@@ -4,7 +4,7 @@
 <!-- design-impact -->
 ### ticket/788-atb-calibration (2026-11-01)
 
-Between `main bc33044` and `this branch 9e0d6ef5`.
+Between `main 5c9f613` and `this branch 45594a8b`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|
