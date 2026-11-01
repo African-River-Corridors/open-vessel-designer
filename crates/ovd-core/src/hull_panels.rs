@@ -328,6 +328,13 @@ pub struct PanelMember {
     pub stiffener: Option<Section>,
     /// Total length of the stiffeners of all of them (m).
     pub stiffener_length_m: f64,
+    /// Each stiffener entry of one of them: its section and length, for the plate model
+    /// (`hull_plates`, issue #742). A run of like stiffeners is one entry, its length their sum.
+    pub stiffeners: Vec<(Section, f64)>,
+    /// The profile primary members of one of them (a side web, a deck transverse, the vertical webs
+    /// of a bulkhead), as section and length. Their weight is in `stiffeners_t` with the
+    /// stiffeners'.
+    pub primary_members: Vec<(Section, f64)>,
     /// The primary members that support this panel: their spacing (m) and section.
     pub primary_spacing_m: Option<f64>,
     pub primary: Option<String>,
@@ -475,6 +482,9 @@ struct Panel {
     dir: StiffenerDirection,
     /// Stiffener count per panel and the length of each.
     stiffeners: Vec<(Section, f64)>,
+    /// The profile primary members of each panel (a side web, a deck transverse, the vertical webs
+    /// of a bulkhead) and their length.
+    primary_members: Vec<(Section, f64)>,
     primary_spacing: Option<f64>,
     primary: Option<String>,
     rule: String,
@@ -489,7 +499,7 @@ impl Builder<'_> {
         let plate_t = plate_area * p.plate_mm / 1000.0 * rho;
         let mut st_t = 0.0;
         let mut st_len = 0.0;
-        for (s, len) in &p.stiffeners {
+        for (s, len) in p.stiffeners.iter().chain(&p.primary_members) {
             st_t += s.mass_per_m(rho) * len * p.count as f64;
             st_len += len * p.count as f64;
         }
@@ -497,6 +507,7 @@ impl Builder<'_> {
         let stiffener = p
             .stiffeners
             .iter()
+            .chain(&p.primary_members)
             .map(|(s, _)| s)
             .max_by(|a, b| a.area_cm2().total_cmp(&b.area_cm2()))
             .cloned();
@@ -510,13 +521,15 @@ impl Builder<'_> {
             plate_area_m2: plate_area,
             plate_mm: p.plate_mm,
             stiffener_direction: p.dir,
-            stiffener_spacing_mm: if p.stiffeners.is_empty() {
+            stiffener_spacing_mm: if p.stiffeners.is_empty() && p.primary_members.is_empty() {
                 0.0
             } else {
                 self.ch.longitudinal_spacing_mm
             },
             stiffener,
             stiffener_length_m: st_len,
+            stiffeners: p.stiffeners,
+            primary_members: p.primary_members,
             primary_spacing_m: p.primary_spacing,
             primary: p.primary,
             plate_t,
@@ -839,6 +852,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
             plate_mm: t,
             dir: StiffenerDirection::Longitudinal,
             stiffeners: alloc::vec![(bottom_long.clone(), n_b as f64 * len)],
+            primary_members: Vec::new(),
             primary_spacing: Some(web),
             primary: Some(floors_desc.clone()),
             rule: format!("{rule}; longitudinals 5-2-2/3.7 (c = 1.34)"),
@@ -879,6 +893,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
             plate_mm: t,
             dir: StiffenerDirection::Longitudinal,
             stiffeners: side_longs.iter().map(|st| (st.clone(), len)).collect(),
+            primary_members: Vec::new(),
             primary_spacing: Some(web),
             primary: Some(webs_desc("side web frames")),
             rule: format!("{rule}; longitudinals 5-2-2/7 and 5-2-1/7 (c = 1.25)"),
@@ -904,6 +919,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
         plate_mm: t_dm,
         dir: StiffenerDirection::Longitudinal,
         stiffeners: alloc::vec![(deck_long.clone(), n_across(deck_w, s) as f64 * 0.4 * l)],
+        primary_members: Vec::new(),
         primary_spacing: Some(web),
         primary: Some(webs_desc("deck transverses")),
         rule: "ABS 3-2-3/2.1.2(a)(b); 3-2-1/3.1 hull girder; beams 5-1-1/3.1".into(),
@@ -928,6 +944,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
         plate_mm: t_de,
         dir: StiffenerDirection::Longitudinal,
         stiffeners: alloc::vec![(deck_long.clone(), ends_long_len)],
+        primary_members: Vec::new(),
         primary_spacing: Some(web),
         primary: Some(webs_desc("deck transverses")),
         rule: "ABS 3-2-3/2.7, tapered from 3-2-3/2.1.2".into(),
@@ -948,6 +965,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
             plate_mm: order_mm(t_ib),
             dir: StiffenerDirection::Longitudinal,
             stiffeners: alloc::vec![(ib_long.clone(), n_b as f64 * l)],
+            primary_members: Vec::new(),
             primary_spacing: Some(web),
             primary: Some(floors_desc.clone()),
             rule: "ABS 5-2-2/3.3 (5-1-2/5.17, 3-2-7/3.1); longitudinals 5-2-2/3.5".into(),
@@ -972,6 +990,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
             plate_mm: order_mm(t_cg),
             dir: StiffenerDirection::None,
             stiffeners: Vec::new(),
+            primary_members: Vec::new(),
             primary_spacing: None,
             primary: None,
             rule: "ABS 5-1-2/5.1.1 and 5.1.2 (85 % at the ends, weighed as thinner area)".into(),
@@ -990,6 +1009,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
                 plate_mm: order_mm(t_sg),
                 dir: StiffenerDirection::None,
                 stiffeners: Vec::new(),
+                primary_members: Vec::new(),
                 primary_spacing: None,
                 primary: None,
                 rule: "ABS 5-1-2/5.5 (at most 4.6 m apart)".into(),
@@ -1010,6 +1030,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
             plate_mm: order_mm(linear("abs-steel-barges/5-1-2.5.7.1/solid-floors", lr, 0.0)),
             dir: StiffenerDirection::Vertical,
             stiffeners: alloc::vec![(floor_stiff, n_b as f64 * db)],
+            primary_members: Vec::new(),
             primary_spacing: Some(web),
             primary: None,
             rule: "ABS 5-1-2/5.7.1 (spacing at most 3.66 m; a stiffener at every longitudinal)".into(),
@@ -1032,6 +1053,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
             plate_mm: order_mm(t_inner_side),
             dir: StiffenerDirection::Longitudinal,
             stiffeners: inner_longs.iter().map(|st| (st.clone(), lc)).collect(),
+            primary_members: Vec::new(),
             primary_spacing: Some(web),
             primary: Some(webs_desc("wing web frames")),
             rule: "ABS 3-2-7/3.1 plating, 3-2-7/3.3 stiffeners (c = 0.90), head 5-2-1/3".into(),
@@ -1053,6 +1075,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
                     wing_deck_long.clone(),
                     n_across(wing_deck_w, s) as f64 * lc
                 )],
+                primary_members: Vec::new(),
                 primary_spacing: Some(web),
                 primary: Some(webs_desc("wing web frames")),
                 rule: "ABS 3-2-7/3.1 plating, 3-2-7/3.3 stiffeners, head 5-2-1/3".into(),
@@ -1073,6 +1096,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
             plate_mm: order_mm(tw),
             dir: StiffenerDirection::None,
             stiffeners: Vec::new(),
+            primary_members: Vec::new(),
             primary_spacing: Some(web),
             primary: None,
             rule: "ABS 3-2-4/3.11.1 web thickness in tanks".into(),
@@ -1117,7 +1141,8 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
             area_each: 0.0,
             plate_mm: 0.0,
             dir: StiffenerDirection::None,
-            stiffeners: alloc::vec![(sec.clone(), span)],
+            stiffeners: Vec::new(),
+            primary_members: alloc::vec![(sec.clone(), span)],
             primary_spacing: Some(web),
             primary: Some(sec.name.clone()),
             rule: "ABS 5-2-1/11 (c = 1.75), proportions 3-2-4/3.9(iii), web 3-2-4/3.11.2".into(),
@@ -1177,7 +1202,8 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
             area_each: 0.0,
             plate_mm: 0.0,
             dir: StiffenerDirection::None,
-            stiffeners: alloc::vec![(sec.clone(), len_each)],
+            stiffeners: Vec::new(),
+            primary_members: alloc::vec![(sec.clone(), len_each)],
             primary_spacing: Some(web),
             primary: Some(sec.name.clone()),
             rule: "ABS 5-2-1/11 (c = 2.0), head 5-1-1/3.1, proportions 3-2-4/3.9(i), web 3-2-4/3.11.2".into(),
@@ -1235,7 +1261,6 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
                 (web * 1000.0).min(hb * 1000.0 / 3.0),
             )
         };
-        stiff.push((vweb.clone(), hb * n_vweb as f64));
         bld.add(Panel {
             member: function_type::TRANSVERSE_BULKHEADS,
             region: "",
@@ -1247,6 +1272,7 @@ pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> Hu
             plate_mm: libm::round(t_mean * 10.0) / 10.0,
             dir: StiffenerDirection::Transverse,
             stiffeners: stiff,
+            primary_members: alloc::vec![(vweb.clone(), hb * n_vweb as f64)],
             primary_spacing: Some(web),
             primary: Some(format!("vertical webs {}", vweb.name)),
             rule: "ABS 3-2-6/5.1 plating, 5.3 stiffeners (c = 0.56), 5.5 webs; proportions 3-2-7/3.5.3".into(),

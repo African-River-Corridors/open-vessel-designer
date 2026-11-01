@@ -3007,6 +3007,11 @@ fn simulate_gas(
         hull: fit_hull.table.clone(),
         structure,
     };
+    // Issue #742: the panel model and its plate model (the steel list).
+    let steel = r
+        .gas_basis
+        .as_ref()
+        .and_then(|b| gas_steel(b, &vessel_inputs));
     with_blocks_and_text_ids(
         powering_block.clone(),
         sightline_json(r),
@@ -3066,7 +3071,10 @@ fn simulate_gas(
                     pw["installed_power_kw"].as_f64().unwrap_or(0.0),
                 ),
                 None => crate::cost::gas_masses(&b.weights),
-            }, gas_hull_panels(b, &vessel_inputs).as_ref())),
+            }, steel.as_ref().map(|s| &s.0))),
+            // Issue #742: the plate model's steel list, groups and purchase, and its geometry.
+            "structure": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_json(&s.1)),
+            "structure_geometry": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_geometry_json(&s.1)),
         }),
             (&r.stern_block_items, &r.trim_conditions),
         ),
@@ -3554,10 +3562,14 @@ pub(crate) fn formation_curves(
 /// Issue #741: built from the `HullStructureSpec` of the Vessel Model; the block coefficient and the
 /// steel density are the lightship's (`weights::calculate_weights_with`). `None` when the model has
 /// no Tank Layout.
-fn gas_hull_panels(
+/// Issue #742: with its plate model (`hull_plates`).
+fn gas_steel(
     b: &ovd_core::barge_capacity::GasBasis,
     vessel: &ovd_core::vessel_model::VesselModelInputs,
-) -> Option<ovd_core::hull_panels::HullPanelModel> {
+) -> Option<(
+    ovd_core::hull_panels::HullPanelModel,
+    ovd_core::hull_plates::HullPlateModel,
+)> {
     let i = &b.inputs;
     let model = ovd_core::vessel_model::assemble(vessel);
     let spec = ovd_core::hull_panels::structure_spec_of(
@@ -3565,5 +3577,7 @@ fn gas_hull_panels(
         i.block_coefficient,
         i.hull_steel_density,
     )?;
-    Some(ovd_core::hull_panels::hull_panels(&spec))
+    let panels = ovd_core::hull_panels::hull_panels(&spec);
+    let plates = ovd_core::hull_plates::hull_plates(&panels, &spec);
+    Some((panels, plates))
 }

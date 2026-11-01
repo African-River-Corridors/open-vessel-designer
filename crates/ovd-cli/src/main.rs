@@ -92,12 +92,13 @@ Usage:
   ovd draw [--profile <profile.json>] [--option <name>] --document <file.vdesign>
       Print the drawing documents only, as JSON, so that they can be built with another
       implementation of the standard.
-  ovd export [--profile <profile.json>] --format gltf|stl|obj|offsets-csv [--option <name>] [--below <condition>] (-o <file> | --hash) <file.vdesign>
+  ovd export [--profile <profile.json>] --format gltf|stl|obj|offsets-csv|steel-csv [--option <name>] [--below <condition>] (-o <file> | --hash) <file.vdesign>
       Write the Vessel Model of an Option (spec 0008, issues #460 and #461): `gltf` is a glTF 2.0
       binary (.glb) with one node for each layer and each Space; `stl` (binary) and `obj` are the
       closed hull to the deck, outward normals, watertight, and with `--below <condition>` the part
       under that loading condition's waterline with a lid; `offsets-csv` is the Sections Table in
-      the import format. `-o` names the file; `--option` picks the Option (the only one, when there
+      the import format; `steel-csv` is the steel list of a gas hull's plate model (issue #742),
+      one row per plate, stiffener and primary member. `-o` names the file; `--option` picks the Option (the only one, when there
       is one). `--hash` prints the SHA-256 of each Option's bytes instead, for the web parity check.
   ovd mesh [--profile <profile.json>] --hash <file.vdesign>
       Print the mesh hash of each Option (spec 0008, issue #456): the SHA-256 of the meshes of its
@@ -610,7 +611,7 @@ fn export(args: &[&str]) -> Result<(), String> {
             a => rest.push(a),
         }
     }
-    let format = format.ok_or("give --format gltf, stl, obj or offsets-csv")?;
+    let format = format.ok_or("give --format gltf, stl, obj, offsets-csv or steel-csv")?;
     if !ovd_format::export::FORMATS.contains(&format) {
         return Err(format!(
             "unknown format `{format}` (use {})",
