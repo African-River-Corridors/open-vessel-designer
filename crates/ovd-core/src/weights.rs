@@ -230,6 +230,9 @@ pub struct TankMassOptions {
     /// drive the lightship and the cost, in place of the top-down rate and the plating x factor.
     /// The gas capacity calculation sets it; the legacy API leaves it off.
     pub hull_panels: bool,
+    /// The `structure` block of the Hull (spec 0013, issue #741): the spacings the panel model is
+    /// laid out on.
+    pub structure: crate::vessel_model::StructureBlock,
 }
 
 /// The mass of the tank domes as one lightship item (issue #412): per tank a cylinder of the dome
@@ -416,19 +419,24 @@ pub fn calculate_weights_with(
         w_weather_shield,
         steel_lightship,
     ) = if opts.hull_panels {
-        let spec = crate::hull_panels::gas_hull_spec(inputs, tanks, inputs.block_coefficient);
-        let m = crate::hull_panels::double_hull_panels(&spec, &Default::default());
-        let plate_of = |prefix: &str| -> f64 {
+        let spec = crate::hull_panels::HullStructureSpec::of_gas_arrangement(
+            inputs,
+            tanks,
+            inputs.block_coefficient,
+            opts.structure,
+        );
+        let m = crate::hull_panels::hull_panels(&spec);
+        let plate_of = |function_type: &str| -> f64 {
             m.members
                 .iter()
-                .filter(|p| p.member.starts_with(prefix))
+                .filter(|p| p.member == function_type)
                 .map(|p| p.plate_t)
                 .sum()
         };
         let (b, s, d) = (
-            plate_of("bottom shell"),
-            plate_of("side shell"),
-            plate_of("strength deck"),
+            plate_of(crate::hull_panels::function_type::BOTTOM_SHELL),
+            plate_of(crate::hull_panels::function_type::SIDE_SHELL),
+            plate_of(crate::hull_panels::function_type::STRENGTH_DECK),
         );
         let cover = covering_items(inputs, tanks)?;
         let part = |labels: &[&str]| -> f64 {

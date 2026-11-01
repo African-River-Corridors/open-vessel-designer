@@ -194,7 +194,10 @@ fn steel_json(w: &WeightBreakdown) -> Value {
 /// beside the two steel figures as `steel.panel_t`, and the panel table as `hull_panels`, for a later
 /// ticket to draw. Neither the lightship nor the cost reads it yet: which figure drives them is the
 /// maintainer's question on issue #722. Concept and preliminary design only; not a structural approval.
-pub fn with_hull_panels(mut v: Value, m: &ovd_core::hull_panels::HullPanelModel) -> Value {
+pub fn with_hull_panels(mut v: Value, m: Option<&ovd_core::hull_panels::HullPanelModel>) -> Value {
+    let Some(m) = m else {
+        return v;
+    };
     if v.is_null() {
         return v;
     }
@@ -205,6 +208,7 @@ pub fn with_hull_panels(mut v: Value, m: &ovd_core::hull_panels::HullPanelModel)
         .map(|p| {
             json!({
                 "member": p.member,
+                "region": p.region,
                 "x_m": [p.x_m.0, p.x_m.1],
                 "y_m": [p.y_m.0, p.y_m.1],
                 "z_m": [p.z_m.0, p.z_m.1],

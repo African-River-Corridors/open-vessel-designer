@@ -132,6 +132,9 @@ pub struct FitOptions {
     pub weather_shield_thickness_mm: f64,
     /// Clearance from the tank top to the weather shield top (m, issue #410).
     pub weather_shield_clearance_m: f64,
+    /// The `structure` block of the Hull (spec 0013, issue #741), for the panel model of each
+    /// arrangement tried.
+    pub structure: crate::vessel_model::StructureBlock,
     /// Forming allowance on the tank plate, % of the required thickness (issue #412).
     pub tank_forming_allowance_pct: f64,
     /// Wall thickness of each tank's dome (mm); 0: no dome mass (issue #412).
@@ -374,6 +377,7 @@ impl Default for FitOptions {
             wing_tank_height_ratio: DEFAULT_WING_TANK_HEIGHT_RATIO,
             weather_shield_thickness_mm: DEFAULT_WEATHER_SHIELD_THICKNESS_MM,
             weather_shield_clearance_m: DEFAULT_WEATHER_SHIELD_CLEARANCE_M,
+            structure: crate::vessel_model::StructureBlock::default(),
             // As the legacy capacity inputs: neither is weighed unless a Design asks (issue #412).
             tank_forming_allowance_pct: 0.0,
             tank_dome_wall_thickness_mm: 0.0,
@@ -1133,6 +1137,7 @@ impl Search<'_> {
         inp.wing_tank_height_ratio = self.o.wing_tank_height_ratio;
         inp.weather_shield_thickness_mm = self.o.weather_shield_thickness_mm;
         inp.weather_shield_clearance_m = self.o.weather_shield_clearance_m;
+        inp.structure = self.o.structure;
         inp.tank_forming_allowance_pct = self.o.tank_forming_allowance_pct;
         inp.tank_dome_wall_thickness_mm = self.o.tank_dome_wall_thickness_mm;
         // Issue #280: end spaces of the Option's own, when they are not the engine's default.

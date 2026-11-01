@@ -11,7 +11,10 @@
 //! length (ABS 3-1-1/3.1, issue #740) is the box's: 96 % of the length overall, as no case publishes
 //! its rakes.
 
-use ovd_core::hull_panels::{DoubleHullSpec, ScantlingChoices, double_hull_panels, rule_length_m};
+use ovd_core::hull_panels::{
+    HullStructureSpec, ScantlingChoices, double_hull_panels, rule_length_m,
+};
+use ovd_core::vessel_model::StructureBlock;
 
 /// (case id, LOA, B, D, k_implied t/m3), from `calibration/tank_lightship.yaml` and `cases.yaml`.
 const CASES: &[(&str, f64, f64, f64, f64)] = &[
@@ -32,8 +35,8 @@ const CASES: &[(&str, f64, f64, f64, f64)] = &[
     ("htco-3064-320x50", 97.54, 15.24, 3.96, 0.1291),
 ];
 
-fn tank_barge(l: f64, b: f64, d: f64) -> DoubleHullSpec {
-    DoubleHullSpec {
+fn tank_barge(l: f64, b: f64, d: f64) -> HullStructureSpec {
+    HullStructureSpec {
         loa_m: l,
         rule_length_m: rule_length_m(d, |_| l),
         beam_m: b,
@@ -49,6 +52,7 @@ fn tank_barge(l: f64, b: f64, d: f64) -> DoubleHullSpec {
         holds_along: ((0.84 * l / 20.0).round() as usize).max(2),
         tanks_abreast: 2,
         steel_density: 7.85,
+        structure: StructureBlock::default(),
     }
 }
 
