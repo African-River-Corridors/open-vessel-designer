@@ -232,6 +232,30 @@ A named transverse reference plane of the Structure Layer: FR0 at the aft end of
 frame spacing forward (spec 0013; OCX names frames the same way).
 _Avoid_: station (a Section of the Sections Table), frame line
 
+**Plate**:
+A piece of a Panel between Seams and Butts, with one thickness and grade; the plate model cuts each Panel of
+the panel model into Plates no larger than the stock plate (spec 0013).
+_Avoid_: sheet, strake (a run of Plates across the length)
+
+**Seam / Butt**:
+A weld line along / across the length that bounds Plates (spec 0013, OCX).
+_Avoid_: joint
+
+**Primary Member**:
+A web frame, floor, girder or transverse that supports Stiffeners: a plated part (a floor) or a profile (a
+side web, a deck transverse); one steel list item per Frame (spec 0013).
+_Avoid_: main frame, big frame
+
+**Rule-net thickness / ordered thickness**:
+The plate thickness the Rule gives / that thickness rounded up to the thickness step, as a yard orders it
+(spec 0013, D10).
+_Avoid_: net thickness (a corrosion term), gross thickness
+
+**Steel List**:
+One row per Plate, Stiffener and Primary Member of the plate model, with its rule-net and ordered weight,
+centre and rule citation; with the stock plates bought and the counted scrap (spec 0013).
+_Avoid_: steel take-off, material list
+
 **Lightship**:
 The mass of the vessel ready for service, without cargo, consumables, stores or water ballast.
 _Avoid_: light weight, empty weight

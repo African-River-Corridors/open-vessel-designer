@@ -21,6 +21,7 @@ mod run;
 pub mod session;
 pub mod shipd;
 mod simulate;
+pub mod steel;
 mod text_ids;
 pub mod trace;
 pub mod vdesign;

@@ -403,8 +403,18 @@ pub fn option_offsets_csv(option: &crate::DesignOption) -> Result<String, String
     Ok(crate::offsets::to_csv(&ovd_core::offsets::to_rows(&table)))
 }
 
+/// The steel list of an Option's plate model as CSV (issue #742): a gas hull only, so far.
+pub fn option_steel_csv(option: &crate::DesignOption) -> Result<String, String> {
+    match crate::run_option(option) {
+        crate::RunOutcome::Results { results, .. } => {
+            crate::steel::steel_csv(&results["structure"])
+        }
+        _ => Err("the Option has no results".to_string()),
+    }
+}
+
 /// The formats `ovd export` writes.
-pub const FORMATS: [&str; 4] = ["gltf", "stl", "obj", "offsets-csv"];
+pub const FORMATS: [&str; 5] = ["gltf", "stl", "obj", "offsets-csv", "steel-csv"];
 
 /// The bytes of an Option's export in `format` (one of [`FORMATS`]). `below` (a loading condition's
 /// name) clips an `stl` or `obj` at that waterline; it is an error for the others.
@@ -421,6 +431,8 @@ pub fn option_export(
         "stl" => option_panel_mesh(option, below).map(|m| stl_binary(&m)),
         "obj" => option_panel_mesh(option, below).map(|m| obj_text(&m).into_bytes()),
         "offsets-csv" => option_offsets_csv(option).map(String::into_bytes),
+        // Issue #742: the plate model's steel list.
+        "steel-csv" => option_steel_csv(option).map(String::into_bytes),
         other => Err(format!(
             "unknown format `{other}` (use {})",
             FORMATS.join(", ")
