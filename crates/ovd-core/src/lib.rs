@@ -34,6 +34,7 @@ pub mod holtrop_mennen;
 pub mod hull;
 pub mod hull_panels;
 pub mod hull_plates;
+pub mod hull_shell;
 pub mod hydrostatics;
 pub mod journey_derating;
 pub mod liquid_bulk;

@@ -69,6 +69,9 @@ pub mod region {
     pub const ENDS: &str = "ends";
     pub const CARGO_ZONE: &str = "cargo zone";
     pub const END_ZONES: &str = "end zones";
+    /// The plating of the hull's two end faces (a transom, a square bow) in the plate model on the
+    /// Sections Table (issue #743); the panel model has no such member.
+    pub const END_PLATING: &str = "end plating";
 }
 
 /// The allowance for brackets, collars, welds and small items, as a share (%) of the net member

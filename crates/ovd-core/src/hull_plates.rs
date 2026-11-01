@@ -15,10 +15,17 @@
 //! the net plate area. Brackets, collars and welds stay the panel model's named
 //! allowance (an Estimate, D2). Lightening holes are not deducted (D13): the list errs heavy.
 //!
-//! The geometry of a panel here is its panel-equivalent rectangle: the panel's area as a length
-//! times a girth, placed at the panel's position. It sets each item's centre and the 3D view; the
-//! weights are exact whatever the placing. The bulkhead positions are Estimates until the end
-//! structure follows the Vessel Model's bulkheads (spec 0013, T5).
+//! Without a Sections Table ([`hull_plates`]) the geometry of a panel is its panel-equivalent
+//! rectangle: the panel's area as a length times a girth, placed at the panel's position. It sets
+//! each item's centre and the 3D view; the weights are the panel model's whatever the placing.
+//!
+//! With the hull's Sections Table ([`hull_plates_on`], issue #743, spec 0013 "Ends", D6) the shell
+//! follows the table, one strip per Station interval, so the rakes, bilges, sheer, camber and Stern
+//! Forms carry real plate, and the end faces of the hull are plated; the transverse bulkheads
+//! (aft peak, holds, collision), the floors, the inner bottom and the girders take the hull's
+//! section where they stand ([`crate::hull_shell`]). The scantlings stay the panel model's. The plate
+//! model then differs from the panel table at the ends: the lightship reads the panel table until
+//! spec 0013, T7.
 
 use alloc::format;
 use alloc::string::String;
@@ -30,6 +37,7 @@ use crate::hull_panels::{
     HullPanelModel, HullStructureSpec, PanelMember, Section, function_type as ft, region,
 };
 use crate::mesh::PartSource;
+use crate::sections::SectionsTable;
 use crate::vessel_model::{SteelGrade, StructureBlock};
 
 /// What the steel list says about the openings (spec 0013, "Openings", D13).
@@ -38,7 +46,7 @@ deducted: the list errs heavy. The large openings the model holds (the deck cut-
 tanks) are deducted.";
 
 /// Two lengths closer than this (m) are one.
-const EPS: f64 = 1e-9;
+pub(crate) const EPS: f64 = 1e-9;
 
 /// `a > b`, false for NaN.
 fn above(a: f64, b: f64) -> bool {
@@ -69,8 +77,10 @@ impl ItemKind {
 /// A point in hull axes (m): x forward from the aft end, y to starboard, z up from the keel.
 pub type Point = (f64, f64, f64);
 
-/// The geometry of an item: a plate's corners (four, in order round it), or a trace line's two
-/// ends (a stiffener, a profile primary member). Outside the results hash.
+/// The geometry of an item: a plate's outline in order round it (four corners for a flat plate on a
+/// panel-equivalent rectangle; on the Sections Table, issue #743, a curved plate's outline holds the
+/// knuckles of the strip too, and a plate cut from a hull section its clipped polygon), or a trace
+/// line's two ends (a stiffener, a profile primary member). Outside the results hash.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Geometry {
     pub points: Vec<Point>,
@@ -210,7 +220,7 @@ pub const WELD_CLEARANCE_M: f64 = 0.05;
 /// Cut points along a run of `total`, at most `stock` apart: each cut at the stock length from the
 /// last, pulled back to [`WELD_CLEARANCE_M`] short of a line it would fall on or near. The lines
 /// (stiffeners, or frames) sit at `phase + k x spacing`. The ends 0 and `total` are included.
-fn cuts(total: f64, stock: f64, lines: Option<(f64, f64)>) -> Vec<f64> {
+pub(crate) fn cuts(total: f64, stock: f64, lines: Option<(f64, f64)>) -> Vec<f64> {
     let mut out = alloc::vec![0.0];
     if !above(total, EPS) {
         return out;
@@ -242,7 +252,7 @@ fn cuts(total: f64, stock: f64, lines: Option<(f64, f64)>) -> Vec<f64> {
 }
 
 /// The x of frames FR1, FR2, ... up to `x1` (FR0 at the aft end).
-fn frames(spacing: f64, x1: f64) -> Vec<f64> {
+pub(crate) fn frames(spacing: f64, x1: f64) -> Vec<f64> {
     let mut out = Vec::new();
     if !above(spacing, EPS) {
         return out;
@@ -256,7 +266,7 @@ fn frames(spacing: f64, x1: f64) -> Vec<f64> {
 }
 
 /// `n` frame positions up to `x1`: the frames FR1, FR2, ...; spread evenly when fewer frames fit.
-fn frames_n(spacing: f64, x1: f64, n: usize) -> Vec<f64> {
+pub(crate) fn frames_n(spacing: f64, x1: f64, n: usize) -> Vec<f64> {
     let f = frames(spacing, x1);
     if f.len() >= n {
         f.into_iter().take(n).collect()
@@ -266,7 +276,7 @@ fn frames_n(spacing: f64, x1: f64, n: usize) -> Vec<f64> {
 }
 
 /// `n` positions spread evenly over (a, b), clear of both ends.
-fn spread(n: usize, a: f64, b: f64) -> Vec<f64> {
+pub(crate) fn spread(n: usize, a: f64, b: f64) -> Vec<f64> {
     (1..=n)
         .map(|k| a + (b - a) * k as f64 / (n as f64 + 1.0))
         .collect()
@@ -368,7 +378,7 @@ fn faces_of(m: &PanelMember, spec: &HullStructureSpec) -> Vec<Vec<Face>> {
 /// The x of the transverse bulkheads of the panel model (Estimates, spec 0013 T5 places them from the
 /// Vessel Model): the aft peak bulkhead midway along the stern zone, the hold bulkheads at the ends
 /// of the cargo zone and evenly between, and the collision bulkhead midway along the bow zone.
-fn bulkhead_xs(spec: &HullStructureSpec, n: usize) -> Vec<f64> {
+pub(crate) fn bulkhead_xs(spec: &HullStructureSpec, n: usize) -> Vec<f64> {
     let (xa, xf) = (spec.cargo_zone_aft_m, spec.cargo_zone_fwd_m);
     let holds = n.saturating_sub(3);
     let mut out = alloc::vec![xa / 2.0];
@@ -462,28 +472,57 @@ fn stiffener_lines(
     out
 }
 
-fn mid(a: Point, b: Point) -> Point {
+pub(crate) fn mid(a: Point, b: Point) -> Point {
     ((a.0 + b.0) / 2.0, (a.1 + b.1) / 2.0, (a.2 + b.2) / 2.0)
 }
 
-/// The plate model of a hull from its panel model and its `HullStructureSpec`.
-pub fn hull_plates(panels: &HullPanelModel, spec: &HullStructureSpec) -> HullPlateModel {
-    let st = spec.structure;
-    let rho = spec.steel_density;
-    let step = st.thickness_step_mm;
-    let (stock_w, stock_l) = (st.stock_plate_width_m, st.stock_plate_length_m);
-    let spacing = st.longitudinal_spacing_mm / 1000.0;
-    let web = st.frame_spacing_m;
-    let mut items: Vec<SteelItem> = Vec::new();
-    // Every piece cut from stock: (panel index, ordered thickness, width, length).
-    let mut cut: Vec<(usize, f64, f64, f64)> = Vec::new();
-    let mut groups: Vec<Group> = Vec::new();
-    let (mut n_pl, mut n_st, mut n_pm) = (0usize, 0usize, 0usize);
-    for (k, m) in panels.members.iter().enumerate() {
-        let first = items.len();
-        let t_net = m.plate_mm;
-        let t_ord = ordered_mm(t_net, step);
-        let base = |kind: ItemKind, id: String| SteelItem {
+/// The items built so far, with the pieces cut from stock and the item range of each group.
+pub(crate) struct Acc {
+    pub(crate) items: Vec<SteelItem>,
+    /// Every piece cut from stock: (group index, ordered thickness, width, length, net area). A
+    /// piece of a hull section is cut from its bounding width x length.
+    pub(crate) cut: Vec<(usize, f64, f64, f64, f64)>,
+    /// Each group: its member, region and the range of its items.
+    pub(crate) groups: Vec<(String, String, usize, usize)>,
+    n_pl: usize,
+    n_st: usize,
+    n_pm: usize,
+}
+
+impl Acc {
+    fn new() -> Self {
+        Self {
+            items: Vec::new(),
+            cut: Vec::new(),
+            groups: Vec::new(),
+            n_pl: 0,
+            n_st: 0,
+            n_pm: 0,
+        }
+    }
+
+    /// A new item of a panel, with the next id of its kind; its numbers are 0.
+    pub(crate) fn item(
+        &mut self,
+        m: &PanelMember,
+        st: &StructureBlock,
+        kind: ItemKind,
+    ) -> SteelItem {
+        let id = match kind {
+            ItemKind::Plate => {
+                self.n_pl += 1;
+                format!("PL{}", self.n_pl)
+            }
+            ItemKind::Stiffener => {
+                self.n_st += 1;
+                format!("ST{}", self.n_st)
+            }
+            ItemKind::Primary => {
+                self.n_pm += 1;
+                format!("PM{}", self.n_pm)
+            }
+        };
+        SteelItem {
             source: PartSource::Hull,
             id,
             kind,
@@ -506,160 +545,246 @@ pub fn hull_plates(panels: &HullPanelModel, spec: &HullStructureSpec) -> HullPla
             edition: m.edition,
             paragraph: m.paragraph.clone(),
             basis: m.basis,
-        };
-        let plated_primary = m.member == ft::FLOORS || m.member == ft::WING_WEB_FRAMES;
-        let copies = faces_of(m, spec);
-        let share = if copies.is_empty() {
-            0.0
-        } else {
-            m.count.max(1) as f64 / copies.len() as f64
-        };
-        for copy in &copies {
-            for face in copy {
-                // Seams across the girth at the stock width, clear of the longitudinals; butts along
-                // the length. A transverse face (a floor, a bulkhead) has its butts across the hull.
-                let has_stiffeners = !m.stiffeners.is_empty();
-                let seams = cuts(
-                    face.girth,
-                    stock_w,
-                    (has_stiffeners && !plated_primary).then_some((0.0, spacing)),
-                );
-                // Butts of a lengthwise panel clear of the frames (FR0 at x = 0).
-                let frames_at = (face.along == X && web > EPS).then(|| {
-                    let phase = (web - face.origin.0 % web) % web;
-                    (phase, web)
-                });
-                let butts = cuts(face.length, stock_l, frames_at);
-                if plated_primary {
-                    // One item per frame, cut in as many pieces as its seams and butts make.
-                    let area = face.length * face.girth;
-                    n_pm += 1;
-                    let mut it = base(ItemKind::Primary, format!("PM{n_pm}"));
-                    let pieces = (seams.len() - 1) * (butts.len() - 1);
-                    for bw in butts.windows(2) {
-                        for sw in seams.windows(2) {
-                            cut.push((k, t_ord, sw[1] - sw[0], bw[1] - bw[0]));
-                        }
+        }
+    }
+
+    /// A stiffener or a profile primary member: `section` over the line `p0` to `p1`, `len` long.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn line(
+        &mut self,
+        m: &PanelMember,
+        st: &StructureBlock,
+        kind: ItemKind,
+        s: &Section,
+        len: f64,
+        rho: f64,
+        p0: Point,
+        p1: Point,
+    ) {
+        let mut it = self.item(m, st, kind);
+        let t = s.mass_per_m(rho) * len;
+        it.section = Some(s.name.clone());
+        it.length_m = len;
+        it.rule_net_t = t;
+        it.ordered_t = t;
+        it.centre_m = mid(p0, p1);
+        it.geometry.points = alloc::vec![p0, p1];
+        self.items.push(it);
+    }
+
+    /// Close the group of `m` (or of `m` under another region): the items since `first`.
+    pub(crate) fn close(&mut self, member: &str, region: &str, first: usize) {
+        self.groups
+            .push((member.into(), region.into(), first, self.items.len()));
+    }
+}
+
+/// The items of one panel laid out on its panel-equivalent rectangles (`faces_of`).
+fn box_member(acc: &mut Acc, k: usize, m: &PanelMember, spec: &HullStructureSpec) {
+    let st = spec.structure;
+    let rho = spec.steel_density;
+    let step = st.thickness_step_mm;
+    let (stock_w, stock_l) = (st.stock_plate_width_m, st.stock_plate_length_m);
+    let spacing = st.longitudinal_spacing_mm / 1000.0;
+    let web = st.frame_spacing_m;
+    let t_net = m.plate_mm;
+    let t_ord = ordered_mm(t_net, step);
+    let plated_primary = m.member == ft::FLOORS || m.member == ft::WING_WEB_FRAMES;
+    let copies = faces_of(m, spec);
+    let share = if copies.is_empty() {
+        0.0
+    } else {
+        m.count.max(1) as f64 / copies.len() as f64
+    };
+    for copy in &copies {
+        for face in copy {
+            // Seams across the girth at the stock width, clear of the longitudinals; butts along
+            // the length. A transverse face (a floor, a bulkhead) has its butts across the hull.
+            let has_stiffeners = !m.stiffeners.is_empty();
+            let seams = cuts(
+                face.girth,
+                stock_w,
+                (has_stiffeners && !plated_primary).then_some((0.0, spacing)),
+            );
+            // Butts of a lengthwise panel clear of the frames (FR0 at x = 0).
+            let frames_at = (face.along == X && web > EPS).then(|| {
+                let phase = (web - face.origin.0 % web) % web;
+                (phase, web)
+            });
+            let butts = cuts(face.length, stock_l, frames_at);
+            if plated_primary {
+                // One item per frame, cut in as many pieces as its seams and butts make.
+                let area = face.length * face.girth;
+                let mut it = acc.item(m, &st, ItemKind::Primary);
+                let pieces = (seams.len() - 1) * (butts.len() - 1);
+                for bw in butts.windows(2) {
+                    for sw in seams.windows(2) {
+                        acc.cut.push((
+                            k,
+                            t_ord,
+                            sw[1] - sw[0],
+                            bw[1] - bw[0],
+                            (sw[1] - sw[0]) * (bw[1] - bw[0]),
+                        ));
                     }
-                    it.rule_net_mm = t_net;
-                    it.ordered_mm = t_ord;
-                    it.length_m = face.length;
-                    it.width_m = face.girth;
-                    it.area_m2 = area;
-                    it.pieces = pieces;
-                    it.rule_net_t = area * t_net / 1000.0 * rho;
-                    it.ordered_t = area * t_ord / 1000.0 * rho;
-                    it.centre_m = face.at(face.length / 2.0, face.girth / 2.0);
-                    it.geometry.points = alloc::vec![
-                        face.at(0.0, 0.0),
-                        face.at(face.length, 0.0),
-                        face.at(face.length, face.girth),
-                        face.at(0.0, face.girth),
-                    ];
-                    items.push(it);
-                } else {
-                    for bw in butts.windows(2) {
-                        for sw in seams.windows(2) {
-                            let (len, wid) = (bw[1] - bw[0], sw[1] - sw[0]);
-                            let area = len * wid;
-                            n_pl += 1;
-                            let mut it = base(ItemKind::Plate, format!("PL{n_pl}"));
-                            it.rule_net_mm = t_net;
-                            it.ordered_mm = t_ord;
-                            it.length_m = len;
-                            it.width_m = wid;
-                            it.area_m2 = area;
-                            it.pieces = 1;
-                            cut.push((k, t_ord, wid, len));
-                            it.rule_net_t = area * t_net / 1000.0 * rho;
-                            it.ordered_t = area * t_ord / 1000.0 * rho;
-                            it.centre_m = face.at((bw[0] + bw[1]) / 2.0, (sw[0] + sw[1]) / 2.0);
-                            it.geometry.points = alloc::vec![
-                                face.at(bw[0], sw[0]),
-                                face.at(bw[1], sw[0]),
-                                face.at(bw[1], sw[1]),
-                                face.at(bw[0], sw[1]),
-                            ];
-                            items.push(it);
-                        }
+                }
+                it.rule_net_mm = t_net;
+                it.ordered_mm = t_ord;
+                it.length_m = face.length;
+                it.width_m = face.girth;
+                it.area_m2 = area;
+                it.pieces = pieces;
+                it.rule_net_t = area * t_net / 1000.0 * rho;
+                it.ordered_t = area * t_ord / 1000.0 * rho;
+                it.centre_m = face.at(face.length / 2.0, face.girth / 2.0);
+                it.geometry.points = alloc::vec![
+                    face.at(0.0, 0.0),
+                    face.at(face.length, 0.0),
+                    face.at(face.length, face.girth),
+                    face.at(0.0, face.girth),
+                ];
+                acc.items.push(it);
+            } else {
+                for bw in butts.windows(2) {
+                    for sw in seams.windows(2) {
+                        let (len, wid) = (bw[1] - bw[0], sw[1] - sw[0]);
+                        let area = len * wid;
+                        let mut it = acc.item(m, &st, ItemKind::Plate);
+                        it.rule_net_mm = t_net;
+                        it.ordered_mm = t_ord;
+                        it.length_m = len;
+                        it.width_m = wid;
+                        it.area_m2 = area;
+                        it.pieces = 1;
+                        acc.cut.push((k, t_ord, wid, len, area));
+                        it.rule_net_t = area * t_net / 1000.0 * rho;
+                        it.ordered_t = area * t_ord / 1000.0 * rho;
+                        it.centre_m = face.at((bw[0] + bw[1]) / 2.0, (sw[0] + sw[1]) / 2.0);
+                        it.geometry.points = alloc::vec![
+                            face.at(bw[0], sw[0]),
+                            face.at(bw[1], sw[0]),
+                            face.at(bw[1], sw[1]),
+                            face.at(bw[0], sw[1]),
+                        ];
+                        acc.items.push(it);
                     }
                 }
             }
-            for (s, p0, p1, len) in stiffener_lines(m, copy, share, spacing) {
-                n_st += 1;
-                let mut it = base(ItemKind::Stiffener, format!("ST{n_st}"));
-                let t = s.mass_per_m(rho) * len;
-                it.section = Some(s.name.clone());
-                it.length_m = len;
-                it.rule_net_t = t;
-                it.ordered_t = t;
-                it.centre_m = mid(p0, p1);
-                it.geometry.points = alloc::vec![p0, p1];
-                items.push(it);
-            }
         }
-        // Profile primary members: one per frame (side webs, deck transverses), and the vertical
-        // webs of each bulkhead.
-        for (s, len) in &m.primary_members {
-            let lines: Vec<(Point, Point)> = if m.member == ft::TRANSVERSE_BULKHEADS {
-                // The webs of every bulkhead, spread across it, each the bulkhead's height.
-                let n_v = copies
-                    .first()
-                    .and_then(|c| c.first())
-                    .map_or(1, |f| libm::round(len / f.girth.max(EPS)).max(1.0) as usize);
-                copies
-                    .iter()
-                    .flat_map(|c| c.iter())
-                    .flat_map(|f| {
-                        spread(n_v, 0.0, f.length)
-                            .into_iter()
-                            .map(|y| (f.at(y, 0.0), f.at(y, f.girth)))
-                            .collect::<Vec<_>>()
-                    })
-                    .collect()
-            } else {
-                primary_lines(m, spec, *len)
-            };
-            let each = if m.member == ft::TRANSVERSE_BULKHEADS {
-                let per = (lines.len() / copies.len().max(1)).max(1);
-                len / per as f64
-            } else {
-                *len
-            };
-            for (p0, p1) in lines {
-                n_pm += 1;
-                let mut it = base(ItemKind::Primary, format!("PM{n_pm}"));
-                let t = s.mass_per_m(rho) * each;
-                it.section = Some(s.name.clone());
-                it.length_m = each;
-                it.rule_net_t = t;
-                it.ordered_t = t;
-                it.centre_m = mid(p0, p1);
-                it.geometry.points = alloc::vec![p0, p1];
-                items.push(it);
-            }
+        for (s, p0, p1, len) in stiffener_lines(m, copy, share, spacing) {
+            acc.line(m, &st, ItemKind::Stiffener, &s, len, rho, p0, p1);
         }
-        let mine = &items[first..];
-        let ordered: f64 = mine.iter().map(|i| i.ordered_t).sum();
-        let moment = |f: fn(&Point) -> f64| -> f64 {
-            if ordered > 0.0 {
-                mine.iter()
-                    .map(|i| i.ordered_t * f(&i.centre_m))
-                    .sum::<f64>()
-                    / ordered
-            } else {
-                0.0
-            }
-        };
-        groups.push(Group {
-            member: m.member.clone(),
-            region: m.region.clone(),
-            items: mine.len(),
-            rule_net_t: mine.iter().map(|i| i.rule_net_t).sum(),
-            ordered_t: ordered,
-            centre_m: (moment(|p| p.0), moment(|p| p.1), moment(|p| p.2)),
-        });
     }
+    // Profile primary members: one per frame (side webs, deck transverses), and the vertical
+    // webs of each bulkhead.
+    for (s, len) in &m.primary_members {
+        let lines: Vec<(Point, Point)> = if m.member == ft::TRANSVERSE_BULKHEADS {
+            // The webs of every bulkhead, spread across it, each the bulkhead's height.
+            let n_v = copies
+                .first()
+                .and_then(|c| c.first())
+                .map_or(1, |f| libm::round(len / f.girth.max(EPS)).max(1.0) as usize);
+            copies
+                .iter()
+                .flat_map(|c| c.iter())
+                .flat_map(|f| {
+                    spread(n_v, 0.0, f.length)
+                        .into_iter()
+                        .map(|y| (f.at(y, 0.0), f.at(y, f.girth)))
+                        .collect::<Vec<_>>()
+                })
+                .collect()
+        } else {
+            primary_lines(m, spec, *len)
+        };
+        let each = if m.member == ft::TRANSVERSE_BULKHEADS {
+            let per = (lines.len() / copies.len().max(1)).max(1);
+            len / per as f64
+        } else {
+            *len
+        };
+        for (p0, p1) in lines {
+            acc.line(m, &st, ItemKind::Primary, s, each, rho, p0, p1);
+        }
+    }
+}
+
+/// The plate model of a hull from its panel model and its `HullStructureSpec`, each panel laid out
+/// on its panel-equivalent rectangle. With a Sections Table, [`hull_plates_on`] lays the shell and
+/// the end structure out on the hull itself.
+pub fn hull_plates(panels: &HullPanelModel, spec: &HullStructureSpec) -> HullPlateModel {
+    let mut acc = Acc::new();
+    for (k, m) in panels.members.iter().enumerate() {
+        let first = acc.items.len();
+        box_member(&mut acc, k, m, spec);
+        acc.close(&m.member, &m.region, first);
+    }
+    finish(panels, spec, acc)
+}
+
+/// The plate model of a hull laid out on its Sections Table (issue #743, spec 0013 "Ends", D6). The
+/// shell (bottom, side and deck, in the midship 0.4L and the ends) follows the table, one strip per
+/// Station interval, and the two end faces of the hull are plated ("end plating"). The transverse
+/// bulkheads, the floors, the inner bottom and the girders take the hull's section where they stand.
+/// The hold bulkheads stand at `hold_bulkheads_m` (the Vessel Model's, from aft) when it holds one
+/// per hold end (`holds_along + 1`); else at the panel model's Estimates. The other members (the
+/// double side, the side webs, the deck transverses) stand in the cargo zone and keep their
+/// panel-equivalent rectangles. See [`crate::hull_shell`].
+pub fn hull_plates_on(
+    panels: &HullPanelModel,
+    spec: &HullStructureSpec,
+    hull: &SectionsTable,
+    hold_bulkheads_m: &[f64],
+) -> HullPlateModel {
+    let mut acc = Acc::new();
+    let hull = crate::hull_shell::Hull::new(hull, spec);
+    for (k, m) in panels.members.iter().enumerate() {
+        let first = acc.items.len();
+        if !hull.lay_out(&mut acc, k, m, hold_bulkheads_m) {
+            box_member(&mut acc, k, m, spec);
+        }
+        acc.close(&m.member, &m.region, first);
+    }
+    hull.end_plating(&mut acc, panels);
+    finish(panels, spec, acc)
+}
+
+/// The groups, the purchase and the totals of the items built.
+fn finish(panels: &HullPanelModel, spec: &HullStructureSpec, acc: Acc) -> HullPlateModel {
+    let st = spec.structure;
+    let rho = spec.steel_density;
+    let (stock_w, stock_l) = (st.stock_plate_width_m, st.stock_plate_length_m);
+    let Acc {
+        items,
+        cut,
+        groups: ranges,
+        ..
+    } = acc;
+    let groups: Vec<Group> = ranges
+        .iter()
+        .map(|(member, region, a, b)| {
+            let mine = &items[*a..*b];
+            let ordered: f64 = mine.iter().map(|i| i.ordered_t).sum();
+            let moment = |f: fn(&Point) -> f64| -> f64 {
+                if ordered > 0.0 {
+                    mine.iter()
+                        .map(|i| i.ordered_t * f(&i.centre_m))
+                        .sum::<f64>()
+                        / ordered
+                } else {
+                    0.0
+                }
+            };
+            Group {
+                member: member.clone(),
+                region: region.clone(),
+                items: mine.len(),
+                rule_net_t: mine.iter().map(|i| i.rule_net_t).sum(),
+                ordered_t: ordered,
+                centre_m: (moment(|p| p.0), moment(|p| p.1), moment(|p| p.2)),
+            }
+        })
+        .collect();
 
     // Purchase: stock plates by ordered thickness. Like pieces of one panel (the same thickness
     // and size) are cut side by side from a stock plate, as many as fit in rows and columns, turned
@@ -674,20 +799,23 @@ pub fn hull_plates(panels: &HullPanelModel, spec: &HullStructureSpec) -> HullPla
         };
         rows(w, l).max(rows(l, w)).max(1)
     };
-    let mut kinds: Vec<(usize, f64, f64, f64, usize)> = Vec::new();
-    for &(k, t, w, l) in &cut {
+    let mut kinds: Vec<(usize, f64, f64, f64, usize, f64)> = Vec::new();
+    for &(k, t, w, l, a) in &cut {
         let same = |a: f64, b: f64| (a - b).abs() < 1e-6;
         match kinds
             .iter_mut()
             .find(|c| c.0 == k && same(c.1, t) && same(c.2, w) && same(c.3, l))
         {
-            Some(c) => c.4 += 1,
-            None => kinds.push((k, t, w, l, 1)),
+            Some(c) => {
+                c.4 += 1;
+                c.5 += a;
+            }
+            None => kinds.push((k, t, w, l, 1, a)),
         }
     }
     let buys: Vec<(f64, usize, f64)> = kinds
         .iter()
-        .map(|&(_, t, w, l, n)| (t, n.div_ceil(fit(w, l)), n as f64 * w * l))
+        .map(|&(_, t, w, l, n, a)| (t, n.div_ceil(fit(w, l)), a))
         .collect();
     let mut plates: Vec<PlatePurchase> = Vec::new();
     for (t, count, net) in buys {

@@ -3562,7 +3562,7 @@ pub(crate) fn formation_curves(
 /// Issue #741: built from the `HullStructureSpec` of the Vessel Model; the block coefficient and the
 /// steel density are the lightship's (`weights::calculate_weights_with`). `None` when the model has
 /// no Tank Layout.
-/// Issue #742: with its plate model (`hull_plates`).
+/// Issue #742: with its plate model (`hull_plates`); issue #743: laid out on the hull's Sections Table.
 fn gas_steel(
     b: &ovd_core::barge_capacity::GasBasis,
     vessel: &ovd_core::vessel_model::VesselModelInputs,
@@ -3578,6 +3578,19 @@ fn gas_steel(
         i.hull_steel_density,
     )?;
     let panels = ovd_core::hull_panels::hull_panels(&spec);
-    let plates = ovd_core::hull_plates::hull_plates(&panels, &spec);
+    // Issue #743: the shell and the end structure on the hull's Sections Table, the hold bulkheads
+    // where the Vessel Model puts them (the ends of the cargo zone and the bulkheads between holds).
+    let holds: Vec<f64> = model
+        .bulkheads
+        .iter()
+        .filter(|b| {
+            b.watertight
+                && (b.name == "cargo_zone_aft"
+                    || b.name == "cargo_zone_fwd"
+                    || b.name.starts_with("hold_"))
+        })
+        .map(|b| b.x_m)
+        .collect();
+    let plates = ovd_core::hull_plates::hull_plates_on(&panels, &spec, &model.hull, &holds);
     Some((panels, plates))
 }

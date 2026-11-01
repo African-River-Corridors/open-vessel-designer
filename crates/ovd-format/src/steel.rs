@@ -109,7 +109,8 @@ pub fn structure_json(m: &HullPlateModel) -> Value {
     })
 }
 
-/// The geometry of each steel list item, by its id: a plate's four corners, or a trace line's two
+/// The geometry of each steel list item, by its id: a plate's outline (its four corners, or on the
+/// Sections Table the knuckles of a curved plate and the clipped polygon of a section; issue #743), or a trace line's two
 /// ends, in hull axes (m).
 pub fn structure_geometry_json(m: &HullPlateModel) -> Value {
     let mut out = Map::new();
