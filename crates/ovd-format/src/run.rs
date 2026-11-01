@@ -696,9 +696,18 @@ pub fn run_option_with(
                 if let Some(o) = v.as_object_mut() {
                     o.insert("cost".to_string(), cost);
                     let mut calibration = calibration_of(option);
+                    // Issue #788: an ATB's label, written by `formation.rs` (the fitted allowance,
+                    // the residuals and the method's range check).
+                    let atb_label = o
+                        .get("calibration")
+                        .and_then(|c| c.get("formation"))
+                        .filter(|l| l.is_object())
+                        .cloned();
                     // Issue #359: the pusher ratios and the allowance are not fitted yet (part 2 of
                     // #359 does it). The label is outside the hash, so its change moves no hash.
-                    if v_has_formation {
+                    if let Some(label) = atb_label {
+                        calibration["formation"] = label;
+                    } else if v_has_formation {
                         calibration["formation"] = json!({
                             "state": "uncalibrated",
                             "basis": "The pusher ratios and the Formation resistance allowance are estimates not yet fitted to the reference pushers; a small pusher can be far from a real one.",

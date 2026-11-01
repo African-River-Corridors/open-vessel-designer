@@ -3545,6 +3545,37 @@ pub(crate) fn formation_curves(
         .map_err(stop_text)
 }
 
+/// Issue #788: the resistance method that gives an Equivalent Hull's residuary resistance (the one
+/// [`formation_curves`] uses), and its midship coefficient, for the method's range check. `None`
+/// when the hull has no draught.
+pub(crate) fn formation_method(
+    p: &Map<String, Value>,
+    (l, b, t): (f64, f64, f64),
+    cb: f64,
+    disp: f64,
+    rho: f64,
+) -> Result<Option<(resistance::AppliedMethod, f64)>, String> {
+    let stop_text = |s: Stop| match s {
+        Stop::Raised(kind, message) => format!("{kind}: {message}"),
+        Stop::Eval(e) => e.to_string(),
+    };
+    let cm = get_or(
+        p,
+        "midship_coefficient",
+        ovd_core::confined_water::DEFAULT_MIDSHIP_COEFFICIENT,
+    )
+    .map_err(stop_text)?;
+    let hull = HullAt {
+        cb,
+        lwl: l,
+        midship_m2: b * t * cm,
+        cwp: 0.0,
+    };
+    resistance_of(p, l, b, t, (hull, 0.0), disp, rho)
+        .map(|r| r.map(|r| (r.method_used, cm)))
+        .map_err(stop_text)
+}
+
 /// Issue #722: the panel model of a gas hull, the same one that drives its lightship and cost.
 fn gas_hull_panels(
     b: &ovd_core::barge_capacity::GasBasis,

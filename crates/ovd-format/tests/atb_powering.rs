@@ -4,7 +4,7 @@
 //!
 //! Label: property - the ratios and the Equivalent Hull length are the spec's.
 
-use ovd_format::{DesignSession, Profile, RunOutcome};
+use ovd_format::{DesignSession, Profile, RunOutcome, UNHASHED_KEYS};
 use serde_json::{Value, json};
 
 fn raw(name: &str) -> String {
@@ -153,7 +153,7 @@ type Reference = (
     f64,
 );
 
-/// The three reference ATBs of `calibration/atb.yaml`: name, barge length, beam and depth, the tug's
+/// Three reference ATBs of `calibration/atb.yaml` at the allowance of spec 0007 (1.05): name, barge length, beam and depth, the tug's
 /// typed dimensions and propulsor, the speed and the published installed power in kW (1 hp = 0.7457 kW).
 #[test]
 fn the_atb_powering_against_the_reference_vessels() {
@@ -260,4 +260,80 @@ fn the_service_margins_are_shown_and_the_tug_is_still_sized_with_its_own_margin(
         );
         assert_eq!(m["environment"], json!("Deep water"), "{kind}");
     }
+}
+
+/// The calibration of `tools/atb_calibration.py`, embedded in the engine (issue #788).
+fn fitted() -> Value {
+    serde_json::from_str(include_str!("../src/atb_calibration.json")).unwrap()
+}
+
+/// The results of a new ATB Option: every input from the Defaults Profile.
+fn new_atb() -> Value {
+    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    s.set_input("Option 1", "cargo", json!("bauxite")).unwrap();
+    s.set_formation("Option 1", "atb", None, None).unwrap();
+    match s.evaluate().options[0].outcome.as_ref().unwrap() {
+        RunOutcome::Results { results, .. } => results.clone(),
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn a_new_atb_uses_the_fitted_allowance_and_states_each_residual_and_the_range_check() {
+    // Issue #788 (spec 0014 D10, D19): the label of the fit, status `estimate`, in the results.
+    let data = fitted();
+    let r = new_atb();
+    let fitted_allowance = data["allowance"].as_f64().unwrap();
+    close(
+        num(&r["formation"], &["resistance_allowance"]),
+        fitted_allowance,
+        "a new ATB takes the fitted allowance",
+    );
+    let label = &r["calibration"]["formation"];
+    assert_eq!(label["state"], json!("estimate"), "{label}");
+    assert_eq!(label["uses_fitted_allowance"], json!(true), "{label}");
+    assert_eq!(label["fitted_allowance"], data["allowance"]);
+    assert_eq!(label["cases"], data["cases"]);
+    let cases = label["cases"].as_array().unwrap();
+    let residuals: Vec<f64> = cases
+        .iter()
+        .map(|c| c["residual_pct"].as_f64().unwrap())
+        .collect();
+    assert!(cases.iter().any(|c| c["sample"] == "in_sample"));
+    assert!(cases.iter().any(|c| c["sample"] == "held_out"));
+    let range = label["residual_range_pct"].as_array().unwrap();
+    close(
+        range[0].as_f64().unwrap(),
+        residuals.iter().cloned().fold(f64::INFINITY, f64::min),
+        "lowest residual",
+    );
+    close(
+        range[1].as_f64().unwrap(),
+        residuals.iter().cloned().fold(f64::NEG_INFINITY, f64::max),
+        "highest residual",
+    );
+    // The method's range check on this Option's Equivalent Hull.
+    let check = &label["method_range"];
+    assert!(check["in_range"].is_boolean(), "{check}");
+    assert_eq!(
+        check["in_range"].as_bool().unwrap(),
+        check["outside"].as_array().unwrap().is_empty()
+    );
+    assert!(check["message"].as_str().unwrap().contains("Fn"), "{check}");
+    // The label is outside the results hash, so it moves no saved hash.
+    assert!(UNHASHED_KEYS.contains(&"calibration"));
+}
+
+#[test]
+fn a_typed_allowance_is_kept_and_the_label_says_it_is_not_the_fitted_one() {
+    let r = results("atb", &[]);
+    close(
+        num(&r["formation"], &["resistance_allowance"]),
+        1.05,
+        "typed",
+    );
+    let label = &r["calibration"]["formation"];
+    assert_eq!(label["uses_fitted_allowance"], json!(false), "{label}");
+    assert_eq!(label["allowance"], json!(1.05));
+    assert_eq!(label["fitted_allowance"], fitted()["allowance"]);
 }
