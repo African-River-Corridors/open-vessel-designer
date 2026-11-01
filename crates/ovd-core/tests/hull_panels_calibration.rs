@@ -56,27 +56,96 @@ fn tank_barge(l: f64, b: f64, d: f64) -> HullStructureSpec {
     }
 }
 
+/// The box hull of a case as a Sections Table, for the plate model (issue #745).
+fn box_table(l: f64, b: f64, d: f64) -> ovd_core::sections::SectionsTable {
+    ovd_core::hydrostatics::Hull::build(&ovd_core::hydrostatics::HullSpec {
+        loa: l,
+        beam: b,
+        depth: d,
+        bow_rake_length_m: 0.0,
+        bow_rake_rise_m: d,
+        stern: None,
+        shape: Default::default(),
+        downflooding_deg: None,
+        openings: Vec::new(),
+    })
+    .unwrap()
+    .table
+}
+
+/// The panel steel of #722 beside the steel the lightship takes since issue #745: the plate model's
+/// ordered weight plus the allowance, its shell laid out on the box's Sections Table (end plating
+/// included) and its hold bulkheads at the panel model's Estimates.
 #[test]
 fn the_library_table() {
-    println!("| case | L x B x D (m) | implied steel (t) | panel steel (t) | residual (%) |");
-    println!("|---|---|---:|---:|---:|");
+    println!(
+        "| case | L x B x D (m) | implied steel (t) | panel steel (t) | residual (%) | plate steel (t) | residual (%) |"
+    );
+    println!("|---|---|---:|---:|---:|---:|---:|");
     let mut res = Vec::new();
+    let mut res_plate = Vec::new();
     for (id, l, b, d, k) in CASES {
-        let m = double_hull_panels(&tank_barge(*l, *b, *d), &ScantlingChoices::default());
+        let s = tank_barge(*l, *b, *d);
+        let m = double_hull_panels(&s, &ScantlingChoices::default());
+        let table = box_table(*l, *b, *d);
+        let (_, plates) = ovd_core::hull_plates::gas_hull_steel(&s, Some((&table, &[])));
         let implied = k * l * b * d;
         let r = (m.total_t / implied - 1.0) * 100.0;
+        let rp = (plates.total_t / implied - 1.0) * 100.0;
         res.push(r);
+        res_plate.push(rp);
         println!(
-            "| {id} | {l} x {b} x {d} | {implied:.0} | {:.0} | {r:+.0} |",
-            m.total_t
+            "| {id} | {l} x {b} x {d} | {implied:.0} | {:.0} | {r:+.0} | {:.0} | {rp:+.0} |",
+            m.total_t, plates.total_t
         );
         assert!(m.total_t.is_finite() && m.total_t > 0.0, "{id}");
+        assert!(plates.total_t.is_finite() && plates.total_t > 0.0, "{id}");
     }
-    res.sort_by(f64::total_cmp);
-    let median = res[res.len() / 2];
+    for (name, r) in [("panel", &mut res), ("plate", &mut res_plate)] {
+        r.sort_by(f64::total_cmp);
+        println!(
+            "{name}: median residual {:+.1} %, range {:+.0} to {:+.0} %",
+            r[r.len() / 2],
+            r[0],
+            r[r.len() - 1]
+        );
+    }
+}
+
+/// The LNG bunker vessel concept of `calibration/hull_steel_cases.yaml` (`lng-bunker-4200-concept`),
+/// run as that file records: 95 x 20 x 10 m, LNG, one tank across, two along, tanks at most 11 m OD,
+/// fill 0.98. Prints the hull steel and lightship since issue #745 beside the panel steel before it
+/// (the panel model on the arrangement's box rule length), and the residual to the published 2,687 t.
+#[test]
+fn the_bunker_concept() {
+    use ovd_core::barge_capacity::{BargeCapacityInputs, compute};
+    let mut i = BargeCapacityInputs::new(95.0, 20.0, 10.0);
+    i.cargo_type = "LNG_ethane".into();
+    i.n_tanks_wide = Some(1);
+    i.n_tanks_long = 2;
+    i.max_tank_od_m = 11.0;
+    i.fill_ratio = 0.98;
+    let r = compute(&i).unwrap();
+    let b = r.gas_basis.as_ref().unwrap();
+    let before = ovd_core::hull_panels::hull_panels(
+        &ovd_core::hull_panels::HullStructureSpec::of_gas_arrangement(
+            &b.inputs,
+            &b.tanks,
+            b.inputs.block_coefficient,
+            StructureBlock::default(),
+            None,
+        ),
+    )
+    .total_t;
+    let steel = b.weights.hull_steel_total;
+    let factors = 1.0 + b.inputs.piping_factor + b.inputs.outfitting_factor;
+    let lightship_before = r.lightship_t - (steel - before) * factors;
     println!(
-        "median residual {median:+.1} %, range {:+.0} to {:+.0} %",
-        res[0],
-        res[res.len() - 1]
+        "bunker concept: hull steel {steel:.0} t (panel before {before:.0} t); lightship {:.0} t \
+         (before {lightship_before:.0} t); residual to 2687 t {:+.1} % (before {:+.1} %)",
+        r.lightship_t,
+        (r.lightship_t / 2687.0 - 1.0) * 100.0,
+        (lightship_before / 2687.0 - 1.0) * 100.0
     );
+    assert!(steel > 0.0 && r.lightship_t > 0.0);
 }

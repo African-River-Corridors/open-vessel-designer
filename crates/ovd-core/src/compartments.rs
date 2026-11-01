@@ -872,6 +872,29 @@ pub fn gas_hold_bounds(inp: &BargeCapacityInputs, r: &BargeCapacityResult) -> Ve
         .gas_basis
         .as_ref()
         .and_then(|g| crate::tanks::arrangement_layout(&g.inputs, &g.tanks, None));
+    holds_of(zone, layout.as_ref())
+}
+
+/// The x of the hold bulkheads of a gas hull from its arrangement (issue #745): the ends of the cargo
+/// zone `zone` and one midway between the heads of each two tanks in line, aft to forward, as
+/// [`gas_hold_bounds`] places them. The capacity calculation weighs the lightship from these
+/// before its result exists.
+pub fn gas_hold_bulkheads(
+    zone: (f64, f64),
+    inputs: &crate::models::BargeInputs,
+    tanks: &crate::models::TankResult,
+) -> Vec<f64> {
+    let layout = crate::tanks::arrangement_layout(inputs, tanks, None);
+    let holds = holds_of(zone, layout.as_ref());
+    let mut out: Vec<f64> = holds.iter().map(|h| h.0).collect();
+    if let Some(last) = holds.last() {
+        out.push(last.1);
+    }
+    out
+}
+
+/// The holds along `zone` of a Tank Layout: one per tank in line.
+fn holds_of(zone: (f64, f64), layout: Option<&crate::tanks::TankLayout>) -> Vec<(f64, f64)> {
     let Some(layout) = layout else {
         return vec![zone];
     };

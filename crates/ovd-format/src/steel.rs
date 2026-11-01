@@ -2,8 +2,9 @@
 //! `structure` results block (`steel_list`, `groups`, `purchase`), the item geometry beside it
 //! (`structure_geometry`), and the CSV of `ovd export --format steel-csv`.
 //!
-//! Both blocks are outside the results hash until the lightship reads the plate model (spec 0013,
-//! T7): see `run::UNHASHED_KEYS`. Concept and preliminary design only (ADR 0011).
+//! The plate model's ordered weight drives the lightship and the cost (issue #745), so the
+//! `structure` block is in the results hash; its geometry is not (`run::UNHASHED_KEYS`). Concept and
+//! preliminary design only (ADR 0011).
 
 use ovd_core::hull_plates::{HullPlateModel, OPENINGS_NOTE};
 use serde_json::{Map, Value, json};

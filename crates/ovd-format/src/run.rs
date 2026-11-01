@@ -338,10 +338,9 @@ pub use arc_rules::load::canonical_json;
 /// of the lightship (issue #434), and the gas tank arrangements the search tried (issue #675). They are left
 /// out of the results hash, so adding to one never changes a saved hash, and `tools/design_impact.py`
 /// leaves them out of its comparison (it holds the same list; `tests/test_design_impact_unhashed_keys.py` checks
-/// that the two lists agree). The plate model's steel list (`structure`, issue #742) is outside the hash
-/// until the lightship reads it (spec 0013, T7); its geometry (`structure_geometry`) stays outside, like
-/// the meshes.
-pub const UNHASHED_KEYS: [&str; 13] = [
+/// that the two lists agree). The plate model's steel list (`structure`) is in the hash since the
+/// lightship reads it (issue #745); its geometry (`structure_geometry`) stays outside, like the meshes.
+pub const UNHASHED_KEYS: [&str; 12] = [
     "drawing",
     "stability_marks",
     "cost_masses",
@@ -353,7 +352,6 @@ pub const UNHASHED_KEYS: [&str; 13] = [
     "marpol_damage",
     "oil_outflow",
     "fit_tried",
-    "structure",
     "structure_geometry",
 ];
 

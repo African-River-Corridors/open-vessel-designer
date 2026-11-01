@@ -3577,7 +3577,6 @@ fn gas_steel(
         i.block_coefficient,
         i.hull_steel_density,
     )?;
-    let panels = ovd_core::hull_panels::hull_panels(&spec);
     // Issue #743: the shell and the end structure on the hull's Sections Table, the hold bulkheads
     // where the Vessel Model puts them (the ends of the cargo zone and the bulkheads between holds).
     let holds: Vec<f64> = model
@@ -3591,6 +3590,9 @@ fn gas_steel(
         })
         .map(|b| b.x_m)
         .collect();
-    let plates = ovd_core::hull_plates::hull_plates_on(&panels, &spec, &model.hull, &holds);
-    Some((panels, plates))
+    // Issue #745: the panel table rolled up from the plate model, the same steel the lightship takes.
+    Some(ovd_core::hull_plates::gas_hull_steel(
+        &spec,
+        Some((&model.hull, &holds)),
+    ))
 }
