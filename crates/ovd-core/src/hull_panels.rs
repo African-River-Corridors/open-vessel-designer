@@ -15,7 +15,7 @@
 //! under the tank saddles, no machinery seats, no superstructure. Those are follow-up tickets.
 //!
 //! The rule length L is the rule's own (ABS 3-1-1/3.1): 96 % of the length on a waterline at 85 % of
-//! the moulded depth, from the hull's waterplane ([`DoubleHullSpec::rule_length_m`]). The hull's own
+//! the moulded depth, from the hull's waterplane ([`HullStructureSpec::rule_length_m`]). The hull's own
 //! extents (the 0.4L midship region, the ends) stay on the length overall. Ordinary-strength steel throughout (Q = 1, q = 1). Unrestricted service:
 //! ABS gives special consideration for restricted service (3-2-1 Table note), not modelled.
 
@@ -29,6 +29,47 @@ use libm::{ceil, fabs, floor, pow, sqrt};
 pub const RULE_EDITION: &str = crate::scantling_rules::EDITION;
 
 use crate::scantling_rules as rules;
+use crate::vessel_model::{StructureBlock, VesselModel};
+
+/// The member names: OCX `functionType` values (issue #741, spec 0013 "Terms"). Each is a value of
+/// the `functionType` attribute of the OCX schema v3.2.0 (`OCX_Schema.xsd`, the attribute's
+/// enumeration, "Follows STEP AP218 coding and IACS Rec 82 Glossary"), read in the release tag of
+/// OCXStandard/OCX_Schema.
+pub mod function_type {
+    /// "The watertight shell plating of the bottom of the hull."
+    pub const BOTTOM_SHELL: &str = "SHELL: Bottom shell";
+    /// "The watertight shell plating of the hull." The schema has no side shell value; the side
+    /// shell is the shell without a qualifier.
+    pub const SIDE_SHELL: &str = "SHELL";
+    /// "Strength Deck is normally the uppermost continuous deck."
+    pub const STRENGTH_DECK: &str = "DECK: Strength deck";
+    /// "The watertight shell plating of the hull inner bottom."
+    pub const INNER_BOTTOM: &str = "SHELL: Inner bottom shell";
+    pub const CENTRE_GIRDER: &str = "LONGITUDINAL: Centerline girder";
+    pub const SIDE_GIRDER: &str = "LONGITUDINAL: Side girder";
+    /// "A transverse stiffening system of a floor."
+    pub const FLOORS: &str = "WEB_FRAME: Floor frame";
+    /// "The watertight shell plating located at the inners side of the hull."
+    pub const INNER_SIDE: &str = "SHELL: Inner side shell";
+    /// The plate at the wing tank top, a deck that is not the strength deck (D15: not in the hull
+    /// girder by default).
+    pub const WING_TANK_TOP: &str = "DECK: Platform deck";
+    /// The plate diaphragms across the double side.
+    pub const WING_WEB_FRAMES: &str = "WEB_FRAME: General web-frame";
+    pub const SIDE_WEB_FRAMES: &str = "WEB_FRAME: Side";
+    /// "A transverse stiffening system of a deck."
+    pub const DECK_TRANSVERSES: &str = "WEB_FRAME: Deck transverse frame";
+    /// "Bulkhead transverse stiffening system."
+    pub const TRANSVERSE_BULKHEADS: &str = "TRANSVERSAL_BULKHEAD";
+}
+
+/// Where a member is, for two members with one `functionType`.
+pub mod region {
+    pub const MIDSHIP: &str = "midship 0.4L";
+    pub const ENDS: &str = "ends";
+    pub const CARGO_ZONE: &str = "cargo zone";
+    pub const END_ZONES: &str = "end zones";
+}
 
 /// The allowance for brackets, collars, welds and small items, as a share (%) of the net member
 /// steel. An Estimate: no primary source was found that gives one figure. Weld metal alone is
@@ -49,10 +90,12 @@ pub const DEFAULT_WEB_SPACING_M: f64 = 3.66;
 /// Table 3. It sets the design head of the ballast tanks (ABS 5-2-2/3.7, 5-2-2/7).
 pub const OVERFLOW_HEIGHT_M: f64 = 0.76;
 
-/// What the panel model needs to know about the hull. Distances in metres; x from the aft end,
-/// y from the centreline (the model is symmetric), z from the keel.
+/// What the panel model needs to know about the hull (issue #741): the `HullStructureSpec`,
+/// assembled from the Vessel Model ([`structure_spec_of`]: its Sections Table, decks, Spaces, Tank
+/// Layout and `structure` block). Distances in metres; x from the aft end, y from the centreline (the
+/// model is symmetric), z from the keel.
 #[derive(Debug, Clone, PartialEq)]
-pub struct DoubleHullSpec {
+pub struct HullStructureSpec {
     pub loa_m: f64,
     /// The rule length L of ABS 3-1-1/3.1, which every scantling formula takes ([`rule_length_m`]).
     pub rule_length_m: f64,
@@ -79,6 +122,21 @@ pub struct DoubleHullSpec {
     pub tanks_abreast: usize,
     /// Hull steel density (t/m3).
     pub steel_density: f64,
+    /// The `structure` block of the Hull (spec 0013): the frame and longitudinal spacing the panels
+    /// are laid out on.
+    pub structure: StructureBlock,
+}
+
+impl HullStructureSpec {
+    /// The spacings of the `structure` block, with the named allowance for brackets, collars and
+    /// welds.
+    pub fn choices(&self) -> ScantlingChoices {
+        ScantlingChoices {
+            longitudinal_spacing_mm: self.structure.longitudinal_spacing_mm,
+            web_spacing_m: self.structure.frame_spacing_m,
+            allowance_pct: BRACKETS_WELDS_ALLOWANCE_PCT,
+        }
+    }
 }
 
 /// Spacings and allowances the designer chooses.
@@ -249,7 +307,12 @@ pub fn design_primary(
 /// One structural member of the hull: a record of the panel table.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PanelMember {
+    /// The member's OCX `functionType` (issue #741; see [`function_type`]), e.g. "DECK: Strength
+    /// deck".
     pub member: String,
+    /// Where it is, when two members share a `functionType` ("midship 0.4L", "ends", "cargo zone",
+    /// "end zones"); "" otherwise.
+    pub region: String,
     /// x bounds from the aft end, y bounds from the centreline (one side; `count` says how many),
     /// z bounds from the keel (m).
     pub x_m: (f64, f64),
@@ -392,14 +455,17 @@ fn order_mm(t: f64) -> f64 {
 }
 
 struct Builder<'a> {
-    spec: &'a DoubleHullSpec,
+    spec: &'a HullStructureSpec,
     ch: ScantlingChoices,
     members: Vec<PanelMember>,
 }
 
 /// A stiffened panel to add: geometry, plate, stiffeners.
 struct Panel {
-    member: String,
+    /// The OCX `functionType` of the member (see [`function_type`]).
+    member: &'static str,
+    /// Where along or in the hull it is, when two members share a `functionType`; "" otherwise.
+    region: &'static str,
     x: (f64, f64),
     y: (f64, f64),
     z: (f64, f64),
@@ -435,7 +501,8 @@ impl Builder<'_> {
             .max_by(|a, b| a.area_cm2().total_cmp(&b.area_cm2()))
             .cloned();
         self.members.push(PanelMember {
-            member: p.member,
+            member: p.member.into(),
+            region: p.region.into(),
             x_m: p.x,
             y_m: p.y,
             z_m: p.z,
@@ -481,7 +548,7 @@ fn n_across(w_m: f64, s_mm: f64) -> usize {
 }
 
 /// Build the panel model of a double-hull barge.
-pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullPanelModel {
+pub fn double_hull_panels(spec: &HullStructureSpec, ch: &ScantlingChoices) -> HullPanelModel {
     // The hull's own length, for its extents, and the rule length L of 3-1-1/3.1, which every
     // scantling formula takes.
     let l = spec.loa_m;
@@ -747,14 +814,14 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
     let t_be = order_mm((t_bottom_mid + bottom_add + t_shell_end) / 2.0);
     for (name, x, len, t, rule) in [
         (
-            "bottom shell, midship 0.4L",
+            (function_type::BOTTOM_SHELL, region::MIDSHIP),
             mid,
             0.4 * l,
             t_bm,
             "ABS 3-2-2/3.5.1; 3-2-1/3.1 hull girder",
         ),
         (
-            "bottom shell, ends",
+            (function_type::BOTTOM_SHELL, region::ENDS),
             (0.0, l),
             ends_len,
             t_be,
@@ -762,7 +829,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
         ),
     ] {
         bld.add(Panel {
-            member: name.into(),
+            member: name.0,
+            region: name.1,
             x,
             y: (0.0, b / 2.0),
             z: (0.0, 0.0),
@@ -786,14 +854,14 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
     let t_se = order_mm((t_side_mid + t_shell_end) / 2.0);
     for (name, x, len, t, rule) in [
         (
-            "side shell, midship 0.4L",
+            (function_type::SIDE_SHELL, region::MIDSHIP),
             mid,
             0.4 * l,
             t_sm,
             "ABS 3-2-2/3.1",
         ),
         (
-            "side shell, ends",
+            (function_type::SIDE_SHELL, region::ENDS),
             (0.0, l),
             ends_len,
             t_se,
@@ -801,7 +869,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
         ),
     ] {
         bld.add(Panel {
-            member: name.into(),
+            member: name.0,
+            region: name.1,
             x,
             y: (b / 2.0, b / 2.0),
             z: (0.0, d),
@@ -825,7 +894,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
     let ends_long_len =
         (l - lc) * n_b as f64 + (lc - 0.4 * l).max(0.0) * n_across(deck_w, s) as f64;
     bld.add(Panel {
-        member: "strength deck, midship 0.4L".into(),
+        member: function_type::STRENGTH_DECK,
+        region: region::MIDSHIP,
         x: mid,
         y: (0.0, b / 2.0),
         z: (d, d),
@@ -848,7 +918,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
         ),
     });
     bld.add(Panel {
-        member: "strength deck, ends".into(),
+        member: function_type::STRENGTH_DECK,
+        region: region::ENDS,
         x: (0.0, l),
         y: (0.0, b / 2.0),
         z: (d, d),
@@ -867,7 +938,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
     // --- Double bottom: inner bottom, girders, floors (full length) ---
     if db > 0.0 {
         bld.add(Panel {
-            member: "inner bottom".into(),
+            member: function_type::INNER_BOTTOM,
+            region: "",
             x: (0.0, l),
             y: (0.0, b / 2.0),
             z: (db, db),
@@ -883,7 +955,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
             note: "ballast tank boundary; head per 5-2-1/3".into(),
         });
         bld.add(Panel {
-            member: "centre girder".into(),
+            member: function_type::CENTRE_GIRDER,
+            region: "",
             x: (0.0, l),
             y: (0.0, 0.0),
             z: (0.0, db),
@@ -907,7 +980,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
         });
         if n_side_girders > 0 {
             bld.add(Panel {
-                member: "side girders".into(),
+                member: function_type::SIDE_GIRDER,
+                region: "",
                 x: (0.0, l),
                 y: (0.0, b / 2.0),
                 z: (0.0, db),
@@ -926,7 +1000,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
         let n_floor = (floor(l / web) as usize).max(1);
         let floor_stiff = Section::flat(100.0, 7.0);
         bld.add(Panel {
-            member: "solid floors".into(),
+            member: function_type::FLOORS,
+            region: "",
             x: (0.0, l),
             y: (0.0, b / 2.0),
             z: (0.0, db),
@@ -947,7 +1022,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
     if w > 0.0 && zw > db && lc > 0.0 {
         let h = zw - db;
         bld.add(Panel {
-            member: "inner side (longitudinal bulkhead)".into(),
+            member: function_type::INNER_SIDE,
+            region: "",
             x: (spec.cargo_zone_aft_m, spec.cargo_zone_fwd_m),
             y: (b / 2.0 - w, b / 2.0 - w),
             z: (db, zw),
@@ -964,7 +1040,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
         });
         if wing_deck_w > 0.0 {
             bld.add(Panel {
-                member: "wing tank top".into(),
+                member: function_type::WING_TANK_TOP,
+                region: "",
                 x: (spec.cargo_zone_aft_m, spec.cargo_zone_fwd_m),
                 y: (b / 2.0 - w, b / 2.0),
                 z: (zw, zw),
@@ -986,7 +1063,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
         let n_web = (floor(lc / web) as usize).max(1);
         let tw = web_thickness_mm(lr, w * 1000.0, true);
         bld.add(Panel {
-            member: "wing web frames".into(),
+            member: function_type::WING_WEB_FRAMES,
+            region: "",
             x: (spec.cargo_zone_aft_m, spec.cargo_zone_fwd_m),
             y: (b / 2.0 - w, b / 2.0),
             z: (db, zw),
@@ -1022,14 +1100,16 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
             (web * 1000.0).min(span * 1000.0 / 3.0),
         )
     };
-    let add_side_webs = |bld: &mut Builder, name: &str, x: (f64, f64), z: (f64, f64), n: usize| {
-        if n == 0 || z.1 <= z.0 {
-            return;
-        }
-        let span = z.1 - z.0;
-        let sec = side_web(span, (z.0 + z.1) / 2.0);
-        bld.add(Panel {
-            member: name.into(),
+    let add_side_webs =
+        |bld: &mut Builder, name: &'static str, x: (f64, f64), z: (f64, f64), n: usize| {
+            if n == 0 || z.1 <= z.0 {
+                return;
+            }
+            let span = z.1 - z.0;
+            let sec = side_web(span, (z.0 + z.1) / 2.0);
+            bld.add(Panel {
+            member: function_type::SIDE_WEB_FRAMES,
+            region: name,
             x,
             y: (b / 2.0, b / 2.0),
             z,
@@ -1046,7 +1126,7 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
                 "design head to the deck plus the 0.91 m of 5-2-2/9 (an Estimate for a void space)"
                     .into(),
         });
-    };
+        };
     let n_cz = if lc > 0.0 {
         (floor(lc / web) as usize).max(1)
     } else {
@@ -1055,19 +1135,13 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
     let z_cz = if w > 0.0 { zw } else { db };
     add_side_webs(
         &mut bld,
-        "side web frames, cargo zone",
+        region::CARGO_ZONE,
         (spec.cargo_zone_aft_m, spec.cargo_zone_fwd_m),
         (z_cz, d),
         n_cz,
     );
     let n_ends = floor((l - lc) / web) as usize;
-    add_side_webs(
-        &mut bld,
-        "side web frames, end zones",
-        (0.0, l),
-        (db, d),
-        n_ends,
-    );
+    add_side_webs(&mut bld, region::END_ZONES, (0.0, l), (db, d), n_ends);
 
     // --- Deck transverses, full length ---
     let n_strips = spec.tanks_abreast.max(1) as f64 + 1.0;
@@ -1094,7 +1168,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
         let n = (floor(l / web) as usize).max(1);
         let len_each = (lc * deck_w + (l - lc) * b) / l;
         bld.add(Panel {
-            member: "deck transverses".into(),
+            member: function_type::DECK_TRANSVERSES,
+            region: "",
             x: (0.0, l),
             y: (0.0, b / 2.0),
             z: (d - depth_mm / 1000.0, d),
@@ -1162,7 +1237,8 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
         };
         stiff.push((vweb.clone(), hb * n_vweb as f64));
         bld.add(Panel {
-            member: "transverse bulkheads".into(),
+            member: function_type::TRANSVERSE_BULKHEADS,
+            region: "",
             x: (0.0, l),
             y: (0.0, b / 2.0),
             z: (db, d),
@@ -1195,60 +1271,151 @@ pub fn double_hull_panels(spec: &DoubleHullSpec, ch: &ScantlingChoices) -> HullP
     }
 }
 
-/// The double-hull spec of a gas hull from its converged arrangement (the `BargeInputs` and
-/// `TankResult` of `GasBasis`). The wing tank top, double bottom and cut-outs are the ones the
-/// weights already use (`weights::calculate_weights_with`).
-pub fn gas_hull_spec(
-    inputs: &crate::models::BargeInputs,
-    tanks: &crate::models::TankResult,
+/// The panel model of a hull from its `HullStructureSpec`, laid out on the spacings of its
+/// `structure` block (issue #741).
+pub fn hull_panels(spec: &HullStructureSpec) -> HullPanelModel {
+    double_hull_panels(spec, &spec.choices())
+}
+
+/// The rule length of ABS 3-1-1/3.1 on a hull's Sections Table: 96 % of the upright waterline length
+/// at 85 % of the depth, with the raked bow and the Stern Form the table holds.
+pub fn sections_rule_length(hull: &crate::sections::SectionsTable, depth: f64) -> f64 {
+    rule_length_m(depth, |z| {
+        crate::sections::immersed(hull, &crate::sections::Waterplane::upright(z)).l_wl_m
+    })
+}
+
+/// The chord of a circle of radius `r` about `axis` at the height `z` (0 off the circle).
+fn chord(axis: f64, r: f64, z: f64) -> f64 {
+    let dy = z - axis;
+    if fabs(dy) < r {
+        2.0 * sqrt(r * r - dy * dy)
+    } else {
+        0.0
+    }
+}
+
+/// The `HullStructureSpec` of a gas hull from its Vessel Model (issue #741): the length, beam and
+/// rule length from the Sections Table, the depth from the main deck, the double bottom from the
+/// inner bottom deck, the double side from the wing ballast Spaces, the cargo zone, holds, tanks
+/// abreast and deck cut-outs from the Tank Layout, and the spacings from the `structure` block. The
+/// block coefficient (for the hull girder rule) and the steel density are the Option's inputs.
+/// `None` for a hull with no Tank Layout (gas hulls first; the other vessel types follow, spec 0013
+/// T11).
+pub fn structure_spec_of(
+    model: &VesselModel,
     block_coefficient: f64,
-) -> DoubleHullSpec {
-    let db = inputs.double_bottom_height.unwrap_or(0.0);
-    let od = tanks.outer_diameter;
-    let r = od / 2.0;
-    let bottom = crate::tanks::tank_bottom(db, inputs.tank_support_height);
-    let axis = crate::tanks::tank_axis_z(bottom, od);
-    let chord = |z: f64| {
-        let dy = z - axis;
-        if fabs(dy) < r {
-            2.0 * sqrt(r * r - dy * dy)
-        } else {
-            0.0
-        }
+    steel_density: f64,
+) -> Option<HullStructureSpec> {
+    use crate::compartments::SpaceKind;
+    let layout = model.tank_layout.as_ref()?;
+    let (first, last) = (model.hull.sections.first()?, model.hull.sections.last()?);
+    let loa = last.x - first.x;
+    let half_b = model
+        .hull
+        .sections
+        .iter()
+        .flat_map(|s| s.points.iter())
+        .fold(0.0_f64, |a, p| a.max(fabs(p.0)));
+    let deck = |name: &str| model.decks.iter().find(|d| d.name == name).map(|d| d.z_m);
+    let depth = deck("main_deck")?;
+    let db = deck("inner_bottom").unwrap_or(0.0);
+    let od = layout.outer_diameter_m;
+    let axis = layout.tanks.first().map_or(db + od / 2.0, |t| t.z_m);
+    let n_wide = layout.tanks.iter().filter(|t| t.row == 0).count().max(1);
+    let n_long = layout.tanks.iter().map(|t| t.row + 1).max().unwrap_or(1);
+    // The double side: the inboard face and the top of the wing ballast tanks.
+    let wing = model
+        .spaces
+        .iter()
+        .map(|c| &c.space)
+        .filter(|s| s.kind == SpaceKind::WingBallast)
+        .fold(None, |acc: Option<(f64, f64)>, s| {
+            let inboard = s
+                .section()
+                .iter()
+                .fold(f64::INFINITY, |a, p| a.min(fabs(p.0)));
+            let top = s.z_range().1;
+            Some(acc.map_or((inboard, top), |(i, t)| (i.min(inboard), t.max(top))))
+        });
+    let (wing_width, wing_top) = match wing {
+        Some((inboard, top)) => ((half_b - inboard).max(0.0), top),
+        None => (0.0, db),
     };
-    let wing_top = bottom + inputs.wing_tank_height_ratio * od;
-    let stern = inputs.stern_non_tank_length.unwrap_or(0.0);
-    let bow = inputs.bow_non_tank_length.unwrap_or(0.0);
-    let n_wide = tanks.n_tanks_wide.max(1) as f64;
-    // The rule length of 3-1-1/3.1 from the raked box the gas hull floats on (`hull::RakedBox`, the
-    // hull of the lightship's hydrostatics): its waterline length at 85 % of the depth. A Stern Form
-    // is not in it (an Estimate: the raked box's square stern).
-    let depth = inputs.depth;
-    let raked = crate::hull::hull_form::RakedBox::new(
-        inputs.loa,
-        inputs.beam,
-        depth,
-        inputs.bow_rake_length,
-        inputs.bow_rake_rise.unwrap_or(depth),
-        inputs.stern_rake_length,
-        inputs.stern_rake_rise.unwrap_or(depth),
-    );
-    let rule_length = rule_length_m(depth, |z| raked.waterplane_area(z) / inputs.beam);
-    DoubleHullSpec {
-        loa_m: inputs.loa,
-        rule_length_m: rule_length,
-        beam_m: inputs.beam,
-        depth_m: inputs.depth,
+    Some(HullStructureSpec {
+        loa_m: loa,
+        // The rule length as the lightship takes it today (issue #740): the raked box of the gas
+        // arrangement, whose `BargeInputs` carry no rake, so 0.96 x the length overall. An Estimate,
+        // kept so this spec and the lightship's agree; [`sections_rule_length`] gives the rule's own
+        // from the table, and the lightship switch (spec 0013, T7) moves to it.
+        rule_length_m: rule_length_m(depth, |_| loa),
+        beam_m: 2.0 * half_b,
+        depth_m: depth,
         block_coefficient,
-        cargo_zone_aft_m: stern,
-        cargo_zone_fwd_m: inputs.loa - bow,
+        cargo_zone_aft_m: layout.zone.x_aft_m,
+        cargo_zone_fwd_m: layout.zone.x_fwd_m,
         double_bottom_m: db,
-        wing_width_m: inputs.wing_tank_width.unwrap_or(0.0).max(0.0),
+        wing_width_m: wing_width,
         wing_top_m: wing_top,
-        deck_opening_width_m: n_wide * chord(inputs.depth),
-        wing_deck_opening_width_m: n_wide * chord(wing_top),
-        holds_along: tanks.n_tanks_long.max(1) as usize,
-        tanks_abreast: tanks.n_tanks_wide.max(1) as usize,
-        steel_density: inputs.hull_steel_density,
+        deck_opening_width_m: n_wide as f64 * chord(axis, od / 2.0, depth),
+        wing_deck_opening_width_m: n_wide as f64 * chord(axis, od / 2.0, wing_top),
+        holds_along: n_long,
+        tanks_abreast: n_wide,
+        steel_density,
+        structure: model.structure,
+    })
+}
+
+impl HullStructureSpec {
+    /// The same `HullStructureSpec` from a gas hull's converged arrangement (the `BargeInputs` and
+    /// `TankResult` of `GasBasis`), for the lightship, which the capacity calculation weighs before
+    /// the Vessel Model exists. It reads what the Vessel Model is assembled from (the double bottom,
+    /// the wing tanks, the tanks and the hull's raked box), and a test holds it equal to
+    /// [`structure_spec_of`] on the converged design.
+    pub fn of_gas_arrangement(
+        inputs: &crate::models::BargeInputs,
+        tanks: &crate::models::TankResult,
+        block_coefficient: f64,
+        structure: StructureBlock,
+    ) -> HullStructureSpec {
+        let db = inputs.double_bottom_height.unwrap_or(0.0);
+        let od = tanks.outer_diameter;
+        let bottom = crate::tanks::tank_bottom(db, inputs.tank_support_height);
+        let axis = crate::tanks::tank_axis_z(bottom, od);
+        let wing_top = bottom + inputs.wing_tank_height_ratio * od;
+        let stern = inputs.stern_non_tank_length.unwrap_or(0.0);
+        let bow = inputs.bow_non_tank_length.unwrap_or(0.0);
+        let n_wide = tanks.n_tanks_wide.max(1) as f64;
+        // The rule length of 3-1-1/3.1 from the raked box the gas hull floats on (`hull::RakedBox`,
+        // the hull of the lightship's hydrostatics): its waterline length at 85 % of the depth.
+        let depth = inputs.depth;
+        let raked = crate::hull::hull_form::RakedBox::new(
+            inputs.loa,
+            inputs.beam,
+            depth,
+            inputs.bow_rake_length,
+            inputs.bow_rake_rise.unwrap_or(depth),
+            inputs.stern_rake_length,
+            inputs.stern_rake_rise.unwrap_or(depth),
+        );
+        let rule_length = rule_length_m(depth, |z| raked.waterplane_area(z) / inputs.beam);
+        HullStructureSpec {
+            loa_m: inputs.loa,
+            rule_length_m: rule_length,
+            beam_m: inputs.beam,
+            depth_m: inputs.depth,
+            block_coefficient,
+            cargo_zone_aft_m: stern,
+            cargo_zone_fwd_m: inputs.loa - bow,
+            double_bottom_m: db,
+            wing_width_m: inputs.wing_tank_width.unwrap_or(0.0).max(0.0),
+            wing_top_m: wing_top,
+            deck_opening_width_m: n_wide * chord(axis, od / 2.0, inputs.depth),
+            wing_deck_opening_width_m: n_wide * chord(axis, od / 2.0, wing_top),
+            holds_along: tanks.n_tanks_long.max(1) as usize,
+            tanks_abreast: tanks.n_tanks_wide.max(1) as usize,
+            steel_density: inputs.hull_steel_density,
+            structure,
+        }
     }
 }

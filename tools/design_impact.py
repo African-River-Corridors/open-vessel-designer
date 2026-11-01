@@ -189,8 +189,10 @@ OPTIONAL_INPUT_CASES = (
     # a design that types one has the same results as one that gives none.
     ("downflooding_angle_deg", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"downflooding_angle_deg": 60.0}),
-    # The structure block of the Hull (issue #739, spec 0013): inputs only, no result reads them yet, so
-    # a design that sets them has the same results as one that leaves them out.
+    # The structure block of the Hull (issue #739, spec 0013). Since issue #741 the gas hull's panel
+    # model lays out on the frame and longitudinal spacing, so those two move a gas design's
+    # lightship; the others are inputs only until the plate model reads them, so a design that sets
+    # them has the same results as one that leaves them out.
     ("frame_spacing_m", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"frame_spacing_m": 2.4}),
     ("longitudinal_spacing_mm", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,

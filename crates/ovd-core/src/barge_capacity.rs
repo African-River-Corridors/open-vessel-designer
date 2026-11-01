@@ -336,6 +336,9 @@ pub struct BargeCapacityInputs {
     pub bulk_steel_rate_per_cbm: f64,
     pub bulk_piping_factor: f64,
     pub bulk_outfitting_factor: f64,
+    /// The `structure` block of the Hull (spec 0013, issue #741): the spacings the gas hull's panel
+    /// model is laid out on. The default is the spec's.
+    pub structure: crate::vessel_model::StructureBlock,
 }
 
 impl BargeCapacityInputs {
@@ -412,6 +415,7 @@ impl BargeCapacityInputs {
             bulk_steel_rate_per_cbm: 0.10,
             bulk_piping_factor: 0.04,
             bulk_outfitting_factor: 0.035,
+            structure: crate::vessel_model::StructureBlock::default(),
         }
     }
 }
@@ -875,6 +879,7 @@ fn gas_volumetric(
         dome_wall_thickness_mm: inp.tank_dome_wall_thickness_mm,
         dome_diameter_m: dome.0,
         hull_panels: true,
+        structure: inp.structure,
     };
     let weights = calculate_weights_with(&bi, &hull, &tanks, &mass_opts)?;
     let dome_mass_items = dome_items(&bi, &tanks, &mass_opts)?;

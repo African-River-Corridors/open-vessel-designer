@@ -1294,6 +1294,8 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
     };
     let mut inp = BargeCapacityInputs::new(l, b, d);
     inp.cargo_type = cargo_key.to_string();
+    // Issue #741: the `structure` block of the Hull, for the panel model.
+    inp.structure = structure_block(p)?;
     inp.self_propelled = self_propelled;
     inp.block_coefficient = cb;
     inp.water_density = rho;
@@ -2678,6 +2680,8 @@ fn simulate_gas(
         None
     };
     let options = FitOptions {
+        // Issue #741: the `structure` block of the Hull, for the panel model of each arrangement.
+        structure: structure_block(p)?,
         ruleset: ruleset.to_string(),
         fill_ratio: loading.fill,
         cargo_density_kg_m3: loading.density_kg_m3,
@@ -2997,6 +3001,12 @@ fn simulate_gas(
     let air_loaded = r.air_draft_top_above_keel_m - t;
     // Issue #739: the `structure` block of the Hull, for the Vessel Model.
     let structure = structure_block(p)?;
+    let vessel_inputs = ovd_core::vessel_model::VesselModelInputs {
+        capacity: f.engine_inputs.clone(),
+        result: f.engine_result.clone(),
+        hull: fit_hull.table.clone(),
+        structure,
+    };
     with_blocks_and_text_ids(
         powering_block.clone(),
         sightline_json(r),
@@ -3056,7 +3066,7 @@ fn simulate_gas(
                     pw["installed_power_kw"].as_f64().unwrap_or(0.0),
                 ),
                 None => crate::cost::gas_masses(&b.weights),
-            }, &gas_hull_panels(b))),
+            }, gas_hull_panels(b, &vessel_inputs).as_ref())),
         }),
             (&r.stern_block_items, &r.trim_conditions),
         ),
@@ -3081,12 +3091,7 @@ fn simulate_gas(
                     (s, plane)
                 }),
                 checks: Vec::new(),
-                vessel: Some(ovd_core::vessel_model::VesselModelInputs {
-                    capacity: f.engine_inputs.clone(),
-                    result: f.engine_result.clone(),
-                    hull: fit_hull.table.clone(),
-                    structure,
-                }),
+                vessel: Some(vessel_inputs.clone()),
                 ..Measured::default()
             },
         )
@@ -3546,11 +3551,19 @@ pub(crate) fn formation_curves(
 }
 
 /// Issue #722: the panel model of a gas hull, the same one that drives its lightship and cost.
+/// Issue #741: built from the `HullStructureSpec` of the Vessel Model; the block coefficient and the
+/// steel density are the lightship's (`weights::calculate_weights_with`). `None` when the model has
+/// no Tank Layout.
 fn gas_hull_panels(
     b: &ovd_core::barge_capacity::GasBasis,
-) -> ovd_core::hull_panels::HullPanelModel {
+    vessel: &ovd_core::vessel_model::VesselModelInputs,
+) -> Option<ovd_core::hull_panels::HullPanelModel> {
     let i = &b.inputs;
-    // The same block coefficient as the lightship's panel model (`weights::calculate_weights_with`).
-    let spec = ovd_core::hull_panels::gas_hull_spec(i, &b.tanks, i.block_coefficient);
-    ovd_core::hull_panels::double_hull_panels(&spec, &Default::default())
+    let model = ovd_core::vessel_model::assemble(vessel);
+    let spec = ovd_core::hull_panels::structure_spec_of(
+        &model,
+        i.block_coefficient,
+        i.hull_steel_density,
+    )?;
+    Some(ovd_core::hull_panels::hull_panels(&spec))
 }

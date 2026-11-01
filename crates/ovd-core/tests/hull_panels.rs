@@ -6,13 +6,14 @@
 
 use ovd_core::barge_capacity::{BargeCapacityInputs, compute};
 use ovd_core::hull_panels::{
-    DoubleHullSpec, ScantlingChoices, Section, double_hull_panels, gas_hull_spec,
-    required_section_modulus, rule_length_m, tank_boundary_plate_mm, watertight_bulkhead_plate_mm,
-    web_thickness_mm,
+    HullStructureSpec, ScantlingChoices, Section, double_hull_panels, function_type as ft,
+    hull_panels, region, required_section_modulus, rule_length_m, sections_rule_length,
+    structure_spec_of, tank_boundary_plate_mm, watertight_bulkhead_plate_mm, web_thickness_mm,
 };
+use ovd_core::vessel_model::StructureBlock;
 
-fn spec(depth: f64) -> DoubleHullSpec {
-    DoubleHullSpec {
+fn spec(depth: f64) -> HullStructureSpec {
+    HullStructureSpec {
         loa_m: 140.0,
         // The rule length is an input of the spec; the hand values below take L = 140 m.
         rule_length_m: 140.0,
@@ -29,6 +30,7 @@ fn spec(depth: f64) -> DoubleHullSpec {
         holds_along: 2,
         tanks_abreast: 2,
         steel_density: 7.85,
+        structure: StructureBlock::default(),
     }
 }
 
@@ -71,15 +73,20 @@ fn web_thickness_is_3_2_4_3_11() {
 #[test]
 fn bottom_and_deck_plates_follow_3_2_2_and_3_2_3() {
     let m = double_hull_panels(&spec(14.0), &ScantlingChoices::default());
-    let get = |n: &str| m.members.iter().find(|p| p.member == n).unwrap();
+    let get = |n: &str, r: &str| {
+        m.members
+            .iter()
+            .find(|p| p.member == n && p.region == r)
+            .unwrap()
+    };
     let hg = m.hull_girder;
     // Bottom, L > 123 m: 0.08 x 140 + 0.007 x 700 - 2.5 = 13.6 mm, ordered to 14.0 (no girder addition).
     assert_eq!(hg.bottom_added_mm, 0.0);
-    assert_eq!(get("bottom shell, midship 0.4L").plate_mm, 14.0);
+    assert_eq!(get(ft::BOTTOM_SHELL, region::MIDSHIP).plate_mm, 14.0);
     // Deck, 1.1.2(b): 700 x (140 + 48.76) / (26 x 140 + 8681) = 10.725 mm; (a) 0.009 x 700 + 2.4 = 8.7.
     let t = 700.0 * (140.0 + 48.76) / (26.0 * 140.0 + 8681.0);
     let ordered = ((t + hg.deck_added_mm) * 2.0).ceil() / 2.0;
-    assert_eq!(get("strength deck, midship 0.4L").plate_mm, ordered);
+    assert_eq!(get(ft::STRENGTH_DECK, region::MIDSHIP).plate_mm, ordered);
 }
 
 #[test]
@@ -106,21 +113,21 @@ fn the_weight_is_the_sum_of_the_records_plus_the_named_allowance() {
 #[test]
 fn the_double_hull_members_are_all_there() {
     let m = double_hull_panels(&spec(12.0), &ScantlingChoices::default());
-    for name in [
-        "bottom shell, midship 0.4L",
-        "inner bottom",
-        "side shell, midship 0.4L",
-        "inner side (longitudinal bulkhead)",
-        "strength deck, midship 0.4L",
-        "transverse bulkheads",
-        "centre girder",
-        "side girders",
-        "solid floors",
-        "wing web frames",
-        "deck transverses",
+    for (name, r) in [
+        (ft::BOTTOM_SHELL, region::MIDSHIP),
+        (ft::INNER_BOTTOM, ""),
+        (ft::SIDE_SHELL, region::MIDSHIP),
+        (ft::INNER_SIDE, ""),
+        (ft::STRENGTH_DECK, region::MIDSHIP),
+        (ft::TRANSVERSE_BULKHEADS, ""),
+        (ft::CENTRE_GIRDER, ""),
+        (ft::SIDE_GIRDER, ""),
+        (ft::FLOORS, ""),
+        (ft::WING_WEB_FRAMES, ""),
+        (ft::DECK_TRANSVERSES, ""),
     ] {
-        let p = m.members.iter().find(|p| p.member == name);
-        assert!(p.is_some_and(|p| p.total_t > 0.0), "{name}");
+        let p = m.members.iter().find(|p| p.member == name && p.region == r);
+        assert!(p.is_some_and(|p| p.total_t > 0.0), "{name} {r}");
     }
 }
 
@@ -170,7 +177,8 @@ fn a_gas_hull_gets_a_panel_model_from_its_arrangement() {
     i.cargo_type = "LPG_propane".into();
     let r = compute(&i).unwrap();
     let b = r.gas_basis.as_ref().unwrap();
-    let s = gas_hull_spec(&b.inputs, &b.tanks, 0.9);
+    let s =
+        HullStructureSpec::of_gas_arrangement(&b.inputs, &b.tanks, 0.9, StructureBlock::default());
     assert_eq!(s.loa_m, 110.0);
     assert_eq!(s.double_bottom_m, b.inputs.double_bottom_height.unwrap());
     let m = double_hull_panels(&s, &ScantlingChoices::default());
@@ -189,8 +197,13 @@ mod the_switch {
     }
 
     fn panel_of(b: &ovd_core::barge_capacity::GasBasis) -> ovd_core::hull_panels::HullPanelModel {
-        let s = gas_hull_spec(&b.inputs, &b.tanks, b.inputs.block_coefficient);
-        double_hull_panels(&s, &ScantlingChoices::default())
+        let s = HullStructureSpec::of_gas_arrangement(
+            &b.inputs,
+            &b.tanks,
+            b.inputs.block_coefficient,
+            StructureBlock::default(),
+        );
+        hull_panels(&s)
     }
 
     #[test]
@@ -272,7 +285,165 @@ fn every_member_carries_the_rule_set_edition_and_paragraph() {
     let deck = m
         .members
         .iter()
-        .find(|p| p.member.starts_with("strength deck, midship"))
+        .find(|p| p.member == ft::STRENGTH_DECK && p.region == region::MIDSHIP)
         .unwrap();
     assert_eq!(deck.paragraph, "3-2-3/2.1.2(a)(b)");
+}
+
+/// Issue #741: the member names are OCX `functionType` values: each one is in the enumeration of
+/// the `functionType` attribute of the OCX schema v3.2.0 (`OCX_Schema.xsd`, release tag v3.2.0 of
+/// OCXStandard/OCX_Schema, read 2026-11-01). The values below are copied from that enumeration.
+#[test]
+fn member_names_are_ocx_function_types() {
+    const OCX_3_2_0: &[&str] = &[
+        "SHELL",
+        "SHELL: Bottom shell",
+        "SHELL: Inner bottom shell",
+        "SHELL: Inner side shell",
+        "DECK: Strength deck",
+        "DECK: Platform deck",
+        "LONGITUDINAL: Centerline girder",
+        "LONGITUDINAL: Side girder",
+        "WEB_FRAME: Floor frame",
+        "WEB_FRAME: General web-frame",
+        "WEB_FRAME: Side",
+        "WEB_FRAME: Deck transverse frame",
+        "TRANSVERSAL_BULKHEAD",
+    ];
+    let m = double_hull_panels(&spec(12.0), &ScantlingChoices::default());
+    let mut seen = std::collections::HashSet::new();
+    for p in &m.members {
+        assert!(OCX_3_2_0.contains(&p.member.as_str()), "{}", p.member);
+        // A functionType and a region name one member.
+        assert!(
+            seen.insert((p.member.clone(), p.region.clone())),
+            "{} {}",
+            p.member,
+            p.region
+        );
+    }
+}
+
+/// Issue #741: the panel model's spacings are the `structure` block's.
+#[test]
+fn the_spacings_come_from_the_structure_block() {
+    let mut s = spec(12.0);
+    assert_eq!(
+        hull_panels(&s),
+        double_hull_panels(&s, &ScantlingChoices::default())
+    );
+    s.structure.longitudinal_spacing_mm = 800.0;
+    s.structure.frame_spacing_m = 3.0;
+    let m = hull_panels(&s);
+    let bottom = m
+        .members
+        .iter()
+        .find(|p| p.member == ft::BOTTOM_SHELL && p.region == region::MIDSHIP)
+        .unwrap();
+    assert_eq!(bottom.stiffener_spacing_mm, 800.0);
+    assert_eq!(bottom.primary_spacing_m, Some(3.0));
+}
+
+/// Issue #741: the `HullStructureSpec` of a gas hull's Vessel Model equals the one the lightship
+/// builds from the converged arrangement, so the panel table the results show is the one that
+/// weighs the lightship.
+mod from_the_vessel_model {
+    use super::*;
+    use ovd_core::hydrostatics::Hull;
+    use ovd_core::vessel_model::{VesselModelInputs, assemble};
+
+    fn close(a: f64, b: f64) -> bool {
+        (a - b).abs() <= 1e-9 * a.abs().max(1.0)
+    }
+
+    /// Checks the two specs agree; gives the double side width.
+    fn check(i: BargeCapacityInputs) -> f64 {
+        let r = compute(&i).unwrap();
+        let b = r.gas_basis.clone().unwrap();
+        let hull = Hull::build(r.hull_spec.as_ref().unwrap()).unwrap().table;
+        let model = assemble(&VesselModelInputs {
+            capacity: i.clone(),
+            result: r,
+            hull,
+            structure: i.structure,
+        });
+        let v = structure_spec_of(
+            &model,
+            b.inputs.block_coefficient,
+            b.inputs.hull_steel_density,
+        )
+        .unwrap();
+        let a = HullStructureSpec::of_gas_arrangement(
+            &b.inputs,
+            &b.tanks,
+            b.inputs.block_coefficient,
+            i.structure,
+        );
+        eprintln!("DBG v={v:?}\nDBG a={a:?}");
+        for (name, x, y) in [
+            ("loa", v.loa_m, a.loa_m),
+            ("rule length", v.rule_length_m, a.rule_length_m),
+            ("beam", v.beam_m, a.beam_m),
+            ("depth", v.depth_m, a.depth_m),
+            ("cargo zone aft", v.cargo_zone_aft_m, a.cargo_zone_aft_m),
+            ("cargo zone fwd", v.cargo_zone_fwd_m, a.cargo_zone_fwd_m),
+            ("double bottom", v.double_bottom_m, a.double_bottom_m),
+            ("wing width", v.wing_width_m, a.wing_width_m),
+            (
+                "deck opening",
+                v.deck_opening_width_m,
+                a.deck_opening_width_m,
+            ),
+        ] {
+            assert!(close(x, y), "{name}: model {x} vs arrangement {y}");
+        }
+        // The wing tank top and its cut-outs count only with a double side.
+        if a.wing_width_m > 0.0 {
+            assert!(close(v.wing_top_m, a.wing_top_m), "wing top");
+            assert!(
+                close(v.wing_deck_opening_width_m, a.wing_deck_opening_width_m),
+                "wing deck opening"
+            );
+        }
+        assert_eq!(v.holds_along, a.holds_along);
+        assert_eq!(v.tanks_abreast, a.tanks_abreast);
+        assert_eq!(v.structure, a.structure);
+        assert!(close(hull_panels(&v).total_t, b.weights.hull_steel_total));
+        // The rule's own L on the hull's Sections Table is shorter: the raked bow is not in the
+        // lightship's rule length yet (an Estimate; the lightship switch moves to it).
+        let own = sections_rule_length(&model.hull, v.depth_m);
+        assert!(own < v.rule_length_m, "{own} vs {}", v.rule_length_m);
+        a.wing_width_m
+    }
+
+    #[test]
+    fn a_pushed_lpg_hull() {
+        let mut i = BargeCapacityInputs::new(110.0, 11.4, 6.0);
+        i.cargo_type = "LPG_propane".into();
+        let _ = check(i);
+    }
+
+    #[test]
+    fn an_lng_hull_with_its_own_spacings() {
+        let mut i = BargeCapacityInputs::new(140.0, 29.0, 9.0);
+        i.structure.longitudinal_spacing_mm = 650.0;
+        i.structure.frame_spacing_m = 3.2;
+        // This one has a double side, so its wing tank top is compared too.
+        assert!(check(i) > 0.0);
+    }
+
+    #[test]
+    fn a_dry_bulk_hull_has_no_gas_structure_spec_yet() {
+        let mut i = BargeCapacityInputs::new(80.0, 11.4, 4.0);
+        i.cargo_type = "bauxite".to_string();
+        let r = compute(&i).unwrap();
+        let hull = Hull::build(r.hull_spec.as_ref().unwrap()).unwrap().table;
+        let model = assemble(&VesselModelInputs {
+            capacity: i,
+            result: r,
+            hull,
+            structure: StructureBlock::default(),
+        });
+        assert!(structure_spec_of(&model, 0.85, 7.85).is_none());
+    }
 }
