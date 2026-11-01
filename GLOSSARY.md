@@ -251,6 +251,11 @@ The plate thickness the Rule gives / that thickness rounded up to the thickness 
 (spec 0013, D10).
 _Avoid_: net thickness (a corrosion term), gross thickness
 
+**End Plating**:
+The plating of the hull's two end faces (a transom, a square bow) in the plate model laid out on the
+Sections Table: the first and the last Section where they enclose an area (spec 0013, "Ends").
+_Avoid_: end shell, transom plate (a transom is one Stern Form)
+
 **Steel List**:
 One row per Plate, Stiffener and Primary Member of the plate model, with its rule-net and ordered weight,
 centre and rule citation; with the stock plates bought and the counted scrap (spec 0013).
