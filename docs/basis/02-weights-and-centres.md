@@ -115,6 +115,23 @@ The hold geometry (h_hold, widths, l_cargo) is on page 06.
 - **Pushed barge.** The crew, battery and propulsion are on the tug and are not in the lightship
   (`barge_capacity.rs:810-812`).
 - **"Piping and machinery"** on the gas barge is the 4 % factor in step 1.4. It is not a machinery estimate.
+- **Machinery steel** (issue #774, spec 0011 D7, D19). With a specified Propulsor and the stern block mass in
+  the lightship, two items join the block, because the hull steel leaves them out (step 1.2, "Not in it"):
+  - **Engine-room steel** = engine-room volume (the layout's engine room, full beam, from the double bottom to
+    the deck) × 0.057 t/m³, at the room's centre. The rate is an **unverified estimate**: no engine-room or
+    casing rate per m³ was found in a source read, so OVD takes the volumetric deckhouse coefficient C_DH of
+    layer I at Fo/Fu = 1.0 (Schneekluth and Bertram, *Ship Design for Efficiency and Economy*, sec. 5,
+    Table 5.2, p. 164; the edition is not shown on the pages read). The calibration ticket replaces it (D11).
+    The results say so (`stern_block_mass.machinery_steel.engine_room_rate_status`).
+  - **Engine seats** = W = 27 P_B / ((n + 250) (15 + P_B / 1000)) t per engine (same book, sec. 5.1,
+    p. 158), at the room's centre on the double bottom. A gas genset takes its maker speed; the high-speed
+    engines of the engine table take 1,800 rpm (an estimate).
+  - **No funnel item**: no source or defensible rate was found.
+  - **Watson cross-check.** On a genset plant (diesel-electric, gas-fuelled), Watson's diesel-electric total
+    0.72 × MCR^0.78 t (MCR the kW of all gensets; secondary, lecture notes citing Watson 1998) is reported
+    beside OVD's machinery items (`watson_cross_check`). It is never added to the lightship.
+  - The tug of a Formation keeps its box-rate hull steel, which holds its engine-room structure, so it takes
+    neither item.
 
 ### 4. Displacement and deadweight
 
@@ -212,6 +229,8 @@ writes `calibration/factors.yaml`. Held-out cases are left out of the fit.
 | WC-A28 | Sloped-hopper lightship | Build-up of WC-A16 to WC-A21 | Method | Original engine; no hopper case. On box barges it gave 31–111 % high (`calibration/README.md`, pass 1) | `barge_capacity.rs:634-651` | Unknown; likely high (conservative on cargo) |
 | WC-A29 | Stern block mass | 0 t in lightship | Fixed in code | Not modelled | `barge_capacity.rs:571-572`, `651-660`; `gas_stability.rs:798-803` | Non-conservative on cargo and draught |
 | WC-A30 | Genset engine mass | 9.8 to 21.0 t per set, from a maker table; reported only | Fixed in code | Maker product presentation, cited at `aft_arrangement.rs:132-135` | `aft_arrangement.rs:136-221`, `1025` | Not in lightship (see WC-A29) |
+| WC-A30a | Engine-room steel rate | 0.057 t/m³ of engine-room volume | Estimate (unverified) | Schneekluth and Bertram Table 5.2 p. 164, a deckhouse coefficient taken for the engine room (issue #774) | `machinery.rs` `steel_rates` | Unknown until calibration (spec 0011 D11) |
+| WC-A30b | Engine seats | 27 P_B / ((n + 250)(15 + P_B/1000)) t per engine; n 1,800 rpm for the engine table (estimate) | Method | Schneekluth and Bertram sec. 5.1 p. 158 (issue #774) | `machinery.rs` `engine_seat_t` | Small (about 1 t per engine) |
 | WC-A31 | Pushed barge | crew, battery, propulsion on the tug, not in lightship | Method | Scope of the Formation | `barge_capacity.rs:810-812` | None for the barge; the tug is not weighed |
 | WC-A32 | Displacement | Cb × LOA × B × T × ρ on a box hull | Method | Box hull, see page 01 | `barge_capacity.rs:905`; `simulate.rs:740-751` | See WC-A33 |
 | WC-A33 | Block coefficient | 0.85 for every Hull | Estimate | Profile; basis cites calibrated box barges 0.883–0.995 | `builtin_profile.json:52`; `simulate.rs:667` | Box barge: displacement about 8 % low (conservative on cargo) |

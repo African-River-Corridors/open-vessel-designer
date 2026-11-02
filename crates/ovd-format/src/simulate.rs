@@ -1713,7 +1713,11 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
                     &measured.marpol_damage,
                     measured.oil_outflow.as_ref(),
                 ),
-                (&r.stern_block_items, &r.trim_conditions),
+                (
+                    &r.stern_block_items,
+                    &r.trim_conditions,
+                    r.machinery_summary.as_ref(),
+                ),
             ),
             is_code_stability,
             loading_conditions,
@@ -2486,9 +2490,10 @@ fn stern_mass_of(p: &Map<String, Value>) -> R<Option<ovd_core::aft_arrangement::
 /// a file without the stern mass gets no new field, so its results hash is unchanged.
 fn with_stern_mass(
     mut result: Value,
-    (items, trims): (
+    (items, trims, machinery): (
         &[ovd_core::weights::MassItem],
         &[(&str, ovd_core::models::TrimResult)],
+        Option<&ovd_core::aft_arrangement::MachinerySummary>,
     ),
 ) -> Value {
     // Issue #349: a dry-bulk hull's trim, laden and light, beside the block.
@@ -2515,8 +2520,39 @@ fn with_stern_mass(
                 "kcg_m": num(i.kcg_m),
             })).collect::<Vec<_>>(),
         });
+        if let Some(m) = machinery {
+            result["stern_block_mass"]["machinery_steel"] = machinery_steel_json(m);
+        }
     }
     result
+}
+
+/// Issue #774: what the engine-room steel and the engine seats were worked from, with the status of
+/// the rate, and Watson's machinery total beside OVD's (a cross-check, never in the lightship).
+fn machinery_steel_json(m: &ovd_core::aft_arrangement::MachinerySummary) -> Value {
+    let s = &m.steel;
+    json!({
+        "engine_room_volume_m3": num(s.engine_room_volume_m3),
+        "engine_room_rate_t_per_m3": num(s.engine_room_rate_t_per_m3),
+        "engine_room_steel_t": num(s.engine_room_steel_t),
+        "engine_room_rate_status": "unverified estimate",
+        "engine_room_rate_basis": "Schneekluth and Bertram, Ship Design for Efficiency and Economy, sec. 5, Table 5.2, p. 164: deckhouse coefficient C_DH, layer I, Fo/Fu = 1.0, taken for the engine room (edition not shown on the pages read)",
+        "seats_t": num(s.seats_t),
+        "seats_basis": "Schneekluth and Bertram, sec. 5.1, p. 158: W = 27 P_B / ((n + 250) (15 + P_B / 1000)) t per engine",
+        "prime_movers": s.prime_movers.map_or(Value::Null, |p| json!({
+            "count": p.count,
+            "kw_each": num(p.kw_each),
+            "rpm": num(p.rpm),
+            "rpm_status": if p.rpm_sourced { "maker table" } else { "estimate" },
+        })),
+        "watson_cross_check": m.watson.map_or(Value::Null, |w| json!({
+            "method": "Watson diesel-electric machinery total, 0.72 MCR^0.78 t (secondary: lecture notes citing Watson 1998)",
+            "mcr_kw": num(w.mcr_kw),
+            "watson_total_t": num(w.watson_total_t),
+            "ovd_machinery_t": num(w.ovd_machinery_t),
+            "in_lightship": false,
+        })),
+    })
 }
 
 /// Issue #354: the sightline as a Blind Distance, in the results only with that method (other
@@ -3104,7 +3140,7 @@ fn simulate_gas(
             "steel_list": steel.as_ref().map_or(Value::Null, |s| crate::steel::steel_list_json(&s.1)),
             "structure_geometry": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_geometry_json(&s.1)),
         }),
-            (&r.stern_block_items, &r.trim_conditions),
+            (&r.stern_block_items, &r.trim_conditions, r.machinery_summary.as_ref()),
         ),
             is_code_stability,
             loading_conditions,

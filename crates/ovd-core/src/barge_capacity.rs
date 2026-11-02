@@ -534,6 +534,9 @@ pub struct BargeCapacityResult {
     /// Gas only: the converged arrangement, for gas stability.
     /// Issue #348: the stern block's mass items when they are in the lightship (empty otherwise).
     pub stern_block_items: Vec<crate::weights::MassItem>,
+    /// Issue #774: the machinery steel behind the stern block's steel items and the Watson
+    /// cross-check, when the stern block is in the lightship and has machinery laid out.
+    pub machinery_summary: Option<crate::aft_arrangement::MachinerySummary>,
     /// Issue #412: the tank domes as a lightship item (already in `lightship_t`); empty for a hull
     /// without gas tanks or a dome with no wall. The gas stability takes it with the covering.
     pub dome_items: Vec<crate::weights::MassItem>,
@@ -1454,6 +1457,7 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
         (None, h_top)
     };
     // Issue #348: the stern block's mass, in the lightship only when asked for.
+    let mut machinery_summary = None;
     let stern_block_items = match (&aft, &inp.stern_block_mass) {
         (Some(a), Some(m)) => {
             let db = match class {
@@ -1464,6 +1468,7 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
                 CargoClass::LiquidBulk => inp.liquid.map_or(0.0, |l| l.double_bottom_m),
             };
             let db = if db > 0.0 { db } else { 0.0 };
+            machinery_summary = crate::aft_arrangement::machinery_summary(&aft_second, a, db);
             crate::aft_arrangement::stern_block_mass(&aft_second, a, m, db)
         }
         _ => Vec::new(),
@@ -1864,6 +1869,7 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
         gas_basis: detail.gas_basis,
         liquid: detail.liquid,
         stern_block_items: stern_block_items.clone(),
+        machinery_summary,
         dome_items: detail.dome_items,
         trim_conditions,
         sightline,
