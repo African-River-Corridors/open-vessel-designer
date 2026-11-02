@@ -62,3 +62,8 @@ test("the text is the number in the locale, then a no-break space and the unit",
   const by = Object.fromEntries(principalItems({ dims: { loa_m: 1234.5 } }, "es-419", NE).map((i) => [i.id, i]));
   assert.equal(by["loa"].text, (1234.5).toLocaleString("es-419", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "\u00a0m");
 });
+
+test("each English label in the data file is the text of its Message Id in the Text Library", () => {
+  const ftl = fs.readFileSync(new URL("../../locales/en/app.ftl", import.meta.url), "utf8");
+  for (const r of file.rows) assert.ok(ftl.includes(`\n${r.label_id} = ${r.label}\n`), r.label_id);
+});

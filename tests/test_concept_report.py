@@ -433,14 +433,11 @@ def _summary_rows(run, option):
     return next(b for b in _section(cr.build(run, option), "summary")["body"] if b["type"] == "table")["rows"]
 
 
-def test_the_data_file_has_the_rows_of_the_ticket_in_order_and_english_labels_in_the_text_library():
+def test_the_data_file_has_the_rows_of_the_ticket_in_order():
     """Label: property"""
     assert [r["id"] for r in PRINCIPAL] == ["loa", "beam", "depth", "draught-laden", "draught-light", "displacement", "lightship",
                                             "deadweight", "cargo", "gross-tonnage", "installed-power", "service-speed",
                                             "crew-minimum", "crew-berths"]
-    ftl = (ROOT / "locales" / "en" / "app.ftl").read_text(encoding="utf-8")
-    for r in PRINCIPAL:
-        assert f"{r['label_id']} = {r['label']}\n" in ftl
 
 
 def test_the_report_summary_table_is_the_data_file_applied_to_the_run():
