@@ -17,3 +17,5 @@ Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents
 ### Build process
 
 How ticketed work is built, reviewed and merged. See `docs/agents/build-process.md`.
+
+- **Pre-push hook.** `sankofa-prepush` (workflows repo) runs `cargo fmt --check` on the crates a push changes on every `git push`. Install it once per clone with `sankofa-prepush install` (it covers every worktree). If it blocks, run the fix it prints, commit, and push again; do not `--no-verify` around it.
