@@ -130,3 +130,114 @@ tank_weight_records:
     held_out: "tank weight records (issue #317); never used to fit the structure factor"
     flags: "A bilobe tank, which the engine does not model. The 2,500 m3 is the vessel's capacity split in two"
     not_yet_runnable: "bilobe tanks are not modelled, and no diameter is printed"
+
+# Added 2026-11-02 (issue #317, deep search). Vacuum-insulated marine fuel tanks are `vacuum_insulated: true`:
+# they weigh 0.4 to 0.6 t per m3, so they are never read against the single-shell records above and are left
+# out of the published single-shell range. Land tanks are reference rows only (`not_imo: true`).
+  - id: lng-bilobe-coral-16000
+    what: "One of two 16,000 m3 bilobe LNG Type C tanks of a 30,000 m3 LNG carrier"
+    cargo: LNG
+    gross_volume_m3: 16000.0
+    tank_weight_t: 1400.0
+    weight_includes: "not stated ('single tank weight about 1400 t'); probably an all-in tank, scope unknown"
+    published: "单罐舱容达16000立方米 ... 单罐重量约1400吨 (single-tank capacity 16,000 m3; single-tank weight about 1,400 t)"
+    source: "P15 — Pai Pai News, 12 October 2022, accessed 2026-11-02"
+    confidence: low
+    held_out: "tank weight records (issue #317); never used to fit the structure factor; the maintainer decided no refit (2026-11-02)"
+    flags: "Single shell. A bilobe tank, which the engine does not model. 'About' 1,400 t, so the 0.0875 t per m3 is approximate. D, L, design pressure and steel are not printed"
+    not_yet_runnable: "bilobe tanks are not modelled, and no diameter or length is printed"
+  - id: lng-ferry-vacuum-147
+    what: "One 147 m3 vacuum-insulated LNG fuel tank of a ferry, single cylinder, double shell"
+    cargo: LNG
+    gross_volume_m3: 147.0
+    tank_weight_t: 88.0
+    vacuum_insulated: true
+    weight_includes: "not stated whether fittings or saddles are in ('an 88-tonne LNG tank was delivered')"
+    published: "an 88-tonne liquefied natural gas (LNG) tank ... The 147m3 tank (P9); 20.4 metres in length and 4 metres in diameter ... weighs over 80 tonnes ... internal volume of 149m3 (P10)"
+    source: "P9 — CMAL press release, 14 July 2017; P10 — CMAL project page, accessed 2026-11-02"
+    confidence: low
+    held_out: "tank weight records (issue #317); never used to fit the structure factor; the maintainer decided no refit (2026-11-02)"
+    flags: "vacuum_insulated: double shell with a vacuum between, never read against single-shell cases. Sources disagree: 88 t against 'over 80 t', and 147 m3 against 149 m3 (0.599 t per m3 with the press-release pair; 0.537 with 80 t and 149 m3). The 88 t, 147 m3 pair of P9 is recorded. 20.4 m by 4 m: datum not stated; one page says 4.5 metres high"
+    not_yet_runnable: "no diameter or length with a stated basis (20.4 m by 4 m, datum not stated); a double-shell vacuum tank is not modelled"
+  - id: lng-supply-vessel-vacuum-220
+    what: "One 220 m3 vacuum-insulated LNG fuel tank of an offshore supply vessel (delivered 2003), stainless steel"
+    cargo: LNG
+    gross_volume_m3: 220.0
+    tank_weight_t: 115.0
+    vacuum_insulated: true
+    weight_includes: "not stated ('weighs 115 metric tons')"
+    published: "The tank ... is 6 m in diameter, weighs 115 metric tons, and is made of stainless steel; can hold 220 cu m (P11); 20-mm thick outer wall, vacuum in-between with 300 mm of perlite (P11); 234m3 Cryo AB bunker tank (P12)"
+    source: "P11 — Offshore Magazine, 1 October 2003; P12 — Riviera, 10 December 2014, accessed 2026-11-02"
+    confidence: low
+    held_out: "tank weight records (issue #317); never used to fit the structure factor; the maintainer decided no refit (2026-11-02)"
+    flags: "vacuum_insulated: double shell, never read against single-shell cases. Sources disagree on volume: 220 m3 (P11) against 234 m3 (P12); 0.523 t per m3 at 220, 0.491 at 234. Length and design pressure not printed"
+    not_yet_runnable: "no length with a stated basis; the diameter basis is not stated; a double-shell vacuum tank is not modelled"
+  - id: lng-icebreaker-vacuum-400
+    what: "One of two 400 m3 vacuum-insulated LNG bunker tanks ordered for an icebreaker"
+    cargo: LNG
+    gross_volume_m3: 400.0
+    tank_weight_t: 175.0
+    vacuum_insulated: true
+    forecast_not_as_built: true
+    weight_includes: "not stated ('will weigh 175 tonnes')"
+    published: "the pair of 400m3 LNG bunker tanks ... Each of these units will weigh 175 tonnes (P12)"
+    source: "P12 — Riviera, 10 December 2014, accessed 2026-11-02"
+    confidence: low
+    held_out: "tank weight records (issue #317); never used to fit the structure factor; the maintainer decided no refit (2026-11-02)"
+    flags: "vacuum_insulated: double shell, never read against single-shell cases. forecast_not_as_built: a 2014 statement of a tank on order, not an as-built mass. D, L and pressure not printed"
+    not_yet_runnable: "no diameter or length printed; a double-shell vacuum tank is not modelled"
+  - id: lng-containership-vacuum-900
+    what: "One of two 900 m3 stainless steel LNG fuel tanks of a containership class"
+    cargo: LNG
+    gross_volume_m3: 900.0
+    tank_weight_t: 380.0
+    vacuum_insulated: true
+    weight_includes: "not stated ('weigh 380 tons each'); the unit (metric or short tons) is not stated"
+    published: "two 900 cubic meter cryogenic tanks ... stainless steel tanks ... weigh 380 tons each (P13); weighing 380 tons each ... approximately 26 m in length and 8.3 m in width (P14)"
+    source: "P13 — gCaptain, 8 August 2014; P14 — LNG Industry, 15 July 2014, accessed 2026-11-02"
+    confidence: low
+    held_out: "tank weight records (issue #317); never used to fit the structure factor; the maintainer decided no refit (2026-11-02)"
+    flags: "vacuum_insulated: double shell, never read against single-shell cases (inferred from the maker's tank type; the sources do not say). Unit of 'tons' not stated: 0.422 t per m3 if metric, 0.383 if short. 26 m by 8.3 m is a transport envelope; its datum is not stated"
+    not_yet_runnable: "26 m by 8.3 m is a transport envelope with no stated datum; a double-shell vacuum tank is not modelled"
+  - id: ref-land-vacuum-chart-hs-500
+    what: "Reference row, not IMO: 500 m3 horizontal vacuum-insulated LNG land tank, 3.45 barg"
+    cargo: LNG
+    gross_volume_m3: 500.0
+    tank_weight_t: 109.905
+    vacuum_insulated: true
+    not_imo: true
+    weight_includes: "'Weight (Empty)' as printed; scope not printed"
+    published: "HS 500 m3: 132,030 gal, 500 m3, 3.45 barg, 242,300 lb, 109,905 kg"
+    source: "P16 — Chart Industries datasheet PN 20758418, 2022, accessed 2026-11-02"
+    confidence: low
+    held_out: "tank weight records (issue #317); never used to fit the structure factor; the maintainer decided no refit (2026-11-02)"
+    flags: "Land tank, ASME VIII Div 1 or EN 13458, NOT an IMO tank. Reference row only: a floor for vacuum-insulated tank weight. vacuum_insulated. 0.220 t per m3"
+    not_yet_runnable: "land tank; not an IMO tank; reference row only"
+  - id: ref-land-vacuum-chart-hs-267
+    what: "Reference row, not IMO: 267 m3 horizontal vacuum-insulated LNG land tank, 12.07 barg"
+    cargo: LNG
+    gross_volume_m3: 267.0
+    tank_weight_t: 80.059
+    vacuum_insulated: true
+    not_imo: true
+    weight_includes: "'Weight (Empty)' as printed; scope not printed"
+    published: "HS 70000 gal series: 70,540 gal, 267 m3, 12.07 barg, 176,500 lb, 80,059 kg"
+    source: "P16 — Chart Industries datasheet PN 20758418, 2022, accessed 2026-11-02"
+    confidence: low
+    held_out: "tank weight records (issue #317); never used to fit the structure factor; the maintainer decided no refit (2026-11-02)"
+    flags: "Land tank, ASME VIII Div 1 or EN 13458, NOT an IMO tank. Reference row only: a floor for vacuum-insulated tank weight. vacuum_insulated. 0.300 t per m3"
+    not_yet_runnable: "land tank; not an IMO tank; reference row only"
+  - id: ref-land-vacuum-ferox-vt108
+    what: "Reference row, not IMO: 107.57 m3 vertical vacuum-insulated LNG land tank, 11 bar"
+    cargo: LNG
+    gross_volume_m3: 107.57
+    tank_weight_t: 37.57
+    vacuum_insulated: true
+    not_imo: true
+    weight_includes: "'Weight empty' at 11 bar as printed; scope not printed"
+    published: "VT 108: 107,570 l, weight empty 37,570 kg at 11 bar"
+    source: "P17 — Chart Ferox VT LNG series datasheet, 2016, accessed 2026-11-02"
+    confidence: low
+    held_out: "tank weight records (issue #317); never used to fit the structure factor; the maintainer decided no refit (2026-11-02)"
+    flags: "Land tank, ASME VIII Div 1 or EN 13458, NOT an IMO tank. Reference row only: a floor for vacuum-insulated tank weight. vacuum_insulated. 0.349 t per m3 (gross volume as printed, 107,570 l)"
+    not_yet_runnable: "land tank; not an IMO tank; reference row only"

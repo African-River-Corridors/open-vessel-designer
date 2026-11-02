@@ -852,6 +852,69 @@ web_sources:
   retrieved: '2026-10-22'
   sha256: 1e7aa5299a2cc3e5ee619adc1f24d21e1b4a32ee65e6f1acdee4053a0fa14372
   note: "Each tank 28.4 m long, light weight 240 t, cargo weight 1,140 t. Tank weight record, issue #317"
+- id: P9
+  title: "CMAL press release, 14 July 2017: an 88-tonne LNG tank delivered for a ferry (147 m3)"
+  url: https://www.cmassets.co.uk/?p=4175
+  accessed: '2026-11-02'
+  retrieved: '2026-11-02'
+  sha256: ccae7738fd17399ca14b0eccb1465b7d0a0b2f113184ebf128678a7b8cf159aa
+  note: "88-tonne, 147 m3 tank. The address redirects to the 88-tonne-fuel-tank page; the hash is of the bytes served after the redirect. Tank weight record, issue #317"
+- id: P10
+  title: "CMAL project page for the same ferry class (20.4 m by 4 m tank; 'over 80 tonnes'; 149 m3)"
+  url: https://www.cmassets.co.uk/?p=2555
+  accessed: '2026-11-02'
+  retrieved: '2026-11-02'
+  sha256: 6a1338f852fd3a49c20734c38c819bb0f18c8409cb33f5fa52e05dfb14fa7428
+  note: "Disagrees with P9 on weight (over 80 t against 88 t) and volume (149 m3 against 147 m3). The address redirects to the project page; the hash is of the bytes served after the redirect. Tank weight record, issue #317"
+- id: P11
+  title: "Offshore Magazine, 1 October 2003: vacuum-insulated dual-skin tank for an LNG-fuelled supply vessel"
+  url: https://www.offshore-mag.com/vessels/article/16755535/vacuum-insulated-dual-skin-tank-protects-lng-fueled-vessel
+  accessed: '2026-11-02'
+  retrieved: '2026-11-02'
+  sha256: 2d391da987fa45cb4b2d8a3abc282c40dbee86a02088456205ddff5239cc3ff0
+  note: "6 m diameter, 115 metric tons, 220 cu m, 20 mm walls, 300 mm perlite. Tank weight record, issue #317"
+- id: P12
+  title: "Riviera Maritime Media, 10 December 2014: Cryo at the heart of LNG-fuelled ships"
+  url: https://www.rivieramm.com/news-content-hub/cryo-at-the-heart-of-lng-fuelled-ships-37462
+  accessed: '2026-11-02'
+  retrieved: '2026-11-02'
+  sha256: 50c70ec946426cc1888bc6c14a20ff33077236af5a3605a1fe601ba101016eed
+  note: "Two 400 m3 bunker tanks, 'each of these units will weigh 175 tonnes' (a forecast); gives 234 m3 for the supply-vessel tank of P11. The site rate-limits some requests. Tank weight record, issue #317"
+- id: P13
+  title: "gCaptain, 8 August 2014: time-lapse of two 900 m3 cryogenic tanks for a containership class"
+  url: https://gcaptain.com/time-lapse-shows-construction-of-massive-lng-tanks-for-worlds-first-gas-powered-containerships
+  accessed: '2026-11-02'
+  retrieved: '2026-11-02'
+  sha256: cc189d65c12432ee21b1348e970a92ba348c94803321830f7af9f5afb1fc5bbc
+  note: "900 cubic metres, 380 tons each (unit not stated). Tank weight record, issue #317"
+- id: P14
+  title: "LNG Industry, 15 July 2014: transport of two LNG tanks and an engine"
+  url: https://www.lngindustry.com/lng-shipping/15072014/AAL_transports_LNG_tanks_and_engine_to_San_Diego_988/
+  accessed: '2026-11-02'
+  retrieved: '2026-11-02'
+  sha256: 9d6cb86b0bbd7a015e0a294a30fe4289bb4ce804bbf44fdeaec847d8f3dfe984
+  note: "Two LNG tanks of 380 tons each, about 26 m long and 8.3 m wide (transport envelope). Tank weight record, issue #317"
+- id: P15
+  title: "Pai Pai News (thepaper.cn), 12 October 2022: a 30,000 m3 LNG carrier delivered with two 16,000 m3 bi-lobe tanks"
+  url: https://www.thepaper.cn/newsDetail_forward_20264207
+  accessed: '2026-11-02'
+  retrieved: '2026-11-02'
+  sha256: 31d9384d0b0772ed67a4bb146085d5499c98cd6483750c5a668bf33c2d0ea5b0
+  note: "Chinese text; one tank 16,000 m3, about 1,400 t, what the weight covers not stated. Tank weight record, issue #317"
+- id: P16
+  title: "Chart Industries, LNG Storage Vessels datasheet PN 20758418 (HS and VS series, land tanks, ASME VIII Div 1), 2022"
+  url: https://files.chartindustries.com/20758418_HS_VS_LNGStorage.pdf
+  accessed: '2026-11-02'
+  retrieved: '2026-11-02'
+  sha256: 5dc71ce79c8059ceeb44b8f9b281d504137d9c1f3e2a57fdae64754857a906fe
+  note: "Land tanks, not IMO. 'Empty' weights by size. Tank weight reference rows, issue #317"
+- id: P17
+  title: "Chart Ferox, VT LNG series bulk tanks datasheet EN/VT LNG/500001/15AUGUST 2016"
+  url: https://files.chartindustries.com/VTLNGSeriesBulkTanks_Europe.pdf
+  accessed: '2026-11-02'
+  retrieved: '2026-11-02'
+  sha256: 0c025bc2df41ce173f0e947cfa48587a87bbc89b16455c3d6d00e85203517934
+  note: "Land tanks (EN 13458), not IMO. Weight empty at 18 bar and at 11 bar. Tank weight reference rows, issue #317"
 - id: M15
   title: "Marine Engineering Bureau (MEB), Project ROB21"
   url: https://mebspb.com/oile/ROB21e.html

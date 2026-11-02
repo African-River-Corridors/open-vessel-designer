@@ -637,7 +637,9 @@ def _tank_section() -> list[str]:
                        f"{fmt(c['tank_weight_t'], 0)} | {_tank_weight_per_m3(c):.3f} | {c['weight_includes']} | "
                        f"{c['not_yet_runnable']} |")
         lo, hi = _tank_weight_range()
-        out += ["", f"Published range: {lo:.3f} to {hi:.3f} t per m³ of tank."]
+        out += ["", f"Published range, single-shell records: {lo:.3f} to {hi:.3f} t per m³ of tank. Records marked "
+                "`vacuum_insulated` (double shell) and land tank reference rows (`not_imo`) are listed but are "
+                "not in this range."]
     return out
 
 
@@ -648,8 +650,10 @@ def _tank_weight_per_m3(record: dict) -> float:
 
 
 def _tank_weight_range() -> tuple[float, float]:
-    """The lowest and highest published tank weight per m³ of the tank weight records."""
-    values = [_tank_weight_per_m3(c) for c in _load_tank_cases().get("tank_weight_records", [])]
+    """The lowest and highest published tank weight per m³ of the single-shell tank weight records. A
+    vacuum-insulated record (double shell, 0.4 to 0.6 t per m³) is left out: it is never read against them."""
+    values = [_tank_weight_per_m3(c) for c in _load_tank_cases().get("tank_weight_records", [])
+              if not c.get("vacuum_insulated")]
     return min(values), max(values)
 
 

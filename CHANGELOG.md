@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Calibration (issue #317, part 2): eight more published tank weights are tank weight records in `calibration/tank_cases.yaml`, with their sources (`sources.yaml` P9 to P17). One is a single-shell all-in point: a 16,000 m3 bilobe tank of about 1,400 t (0.0875 t per m3). Four are vacuum-insulated marine fuel tanks (147, 220, 400 and 900 m3 at 0.42 to 0.60 t per m3), tagged `vacuum_insulated` so they are never read against single-shell records; the 400 m3 mass is a forecast (`forecast_not_as_built`), and the sources disagree on the 147 m3 and 220 m3 tanks (the spread is in `flags`). Three land vacuum tanks are reference rows only, marked `not_imo`. All are low confidence, held out and not run. The published single-shell range in the report is now 0.088 to 0.115 t per m3, and it leaves out vacuum-insulated rows. No fit, factor or tolerance changes, as decided on the issue: no refit.
+
 ## 0.3.0 (2026-10-30)
 
 OVCD is now Open Vessel Designer (OVD). The repository, crates, the `ovd` command, the Python package (`open-vessel-designer`, `import ovd`) and the app use the new name. The old names no longer work. Design files keep the `.vdesign` extension, but files saved by 0.2.x do not open in 0.3.0.
