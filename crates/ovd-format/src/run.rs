@@ -169,6 +169,12 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         "aft_end_space_m",
         "fwd_end_space_m",
         "opening_setback_basis",
+        // Issue #822: the openings the cargo vent mast keeps away from, and the mast itself.
+        "entrance_distance_m",
+        "engine_room_vent_inlet_distance_m",
+        "funnel_outlet_distance_m",
+        "vent_stub_m",
+        "vent_mast_lowerable",
         "tank_wall_thickness_mm",
         "lpg_carriage_condition",
         "lpg_loading_limit_basis",
@@ -297,6 +303,14 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         _ => return Err("the Option has no Cargo Containment".to_string()),
     };
     p.insert("vessel".into(), json!(vessel));
+    // Issue #822: the Service Area sets the vent mast of a gas hull (IGC or ADN); no other hull
+    // reads it, so no other params change.
+    if vessel == "gas_barge" {
+        p.insert(
+            "service_area".into(),
+            json!(crate::trace::service_area_of(option)),
+        );
+    }
     p.insert("self_propelled".into(), json!(kind == "self_propelled"));
     // Issue #362: the barge of an ATB has a Notch (see the tug and Notch inputs above).
     if kind == "atb" {

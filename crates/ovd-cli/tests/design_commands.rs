@@ -873,8 +873,9 @@ fn validate_opens_a_version_1_adn_g_file_as_igc_2g_and_warns() {
         // #237), one for the hull end input a version 1 file lacks, one for the LPG carriage
         // condition the file lacks (issue #292: read as fully pressurised), one for the block
         // coefficient the file stores, now a result of the hull (issue #448), one for the structure
-        // block of the Hull the file lacks (issue #739).
-        stdout(&out).contains("0 error(s), 8 warning(s)"),
+        // block of the Hull the file lacks (issue #739), one for the cargo vent mast inputs the file
+        // lacks (issue #822).
+        stdout(&out).contains("0 error(s), 9 warning(s)"),
         "{}",
         stdout(&out)
     );

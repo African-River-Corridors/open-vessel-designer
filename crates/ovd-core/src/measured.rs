@@ -91,6 +91,9 @@ pub struct Measured {
     /// The gross tonnage of ITC 1969, its V and its K1 (issue #777). `None` where the run worked it
     /// out for no hull (a search candidate, or a run with no capacity result).
     pub gross_tonnage: Option<crate::tonnage::GrossTonnage>,
+    /// The cargo vent mast of a gas hull (issue #822), for the `vent.*` Measures; `None` for every
+    /// other hull.
+    pub vent_mast: Option<crate::vent_mast::VentMast>,
 }
 
 /// One assumed damage and the outcome: the Measure `stability.damage` is `ok`.
@@ -350,6 +353,10 @@ impl Measured {
             "option.enclosed_volume" | "option.gross_tonnage_k1" | "option.gross_tonnage" => {
                 self.gross_tonnage.is_some()
             }
+            "vent.exit_above_deck"
+            | "vent.exit_above_working_area"
+            | "vent.distance_to_openings"
+            | "vent.distance_to_accommodation" => self.vent_mast.is_some(),
             // The Rule on a hull with no damage computed is `not evaluated` with the reason (`missing`).
             "stability.damage"
             | "stability.damage_marpol"
@@ -496,6 +503,21 @@ impl Measured {
                 1 => g.k1,
                 _ => g.value(),
             }));
+        }
+        if let Some(name) = m.id.strip_prefix("vent.") {
+            let v = self
+                .vent_mast
+                .as_ref()
+                .ok_or_else(|| "the Option has no cargo vent mast".to_string())?;
+            return match name {
+                "exit_above_deck" => Ok(MeasureValue::Number(v.exit_above_deck_m)),
+                "exit_above_working_area" => Ok(MeasureValue::Number(v.exit_above_working_area_m)),
+                "distance_to_openings" => Ok(MeasureValue::Number(v.distance_to_openings_m)),
+                "distance_to_accommodation" => {
+                    Ok(MeasureValue::Number(v.distance_to_accommodation_m))
+                }
+                other => Err(format!("no value for Measure `vent.{other}`")),
+            };
         }
         if m.id == "option.deadweight" {
             return self

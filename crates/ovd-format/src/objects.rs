@@ -407,6 +407,7 @@ pub(crate) fn capacity_result_from_json(
         tank_inner_diameter_m: o.opt_f64("tank_inner_diameter_m")?,
         // Not in the result JSON: only a run reads it, typed.
         tank_rules: None,
+        vent_mast: None,
         light_draft_m: o.opt_f64("light_draft_m")?,
         air_draft_light_m: o.opt_f64("air_draft_light_m")?,
         ballast_draft_m: o.opt_f64("ballast_draft_m")?,
@@ -447,6 +448,8 @@ mod tests {
             // The tank values of the Rule Trace are not written to JSON (issue #271).
             let mut written = result.clone();
             written.tank_rules = None;
+            // Nor is the vent mast (issue #822).
+            written.vent_mast = None;
             // Issue #448: the JSON holds the hull's dimensions only in a gas basis, so a dry
             // result comes back with no hull.
             if written.gas_basis.is_none() {

@@ -194,6 +194,7 @@ READ_BY = {
     # no chapter reads these yet: a deletion must change nothing in the skeleton
     "self_propelled": [], "warnings": [], "fit_tried": [], "text_ids": [],
     "gross_tonnage": [],
+    "crew": [],   # no chapter reads it yet; #830 maps it to A4
 }
 GA = {"ga-side": "side.png", "ga-mid": "mid.png"}   # so A.4 is built, and its deletion shows
 

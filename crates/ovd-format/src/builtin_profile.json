@@ -1178,6 +1178,25 @@
       "status": "estimate",
       "basis": "The distance from the cargo area of the engine room ventilation inlets, and of the engine air intakes when the engines do not take air from the engine room (inland class rules 3.3.8 ask for at least 2.00 m). On a gas hull IGC 3.2.4.1 also asks for at least 4 % of the ship length L from the deckhouse end facing the cargo area, not less than 3 m and no more than 5 m; with no setback length in the hull (spec 0011 D17) that end stands at the cargo area. 5 m is the most either rule asks, so the default meets both; the engine does not place openings. A file saved before reads 2 m"
     },
+    "vent_stub_m": {
+      "default": 1.0,
+      "unit": "m",
+      "hard": {
+        "ge": 0,
+        "le": 10
+      },
+      "soft": {
+        "min": 0.5,
+        "max": 3.0
+      },
+      "status": "estimate",
+      "basis": "The height of the cargo PRV vent exit above the top of the tank domes on a river-only hull (issue #822), so the outlet clears the dome: the exit is the greater of 2.00 m above the deck (ADN 9.3.1.22.3) and the dome top plus this stub. 1.0 m is a working value set by the maintainer, with no published source. A coastal and river hull does not read it. A file saved before reads 1 m"
+    },
+    "vent_mast_lowerable": {
+      "default": false,
+      "status": "estimate",
+      "basis": "Whether the cargo vent mast can be lowered for transit (issue #822). true: the river air drafts (loaded, light, ballast) leave the mast out and the air draft limit is checked without it; the sea air draft keeps it. No practice source was found for lowering cargo vent masts: class or flag acceptance is needed, and the result carries a warning. false: the mast stays up. A file saved before reads false"
+    },
     "funnel_outlet_distance_m": {
       "default": 2.0,
       "unit": "m",

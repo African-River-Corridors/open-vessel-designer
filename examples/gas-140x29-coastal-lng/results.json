@@ -5,7 +5,7 @@
     {
       "name": "A basis",
       "status": "results",
-      "results_hash": "95f3c3575190e037d3cecda1e5d8ff73ff440c0e5ab2fb600f4506e27d7b44ee",
+      "results_hash": "6c8961e8166d23aff85946dedcfd0b485960b8aa612916ec2e0e5e330760ab1e",
       "hash_status": "matches",
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
@@ -634,9 +634,25 @@
           "draught_max_m": 10.19,
           "freeboard_m": 8.445029760347635,
           "light_draught_m": 1.5793639278910916,
-          "air_draft_loaded_m": 11.845029760347636,
-          "air_draft_light_m": 13.82063607210891,
-          "h_over_T": null
+          "air_draft_loaded_m": 18.111696427014298,
+          "air_draft_light_m": 20.087302738775573,
+          "h_over_T": null,
+          "vent_mast_x_m": 120.8,
+          "vent_exit_above_keel_m": 21.666666666666664,
+          "vent_exit_above_deck_m": 9.666666666666664,
+          "vent_exit_above_working_area_m": 7.563333333333331,
+          "vent_working_area_top_m": 14.103333333333333,
+          "vent_working_area": "weather_shield",
+          "vent_exit_governed_by": "deck",
+          "vent_distance_to_openings_m": 102.908,
+          "vent_distance_to_accommodation_m": 102.908,
+          "vent_mast_distance_target_m": 25.0,
+          "vent_mast_distance_met": true,
+          "vent_mast_lowerable": false,
+          "vent_mast_notes": [
+            "IGC 8.2.10.4: the working area is the top of the weather shield, or the tank top where the hull has no shield; the top of the tank domes is not counted as a working area.",
+            "IGC 8.2.11.1: the smaller distances it allows for ships under 90 m in length are not used."
+          ]
         },
         "checks": [
           {
@@ -1316,7 +1332,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.443856539275476,
-              "air_draft_m": 11.843856539275476,
+              "air_draft_m": 18.11052320594214,
               "air_draft_ok": null,
               "ok": true
             },
@@ -1632,7 +1648,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.451753818145448,
-              "air_draft_m": 11.851753818145449,
+              "air_draft_m": 18.118420484812113,
               "air_draft_ok": null,
               "ok": true
             },
@@ -1985,7 +2001,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.456993507326823,
-              "air_draft_m": 12.856993507326823,
+              "air_draft_m": 19.123660173993486,
               "air_draft_ok": null,
               "ok": true
             },
@@ -2338,7 +2354,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.46483031755619,
-              "air_draft_m": 12.86483031755619,
+              "air_draft_m": 19.131496984222853,
               "air_draft_ok": null,
               "ok": true
             }
@@ -3550,18 +3566,132 @@
             "vcg_m": 7.1033333333333335
           }
         ],
-        "gross_tonnage": {
-          "gross_tonnage": 12843.008855522432,
+        "crew": {
+          "inputs": {
+            "gross_tonnage": 12843.008855522432,
+            "gross_tonnage_source": "computed",
+            "navigation_hours_per_day": 24.0,
+            "unmanned_machinery_space": true,
+            "propulsion_kw": 1717.1299626370062,
+            "genset_kw": 2400.0,
+            "power_kw": 2400.0,
+            "power_basis": "the total genset rating (the higher band, spec 0011 D14)",
+            "length_m": 140.0,
+            "gas_cargo": true,
+            "service_area": "coastal-and-river"
+          },
+          "regime": "seagoing",
+          "rule_set": {
+            "id": "liberia-man-001",
+            "version": "1.0.0",
+            "hash": "dd6d5621017e1ec4dd93f82381b5543e090e46eea4668a6a38db1cf7f5b5c2c1",
+            "status": "draft",
+            "basis": "a draft Rule Set: no second reader has verified it"
+          },
+          "manning_scale": {
+            "column": "c6",
+            "exact": false,
+            "gt_band": 4,
+            "kw_band": 1,
+            "unattended_machinery": true,
+            "table_total": 13,
+            "hole": "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook",
+            "other_neighbour_column": "c9",
+            "other_neighbour_total": 12
+          },
+          "watches": {
+            "watchkeepers": 3,
+            "master_watch_free": true,
+            "deck_officers_needed": 4,
+            "basis": "more than 12 navigation hours in 24: three watchkeepers (STCW A-VIII/1 rest, an estimate); the master keeps no regular watch above 3,000 GT (MAN-001 3.2.1)"
+          },
+          "roles": [
+            {
+              "role": "master",
+              "count": 1
+            },
+            {
+              "role": "chief-mate",
+              "count": 1
+            },
+            {
+              "role": "oow",
+              "count": 2
+            },
+            {
+              "role": "ab-deck",
+              "count": 3
+            },
+            {
+              "role": "rating-nav",
+              "count": 2
+            },
+            {
+              "role": "chief-engineer",
+              "count": 1
+            },
+            {
+              "role": "second-engineer",
+              "count": 1
+            },
+            {
+              "role": "ab-engine",
+              "count": 1
+            },
+            {
+              "role": "rating-engine",
+              "count": 1
+            }
+          ],
+          "deck_officers": 4,
+          "engineers": 2,
+          "ratings": 7,
+          "cook": 1,
+          "cross_check": {
+            "rule_set": {
+              "id": "uk-msn-1868",
+              "version": "1.0.0",
+              "hash": "5bae3778bf5b365113976d597e23f36721c0493e764a754f3d3b46dee26b1efb",
+              "status": "draft",
+              "basis": "a draft Rule Set: no second reader has verified it"
+            },
+            "uk_officers": 7,
+            "uk_deck_officers": 4,
+            "uk_engineer_officers": 3,
+            "liberia_officers": 6,
+            "difference": 1,
+            "flagged": false,
+            "trading_area": "unlimited",
+            "basis": "officers only (MSN 1868 gives no ratings); trading area unlimited, the cautious reading, as the UK's near-coastal limit (150 nm from a UK haven) is a national meaning the Service Area cannot show; a difference over one person is flagged (spec 0011 4.1 step 10)"
+          },
           "source": "computed",
-          "computed_gt": 12843.008855522432,
-          "typed_gt": null,
-          "k1": 0.29284070671480394,
-          "enclosed_volume_m3": 43856.637964032,
-          "hull_volume_m3": 43606.14,
-          "stern_block_volume_m3": 250.49796403200003,
-          "deckhouse_volume_m3": 0.0,
-          "basis": "ITC 1969, Annex I, Regulation 3 (UN Treaty Series vol. 1291, No. I-21264, p. 15): GT = K1 V, K1 = 0.2 + 0.02 log10 V; V the total volume of all enclosed spaces (Regulation 2(4)), measured to the inner side of the shell (Regulation 6(1))",
-          "volume_basis": "V = the moulded hull volume to the deck at the centre line (sheer and camber included) plus the enclosed volume above the main deck that the stern block has today (the 40 ft units and the wheelhouse). The tiers of the deckhouse (spec 0011) join V when the Arrangement Style is deckhouse, and are nothing for the container block. No hatch coamings, no appendages, and no excluded spaces (Regulation 2(5)) are taken off"
+          "typed_crew": null,
+          "below_minimum": false,
+          "minimum": 14,
+          "owner_margin": [
+            {
+              "role": "cargo-engineer",
+              "count": 1
+            },
+            {
+              "role": "steward",
+              "count": 1
+            },
+            {
+              "role": "electro-technical-officer",
+              "count": 1
+            }
+          ],
+          "planning_low": 15,
+          "planning_high": 17,
+          "crew": 17,
+          "spare_berths": 2,
+          "berths": 19,
+          "notes": [
+            "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
+          ],
+          "status": "estimate",
+          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. No result reads the crew yet (the deckhouse rooms come with issue #780)."
         },
         "stern_block_mass": {
           "total_t": 513.7969035703804,
@@ -4130,7 +4260,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.443856539275476,
-              "air_draft_m": 11.843856539275476,
+              "air_draft_m": 18.11052320594214,
               "air_draft_ok": null,
               "ok": true
             },
@@ -4446,7 +4576,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.451753818145448,
-              "air_draft_m": 11.851753818145449,
+              "air_draft_m": 18.118420484812113,
               "air_draft_ok": null,
               "ok": true
             },
@@ -4799,7 +4929,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.456993507326823,
-              "air_draft_m": 12.856993507326823,
+              "air_draft_m": 19.123660173993486,
               "air_draft_ok": null,
               "ok": true
             },
@@ -5152,7 +5282,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.46483031755619,
-              "air_draft_m": 12.86483031755619,
+              "air_draft_m": 19.131496984222853,
               "air_draft_ok": null,
               "ok": true
             }
@@ -10912,13 +11042,26 @@
               "method_status": "unverified"
             }
           ]
+        },
+        "gross_tonnage": {
+          "gross_tonnage": 12843.008855522432,
+          "source": "computed",
+          "computed_gt": 12843.008855522432,
+          "typed_gt": null,
+          "k1": 0.29284070671480394,
+          "enclosed_volume_m3": 43856.637964032,
+          "hull_volume_m3": 43606.14,
+          "stern_block_volume_m3": 250.49796403200003,
+          "deckhouse_volume_m3": 0.0,
+          "basis": "ITC 1969, Annex I, Regulation 3 (UN Treaty Series vol. 1291, No. I-21264, p. 15): GT = K1 V, K1 = 0.2 + 0.02 log10 V; V the total volume of all enclosed spaces (Regulation 2(4)), measured to the inner side of the shell (Regulation 6(1))",
+          "volume_basis": "V = the moulded hull volume to the deck at the centre line (sheer and camber included) plus the enclosed volume above the main deck that the stern block has today (the 40 ft units and the wheelhouse). The tiers of the deckhouse (spec 0011) join V when the Arrangement Style is deckhouse, and are nothing for the container block. No hatch coamings, no appendages, and no excluded spaces (Regulation 2(5)) are taken off"
         }
       }
     },
     {
       "name": "B profile",
       "status": "results",
-      "results_hash": "6d27514f217f1c52b42dd8c1b5bdde6df4ed690ee96b9a00f0e684c38f11d51b",
+      "results_hash": "dc92a9b5903fd04be803c300fefac9085e0bb08f83969442c48bc5b33f11f5f1",
       "hash_status": "matches",
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
@@ -11547,9 +11690,25 @@
           "draught_max_m": 10.19,
           "freeboard_m": 8.42763850768644,
           "light_draught_m": 1.5818777458596347,
-          "air_draft_loaded_m": 11.82763850768644,
-          "air_draft_light_m": 13.818122254140366,
-          "h_over_T": null
+          "air_draft_loaded_m": 18.094305174353106,
+          "air_draft_light_m": 20.08478892080703,
+          "h_over_T": null,
+          "vent_mast_x_m": 120.8,
+          "vent_exit_above_keel_m": 21.666666666666664,
+          "vent_exit_above_deck_m": 9.666666666666664,
+          "vent_exit_above_working_area_m": 7.563333333333331,
+          "vent_working_area_top_m": 14.103333333333333,
+          "vent_working_area": "weather_shield",
+          "vent_exit_governed_by": "deck",
+          "vent_distance_to_openings_m": 102.908,
+          "vent_distance_to_accommodation_m": 102.908,
+          "vent_mast_distance_target_m": 25.0,
+          "vent_mast_distance_met": true,
+          "vent_mast_lowerable": false,
+          "vent_mast_notes": [
+            "IGC 8.2.10.4: the working area is the top of the weather shield, or the tank top where the hull has no shield; the top of the tank domes is not counted as a working area.",
+            "IGC 8.2.11.1: the smaller distances it allows for ships under 90 m in length are not used."
+          ]
         },
         "checks": [
           {
@@ -12229,7 +12388,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.426629422270251,
-              "air_draft_m": 11.826629422270251,
+              "air_draft_m": 18.093296088936917,
               "air_draft_ok": null,
               "ok": true
             },
@@ -12545,7 +12704,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.434524079564362,
-              "air_draft_m": 11.834524079564364,
+              "air_draft_m": 18.101190746231026,
               "air_draft_ok": null,
               "ok": true
             },
@@ -12898,7 +13057,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.447991271811077,
-              "air_draft_m": 12.847991271811077,
+              "air_draft_m": 19.11465793847774,
               "air_draft_ok": null,
               "ok": true
             },
@@ -13251,7 +13410,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.455826586914696,
-              "air_draft_m": 12.855826586914697,
+              "air_draft_m": 19.12249325358136,
               "air_draft_ok": null,
               "ok": true
             }
@@ -14463,18 +14622,132 @@
             "vcg_m": 7.1033333333333335
           }
         ],
-        "gross_tonnage": {
-          "gross_tonnage": 12843.008855522432,
+        "crew": {
+          "inputs": {
+            "gross_tonnage": 12843.008855522432,
+            "gross_tonnage_source": "computed",
+            "navigation_hours_per_day": 24.0,
+            "unmanned_machinery_space": true,
+            "propulsion_kw": 1717.1299626370062,
+            "genset_kw": 2400.0,
+            "power_kw": 2400.0,
+            "power_basis": "the total genset rating (the higher band, spec 0011 D14)",
+            "length_m": 140.0,
+            "gas_cargo": true,
+            "service_area": "coastal-and-river"
+          },
+          "regime": "seagoing",
+          "rule_set": {
+            "id": "liberia-man-001",
+            "version": "1.0.0",
+            "hash": "dd6d5621017e1ec4dd93f82381b5543e090e46eea4668a6a38db1cf7f5b5c2c1",
+            "status": "draft",
+            "basis": "a draft Rule Set: no second reader has verified it"
+          },
+          "manning_scale": {
+            "column": "c6",
+            "exact": false,
+            "gt_band": 4,
+            "kw_band": 1,
+            "unattended_machinery": true,
+            "table_total": 13,
+            "hole": "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook",
+            "other_neighbour_column": "c9",
+            "other_neighbour_total": 12
+          },
+          "watches": {
+            "watchkeepers": 3,
+            "master_watch_free": true,
+            "deck_officers_needed": 4,
+            "basis": "more than 12 navigation hours in 24: three watchkeepers (STCW A-VIII/1 rest, an estimate); the master keeps no regular watch above 3,000 GT (MAN-001 3.2.1)"
+          },
+          "roles": [
+            {
+              "role": "master",
+              "count": 1
+            },
+            {
+              "role": "chief-mate",
+              "count": 1
+            },
+            {
+              "role": "oow",
+              "count": 2
+            },
+            {
+              "role": "ab-deck",
+              "count": 3
+            },
+            {
+              "role": "rating-nav",
+              "count": 2
+            },
+            {
+              "role": "chief-engineer",
+              "count": 1
+            },
+            {
+              "role": "second-engineer",
+              "count": 1
+            },
+            {
+              "role": "ab-engine",
+              "count": 1
+            },
+            {
+              "role": "rating-engine",
+              "count": 1
+            }
+          ],
+          "deck_officers": 4,
+          "engineers": 2,
+          "ratings": 7,
+          "cook": 1,
+          "cross_check": {
+            "rule_set": {
+              "id": "uk-msn-1868",
+              "version": "1.0.0",
+              "hash": "5bae3778bf5b365113976d597e23f36721c0493e764a754f3d3b46dee26b1efb",
+              "status": "draft",
+              "basis": "a draft Rule Set: no second reader has verified it"
+            },
+            "uk_officers": 7,
+            "uk_deck_officers": 4,
+            "uk_engineer_officers": 3,
+            "liberia_officers": 6,
+            "difference": 1,
+            "flagged": false,
+            "trading_area": "unlimited",
+            "basis": "officers only (MSN 1868 gives no ratings); trading area unlimited, the cautious reading, as the UK's near-coastal limit (150 nm from a UK haven) is a national meaning the Service Area cannot show; a difference over one person is flagged (spec 0011 4.1 step 10)"
+          },
           "source": "computed",
-          "computed_gt": 12843.008855522432,
-          "typed_gt": null,
-          "k1": 0.29284070671480394,
-          "enclosed_volume_m3": 43856.637964032,
-          "hull_volume_m3": 43606.14,
-          "stern_block_volume_m3": 250.49796403200003,
-          "deckhouse_volume_m3": 0.0,
-          "basis": "ITC 1969, Annex I, Regulation 3 (UN Treaty Series vol. 1291, No. I-21264, p. 15): GT = K1 V, K1 = 0.2 + 0.02 log10 V; V the total volume of all enclosed spaces (Regulation 2(4)), measured to the inner side of the shell (Regulation 6(1))",
-          "volume_basis": "V = the moulded hull volume to the deck at the centre line (sheer and camber included) plus the enclosed volume above the main deck that the stern block has today (the 40 ft units and the wheelhouse). The tiers of the deckhouse (spec 0011) join V when the Arrangement Style is deckhouse, and are nothing for the container block. No hatch coamings, no appendages, and no excluded spaces (Regulation 2(5)) are taken off"
+          "typed_crew": null,
+          "below_minimum": false,
+          "minimum": 14,
+          "owner_margin": [
+            {
+              "role": "cargo-engineer",
+              "count": 1
+            },
+            {
+              "role": "steward",
+              "count": 1
+            },
+            {
+              "role": "electro-technical-officer",
+              "count": 1
+            }
+          ],
+          "planning_low": 15,
+          "planning_high": 17,
+          "crew": 17,
+          "spare_berths": 2,
+          "berths": 19,
+          "notes": [
+            "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
+          ],
+          "status": "estimate",
+          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. No result reads the crew yet (the deckhouse rooms come with issue #780)."
         },
         "stern_block_mass": {
           "total_t": 513.7969035703804,
@@ -15043,7 +15316,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.426629422270251,
-              "air_draft_m": 11.826629422270251,
+              "air_draft_m": 18.093296088936917,
               "air_draft_ok": null,
               "ok": true
             },
@@ -15359,7 +15632,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.434524079564362,
-              "air_draft_m": 11.834524079564364,
+              "air_draft_m": 18.101190746231026,
               "air_draft_ok": null,
               "ok": true
             },
@@ -15712,7 +15985,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.447991271811077,
-              "air_draft_m": 12.847991271811077,
+              "air_draft_m": 19.11465793847774,
               "air_draft_ok": null,
               "ok": true
             },
@@ -16065,7 +16338,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.455826586914696,
-              "air_draft_m": 12.855826586914697,
+              "air_draft_m": 19.12249325358136,
               "air_draft_ok": null,
               "ok": true
             }
@@ -21825,13 +22098,26 @@
               "method_status": "unverified"
             }
           ]
+        },
+        "gross_tonnage": {
+          "gross_tonnage": 12843.008855522432,
+          "source": "computed",
+          "computed_gt": 12843.008855522432,
+          "typed_gt": null,
+          "k1": 0.29284070671480394,
+          "enclosed_volume_m3": 43856.637964032,
+          "hull_volume_m3": 43606.14,
+          "stern_block_volume_m3": 250.49796403200003,
+          "deckhouse_volume_m3": 0.0,
+          "basis": "ITC 1969, Annex I, Regulation 3 (UN Treaty Series vol. 1291, No. I-21264, p. 15): GT = K1 V, K1 = 0.2 + 0.02 log10 V; V the total volume of all enclosed spaces (Regulation 2(4)), measured to the inner side of the shell (Regulation 6(1))",
+          "volume_basis": "V = the moulded hull volume to the deck at the centre line (sheer and camber included) plus the enclosed volume above the main deck that the stern block has today (the 40 ft units and the wheelhouse). The tiers of the deckhouse (spec 0011) join V when the Arrangement Style is deckhouse, and are nothing for the container block. No hatch coamings, no appendages, and no excluded spaces (Regulation 2(5)) are taken off"
         }
       }
     },
     {
       "name": "C deep",
       "status": "results",
-      "results_hash": "c41cb9437a5f010d99398a9877f6e313f5bda9872efa032fa7e50973e2ca7e72",
+      "results_hash": "8673c19b596bae183b449b848eb4e3f9134db650012c55dc738cb570757a3f76",
       "hash_status": "matches",
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
@@ -22460,9 +22746,25 @@
           "draught_max_m": 14.139999999999999,
           "freeboard_m": 11.638623686250627,
           "light_draught_m": 1.9385656030051561,
-          "air_draft_loaded_m": 15.038623686250626,
-          "air_draft_light_m": 17.411434396994842,
-          "h_over_T": null
+          "air_draft_loaded_m": 21.305290352917297,
+          "air_draft_light_m": 23.67810106366151,
+          "h_over_T": null,
+          "vent_mast_x_m": 114.48,
+          "vent_exit_above_keel_m": 25.616666666666667,
+          "vent_exit_above_deck_m": 9.666666666666668,
+          "vent_exit_above_working_area_m": 10.513333333333334,
+          "vent_working_area_top_m": 15.103333333333333,
+          "vent_working_area": "weather_shield",
+          "vent_exit_governed_by": "deck",
+          "vent_distance_to_openings_m": 96.58800000000001,
+          "vent_distance_to_accommodation_m": 96.58800000000001,
+          "vent_mast_distance_target_m": 25.0,
+          "vent_mast_distance_met": true,
+          "vent_mast_lowerable": false,
+          "vent_mast_notes": [
+            "IGC 8.2.10.4: the working area is the top of the weather shield, or the tank top where the hull has no shield; the top of the tank domes is not counted as a working area.",
+            "IGC 8.2.11.1: the smaller distances it allows for ships under 90 m in length are not used."
+          ]
         },
         "checks": [
           {
@@ -23142,7 +23444,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 11.651827467131342,
-              "air_draft_m": 15.051827467131341,
+              "air_draft_m": 21.318494133798012,
               "air_draft_ok": null,
               "ok": true
             },
@@ -23458,7 +23760,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 11.660583151322474,
-              "air_draft_m": 15.060583151322472,
+              "air_draft_m": 21.32724981798914,
               "air_draft_ok": null,
               "ok": true
             },
@@ -23811,7 +24113,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 13.041532724901334,
-              "air_draft_m": 16.441532724901332,
+              "air_draft_m": 22.708199391568,
               "air_draft_ok": null,
               "ok": true
             },
@@ -24164,7 +24466,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 13.050188584351664,
-              "air_draft_m": 16.450188584351665,
+              "air_draft_m": 22.716855251018334,
               "air_draft_ok": null,
               "ok": true
             }
@@ -25398,18 +25700,132 @@
             "vcg_m": 7.6033333333333335
           }
         ],
-        "gross_tonnage": {
-          "gross_tonnage": 16467.910427052655,
+        "crew": {
+          "inputs": {
+            "gross_tonnage": 16467.910427052655,
+            "gross_tonnage_source": "computed",
+            "navigation_hours_per_day": 24.0,
+            "unmanned_machinery_space": true,
+            "propulsion_kw": 2021.8984403083487,
+            "genset_kw": 2400.0,
+            "power_kw": 2400.0,
+            "power_basis": "the total genset rating (the higher band, spec 0011 D14)",
+            "length_m": 140.0,
+            "gas_cargo": true,
+            "service_area": "coastal-and-river"
+          },
+          "regime": "seagoing",
+          "rule_set": {
+            "id": "liberia-man-001",
+            "version": "1.0.0",
+            "hash": "dd6d5621017e1ec4dd93f82381b5543e090e46eea4668a6a38db1cf7f5b5c2c1",
+            "status": "draft",
+            "basis": "a draft Rule Set: no second reader has verified it"
+          },
+          "manning_scale": {
+            "column": "c6",
+            "exact": false,
+            "gt_band": 4,
+            "kw_band": 1,
+            "unattended_machinery": true,
+            "table_total": 13,
+            "hole": "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook",
+            "other_neighbour_column": "c9",
+            "other_neighbour_total": 12
+          },
+          "watches": {
+            "watchkeepers": 3,
+            "master_watch_free": true,
+            "deck_officers_needed": 4,
+            "basis": "more than 12 navigation hours in 24: three watchkeepers (STCW A-VIII/1 rest, an estimate); the master keeps no regular watch above 3,000 GT (MAN-001 3.2.1)"
+          },
+          "roles": [
+            {
+              "role": "master",
+              "count": 1
+            },
+            {
+              "role": "chief-mate",
+              "count": 1
+            },
+            {
+              "role": "oow",
+              "count": 2
+            },
+            {
+              "role": "ab-deck",
+              "count": 3
+            },
+            {
+              "role": "rating-nav",
+              "count": 2
+            },
+            {
+              "role": "chief-engineer",
+              "count": 1
+            },
+            {
+              "role": "second-engineer",
+              "count": 1
+            },
+            {
+              "role": "ab-engine",
+              "count": 1
+            },
+            {
+              "role": "rating-engine",
+              "count": 1
+            }
+          ],
+          "deck_officers": 4,
+          "engineers": 2,
+          "ratings": 7,
+          "cook": 1,
+          "cross_check": {
+            "rule_set": {
+              "id": "uk-msn-1868",
+              "version": "1.0.0",
+              "hash": "5bae3778bf5b365113976d597e23f36721c0493e764a754f3d3b46dee26b1efb",
+              "status": "draft",
+              "basis": "a draft Rule Set: no second reader has verified it"
+            },
+            "uk_officers": 7,
+            "uk_deck_officers": 4,
+            "uk_engineer_officers": 3,
+            "liberia_officers": 6,
+            "difference": 1,
+            "flagged": false,
+            "trading_area": "unlimited",
+            "basis": "officers only (MSN 1868 gives no ratings); trading area unlimited, the cautious reading, as the UK's near-coastal limit (150 nm from a UK haven) is a national meaning the Service Area cannot show; a difference over one person is flagged (spec 0011 4.1 step 10)"
+          },
           "source": "computed",
-          "computed_gt": 16467.910427052655,
-          "typed_gt": null,
-          "k1": 0.29493815086046665,
-          "enclosed_volume_m3": 55835.13146403199,
-          "hull_volume_m3": 55584.63349999999,
-          "stern_block_volume_m3": 250.49796403200003,
-          "deckhouse_volume_m3": 0.0,
-          "basis": "ITC 1969, Annex I, Regulation 3 (UN Treaty Series vol. 1291, No. I-21264, p. 15): GT = K1 V, K1 = 0.2 + 0.02 log10 V; V the total volume of all enclosed spaces (Regulation 2(4)), measured to the inner side of the shell (Regulation 6(1))",
-          "volume_basis": "V = the moulded hull volume to the deck at the centre line (sheer and camber included) plus the enclosed volume above the main deck that the stern block has today (the 40 ft units and the wheelhouse). The tiers of the deckhouse (spec 0011) join V when the Arrangement Style is deckhouse, and are nothing for the container block. No hatch coamings, no appendages, and no excluded spaces (Regulation 2(5)) are taken off"
+          "typed_crew": null,
+          "below_minimum": false,
+          "minimum": 14,
+          "owner_margin": [
+            {
+              "role": "cargo-engineer",
+              "count": 1
+            },
+            {
+              "role": "steward",
+              "count": 1
+            },
+            {
+              "role": "electro-technical-officer",
+              "count": 1
+            }
+          ],
+          "planning_low": 15,
+          "planning_high": 17,
+          "crew": 17,
+          "spare_berths": 2,
+          "berths": 19,
+          "notes": [
+            "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
+          ],
+          "status": "estimate",
+          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. No result reads the crew yet (the deckhouse rooms come with issue #780)."
         },
         "stern_block_mass": {
           "total_t": 582.4165430995258,
@@ -25978,7 +26394,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 11.651827467131342,
-              "air_draft_m": 15.051827467131341,
+              "air_draft_m": 21.318494133798012,
               "air_draft_ok": null,
               "ok": true
             },
@@ -26294,7 +26710,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 11.660583151322474,
-              "air_draft_m": 15.060583151322472,
+              "air_draft_m": 21.32724981798914,
               "air_draft_ok": null,
               "ok": true
             },
@@ -26647,7 +27063,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 13.041532724901334,
-              "air_draft_m": 16.441532724901332,
+              "air_draft_m": 22.708199391568,
               "air_draft_ok": null,
               "ok": true
             },
@@ -27000,7 +27416,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 13.050188584351664,
-              "air_draft_m": 16.450188584351665,
+              "air_draft_m": 22.716855251018334,
               "air_draft_ok": null,
               "ok": true
             }
@@ -32760,6 +33176,19 @@
               "method_status": "unverified"
             }
           ]
+        },
+        "gross_tonnage": {
+          "gross_tonnage": 16467.910427052655,
+          "source": "computed",
+          "computed_gt": 16467.910427052655,
+          "typed_gt": null,
+          "k1": 0.29493815086046665,
+          "enclosed_volume_m3": 55835.13146403199,
+          "hull_volume_m3": 55584.63349999999,
+          "stern_block_volume_m3": 250.49796403200003,
+          "deckhouse_volume_m3": 0.0,
+          "basis": "ITC 1969, Annex I, Regulation 3 (UN Treaty Series vol. 1291, No. I-21264, p. 15): GT = K1 V, K1 = 0.2 + 0.02 log10 V; V the total volume of all enclosed spaces (Regulation 2(4)), measured to the inner side of the shell (Regulation 6(1))",
+          "volume_basis": "V = the moulded hull volume to the deck at the centre line (sheer and camber included) plus the enclosed volume above the main deck that the stern block has today (the 40 ft units and the wheelhouse). The tiers of the deckhouse (spec 0011) join V when the Arrangement Style is deckhouse, and are nothing for the container block. No hatch coamings, no appendages, and no excluded spaces (Regulation 2(5)) are taken off"
         }
       }
     }

@@ -187,12 +187,31 @@ struct Hull {
     /// The aft block of a self-propelled hull (`drawing.aft_arrangement`); `None` for a pushed
     /// barge. Its x is measured from the stern, as the hull's x is.
     aft: Option<Aft>,
+    /// The cargo vent mast of a gas hull (issue #822): where it stands and how high its exit is.
+    vent_mast: Option<VentDraw>,
     /// The names of the checks that fail (`results.checks` with `ok` false), as plain capitals.
     failed_checks: Vec<String>,
     /// The Notch of an ATB barge and its tug (`drawing.atb`, issue #363); `None` for any other
     /// Formation.
     atb: Option<AtbDraw>,
     containment: Containment,
+}
+
+/// The cargo vent mast as the views draw it, from `results.results` (issue #822).
+struct VentDraw {
+    /// From the stern.
+    x: f64,
+    exit_above_keel: f64,
+    exit_above_deck: f64,
+}
+
+fn read_vent_mast(results: &Value) -> Option<VentDraw> {
+    let n = |key: &str| num_at(results, &["results", key]);
+    Some(VentDraw {
+        x: n("vent_mast_x_m")?,
+        exit_above_keel: n("vent_exit_above_keel_m")?,
+        exit_above_deck: n("vent_exit_above_deck_m")?,
+    })
 }
 
 /// The Notch of an ATB barge and the tug that sits in it, as the views draw them.
@@ -684,6 +703,7 @@ fn read_hull(results: &Value) -> Result<Hull, String> {
             &["drawing", "separation", "aft_separation_m"],
         )),
         aft: read_aft(results),
+        vent_mast: read_vent_mast(results),
         failed_checks: failed_checks(results),
         atb: read_atb(results),
         containment,
@@ -1385,6 +1405,52 @@ fn zones(c: &mut Canvas, h: &Hull, view: View, labels: &mut Vec<(String, [f64; 2
     }
 }
 
+/// The outside diameter the cargo vent mast is drawn at (m): a nominal pipe, not a design figure.
+const VENT_MAST_DIAMETER_M: f64 = 0.5;
+
+/// The cargo vent mast (issue #822): a pipe from the deck up to its exit in the side elevation, with
+/// the height of the exit above the deck; a circle on the centre line in the plan.
+fn vent_mast(c: &mut Canvas, h: &Hull, view: View, labels: &mut Vec<(String, [f64; 2])>) {
+    let Some(v) = &h.vent_mast else {
+        return;
+    };
+    // At least 1.5 mm of paper wide, so it shows at any scale.
+    let r = (VENT_MAST_DIAMETER_M / 2.0).max(0.75 * c.k);
+    match view {
+        View::Elevation => {
+            c.polyline(
+                "OBJECT",
+                &[
+                    [v.x - r, h.depth],
+                    [v.x - r, v.exit_above_keel],
+                    [v.x + r, v.exit_above_keel],
+                    [v.x + r, h.depth],
+                ],
+                false,
+            );
+            labels.push((
+                label!(
+                    "draw-vent-mast-exit",
+                    "VENT EXIT {height} ABOVE DECK",
+                    height = metres(v.exit_above_deck)
+                ),
+                [v.x + r, v.exit_above_keel],
+            ));
+        }
+        _ => {
+            c.circle("OBJECT", [v.x, 0.0], r);
+            labels.push((
+                label!(
+                    "draw-vent-mast-plan",
+                    "VENT MAST, EXIT {height} ABOVE DECK",
+                    height = metres(v.exit_above_deck)
+                ),
+                [v.x + r, 0.0],
+            ));
+        }
+    }
+}
+
 /// The tunnel stern, hidden under the hull: in elevation the tunnel crown along the run, in plan the
 /// outline of each tunnel from the transom to the end of the run (issue #356).
 fn tunnel_stern(c: &mut Canvas, h: &Hull, view: View) {
@@ -2031,6 +2097,7 @@ fn side_elevation(h: &Hull, n: u32) -> Canvas {
     hold_ballast(&mut c, h, View::Elevation, &mut labels);
     liquid_labels(&mut c, h, View::Elevation, &mut labels);
     tunnel_stern(&mut c, h, View::Elevation);
+    vent_mast(&mut c, h, View::Elevation, &mut labels);
     // Issue #409: the top of the structure and the loaded air draft under it.
     if let Some(top) = h.air_top {
         c.line("ZONE", [0.0, top], [h.loa, top], None);
@@ -2258,6 +2325,7 @@ fn plan(h: &Hull, n: u32) -> Canvas {
     hold_ballast(&mut c, h, View::Plan, &mut labels);
     liquid_labels(&mut c, h, View::Plan, &mut labels);
     tunnel_stern(&mut c, h, View::Plan);
+    vent_mast(&mut c, h, View::Plan, &mut labels);
     let overshoot = 4.0 * c.k;
     c.centre_line([-overshoot, 0.0], [h.loa + overshoot, 0.0]);
     if !c.try_dim_horizontal([0.0, y0], [h.loa, y0], -DIM_OFFSET_MM) {

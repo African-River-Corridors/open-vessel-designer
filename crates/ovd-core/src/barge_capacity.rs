@@ -316,6 +316,21 @@ pub struct BargeCapacityInputs {
     /// Wall thickness of each tank's dome (mm); 0: the dome has no mass (issue #412).
     pub tank_dome_wall_thickness_mm: f64,
 
+    // --- Cargo vent mast (issue #822; gas only) ---
+    /// The Service Area is `river-only` (ADN 9.3.1.22.3 sets the mast); any other reads the IGC
+    /// clauses (8.2.10.3, 8.2.10.4, 8.2.11.1).
+    pub river_only: bool,
+    /// The height of the vent exit above the dome top on a river-only hull (m).
+    pub vent_stub_m: f64,
+    /// The mast can be lowered for transit: the river air drafts then leave it out (the sea air
+    /// draft never does).
+    pub vent_mast_lowerable: bool,
+    /// The distance from the cargo area of the nearest entrance or openable window, of the engine
+    /// room ventilation inlet, and of the funnel outlet (m): the openings the mast keeps away from.
+    pub entrance_distance_m: f64,
+    pub engine_room_vent_inlet_distance_m: f64,
+    pub funnel_outlet_distance_m: f64,
+
     // --- Liquid bulk branch ---
     /// The cargo tank layout of a liquid bulk Cargo (crude oil). `None` for gas and dry bulk; a liquid
     /// bulk Cargo with `None` is refused.
@@ -404,6 +419,12 @@ impl BargeCapacityInputs {
             // Defaults Profile, which `simulate` passes in.
             tank_forming_allowance_pct: 0.0,
             tank_dome_wall_thickness_mm: 0.0,
+            river_only: false,
+            vent_stub_m: crate::vent_mast::DEFAULT_VENT_STUB_M,
+            vent_mast_lowerable: false,
+            entrance_distance_m: 5.0,
+            engine_room_vent_inlet_distance_m: 5.0,
+            funnel_outlet_distance_m: 2.0,
             hold_type: "sloped_hopper".to_string(),
             lightship_k_t_per_m3: None,
             wing_void_width: 1.0,
@@ -538,6 +559,9 @@ pub struct BargeCapacityResult {
     pub air_draft_ballast_m: Option<f64>,
     pub air_draft_navigating_light_m: Option<f64>,
     pub navigating_top_above_keel_m: Option<f64>,
+    /// Issue #822: the cargo vent mast of a gas hull. Not in the capacity JSON: a run reads it,
+    /// typed.
+    pub vent_mast: Option<crate::vent_mast::VentMast>,
 
     /// Gas only: the converged arrangement, for gas stability.
     /// Issue #348: the stern block's mass items when they are in the lightship (empty otherwise).
@@ -691,6 +715,10 @@ struct Detail {
     tank_rules: Option<TankRuleValues>,
     liquid: Option<LiquidBulkResult>,
     dome_items: Vec<crate::weights::MassItem>,
+    /// Issue #822: the surfaces the vent mast reads, above the keel: the top of the tanks and of the
+    /// weather shield (none: no shield). The dome top is the cargo top.
+    tank_top_above_keel_m: Option<f64>,
+    weather_shield_top_above_keel_m: Option<f64>,
 }
 
 /// (cargo volume, lightship, top above keel, detail) of a volume branch. `n_total` is the exact
@@ -964,6 +992,11 @@ fn gas_volumetric(
             weights,
         }),
         dome_items: dome_mass_items,
+        tank_top_above_keel_m: Some(db + inp.tank_support_height + tanks.outer_diameter),
+        // The shield of the weights (`weights.rs`): its top stands the clearance above the tanks.
+        weather_shield_top_above_keel_m: (inp.weather_shield_thickness_mm > 0.0).then_some(
+            db + inp.tank_support_height + tanks.outer_diameter + inp.weather_shield_clearance_m,
+        ),
         ..Detail::default()
     };
     Ok(Volumetric {
@@ -1559,6 +1592,54 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     } else {
         (None, h_top)
     };
+    // Issue #822: the cargo vent mast of a gas hull. The air draft takes its exit: the river top
+    // (wheelhouse lowered) and the sea top (wheelhouse raised) each rise to it where it stands above
+    // them. A mast that lowers for transit leaves the river top as it was; the sea top keeps it.
+    let vent_mast = match (class, detail.tank_top_above_keel_m) {
+        (CargoClass::Gas, Some(tank_top)) => {
+            let sep_in = inp.separation.clone().unwrap_or_default();
+            let (end_space, from_cargo_area) = match &arr.separation {
+                Some(s) => (s.cofferdam_m, sep_in.setback_from_cargo_area),
+                None => (sep_in.cofferdam_m, sep_in.setback_from_cargo_area),
+            };
+            // The stern void is the stern block, the hold cofferdam (when one replaces the A-60
+            // bulkhead), then the aft end space inside the hold. The cargo area starts at the hold's
+            // aft bulkhead: the stern void less the end space (the cofferdam, if any, lies outside
+            // it). On the earlier reading of `opening_setback_basis` it starts at the tank end.
+            // The mast stands at the forward end of the cargo area (the bow rake begins there), as
+            // far from the openings aft as the hull allows.
+            let aft_x = if from_cargo_area {
+                arr.stern_void_m - end_space
+            } else {
+                arr.stern_void_m
+            };
+            Some(crate::vent_mast::place(
+                &crate::vent_mast::VentMastInputs {
+                    river_only: inp.river_only,
+                    beam_m: inp.beam,
+                    deck_m: inp.depth,
+                    tank_top_m: tank_top,
+                    shield_top_m: detail.weather_shield_top_above_keel_m,
+                    dome_top_m: cargo_top_above_keel,
+                    stub_m: inp.vent_stub_m,
+                    mast_x_m: inp.loa - arr.rake_m,
+                    cargo_area_aft_x_m: aft_x,
+                    entrance_m: inp.entrance_distance_m,
+                    engine_room_vent_inlet_m: inp.engine_room_vent_inlet_distance_m,
+                    funnel_outlet_m: inp.funnel_outlet_distance_m,
+                },
+                inp.vent_mast_lowerable,
+            ))
+        }
+        _ => None,
+    };
+    let vent_exit = vent_mast.as_ref().map(|v| v.exit_above_keel_m);
+    if let Some(exit) = vent_exit {
+        h_top_navigating = py_max(h_top_navigating, exit);
+        if !inp.vent_mast_lowerable {
+            h_top = py_max(h_top, exit);
+        }
+    }
     // Issue #348: the stern block's mass, in the lightship only when asked for.
     let mut machinery_summary = None;
     let mut gas_fuel_system = None;
@@ -1772,6 +1853,9 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
             ));
         }
         h_top_navigating = py_max(h_top, a.wheelhouse_top_raised_m);
+        if let Some(exit) = vent_exit {
+            h_top_navigating = py_max(h_top_navigating, exit);
+        }
         air_draft_navigating_light = h_top_navigating - light_draft;
         sightline = Some(s);
     }
@@ -1889,6 +1973,25 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     if let Some(s) = &sep {
         warnings.extend(s.warnings.iter().cloned());
     }
+    if let Some(v) = &vent_mast {
+        if v.lowerable {
+            warnings.push(Text::fixed(
+                "warn-vent-mast-lowerable",
+                "A lowerable cargo vent mast is not backed by a practice source: none was found for lowering cargo vent masts. Class or flag acceptance is needed. The river air drafts leave the mast out; the sea air draft keeps it.",
+            ));
+        }
+        if !v.distance_met {
+            warnings.push(text!(
+                "warn-vent-mast-distance",
+                "The cargo vent mast stands {achieved} m from the nearest openings and {target} m is asked; no position in the cargo area is further. Lengthen the cargo area or move the openings aft.",
+                achieved = Arg::fixed(
+                    if v.river_only { v.distance_to_accommodation_m } else { v.distance_to_openings_m },
+                    2
+                ),
+                target = Arg::fixed(v.target_distance_m, 2),
+            ));
+        }
+    }
     // Issue #722: the gas hull's lightship and cost now take the same steel (the panel model), so
     // the top-down and bottom-up disagreement warning of #404 no longer applies to it.
     let mut gm = None;
@@ -1971,6 +2074,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         air_draft_ballast_m: Some(air_draft_ballast),
         air_draft_navigating_light_m: Some(air_draft_navigating_light),
         navigating_top_above_keel_m: Some(h_top_navigating),
+        vent_mast,
         gas_basis: detail.gas_basis,
         liquid: detail.liquid,
         stern_block_items: stern_block_items.clone(),

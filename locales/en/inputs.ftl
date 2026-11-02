@@ -614,6 +614,10 @@ input-engine-room-vent-inlet-distance-m = Distance of the engine room ventilatio
 
 input-funnel-outlet-distance-m = Distance of the funnel outlet from the cargo area
 
+input-vent-stub-m = Height of the cargo vent exit above the dome top (river only)
+
+input-vent-mast-lowerable = Cargo vent mast can be lowered for transit
+
 input-service-area = Service Area
 choice-service-area-river-only = River only
 choice-service-area-coastal-and-river = Coastal and river

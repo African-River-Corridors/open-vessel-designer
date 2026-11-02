@@ -164,6 +164,14 @@ pub struct FitOptions {
     pub air_draft_limit_m: Option<f64>,
     /// The stern block's design values for every candidate (a self-propelled hull only).
     pub aft_design: AftDesign,
+    /// Issue #822: the cargo vent mast of every candidate (see the fields of the same names in
+    /// [`BargeCapacityInputs`]).
+    pub river_only: bool,
+    pub vent_stub_m: f64,
+    pub vent_mast_lowerable: bool,
+    pub entrance_distance_m: f64,
+    pub engine_room_vent_inlet_distance_m: f64,
+    pub funnel_outlet_distance_m: f64,
     /// The selected Rule Sets, in selection order (spec 0004, "How `fit` uses it", issue #277). A
     /// candidate passes when its Rule Trace has no `fail` row. Empty: the search judges by its own
     /// check list (see "THE CHECKS THE SEARCH USES"), as the Python API does.
@@ -282,6 +290,7 @@ fn candidate_measured(
         downflooding_deg: inp.downflooding_angle_deg,
         downflooding_openings: !inp.downflooding_openings.is_empty(),
         tank: r.tank_rules.clone(),
+        vent_mast: r.vent_mast.clone(),
         separation: r.separation.clone().map(|s| (s, plane)),
         checks: checks
             .iter()
@@ -397,6 +406,12 @@ impl Default for FitOptions {
             required_freeboard_m: DEFAULT_REQUIRED_FREEBOARD_M,
             air_draft_limit_m: None,
             aft_design: AftDesign::default(),
+            river_only: false,
+            vent_stub_m: crate::vent_mast::DEFAULT_VENT_STUB_M,
+            vent_mast_lowerable: false,
+            entrance_distance_m: 5.0,
+            engine_room_vent_inlet_distance_m: 5.0,
+            funnel_outlet_distance_m: 2.0,
             rules: Vec::new(),
             rule_inputs: RuleInputs::default(),
             is_code: None,
@@ -1168,6 +1183,12 @@ impl Search<'_> {
         inp.water_density = self.o.water_density_t_per_m3;
         inp.air_draft_limit_m = self.o.air_draft_limit_m;
         inp.aft_design = self.o.aft_design.clone();
+        inp.river_only = self.o.river_only;
+        inp.vent_stub_m = self.o.vent_stub_m;
+        inp.vent_mast_lowerable = self.o.vent_mast_lowerable;
+        inp.entrance_distance_m = self.o.entrance_distance_m;
+        inp.engine_room_vent_inlet_distance_m = self.o.engine_room_vent_inlet_distance_m;
+        inp.funnel_outlet_distance_m = self.o.funnel_outlet_distance_m;
         // The user's freeboard, so the full-volume `freeboard_ok` the result shows uses it (#418).
         inp.required_freeboard = self.o.required_freeboard_m;
         inp

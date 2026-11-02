@@ -523,6 +523,14 @@ pub const LEGACY_FIXED_INPUTS: &[LegacyFixed] = &[
         formations: None,
         value: ovd_core::gas_separation::OPENING_SETBACK_M,
     },
+    // Issue #822: a file saved before has no cargo vent mast; it reads the default stub, and a mast
+    // that does not lower.
+    LegacyFixed {
+        name: "vent_stub_m",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        formations: None,
+        value: ovd_core::vent_mast::DEFAULT_VENT_STUB_M,
+    },
     // Issue #446 (spec 0008): a file saved before has a square bilge, no sheer and no camber.
     LegacyFixed {
         name: "bilge_radius_m",
@@ -1075,6 +1083,12 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
     // Issue #417: no opening faces the cargo area.
     LegacyFixedJson {
         name: "deckhouse_front_opening",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        value: "false",
+    },
+    // Issue #822: the cargo vent mast stays up in transit.
+    LegacyFixedJson {
+        name: "vent_mast_lowerable",
         applies_to: AppliesTo::Only("type_c_tanks"),
         value: "false",
     },
@@ -3623,6 +3637,21 @@ pub const INPUTS: &[InputSpec] = &[
         "type_c_tanks",
         Group::Openings,
     ),
+    // Issue #822: the cargo PRV vent mast. The engine places it; these two are the designer's.
+    only(
+        "vent_stub_m",
+        "Height of the cargo vent exit above the dome top (river only)",
+        NUM,
+        "type_c_tanks",
+        Group::Openings,
+    ),
+    only(
+        "vent_mast_lowerable",
+        "Cargo vent mast can be lowered for transit",
+        InputKind::Bool,
+        "type_c_tanks",
+        Group::Openings,
+    ),
     // Issue #274 (spec 0004): where the vessel operates, and the Rule Sets it is checked against.
     // They come last: the default stack follows the Cargo Containment.
     spec(
@@ -4771,6 +4800,23 @@ fn read_option(
             condition = DEFAULT_CARRIAGE_CONDITION
         );
         report.migration_note(of_option(name, text), &["lpg_carriage_condition"]);
+    }
+    // Issue #822: the cargo vent mast is new, so a gas file's results move; these two inputs get
+    // their own note, not the "results are unchanged" one.
+    let vent: Vec<&str> = legacy_added
+        .iter()
+        .copied()
+        .filter(|n| matches!(*n, "vent_stub_m" | "vent_mast_lowerable"))
+        .collect();
+    if !vent.is_empty() {
+        legacy_added.retain(|n| !vent.contains(n));
+        let text = Text::fixed(
+            "msg-legacy-vent-mast",
+            "this file has no cargo vent mast inputs (`vent_stub_m`, `vent_mast_lowerable`); they \
+             now hold 1.0 m and false (marked default). The engine now models the cargo vent mast, \
+             so a gas hull's air drafts and results hash move",
+        );
+        report.migration_note(of_option(name, text), &vent);
     }
     // Issue #739: a file saved before format version 4 has no `structure` block. It reads the spec
     // defaults, with one note of its own.
