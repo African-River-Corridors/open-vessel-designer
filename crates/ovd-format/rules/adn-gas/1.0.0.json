@@ -1,0 +1,4328 @@
+{
+  "$schema": "../rule-set.schema.json",
+  "id": "adn-gas",
+  "family": "adn",
+  "title": "ADN 2025, 9.3.1: the construction rules for type G tank vessels (gas), every paragraph listed; the damage stability of 9.3.1.15 evaluated, the rest not evaluated with the reason",
+  "version": "1.0.0",
+  "edition": {
+    "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+    "edition": "ADN 2025 (ECE/TRANS/351, Vol. I and II), applicable from 1 January 2025; the printed page numbers below are the page footers of the text (PDF page = printed page + 24)",
+    "amendments": "none read: ADN 2025 is the text; the 2027 edition is not in force",
+    "in_force": "1 January 2025"
+  },
+  "sources": [
+    {
+      "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+      "edition": "2025, ECE/TRANS/351 (copied from an earlier session; the original URL is not verified)",
+      "url": "https://digitallibrary.un.org/record/4092124",
+      "access": "free",
+      "sha256": "3ee6a1eba8408bea00099fce1a352fc142cc5352774696f384ac5523ea5267b9"
+    }
+  ],
+  "status": "draft",
+  "applies_when": {
+    "cargo_class": [
+      "gas"
+    ],
+    "service_area": [
+      "river-only",
+      "coastal-and-river"
+    ]
+  },
+  "includes": [],
+  "known_conflicts": [],
+  "tables": [
+    {
+      "id": "adn-gas-permeability",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "locator": "9.3.1.15.1 (c)",
+        "page": "adn.pdf, printed p. 516 to 517"
+      },
+      "input": {
+        "name": "space kind"
+      },
+      "unit": "-",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "cargo_tank",
+              "slop"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "machinery"
+            ]
+          },
+          "shape": "const",
+          "a": 0.85
+        },
+        {
+          "when": {
+            "in": [
+              "double_bottom_ballast",
+              "wing_ballast",
+              "peak_ballast",
+              "consumables",
+              "cofferdam",
+              "pump_room",
+              "cargo_hold",
+              "void",
+              "peak_void"
+            ]
+          },
+          "shape": "const",
+          "a": 0.95
+        }
+      ]
+    },
+    {
+      "id": "adn-gas-permeability-by-filling",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "locator": "9.3.1.15.1 (c)",
+        "page": "adn.pdf, printed p. 516 to 517"
+      },
+      "input": {
+        "name": "space kind"
+      },
+      "unit": "1 = by filling, 0 = fixed",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "double_bottom_ballast",
+              "wing_ballast",
+              "peak_ballast",
+              "consumables"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "cargo_tank",
+              "slop",
+              "machinery",
+              "pump_room",
+              "void",
+              "cargo_hold",
+              "cofferdam",
+              "peak_void"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "adn/9.3.1.0.1.1/materials-of-construction",
+      "title": "Materials of construction: The vessel’s hull and cargo tanks shall be constructed of shipbuilding steel or other at least equivalent metal, special provisions of the additional …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.0.1.1",
+        "page": "adn.pdf, printed p. 505",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the materials of the hull, cargo tanks and fittings; OVD holds no material choice to check it against",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.0.1.2/materials-of-construction",
+      "title": "Materials of construction: Independent cargo tanks and membrane tanks may also be constructed of other materials, provided these have at least equivalent mechanical strength …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.0.1.2",
+        "page": "adn.pdf, printed p. 505",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the materials of the hull, cargo tanks and fittings; OVD holds no material choice to check it against",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.0.2/materials-of-construction",
+      "title": "Materials of construction: Every part of the vessel including any installation and equipment which may come into contact with the cargo shall consist of materials which can …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.0.2",
+        "page": "adn.pdf, printed p. 505",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the materials of the hull, cargo tanks and fittings; OVD holds no material choice to check it against",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.0.3/materials-of-construction",
+      "title": "Materials of construction: Except where explicitly permitted in 9.3.1.0.4 below or in the certificate of approval, the use of wood, aluminium alloys, plastic materials, rubber, …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.0.3",
+        "page": "adn.pdf, printed p. 505",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the materials of the hull, cargo tanks and fittings; OVD holds no material choice to check it against",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.0.4/materials-of-construction",
+      "title": "Materials of construction: The use of wood, aluminium alloys, plastic materials, rubber, glass or composite in the cargo area is permitted as shown in the following table",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.0.4",
+        "page": "adn.pdf, printed p. 505",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the materials of the hull, cargo tanks and fittings; OVD holds no material choice to check it against",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.0.5/materials-of-construction",
+      "title": "Materials of construction: The paint used in the cargo area shall not be liable to produce sparks in case of impact.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.0.5",
+        "page": "adn.pdf, printed p. 508",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the materials of the hull, cargo tanks and fittings; OVD holds no material choice to check it against",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.0.6/materials-of-construction",
+      "title": "Materials of construction: All permanently fitted materials in the accommodation or wheelhouse, with the exception of furniture, shall not readily ignite",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.0.6",
+        "page": "adn.pdf, printed p. 508",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the materials of the hull, cargo tanks and fittings; OVD holds no material choice to check it against",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.1/vessel-record",
+      "title": "Vessel record",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.1",
+        "page": "adn.pdf, printed p. 508",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A document duty on the owner (the vessel record); it is not a design quantity",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.8.1/classification",
+      "title": "Classification: The tank vessel shall be built under the survey of a recognised classification society and be classed in its highest class",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.8.1",
+        "page": "adn.pdf, printed p. 508",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A duty to build under the survey of a classification society; OVD does not model class approval",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.10.1/protection-against-the-penetration",
+      "title": "Protection against the penetration of dangerous gases and the spreading of dangerous liquids: The vessel shall be designed so as to prevent dangerous gases and liquids from penetrating into the accommodation, wheelhouse and service spaces",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.10.1",
+        "page": "adn.pdf, printed p. 508",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on doors, coamings, openings and bulwarks that keep gas and liquid out; the concept layout carries none of these details",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.10.2/protection-against-the-penetration",
+      "title": "Protection against the penetration of dangerous gases and the spreading of dangerous liquids: Liquid-tight protective coamings shall be fitted on deck at the height of the external bulkheads of the cargo tanks, at a maximum distance of 0.60 m …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.10.2",
+        "page": "adn.pdf, printed p. 509",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on doors, coamings, openings and bulwarks that keep gas and liquid out; the concept layout carries none of these details",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.10.3/protection-against-the-penetration",
+      "title": "Protection against the penetration of dangerous gases and the spreading of dangerous liquids: If the list of substances on the vessel according to 1.16.1.2.5 is going to include substances that require explosion protection in accordance with …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.10.3",
+        "page": "adn.pdf, printed p. 509",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on doors, coamings, openings and bulwarks that keep gas and liquid out; the concept layout carries none of these details",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.10.4/protection-against-the-penetration",
+      "title": "Protection against the penetration of dangerous gases and the spreading of dangerous liquids: On deck, the lower edges of door-openings in the sidewalls of superstructures and the sills of hatches and ventilation openings of premises located …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.10.4",
+        "page": "adn.pdf, printed p. 509",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on doors, coamings, openings and bulwarks that keep gas and liquid out; the concept layout carries none of these details",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.10.5/protection-against-the-penetration",
+      "title": "Protection against the penetration of dangerous gases and the spreading of dangerous liquids: The bulwarks, foot-rails, etc., shall be provided with sufficiently large openings which are located directly above the deck.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.10.5",
+        "page": "adn.pdf, printed p. 509",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on doors, coamings, openings and bulwarks that keep gas and liquid out; the concept layout carries none of these details",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.11.1/hold-spaces-and-cargo",
+      "title": "Hold spaces and cargo tanks: The maximum permissible capacity of a cargo tank shall be determined in accordance with the following table",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.11.1",
+        "page": "adn.pdf, printed p. 509",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the largest cargo tank capacity (a table on L x B x H), the length to diameter ratio of a pressure tank (at most 7) and its design temperature (+ 40 C); OVD does not check a gas hull against it",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.11.2/hold-spaces-and-cargo",
+      "title": "Hold spaces and cargo tanks: In the cargo area, the hull shall be designed as follows",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.11.2",
+        "page": "adn.pdf, printed p. 510",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the hold spaces, the cargo tanks and their fastenings and access; the concept layout carries no such detail, so OVD does not check this paragraph",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.11.3/hold-spaces-and-cargo",
+      "title": "Hold spaces and cargo tanks: The hold spaces shall be separated from the accommodation, engine rooms and service spaces outside the cargo area below deck by bulkheads of Class …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.11.3",
+        "page": "adn.pdf, printed p. 511",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the hold spaces, the cargo tanks and their fastenings and access; the concept layout carries no such detail, so OVD does not check this paragraph",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.11.4/hold-spaces-and-cargo",
+      "title": "Hold spaces and cargo tanks: The bulkheads bounding the hold spaces shall be watertight",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.11.4",
+        "page": "adn.pdf, printed p. 511",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the hold spaces, the cargo tanks and their fastenings and access; the concept layout carries no such detail, so OVD does not check this paragraph",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.11.5/hold-spaces-and-cargo",
+      "title": "Hold spaces and cargo tanks: Double-hull spaces and double bottoms in the cargo area shall be arranged for being filled with ballast water only",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.11.5",
+        "page": "adn.pdf, printed p. 511",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the hold spaces, the cargo tanks and their fastenings and access; the concept layout carries no such detail, so OVD does not check this paragraph",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.11.6/hold-spaces-and-cargo",
+      "title": "Hold spaces and cargo tanks: A space in the cargo area below deck may be arranged as a service space, provided that the bulkhead bounding the service space extends vertically to …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.11.6",
+        "page": "adn.pdf, printed p. 511",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the hold spaces, the cargo tanks and their fastenings and access; the concept layout carries no such detail, so OVD does not check this paragraph",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.11.7/hold-spaces-and-cargo",
+      "title": "Hold spaces and cargo tanks: Where service spaces are located in the cargo area under deck, they shall be arranged so as to be easily accessible and to permit persons wearing …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.11.7",
+        "page": "adn.pdf, printed p. 511",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the hold spaces, the cargo tanks and their fastenings and access; the concept layout carries no such detail, so OVD does not check this paragraph",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.11.8/hold-spaces-and-cargo",
+      "title": "Hold spaces and cargo tanks: Hold spaces and other accessible spaces within the cargo area shall be arranged so as to ensure that they may be completely inspected and cleaned in …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.11.8",
+        "page": "adn.pdf, printed p. 512",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the hold spaces, the cargo tanks and their fastenings and access; the concept layout carries no such detail, so OVD does not check this paragraph",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.11.9/hold-spaces-and-cargo",
+      "title": "Hold spaces and cargo tanks: In case the vessel has insulated cargo tanks, the hold spaces shall only contain dry air to protect the insulation of the cargo tanks against …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.11.9",
+        "page": "adn.pdf, printed p. 512",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the hold spaces, the cargo tanks and their fastenings and access; the concept layout carries no such detail, so OVD does not check this paragraph",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.12.1/ventilation",
+      "title": "Ventilation: Each hold space shall have two openings the dimensions and location of which shall be such as to permit effective ventilation of any part of the hold …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.12.1",
+        "page": "adn.pdf, printed p. 512",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on ventilation of hold spaces, service spaces and accommodation; OVD models no ventilation system",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.12.2/ventilation",
+      "title": "Ventilation: Double-hull spaces and double bottoms within the cargo area which are not arranged for being filled with ballast water and cofferdams between engine …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.12.2",
+        "page": "adn.pdf, printed p. 512",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on ventilation of hold spaces, service spaces and accommodation; OVD models no ventilation system",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.12.3/ventilation",
+      "title": "Ventilation: A service space located within the cargo area below deck shall be provided with a ventilation system",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.12.3",
+        "page": "adn.pdf, printed p. 512",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on ventilation of hold spaces, service spaces and accommodation; OVD models no ventilation system",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.12.4/ventilation",
+      "title": "Ventilation: shall be provided for the accommodation, wheelhouse and service spaces",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.12.4",
+        "page": "adn.pdf, printed p. 512",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on ventilation of hold spaces, service spaces and accommodation; OVD models no ventilation system",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.12.6/ventilation",
+      "title": "Ventilation: Notice boards shall be fitted at the ventilation inlets indicating the conditions under which they shall be closed",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.12.6",
+        "page": "adn.pdf, printed p. 514",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on ventilation of hold spaces, service spaces and accommodation; OVD models no ventilation system",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.13.1/stability-general",
+      "title": "Stability (general): Proof of sufficient stability shall be furnished including for stability in damaged condition.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.13.1",
+        "page": "adn.pdf, printed p. 514",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "States the duty to prove stability, damaged stability included; the proof is the rows of 9.3.1.14 and 9.3.1.15 that OVD evaluates, and this paragraph adds no number",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.13.2/stability-general",
+      "title": "Stability (general): The basic values for the stability calculation – the vessel’s lightweight and location of the centre of gravity – shall be determined either by means …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.13.2",
+        "page": "adn.pdf, printed p. 514",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on how lightweight and its centre of gravity are found: an inclining experiment, or a mass calculation checked by a lightweight test within 5 %. A concept design has neither",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.13.3/stability-general",
+      "title": "Stability (general): Proof of sufficient intact stability shall be furnished for all stages of loading and unloading and for the final loading condition for all the …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.13.3",
+        "page": "adn.pdf, printed p. 514",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "Intact stability at every stage of loading and unloading; OVD checks the IS Code loading conditions only, not every stage of loading and unloading",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.13.4/stability-general",
+      "title": "Stability (general): Floatability after damage shall be proved for the most unfavourable loading condition",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.13.4",
+        "page": "adn.pdf, printed p. 515",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "States the duty to prove floatability after damage on the most unfavourable loading condition, at the critical intermediate stages and at the final stage; the proof is the rows of 9.3.1.15.1 and 9.3.1.15.2, and this paragraph adds no number",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.14.1/stability-intact",
+      "title": "Stability (intact): The requirements for intact stability resulting from the damaged stability calculation shall be fully complied with.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.14.1",
+        "page": "adn.pdf, printed p. 515",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "Needs the intact stability requirements that come out of the damaged stability calculation, which OVD does not derive",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.14.2/stability-intact",
+      "title": "Stability (intact): For vessels with cargo tanks of more than 0.70 B in width, proof shall be furnished that the following stability requirements have been complied with",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.14.2",
+        "page": "adn.pdf, printed p. 515",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "Needs the cargo tank breadth over the beam, and the stability to the first non-weathertight opening, at every stage of loading and unloading, with all free surfaces",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.14.3/stability-intact",
+      "title": "Stability (intact): The most stringent requirement of 9.3.1.14.1 and 9.3.1.14.2 is applicable to the vessel.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.14.3",
+        "page": "adn.pdf, printed p. 516",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "Takes the stricter of 9.3.1.14.1 and 9.3.1.14.2, and neither is evaluated",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.15.1/damage-stability",
+      "title": "Survival after the assumed side and bottom damage of a gas hull (side: 0.10 L, at least 5.00 m, long and 0.79 m deep; bottom: 0.10 L, at least 5.00 m, long, 3.00 m wide and 0.59 m high), with the final-stage criteria of 9.3.1.15.2",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.15.1",
+        "page": "adn.pdf, printed p. 516",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_adn_gas"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.15.2/intermediate-stages",
+      "title": "Intermediate stages of flooding: a righting lever of at least 0.03 m over a positive range of 5 degrees (25, 50 and 75 % of the final flood)",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.15.2",
+        "page": "adn.pdf, printed p. 517",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_adn_gas_intermediate"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.15.3/stability-damaged-condition",
+      "title": "Stability (damaged condition): If openings through which undamaged compartments may additionally become flooded are capable of being closed watertight, the closing appliances shall …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.15.3",
+        "page": "adn.pdf, printed p. 517",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "Needs the openings of the hull through which undamaged compartments may flood, and their closing appliances; the openings are not an input yet (spec 0012 roadmap)",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.15.4/stability-damaged-condition",
+      "title": "Stability (damaged condition): When cross- or down-flooding openings are provided for reduction of unsymmetrical flooding, the time for equalisation shall not exceed 15 minutes, if …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.15.4",
+        "page": "adn.pdf, printed p. 517",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "Needs the cross-flooding and down-flooding openings and the time to equalise; OVD models no flow between compartments (spec 0012 D16)",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.16.1/engine-rooms",
+      "title": "Engine rooms: Internal combustion engines for the vessel’s propulsion as well as internal combustion engines for auxiliary machinery shall be located outside the …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.16.1",
+        "page": "adn.pdf, printed p. 518",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on engines and the engine room; OVD models no such detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.16.2/engine-rooms",
+      "title": "Engine rooms: The engine room shall be accessible from the deck; the entrances shall not face the cargo area",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.16.2",
+        "page": "adn.pdf, printed p. 518",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on engines and the engine room; OVD models no such detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.17.1/accommodation-and-service-spaces",
+      "title": "Accommodation and service spaces: Accommodation spaces and the wheelhouse shall be located outside the cargo area forward of the fore vertical plane or abaft the aft vertical plane …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.17.1",
+        "page": "adn.pdf, printed p. 518",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the position and arrangement of accommodation, entrances, openings and pump rooms; the concept layout carries none of this detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.17.2/accommodation-and-service-spaces",
+      "title": "Accommodation and service spaces: Entrances to spaces and openings of superstructures shall not face the cargo area",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.17.2",
+        "page": "adn.pdf, printed p. 518",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the position and arrangement of accommodation, entrances, openings and pump rooms; the concept layout carries none of this detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.17.3/accommodation-and-service-spaces",
+      "title": "Accommodation and service spaces: Entrances from the deck and openings of spaces facing the weather shall be capable of being closed",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.17.3",
+        "page": "adn.pdf, printed p. 518",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the position and arrangement of accommodation, entrances, openings and pump rooms; the concept layout carries none of this detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.17.4/accommodation-and-service-spaces",
+      "title": "Accommodation and service spaces: Entrances and windows of superstructures and accommodation spaces which can be opened as well as other openings of these spaces shall be located not …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.17.4",
+        "page": "adn.pdf, printed p. 518",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the position and arrangement of accommodation, entrances, openings and pump rooms; the concept layout carries none of this detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.17.5/accommodation-and-service-spaces",
+      "title": "Accommodation and service spaces: Driving shafts of the bilge or ballast pumps may penetrate through the bulkhead between the service space and the engine room, provided the …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.17.5",
+        "page": "adn.pdf, printed p. 518",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the position and arrangement of accommodation, entrances, openings and pump rooms; the concept layout carries none of this detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.17.6/accommodation-and-service-spaces",
+      "title": "Accommodation and service spaces: A service space located within the cargo area below deck shall not be used as a cargo pump room for the vessel’s own gas discharging system, e.g",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.17.6",
+        "page": "adn.pdf, printed p. 519",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the position and arrangement of accommodation, entrances, openings and pump rooms; the concept layout carries none of this detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.17.7/accommodation-and-service-spaces",
+      "title": "Accommodation and service spaces: The following instruction shall be displayed at the entrance of the cargo pump room",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.17.7",
+        "page": "adn.pdf, printed p. 520",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the position and arrangement of accommodation, entrances, openings and pump rooms; the concept layout carries none of this detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.18.1/inerting-facilities",
+      "title": "Inerting facilities: In cases in which inerting or blanketing of the cargo is prescribed, the vessel shall be equipped with an inerting system",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.18.1",
+        "page": "adn.pdf, printed p. 520",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on inerting or blanketing; OVD models no inerting system",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.18.2/inerting-facilities",
+      "title": "Inerting facilities: Vessels equipped with membrane tanks shall have an inerting system capable of inerting all insulation spaces of the tanks",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.18.2",
+        "page": "adn.pdf, printed p. 520",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on inerting or blanketing; OVD models no inerting system",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.1/safety-and-control-installations",
+      "title": "Safety and control installations: Cargo tanks shall be provided with the following equipment",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.1",
+        "page": "adn.pdf, printed p. 521",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.2/safety-and-control-installations",
+      "title": "Safety and control installations: When the degree of filling of the cargo tank in per cent is determined, an error of not more than 0.5% is permitted",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.2",
+        "page": "adn.pdf, printed p. 521",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.3/safety-and-control-installations",
+      "title": "Safety and control installations: The level gauge shall allow readings from the control position of the shut-off devices of the particular cargo tank",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.3",
+        "page": "adn.pdf, printed p. 521",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.4/safety-and-control-installations",
+      "title": "Safety and control installations: The level alarm device shall give a visual and audible warning on board when actuated",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.4",
+        "page": "adn.pdf, printed p. 521",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.5/safety-and-control-installations",
+      "title": "Safety and control installations: The high level sensor referred to in 9.3.1.21.1 (d) shall give a visual and audible alarm on board and at the same time actuate an electrical contact …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.5",
+        "page": "adn.pdf, printed p. 521",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.6/safety-and-control-installations",
+      "title": "Safety and control installations: The visual and audible signals given by the level alarm device shall be clearly distinguishable from those of the high level sensor",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.6",
+        "page": "adn.pdf, printed p. 522",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.7/safety-and-control-installations",
+      "title": "Safety and control installations: When the pressure or the temperature exceeds a set value, the instruments for measuring the pressure and the temperature of the cargo shall activate …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.7",
+        "page": "adn.pdf, printed p. 522",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.8/safety-and-control-installations",
+      "title": "Safety and control installations: Where the control elements of the shut-off devices of the cargo tanks are located in a control room, it shall be possible to stop the loading pumps …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.8",
+        "page": "adn.pdf, printed p. 522",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.9/safety-and-control-installations",
+      "title": "Safety and control installations: The vessel shall be so equipped that loading or unloading operations can be interrupted by means of switches, i.e",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.9",
+        "page": "adn.pdf, printed p. 522",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.10/safety-and-control-installations",
+      "title": "Safety and control installations: When refrigerated substances are carried the opening pressure of the safety system shall be determined by the design of the cargo tanks",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.10",
+        "page": "adn.pdf, printed p. 522",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.11/safety-and-control-installations",
+      "title": "Safety and control installations: On vessels certified to carry refrigerated liquefied gases the following protective measures shall be provided in the cargo area",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.11",
+        "page": "adn.pdf, printed p. 523",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.21.12/safety-and-control-installations",
+      "title": "Safety and control installations: Vessels carrying refrigerated liquefied gases shall have on board, for the purpose of preventing damage to the cargo tanks during loading and the …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.21.12",
+        "page": "adn.pdf, printed p. 523",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on level gauges, alarms and sensors of the cargo tanks; OVD models no such equipment",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.22.1/cargo-tank-openings",
+      "title": "Cargo tank openings: shall be located on deck in the cargo area",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.22.1",
+        "page": "adn.pdf, printed p. 523",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on cargo tank openings and their closures; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.22.2/cargo-tank-openings",
+      "title": "Cargo tank openings: shall be fitted with gastight closures which comply with the provisions of 9.3.1.23.1.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.22.2",
+        "page": "adn.pdf, printed p. 523",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on cargo tank openings and their closures; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.22.3/cargo-tank-openings",
+      "title": "Cargo tank openings: The exhaust outlets of the pressure relief valves shall be located not less than 2.00 m above the deck at a distance of not less than 6.00 m from the …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.22.3",
+        "page": "adn.pdf, printed p. 523",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on cargo tank openings and their closures; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.22.4/cargo-tank-openings",
+      "title": "Cargo tank openings: The closing devices normally used in loading and unloading operations shall not be capable of producing sparks when operated.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.22.4",
+        "page": "adn.pdf, printed p. 523",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on cargo tank openings and their closures; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.22.5/cargo-tank-openings",
+      "title": "Cargo tank openings: Each tank in which refrigerated substances are carried shall be equipped with a safety system to prevent unauthorized vacuum or overpressure.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.22.5",
+        "page": "adn.pdf, printed p. 523",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on cargo tank openings and their closures; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.23.1/pressure-test",
+      "title": "Pressure test: Cargo tanks and piping for loading and unloading shall comply with the provisions concerning pressure vessels which have been established by the …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.23.1",
+        "page": "adn.pdf, printed p. 524",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on pressure tests of the built tanks and piping; a concept design has none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.23.2/pressure-test",
+      "title": "Pressure test: Any cofferdams shall be subjected to initial tests before being put into service and thereafter at the prescribed intervals",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.23.2",
+        "page": "adn.pdf, printed p. 524",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on pressure tests of the built tanks and piping; a concept design has none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.23.3/pressure-test",
+      "title": "Pressure test: The maximum intervals for the periodic tests referred to in 9.3.1.23.2 above shall be 11 years.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.23.3",
+        "page": "adn.pdf, printed p. 524",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on pressure tests of the built tanks and piping; a concept design has none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.24.1/regulation-of-cargo-pressure",
+      "title": "Regulation of cargo pressure and temperature: Unless the entire cargo system is designed to resist the full effective vapour pressure of the cargo at the upper limits of the ambient design …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.24.1",
+        "page": "adn.pdf, printed p. 524",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the control of cargo pressure and temperature; the concept layout does not model the cargo system to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.24.2/regulation-of-cargo-pressure",
+      "title": "Regulation of cargo pressure and temperature: The systems prescribed in 9.3.1.24.1 shall be constructed, installed and tested to the satisfaction of the recognized classification society",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.24.2",
+        "page": "adn.pdf, printed p. 524",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the control of cargo pressure and temperature; the concept layout does not model the cargo system to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.24.3/regulation-of-cargo-pressure",
+      "title": "Regulation of cargo pressure and temperature: The cargo storage system shall be capable of resisting the full vapour pressure of the cargo at the upper limits of the ambient design temperatures, …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.24.3",
+        "page": "adn.pdf, printed p. 524",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the control of cargo pressure and temperature; the concept layout does not model the cargo system to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.25.1/pumps-and-piping",
+      "title": "Pumps and piping: Pumps, compressors and accessory loading and unloading piping shall be placed in the cargo area",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.25.1",
+        "page": "adn.pdf, printed p. 524",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the loading and unloading pumps and piping; OVD models no cargo piping",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.25.2/pumps-and-piping",
+      "title": "Pumps and piping: Piping for loading and unloading shall be independent of any other piping of the vessel",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.25.2",
+        "page": "adn.pdf, printed p. 525",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the loading and unloading pumps and piping; OVD models no cargo piping",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.25.4/pumps-and-piping",
+      "title": "Pumps and piping: Every component of the piping for loading and unloading shall be electrically connected to the hull.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.25.4",
+        "page": "adn.pdf, printed p. 525",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the loading and unloading pumps and piping; OVD models no cargo piping",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.25.5/pumps-and-piping",
+      "title": "Pumps and piping: The stop valves or other shut-off devices of the piping for loading and unloading shall indicate whether they are open or shut.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.25.5",
+        "page": "adn.pdf, printed p. 525",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the loading and unloading pumps and piping; OVD models no cargo piping",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.25.6/pumps-and-piping",
+      "title": "Pumps and piping: The piping for loading and unloading shall have, at the test pressure, the required elasticity, leakproofness and resistance to pressure.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.25.6",
+        "page": "adn.pdf, printed p. 526",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the loading and unloading pumps and piping; OVD models no cargo piping",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.25.7/pumps-and-piping",
+      "title": "Pumps and piping: The piping for unloading shall be fitted with pressure gauges at the inlet and outlet of the pump",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.25.7",
+        "page": "adn.pdf, printed p. 526",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the loading and unloading pumps and piping; OVD models no cargo piping",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.25.8/pumps-and-piping",
+      "title": "Pumps and piping: Use of the cargo piping for ballasting purposes shall not be possible.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.25.8",
+        "page": "adn.pdf, printed p. 526",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the loading and unloading pumps and piping; OVD models no cargo piping",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.25.10/pumps-and-piping",
+      "title": "Pumps and piping: Compressed air generated outside the cargo area can be used in the cargo area subject to the installation of a spring-loaded non-return valve to …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.25.10",
+        "page": "adn.pdf, printed p. 526",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the loading and unloading pumps and piping; OVD models no cargo piping",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.27.1/refrigeration-system",
+      "title": "Refrigeration system: The refrigeration system referred to in 9.3.1.24.1 (a) shall be composed of one or more units capable of keeping the pressure and temperature of the …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.27.1",
+        "page": "adn.pdf, printed p. 526",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the refrigeration system; OVD models no refrigeration plant to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.27.2/refrigeration-system",
+      "title": "Refrigeration system: The security devices and the connecting lines from the refrigeration system shall be connected to the cargo tanks above the liquid phase of the cargo …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.27.2",
+        "page": "adn.pdf, printed p. 526",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the refrigeration system; OVD models no refrigeration plant to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.27.3/refrigeration-system",
+      "title": "Refrigeration system: When several refrigerated cargoes with a potentially dangerous chemical reaction are carried simultaneously, particular care shall be given to the …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.27.3",
+        "page": "adn.pdf, printed p. 526",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the refrigeration system; OVD models no refrigeration plant to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.27.4/refrigeration-system",
+      "title": "Refrigeration system: When several refrigerated cargoes are not soluble in each other under conditions of carriage such that their vapour pressures are added together in …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.27.4",
+        "page": "adn.pdf, printed p. 526",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the refrigeration system; OVD models no refrigeration plant to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.27.5/refrigeration-system",
+      "title": "Refrigeration system: When the refrigeration systems require water for cooling, a sufficient quantity shall be supplied by a pump or pumps used exclusively for the purpose",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.27.5",
+        "page": "adn.pdf, printed p. 527",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the refrigeration system; OVD models no refrigeration plant to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.27.6/refrigeration-system",
+      "title": "Refrigeration system: The refrigeration system may take one of the following forms",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.27.6",
+        "page": "adn.pdf, printed p. 527",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the refrigeration system; OVD models no refrigeration plant to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.27.7/refrigeration-system",
+      "title": "Refrigeration system: All primary and secondary coolant fluids shall be compatible with each other and with the cargo with which they may come into contact",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.27.7",
+        "page": "adn.pdf, printed p. 527",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the refrigeration system; OVD models no refrigeration plant to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.27.8/refrigeration-system",
+      "title": "Refrigeration system: When the refrigeration system is installed in a separate service space, this service space shall meet the requirements of 9.3.1.17.6.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.27.8",
+        "page": "adn.pdf, printed p. 527",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the refrigeration system; OVD models no refrigeration plant to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.27.9/refrigeration-system",
+      "title": "Refrigeration system: For all cargo systems, the heat transmission coefficient as used for the determination of the holding time (7.2.4.16.16 and 7.2.4.16.17) shall be …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.27.9",
+        "page": "adn.pdf, printed p. 527",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the refrigeration system; OVD models no refrigeration plant to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.27.10/refrigeration-system",
+      "title": "Refrigeration system: A certificate from a recognized classification society stating that 9.3.1.24.1 to 9.3.1.24.3, 9.3.1.27.1 and 9.3.1.27.4 above have been complied with …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.27.10",
+        "page": "adn.pdf, printed p. 527",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the refrigeration system; OVD models no refrigeration plant to this paragraph's detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.28/water-spray-system",
+      "title": "Water-spray system: When water-spraying is required in column (9) of Table C of Chapter 3.2 a water-spray system shall be installed in the cargo area on deck for the …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.28",
+        "page": "adn.pdf, printed p. 527",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the water-spray system; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.31.1/engines",
+      "title": "Engines: Only internal combustion engines running on fuel with having a flashpoint above 55 ºC are allowed",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.31.1",
+        "page": "adn.pdf, printed p. 528",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the engines and their air supply; OVD models no such detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.31.2/engines",
+      "title": "Engines: Ventilation inlets of the engine room and, when the engines do not take in air directly from the engine room, the air intakes of the engines shall be …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.31.2",
+        "page": "adn.pdf, printed p. 528",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the engines and their air supply; OVD models no such detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.31.5/engines",
+      "title": "Engines: The ventilation in the closed engine room shall be designed so that, at an ambient temperature of 20 °C, the average temperature in the engine room …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.31.5",
+        "page": "adn.pdf, printed p. 528",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the engines and their air supply; OVD models no such detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.32.1/oil-fuel-tanks",
+      "title": "Oil fuel tanks: When the vessel is fitted with hold spaces and double bottoms, double bottoms within the cargo area may be arranged as oil fuel tanks, provided their …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.32.1",
+        "page": "adn.pdf, printed p. 528",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on oil fuel tanks and their air pipes; OVD models no such detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.32.2/oil-fuel-tanks",
+      "title": "Oil fuel tanks: The open ends of the air pipes of each oil fuel tanks shall extend to not less than 0.5 m above the open deck",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.32.2",
+        "page": "adn.pdf, printed p. 528",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on oil fuel tanks and their air pipes; OVD models no such detail",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.34.1/exhaust-pipes",
+      "title": "Exhaust pipes: Exhausts shall be evacuated from the vessel into the open air either upwards through an exhaust pipe or through the shell plating",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.34.1",
+        "page": "adn.pdf, printed p. 528",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on exhaust pipes; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.34.2/exhaust-pipes",
+      "title": "Exhaust pipes: of engines shall be provided with a device preventing the escape of sparks, e.g",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.34.2",
+        "page": "adn.pdf, printed p. 528",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on exhaust pipes; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.35.1/bilge-pumping-and-ballasting",
+      "title": "Bilge pumping and ballasting arrangements: Bilge and ballast pumps for spaces within the cargo area shall be installed within such area",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.35.1",
+        "page": "adn.pdf, printed p. 528",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on bilge pumping and ballasting arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.35.2/bilge-pumping-and-ballasting",
+      "title": "Bilge pumping and ballasting arrangements: Where the double bottom is used as a liquid oil fuel tank, it shall not be connected to the bilge piping system.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.35.2",
+        "page": "adn.pdf, printed p. 529",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on bilge pumping and ballasting arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.35.3/bilge-pumping-and-ballasting",
+      "title": "Bilge pumping and ballasting arrangements: Where the ballast pump is installed in the cargo area, the standpipe and its outboard connection for suction of ballast water shall be located within …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.35.3",
+        "page": "adn.pdf, printed p. 529",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on bilge pumping and ballasting arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.35.4/bilge-pumping-and-ballasting",
+      "title": "Bilge pumping and ballasting arrangements: It shall be possible for an under-deck pump room to be stripped in an emergency using a system located in the cargo area and independent of any other …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.35.4",
+        "page": "adn.pdf, printed p. 529",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on bilge pumping and ballasting arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.1/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: A fire-extinguishing system shall be installed on the vessel",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.1",
+        "page": "adn.pdf, printed p. 529",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.1/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Extinguishing agents For the protection of spaces in engine rooms, boiler rooms and pump rooms, only permanently fixed fire-extinguishing systems …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.1",
+        "page": "adn.pdf, printed p. 529",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.2/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Ventilation, air extraction (a) The combustion air required by the combustion engines which ensure propulsion should not come from spaces protected …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.2",
+        "page": "adn.pdf, printed p. 530",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.3/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Fire alarm system The space to be protected shall be monitored by an appropriate fire alarm system",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.3",
+        "page": "adn.pdf, printed p. 530",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.4/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Piping system (a) The extinguishing agent shall be routed to and distributed in the space to be protected by means of a permanent piping system",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.4",
+        "page": "adn.pdf, printed p. 530",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.5/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Triggering device (a) Automatically activated fire-extinguishing systems are not permitted",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.5",
+        "page": "adn.pdf, printed p. 531",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.6/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Alarm device (a) Permanently fixed fire-extinguishing systems shall be fitted with an audible and visual alarm device",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.6",
+        "page": "adn.pdf, printed p. 531",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.7/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Pressurised tanks, fittings and piping (a) Pressurised tanks, fittings and piping shall conform to the requirements of the competent authority or, if …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.7",
+        "page": "adn.pdf, printed p. 532",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.8/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Quantity of extinguishing agent If the quantity of extinguishing agent is intended for more than one space, the quantity of extinguishing agent …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.8",
+        "page": "adn.pdf, printed p. 532",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.9/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Installation, maintenance, monitoring and documents (a) The mounting or modification of the system shall only be performed by a company specialised …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.9",
+        "page": "adn.pdf, printed p. 532",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.10/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Fire-extinguishing system operating with CO2 In addition to the requirements contained in 9.3.1.40.2.1 to 9.3.1.40.2.9, fire-extinguishing systems …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.10",
+        "page": "adn.pdf, printed p. 533",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.11/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Fire-extinguishing system operating with HFC-227 ea (heptafluoropropane) In addition to the requirements of 9.3.1.40.2.1 to 9.3.1.40.2.9, …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.11",
+        "page": "adn.pdf, printed p. 534",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.12/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Fire-extinguishing system operating with IG-541 In addition to the requirements of 9.3.1.40.2.1 to 9.3.1.40.2.9, fire-extinguishing systems using …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.12",
+        "page": "adn.pdf, printed p. 534",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.13/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Fire-extinguishing system operating with FK-5-1-12 In addition to the requirements of 9.3.1.40.2.1 to 9.3.1.40.2.9, fire-extinguishing systems using …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.13",
+        "page": "adn.pdf, printed p. 535",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.15/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Fire-fighting systems using K2CO3 as the extinguishing agent In addition to the requirements laid down in 9.3.1.40.2.1 to 9.3.1.40.2.3, 9.3.1.40.2.5, …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.15",
+        "page": "adn.pdf, printed p. 535",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.2.16/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: Permanently installed fire-extinguishing systems for protecting objects (a) Permanently installed fire-extinguishing systems for protecting objects …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.2.16",
+        "page": "adn.pdf, printed p. 536",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.3/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: The two hand fire–extinguishers referred to in 8.1.4 shall be located in the cargo area.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.3",
+        "page": "adn.pdf, printed p. 537",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.40.4/fire-extinguishing-arrangements",
+      "title": "Fire-extinguishing arrangements: The fire-extinguishing agent and the quantity contained in the permanently fixed fire- extinguishing system shall be suitable and sufficient for …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.40.4",
+        "page": "adn.pdf, printed p. 537",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on fire-extinguishing arrangements; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.41.1/heating-cooking-and-lighting",
+      "title": "Heating, cooking and lighting: The outlets of funnels shall be located not less than 2.00 m from the cargo area",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.41.1",
+        "page": "adn.pdf, printed p. 537",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on funnels, heating, cooking and lighting; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.41.2/heating-cooking-and-lighting",
+      "title": "Heating, cooking and lighting: Heating, cooking and refrigerating appliances shall not be fuelled with liquid fuels, liquid gas or solid fuels",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.41.2",
+        "page": "adn.pdf, printed p. 537",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on funnels, heating, cooking and lighting; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.41.3/heating-cooking-and-lighting",
+      "title": "Heating, cooking and lighting: Only electrical lamps are permitted.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.41.3",
+        "page": "adn.pdf, printed p. 537",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on funnels, heating, cooking and lighting; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.51/surface-temperatures-of-installations",
+      "title": "Surface temperatures of installations and equipment: (a) Surface temperatures of electrical and non-electrical installations and equipment shall not exceed 200 °C. (b) Surface temperatures of the outer …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.51",
+        "page": "adn.pdf, printed p. 537",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on surface temperatures of installations and equipment; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.52.1/electrical-installations",
+      "title": "Electrical installations: and equipment shall be of at least the ‘limited explosion risk’ type",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.52.1",
+        "page": "adn.pdf, printed p. 538",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on electrical installations in the cargo area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.52.2/electrical-installations",
+      "title": "Electrical installations: In the cofferdams, double-hull spaces, double bottoms and hold spaces, only hermetically sealed echo sounding devices are allowed, the cables of …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.52.2",
+        "page": "adn.pdf, printed p. 538",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on electrical installations in the cargo area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.52.3/electrical-installations",
+      "title": "Electrical installations: The fixed electrical installations and equipment which do not meet the requirements set out in 9.3.1.51 (a), 9.3.1.51 (b) and 9.3.1.52.1 above and …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.52.3",
+        "page": "adn.pdf, printed p. 538",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on electrical installations in the cargo area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.52.4/electrical-installations",
+      "title": "Electrical installations: Every insulated distribution network shall be fitted with an automatic device with a visual and audible alarm for checking the insulation level.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.52.4",
+        "page": "adn.pdf, printed p. 538",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on electrical installations in the cargo area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.52.5/electrical-installations",
+      "title": "Electrical installations: Only distribution systems without return connection to the hull are permitted",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.52.5",
+        "page": "adn.pdf, printed p. 539",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on electrical installations in the cargo area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.52.6/electrical-installations",
+      "title": "Electrical installations: An electric generator which is permanently driven by an engine and which does not meet the requirements of 9.3.1.52.1 above, shall be fitted with a …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.52.6",
+        "page": "adn.pdf, printed p. 539",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on electrical installations in the cargo area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.52.7/electrical-installations",
+      "title": "Electrical installations: Failure of the power supply for the safety and control equipment shall be immediately indicated by visual and audible signals in the wheelhouse and …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.52.7",
+        "page": "adn.pdf, printed p. 539",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on electrical installations in the cargo area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.52.8/electrical-installations",
+      "title": "Electrical installations: Electrical switches, sockets and cables on deck shall be protected against mechanical damage.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.52.8",
+        "page": "adn.pdf, printed p. 539",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on electrical installations in the cargo area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.52.9/electrical-installations",
+      "title": "Electrical installations: Sockets for the connection of signal lights and gangway lighting shall be solidly fitted to the vessel close to the signal mast or the gangway",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.52.9",
+        "page": "adn.pdf, printed p. 539",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on electrical installations in the cargo area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.52.10/electrical-installations",
+      "title": "Electrical installations: Accumulators shall be located outside the cargo area.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.52.10",
+        "page": "adn.pdf, printed p. 539",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on electrical installations in the cargo area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.53.1/electrical-installations-and-equipment",
+      "title": "Electrical installations and equipment in the explosion danger area: On board vessels covered by the classification of zones as defined in 1.2.1, electrical and non- electrical installations and equipment used in …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.53.1",
+        "page": "adn.pdf, printed p. 539",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the type and location of electrical equipment and cables in the explosion danger area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.53.2/electrical-installations-and-equipment",
+      "title": "Electrical installations and equipment in the explosion danger area: Except in the case of optical fibres, electrical cables shall be armoured or placed in a metallic sheath or in protective tubes",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.53.2",
+        "page": "adn.pdf, printed p. 539",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the type and location of electrical equipment and cables in the explosion danger area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.53.3/electrical-installations-and-equipment",
+      "title": "Electrical installations and equipment in the explosion danger area: Movable electric cables are prohibited in the explosion danger area, except for electric cables for intrinsically safe electric circuits or for …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.53.3",
+        "page": "adn.pdf, printed p. 540",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the type and location of electrical equipment and cables in the explosion danger area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.53.4/electrical-installations-and-equipment",
+      "title": "Electrical installations and equipment in the explosion danger area: Electrical cables of intrinsically safe circuits shall be separated from other cables not intended for use in such circuits and shall be marked (they …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.53.4",
+        "page": "adn.pdf, printed p. 540",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the type and location of electrical equipment and cables in the explosion danger area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.53.5/electrical-installations-and-equipment",
+      "title": "Electrical installations and equipment in the explosion danger area: For movable electrical cables permitted under 9.3.1.53.3, only sheathed cables of type H07RN-F in accordance with standard IEC 60245-4:20115 or …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.53.5",
+        "page": "adn.pdf, printed p. 540",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on the type and location of electrical equipment and cables in the explosion danger area; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.54.1/earthing",
+      "title": "Earthing: The metal parts of electrical installations and equipment in the cargo area which are not live, as well as the protective metal tubes or metal …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.54.1",
+        "page": "adn.pdf, printed p. 540",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on earthing; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.54.2/earthing",
+      "title": "Earthing: The provisions of 9.3.1.54.1 also apply to installations with a voltage of less than 50 Volts.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.54.2",
+        "page": "adn.pdf, printed p. 540",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on earthing; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.54.3/earthing",
+      "title": "Earthing: Independent cargo tanks, metal intermediate bulk containers and tank-containers shall be earthed.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.54.3",
+        "page": "adn.pdf, printed p. 540",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on earthing; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.54.4/earthing",
+      "title": "Earthing: Receptacles for residual products shall be capable of being earthed.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.54.4",
+        "page": "adn.pdf, printed p. 540",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on earthing; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.60/special-equipment",
+      "title": "Special equipment: A shower and an eye and face bath shall be provided on the vessel at a location which is directly accessible from the cargo area",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.60",
+        "page": "adn.pdf, printed p. 540",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on special equipment (a shower and an eye bath); OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.71/admittance-on-board",
+      "title": "Admittance on board: The notice boards displaying the prohibition of admittance in accordance with 8.3.3 shall be clearly legible from either side of the vessel.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.71",
+        "page": "adn.pdf, printed p. 541",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on notice boards for admittance on board; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.74.1/prohibition-of-smoking-fire",
+      "title": "Prohibition of smoking, fire and naked light: The notice boards displaying the prohibition of smoking in accordance with 8.3.4 shall be clearly legible from either side of the vessel.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.74.1",
+        "page": "adn.pdf, printed p. 541",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on notice boards and ashtrays for the prohibition of smoking; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.74.2/prohibition-of-smoking-fire",
+      "title": "Prohibition of smoking, fire and naked light: Notice boards indicating the circumstances under which the prohibition is applicable shall be fitted near the entrances to the spaces where smoking …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.74.2",
+        "page": "adn.pdf, printed p. 541",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on notice boards and ashtrays for the prohibition of smoking; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.74.3/prohibition-of-smoking-fire",
+      "title": "Prohibition of smoking, fire and naked light: Ashtrays shall be provided close to each exit of the accommodation and the wheelhouse.",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.74.3",
+        "page": "adn.pdf, printed p. 541",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on notice boards and ashtrays for the prohibition of smoking; OVD models none",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "adn/9.3.1.92/emergency-exit",
+      "title": "Emergency exit: Spaces the entrances or exits of which are likely to become partly or completely immersed in the damaged condition shall have an emergency exit which …",
+      "origin": "regulation",
+      "source": {
+        "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",
+        "edition": "2025, ECE/TRANS/351",
+        "locator": "9.3.1.92",
+        "page": "adn.pdf, printed p. 541",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "adn_gas.requirement"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A rule on emergency exits; the concept layout carries no such detail",
+      "finding": null,
+      "since": "1.0.0"
+    }
+  ]
+}

@@ -5,6 +5,11 @@
 //! - MARPOL Annex I regulation 28 (issue #341): [`marpol_damage_cases`].
 //! - IGC Code 2.3 and 2.6 (spec 0012): [`igc_damage_cases`]. The extents ([`BoxExtents`]) and the standard of
 //!   damage ([`StandardOfDamage`]) come from the Rule Set's data; `ovd-format` reads them.
+//! - ADN 2025 9.3.1.15 (type G, spec 0012 D3), ES-TRIN 2025/1 28.03(4) (craft over 110 m, D2): the ADN generator
+//!   with their extents ([`AdnExtents::TYPE_G`], [`AdnExtents::ES_TRIN_28_03`]) and the one-compartment standard
+//!   of the main engine room ([`machinery_bulkheads_intact`]), as [`adn_damage_cases_with`].
+//! - NORMAM-202/DPC 5.23.8 (spec 0012 D2, issue #763): [`normam_damage_cases`], the MARPOL extents with the
+//!   standard of 5.23.8.
 //!
 //! The cargo zone is the Spaces. On a liquid bulk layout a ballast space (a double bottom or a wing tank) is
 //! cut at the transverse bulkheads of the cargo tanks beside it, so a damage floods one compartment of it, not
@@ -66,12 +71,30 @@ impl AdnExtents {
         bottom_width_m: 3.00,
         bottom_height_m: 0.49,
     };
+    /// Type G: 9.3.1.15.1 (a) and (b), the numbers of type C. A side damage reaches 0.79 m "or, when applicable,
+    /// the distance allowed by section 9.3.4, reduced by 0.01 m"; 9.3.4 is not modelled.
+    pub const TYPE_G: AdnExtents = AdnExtents {
+        side_inboard_m: 0.79,
+        bottom_width_m: 3.00,
+        bottom_height_m: 0.59,
+    };
+    /// ES-TRIN 2025/1 28.03(4)(a) and (b): side 0.59 m inboard, bottom 3.00 m wide and 0.39 m high.
+    pub const ES_TRIN_28_03: AdnExtents = AdnExtents {
+        side_inboard_m: 0.59,
+        bottom_width_m: 3.00,
+        bottom_height_m: 0.39,
+    };
 }
 
 /// The longitudinal extent of a damage: 0.10 L, but not less than 5.00 m.
 pub fn longitudinal_extent_m(loa_m: f64) -> f64 {
     let tenth = 0.10 * loa_m;
     if tenth > 5.0 { tenth } else { 5.0 }
+}
+
+/// The longitudinal extent of an ES-TRIN 28.03(4) damage: "at least 0.10 L", with no minimum in metres.
+pub fn es_trin_longitudinal_extent_m(loa_m: f64) -> f64 {
+    0.10 * loa_m
 }
 
 /// One damage: what it floods.
@@ -164,23 +187,41 @@ impl StandardOfDamage {
     /// less, a value the Rule Set gives), not involving either bulkhead of a machinery space aft. A machinery
     /// Space is aft when its middle lies in the aft half of the hull.
     pub fn igc_2g(spaces: &[Space], loa_m: f64, machinery_aft_intact: bool) -> StandardOfDamage {
-        let mut intact: Vec<f64> = Vec::new();
-        if machinery_aft_intact {
-            for s in spaces
-                .iter()
-                .filter(|s| s.kind == SpaceKind::Machinery && s.x_aft + s.x_fwd < loa_m)
-            {
-                intact.push(s.x_aft);
-                intact.push(s.x_fwd);
-            }
-        }
-        intact.sort_by(f64::total_cmp);
-        intact.dedup_by(|a, b| (*a - *b).abs() < 1e-9);
         StandardOfDamage {
             placement: Placement::Anywhere,
-            intact_bulkheads_m: intact,
+            intact_bulkheads_m: if machinery_aft_intact {
+                machinery_bulkheads_intact(spaces, loa_m)
+            } else {
+                Vec::new()
+            },
         }
     }
+
+    /// NORMAM-202/DPC 5.23.8 (c) and (d) (issue #763): anywhere in the length, every bulkhead within the damage
+    /// damaged, except the end bulkheads of the main engine room, which count as one compartment.
+    pub fn normam(spaces: &[Space], loa_m: f64) -> StandardOfDamage {
+        StandardOfDamage {
+            placement: Placement::Anywhere,
+            intact_bulkheads_m: machinery_bulkheads_intact(spaces, loa_m),
+        }
+    }
+}
+
+/// The end bulkheads (x, m) of the main engine room, which a damage may not involve: the one-compartment
+/// standard of ADN 2025 9.3.1.15.1 (c), ES-TRIN 2025/1 28.03(4)(c) and NORMAM-202/DPC 5.23.8 (d), and the
+/// machinery space aft of IGC 2.6.1.3. A machinery Space is aft when its middle lies in the aft half of the hull.
+pub fn machinery_bulkheads_intact(spaces: &[Space], loa_m: f64) -> Vec<f64> {
+    let mut intact: Vec<f64> = Vec::new();
+    for s in spaces
+        .iter()
+        .filter(|s| s.kind == SpaceKind::Machinery && s.x_aft + s.x_fwd < loa_m)
+    {
+        intact.push(s.x_aft);
+        intact.push(s.x_fwd);
+    }
+    intact.sort_by(f64::total_cmp);
+    intact.dedup_by(|a, b| (*a - *b).abs() < 1e-9);
+    intact
 }
 
 /// A compartment of the cargo zone, with the kind of the Space it comes from.
@@ -201,6 +242,9 @@ pub enum Permeability {
     /// (IGC 2.5.2 note 2, "consistent with the amount of liquid carried"; ADN and ES-TRIN "0 or 95 %" as the
     /// space is full or empty).
     ByFilling(f64),
+    /// A space whose water is the greater of `net` times its net volume (its Intact Inclusions taken out) and
+    /// `floor` times its gross volume (ES-TRIN 2025/1 28.03(4)(d): a cargo hold at 95 %, not less than 70 %).
+    WithGrossFloor { net: f64, floor: f64 },
 }
 
 /// A Permeability Table (spec 0012 D9): the permeability of a damaged Space by its `SpaceKind`, from a Rule
@@ -220,6 +264,18 @@ impl PermeabilityTable {
             .map(|(_, p)| match *p {
                 Permeability::Fixed(v) => v,
                 Permeability::ByFilling(v) => v * (1.0 - filling.clamp(0.0, 1.0)),
+                Permeability::WithGrossFloor { net, .. } => net,
+            })
+    }
+
+    /// The floor on the water as a fraction of the gross volume of a Space of `kind`, where the table gives one.
+    pub fn gross_floor(&self, kind: SpaceKind) -> Option<f64> {
+        self.rows
+            .iter()
+            .find(|(k, _)| *k == kind)
+            .and_then(|(_, p)| match *p {
+                Permeability::WithGrossFloor { floor, .. } => Some(floor),
+                _ => None,
             })
     }
 }
@@ -313,8 +369,47 @@ pub fn adn_damage_cases(
     extents: &AdnExtents,
     permeability: &dyn Fn(SpaceKind) -> f64,
 ) -> Vec<DamageCase> {
-    let parts = compartments(spaces, true);
-    let len = longitudinal_extent_m(loa_m).min(loa_m);
+    adn_damage_cases_with(
+        spaces,
+        loa_m,
+        beam_m,
+        extents,
+        &CaseOptions {
+            long_m: longitudinal_extent_m(loa_m),
+            cut: true,
+            intact_bulkheads_m: &[],
+        },
+        permeability,
+    )
+}
+
+/// How the ADN-style generator places and cuts the damage (issue #763).
+#[derive(Debug, Clone, Copy)]
+pub struct CaseOptions<'a> {
+    /// The longitudinal extent of the damage, m: ADN 0.10 L but at least 5.00 m ([`longitudinal_extent_m`]),
+    /// ES-TRIN 0.10 L ([`es_trin_longitudinal_extent_m`]).
+    pub long_m: f64,
+    /// Cut the ballast spaces at the cargo tank bulkheads (a liquid bulk layout); a gas hull is cut already.
+    pub cut: bool,
+    /// Transverse bulkheads (x, m) a damage may not involve: the end bulkheads of the main engine room.
+    pub intact_bulkheads_m: &'a [f64],
+}
+
+/// [`adn_damage_cases`] with the longitudinal extent, the cut and the intact bulkheads given: the generator of
+/// ADN 2025 9.3.1.15.1 (gas, type G) and ES-TRIN 2025/1 28.03(4), which differ from the liquid ADN paragraphs in
+/// the extents, the longitudinal minimum and the one-compartment engine room. No window of damage spans an
+/// intact bulkhead, as in [`box_damage_cases`].
+pub fn adn_damage_cases_with(
+    spaces: &[Space],
+    loa_m: f64,
+    beam_m: f64,
+    extents: &AdnExtents,
+    options: &CaseOptions<'_>,
+    permeability: &dyn Fn(SpaceKind) -> f64,
+) -> Vec<DamageCase> {
+    let parts = compartments(spaces, options.cut);
+    let len = options.long_m.min(loa_m);
+    let intact = options.intact_bulkheads_m;
     let mut edges: Vec<f64> = parts.iter().flat_map(|c| [c.x.0, c.x.1]).collect();
     edges.push(0.0);
     edges.push(loa_m);
@@ -332,6 +427,12 @@ pub fn adn_damage_cases(
     let mut cases: Vec<DamageCase> = Vec::new();
     for &s0 in &starts {
         let window = (s0, s0 + len);
+        if intact
+            .iter()
+            .any(|&k| k > window.0 + 1e-9 && k < window.1 - 1e-9)
+        {
+            continue;
+        }
         for side in [true, false] {
             let hit: Vec<&Compartment> = parts
                 .iter()
@@ -393,6 +494,54 @@ pub fn marpol_damage_cases(spaces: &[Space], loa_m: f64, beam_m: f64) -> Vec<Dam
         true,
         &|_| 0.95,
     )
+}
+
+/// The damage cases of NORMAM-202/DPC 5.23.8 on a liquid bulk hull (spec 0012 D2, issue #763): the box
+/// generator with the extents of 5.23.8 (a) and (b), which are those of MARPOL Annex I regulation 28.2
+/// ([`BoxExtents::marpol`]), under the standard of 5.23.8 (c) and (d) ([`StandardOfDamage::normam`]): anywhere in
+/// the length, the end bulkheads of the main engine room intact. The permeability is the caller's, from the Rule
+/// Set's table (5.23.8 (f)): a full cargo tank is 0 % and floods nothing, so it is left out of the case. The
+/// lesser damage of 5.23.8 (g) is not generated.
+pub fn normam_damage_cases(
+    spaces: &[Space],
+    loa_m: f64,
+    beam_m: f64,
+    permeability: &dyn Fn(SpaceKind) -> f64,
+) -> Vec<DamageCase> {
+    box_damage_cases(
+        spaces,
+        loa_m,
+        beam_m,
+        &BoxExtents::marpol(loa_m, beam_m),
+        &StandardOfDamage::normam(spaces, loa_m),
+        true,
+        permeability,
+    )
+    .into_iter()
+    .filter_map(|mut c| {
+        c.flooded.retain(|f| f.permeability > 0.0);
+        (!c.flooded.is_empty()).then_some(c)
+    })
+    .fold(Vec::<DamageCase>::new(), |mut out, c| {
+        // Leaving the full tanks out can make two cases alike: keep the first.
+        let key = |c: &DamageCase| {
+            let mut names: Vec<&str> = c.flooded.iter().map(|f| f.name.as_str()).collect();
+            names.sort_unstable();
+            (c.name.starts_with("side"), names.join("\u{1}"))
+        };
+        let k = key(&c);
+        if !out.iter().any(|o| key(o) == k) {
+            out.push(c);
+        }
+        out
+    })
+}
+
+/// NORMAM-202/DPC 5.23.9 (c): a final heel of at most 25 degrees, "podendo ser aceita uma inclinação de até 30°,
+/// caso não ocorra imersão do convés" (up to 30 degrees accepted when the deck is not immersed). `ok_to_30` is the
+/// verdict with the 30 degree limit ([`crate::damage_stability::DamageCriteria::NORMAM_5_23_9`]).
+pub fn normam_final_heel_ok(ok_to_30: bool, heel_deg: f64, deck_immersed: bool) -> bool {
+    ok_to_30 && (heel_deg.abs() <= 25.0 || !deck_immersed)
 }
 
 /// The damage cases of IGC 2.3 under the standard of damage of 2.6.1 (spec 0012): the box generator on the
@@ -609,6 +758,7 @@ pub fn gas_flooding(
                 .filter(|t| t.x_aft >= space.x_aft - 1e-9 && t.x_fwd <= space.x_fwd + 1e-9)
                 .map(|t| crate::damage_stability::IntactInclusion::of_space(t))
                 .collect();
+            v.gross_floor = table.gross_floor(space.kind);
         }
         flooded.push(v);
     }

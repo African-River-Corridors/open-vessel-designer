@@ -345,7 +345,7 @@ pub use arc_rules::load::canonical_json;
 /// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
 /// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
 /// moved no saved hash.
-pub const UNHASHED_KEYS: [&str; 14] = [
+pub const UNHASHED_KEYS: [&str; 15] = [
     "drawing",
     "stability_marks",
     "cost_masses",
@@ -355,6 +355,7 @@ pub const UNHASHED_KEYS: [&str; 14] = [
     "calibration",
     "damage",
     "marpol_damage",
+    "damage_by_rule",
     "oil_outflow",
     "fit_tried",
     "steel_list",

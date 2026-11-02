@@ -5,8 +5,10 @@
 
 use ovd_core::compartments::{Side, Space, SpaceKind, SpaceShape};
 use ovd_core::damage_cases::{
-    BoxExtents, DamageCase, Permeability, PermeabilityTable, Placement, StandardOfDamage,
-    box_damage_cases, deck_edge_immersed, gas_flooding, igc_damage_cases, marpol_damage_cases,
+    AdnExtents, BoxExtents, CaseOptions, DamageCase, Permeability, PermeabilityTable, Placement,
+    StandardOfDamage, adn_damage_cases, adn_damage_cases_with, box_damage_cases,
+    deck_edge_immersed, es_trin_longitudinal_extent_m, gas_flooding, igc_damage_cases,
+    longitudinal_extent_m, machinery_bulkheads_intact, marpol_damage_cases, normam_damage_cases,
     without_breached_cargo,
 };
 use ovd_core::damage_stability::FloodedVolume;
@@ -433,4 +435,169 @@ fn a_breached_prism_cargo_tank_loses_its_share_of_the_oil() {
         gd.tcg_m
     );
     assert!((gd.kg_m - (1500.0 * 2.0 - 150.0 * 2.5) / 1350.0).abs() < 1e-9);
+}
+
+/// Issue #763: the ADN generator with no intact bulkhead and the ADN longitudinal extent is the one it was: the
+/// liquid ADN paths do not move.
+#[test]
+fn the_adn_generator_with_the_adn_options_is_the_adn_generator() {
+    let spaces = gas_layout();
+    let p = |k: SpaceKind| if k == SpaceKind::CargoTank { 0.0 } else { 0.95 };
+    let a = adn_damage_cases(&spaces, 60.0, 12.0, &AdnExtents::TYPE_C, &p);
+    let b = adn_damage_cases_with(
+        &spaces,
+        60.0,
+        12.0,
+        &AdnExtents::TYPE_C,
+        &CaseOptions {
+            long_m: longitudinal_extent_m(60.0),
+            cut: true,
+            intact_bulkheads_m: &[],
+        },
+        &p,
+    );
+    assert_eq!(a, b);
+}
+
+/// ADN 9.3.1.15.1 (a), (b): the extents of type G are those of type C. ES-TRIN 28.03(4)(a), (b): 0.59 m inboard,
+/// 0.39 m high, and a longitudinal extent of 0.10 L with no minimum in metres (ADN: not less than 5.00 m).
+#[test]
+fn the_extents_of_type_g_and_es_trin_are_as_the_texts_give_them() {
+    assert_eq!(AdnExtents::TYPE_G, AdnExtents::TYPE_C);
+    assert_eq!(AdnExtents::ES_TRIN_28_03.side_inboard_m, 0.59);
+    assert_eq!(AdnExtents::ES_TRIN_28_03.bottom_width_m, 3.00);
+    assert_eq!(AdnExtents::ES_TRIN_28_03.bottom_height_m, 0.39);
+    assert_eq!(es_trin_longitudinal_extent_m(60.0), 6.0);
+    assert_eq!(es_trin_longitudinal_extent_m(30.0), 3.0);
+    assert_eq!(longitudinal_extent_m(30.0), 5.0);
+}
+
+/// The one-compartment standard of the main engine room (ADN 9.3.1.15.1 (c), ES-TRIN 28.03(4)(c)): no damage
+/// spans an end bulkhead of the machinery space, so none floods the machinery space and the hold beside it
+/// together.
+#[test]
+fn no_damage_spans_an_end_bulkhead_of_the_main_engine_room() {
+    let spaces = gas_layout();
+    assert_eq!(machinery_bulkheads_intact(&spaces, 60.0), vec![0.0, 8.0]);
+    let p = |k: SpaceKind| if k == SpaceKind::CargoTank { 0.0 } else { 0.95 };
+    let intact = machinery_bulkheads_intact(&spaces, 60.0);
+    let cases = adn_damage_cases_with(
+        &spaces,
+        60.0,
+        12.0,
+        &AdnExtents::TYPE_G,
+        &CaseOptions {
+            long_m: longitudinal_extent_m(60.0),
+            cut: false,
+            intact_bulkheads_m: &intact,
+        },
+        &p,
+    );
+    assert!(!cases.is_empty());
+    for c in &cases {
+        let n: Vec<&str> = c.flooded.iter().map(|f| f.name.as_str()).collect();
+        assert!(
+            !(n.contains(&"M1C") && n.iter().any(|x| *x != "M1C")),
+            "{}: {n:?}",
+            c.name
+        );
+    }
+    // the same layout with no intact bulkhead does have a damage across the bulkhead
+    let free = adn_damage_cases_with(
+        &spaces,
+        60.0,
+        12.0,
+        &AdnExtents::TYPE_G,
+        &CaseOptions {
+            long_m: longitudinal_extent_m(60.0),
+            cut: false,
+            intact_bulkheads_m: &[],
+        },
+        &p,
+    );
+    assert!(free.len() > cases.len());
+}
+
+/// NORMAM 5.23.8: the extents are those of MARPOL I 28.2 (the same numbers), the damage may lie anywhere in the
+/// length (no 28.1.3 step at 150 m), the end bulkheads of the main engine room are intact, and a full cargo
+/// tank (0 %) floods nothing and is left out.
+#[test]
+fn normam_is_the_marpol_extents_anywhere_with_the_engine_room_intact_and_full_tanks_left_out() {
+    let spaces = gas_layout();
+    let p = |k: SpaceKind| match k {
+        SpaceKind::CargoTank => 0.0,
+        SpaceKind::Machinery => 0.85,
+        _ => 0.95,
+    };
+    let cases = normam_damage_cases(&spaces, 60.0, 12.0, &p);
+    assert!(!cases.is_empty());
+    for c in &cases {
+        assert!(c.flooded.iter().all(|f| f.permeability > 0.0), "{}", c.name);
+        assert!(
+            c.flooded.iter().all(|f| !f.name.starts_with("CT")),
+            "{}",
+            c.name
+        );
+    }
+    // two cases of one kind never flood the same compartments
+    let mut keys: Vec<(bool, Vec<String>)> = cases
+        .iter()
+        .map(|c| {
+            let mut n: Vec<String> = c.flooded.iter().map(|f| f.name.clone()).collect();
+            n.sort();
+            (c.name.starts_with("side"), n)
+        })
+        .collect();
+    let all = keys.len();
+    keys.sort();
+    keys.dedup();
+    assert_eq!(keys.len(), all);
+    // none spans the machinery bulkhead at 8 m
+    for c in &cases {
+        let n: Vec<&str> = c.flooded.iter().map(|f| f.name.as_str()).collect();
+        assert!(
+            !(n.contains(&"M1C") && n.contains(&"H1C")),
+            "{}: {n:?}",
+            c.name
+        );
+    }
+    // at 60 m the MARPOL path puts the damage between bulkheads (28.1.3); NORMAM has no such rule, so it
+    // generates windows MARPOL does not
+    let marpol = marpol_damage_cases(&spaces, 60.0, 12.0);
+    assert!(!marpol.is_empty());
+}
+
+/// ES-TRIN 28.03(4)(d): a hold with a tank inside takes the table's floor on its gross volume (70 %), a hold the
+/// table gives no floor has none.
+#[test]
+fn gas_flooding_gives_a_hold_the_gross_floor_of_the_table() {
+    let spaces = gas_layout();
+    let case = DamageCase {
+        name: "c".to_string(),
+        flooded: vec![FloodedVolume::from_box(
+            "H1C",
+            (8.0, 34.0),
+            (-4.5, 4.5),
+            (1.0, 6.0),
+            0.95,
+        )],
+    };
+    let mut rows: Vec<(SpaceKind, Permeability)> = SpaceKind::ALL
+        .iter()
+        .map(|&k| (k, Permeability::Fixed(0.95)))
+        .collect();
+    let table = PermeabilityTable { rows: rows.clone() };
+    let f = gas_flooding(&case, &spaces, &table, &|_| 0.0);
+    assert_eq!(f.flooded[0].gross_floor, None);
+    for r in rows.iter_mut().filter(|(k, _)| *k == SpaceKind::CargoHold) {
+        r.1 = Permeability::WithGrossFloor {
+            net: 0.95,
+            floor: 0.70,
+        };
+    }
+    let table = PermeabilityTable { rows };
+    assert_eq!(table.of(SpaceKind::CargoHold, 0.0), Some(0.95));
+    let f = gas_flooding(&case, &spaces, &table, &|_| 0.0);
+    assert_eq!(f.flooded[0].gross_floor, Some(0.70));
+    assert_eq!(f.flooded[0].permeability, 0.95);
 }

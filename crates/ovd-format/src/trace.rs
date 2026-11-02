@@ -376,6 +376,11 @@ pub const DERIVED_INPUTS: &[(&str, &[&str])] = &[
     // Issue #355: the Formation's kind, read from the `formation` input.
     ("formation_kind", crate::vdesign::FORMATION_KINDS),
     ("deadweight_band", DEADWEIGHT_BANDS),
+    // Issue #763: the gross tonnage over 20 that NORMAM-202 5.23 applies to.
+    (
+        "gross_tonnage_band",
+        ovd_core::measured::GROSS_TONNAGE_BANDS,
+    ),
     // Issue #338: the ADN Tank Vessel Type of the Cargo, from its Crude Grade (ADN 2025 3.2.3.3).
     ("adn_vessel_type", &["N_open", "N_closed", "C"]),
     // Issue #543: the length overall, in the bands of SOLAS V/22.1 and ES-TRIN 28.02.
@@ -559,6 +564,23 @@ impl MeasureSource for OptionMeasures<'_> {
                     .to_string(),
             );
         }
+        // Issue #763: the lists of ADN 9.3.1.15 (a gas hull), ES-TRIN 28.03 and NORMAM 5.23.8, which a run
+        // works out when the stack holds the Rule that evaluates them.
+        if (object == ObjectType::AdnGasDamageCase && self.measured.adn_gas_damage.is_empty())
+            || (object == ObjectType::EsTrinDamageCase && self.measured.es_trin_damage.is_empty())
+            || (object == ObjectType::NormamDamageCase && self.measured.normam_damage.is_empty())
+        {
+            return Some(
+                if gas {
+                    "the damage cases were not computed: they need the IS Code 2008 loading conditions, whose weights the damaged condition is worked from, and a loading condition that floats"
+                } else if self.measured.liquid.is_some() {
+                    "the damage cases were not computed: the laden departure condition has no floating position"
+                } else {
+                    "OVD works out damage cases for a gas hull and for a liquid bulk hull; this hull has no damage model"
+                }
+                .to_string(),
+            );
+        }
         if (object == ObjectType::DamageCase && self.measured.damage.is_empty())
             || (object == ObjectType::MarpolDamageCase && self.measured.marpol_damage.is_empty())
         {
@@ -627,6 +649,13 @@ impl MeasureSource for OptionMeasures<'_> {
                     .measured
                     .deadweight_t
                     .map(|dw| deadweight_band(dw).to_string());
+            }
+            "gross_tonnage_band" => {
+                return self
+                    .measured
+                    .gross_tonnage
+                    .as_ref()
+                    .map(|g| ovd_core::measured::gross_tonnage_band(g.value()).to_string());
             }
             "adn_vessel_type" => {
                 let cargo = self.option.input("cargo")?.value.as_str()?;
@@ -1196,7 +1225,14 @@ impl MeasureSource for LiquidMeasures<'_> {
     fn missing(&self, object: &str) -> Option<String> {
         matches!(
             ObjectType::from_key(object),
-            Some(ObjectType::DamageCase | ObjectType::MarpolDamageCase | ObjectType::OilOutflow)
+            Some(
+                ObjectType::DamageCase
+                    | ObjectType::MarpolDamageCase
+                    | ObjectType::OilOutflow
+                    | ObjectType::AdnGasDamageCase
+                    | ObjectType::EsTrinDamageCase
+                    | ObjectType::NormamDamageCase
+            )
         )
         .then(|| "the layout case has no loading condition, so no damage is computed".to_string())
     }

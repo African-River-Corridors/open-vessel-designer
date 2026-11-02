@@ -46,7 +46,11 @@ fn the_es_trin_table_is_28_03_4_d() {
     let set = built_in().latest("es-trin-2025").expect("es-trin-2025");
     let t = permeability_table(set, "es-trin-permeability").expect("es-trin table");
     assert_eq!(t.of(SpaceKind::Machinery, 0.0), Some(0.85));
-    assert_eq!(t.of(SpaceKind::CargoHold, 0.0), Some(0.70));
+    assert_eq!(t.of(SpaceKind::CargoHold, 0.0), Some(0.95));
+    assert_eq!(t.gross_floor(SpaceKind::CargoHold), Some(0.70));
+    // 85 % is for engine and service rooms only; a void is 95 % (28.03(4)(d))
+    assert_eq!(t.of(SpaceKind::PumpRoom, 0.0), Some(0.85));
+    assert_eq!(t.of(SpaceKind::Void, 0.0), Some(0.95));
     assert_eq!(t.of(SpaceKind::DoubleBottomBallast, 0.0), Some(0.95));
     assert_eq!(t.of(SpaceKind::DoubleBottomBallast, 1.0), Some(0.0));
 }

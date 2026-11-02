@@ -44,6 +44,16 @@ const BUILT_IN: &[(&str, &str)] = &[
         "rules/normam-202/1.0.0.json",
         include_str!("../rules/normam-202/1.0.0.json"),
     ),
+    // Spec 0012 (issue #763): NORMAM 5.23.8 and 5.23.9 evaluated, with the 5.23.8 (f) Permeability Table.
+    (
+        "rules/normam-202/2.0.0.json",
+        include_str!("../rules/normam-202/2.0.0.json"),
+    ),
+    // Spec 0012 D3 (issue #763): ADN 9.3.1, type G, every paragraph listed; the damage stability evaluated.
+    (
+        "rules/adn-gas/1.0.0.json",
+        include_str!("../rules/adn-gas/1.0.0.json"),
+    ),
     (
         "rules/es-trin-2025/1.0.0.json",
         include_str!("../rules/es-trin-2025/1.0.0.json"),

@@ -45,6 +45,10 @@ pub struct FloodedVolume {
     /// Spaces inside this one that keep their buoyancy (an intact Type C tank in a flooded hold). Each lies
     /// wholly inside the Flooded Volume; it is not clipped to it.
     pub inclusions: Vec<IntactInclusion>,
+    /// A floor on the water as a fraction of the space's gross volume (its inclusions not taken out): the water is
+    /// the greater of `permeability` times the net volume and this times the gross volume. ES-TRIN 2025/1
+    /// 28.03(4)(d): a cargo hold floods at 95 % unless a calculation gives less, and not less than 70 %.
+    pub gross_floor: Option<f64>,
 }
 
 /// An Intact Inclusion (spec 0012, D7): a Space inside a Flooded Volume that keeps its buoyancy, so the
@@ -76,6 +80,7 @@ impl FloodedVolume {
             },
             permeability,
             inclusions: Vec::new(),
+            gross_floor: None,
         }
     }
 
@@ -88,13 +93,28 @@ impl FloodedVolume {
             shape: space.shape.clone(),
             permeability,
             inclusions: Vec::new(),
+            gross_floor: None,
         }
     }
 
     /// The volume of water in the space below a waterplane, m³: the permeability times its part below
     /// the waterplane less the parts of its inclusions below it.
     pub fn water_m3(&self, wp: &Waterplane) -> f64 {
-        self.permeability * self.below(wp).v
+        self.effective_permeability(wp) * self.below(wp).v
+    }
+
+    /// The fraction of its net part below the waterplane that the water fills: `permeability`, or the more that
+    /// makes the water the `gross_floor` of the gross part below it.
+    fn effective_permeability(&self, wp: &Waterplane) -> f64 {
+        let Some(floor) = self.gross_floor else {
+            return self.permeability;
+        };
+        let net = self.below(wp).v;
+        if net <= 0.0 {
+            return self.permeability;
+        }
+        let gross = shape_below(wp, self.x_aft_m, self.x_fwd_m, &self.shape).v;
+        self.permeability.max(floor * gross / net)
     }
 
     /// The part of the space below the waterplane, its inclusions taken out.
@@ -360,10 +380,11 @@ fn buoyancy(table: &SectionsTable, flooded: &[FloodedVolume], wp: &Waterplane) -
     let (mut mx, mut my, mut mz) = (v * im.lcb_m, v * im.tcb_m, v * im.kb_m);
     for b in flooded {
         let p = b.below(wp);
-        v -= b.permeability * p.v;
-        mx -= b.permeability * p.mx;
-        my -= b.permeability * p.my;
-        mz -= b.permeability * p.mz;
+        let k = b.effective_permeability(wp);
+        v -= k * p.v;
+        mx -= k * p.mx;
+        my -= k * p.my;
+        mz -= k * p.mz;
     }
     if v > 0.0 {
         Buoyancy {
@@ -579,6 +600,53 @@ impl DamageCriteria {
     /// 0.0175 m.rad within it. The range is measured from the equilibrium, the most conservative start 2.7.2.1
     /// allows (spec 0012 D11).
     pub const IGC_2_7: DamageCriteria = DamageCriteria {
+        max_heel_deg: 30.0,
+        min_gz_m: 0.1,
+        min_area_m_rad: 0.0175,
+        limit_deg: 0.0,
+        range_beyond_deg: Some(20.0),
+    };
+
+    /// ADN 2025 9.3.1.15.2, the final stage of a gas hull (issue #763): the same numbers as 9.3.2.15.2 and
+    /// 9.3.3.15.2.
+    pub const ADN_9_3_1_FINAL: DamageCriteria = DamageCriteria::ADN_2025;
+
+    /// ADN 2025 9.3.1.15.2, an intermediate stage: a righting lever of at least 0.03 m over a positive range of
+    /// 5 degrees. The text gives no heel limit for the stage, so none is applied (90 degrees is past capsize);
+    /// with a range, the curve is read to the stage's equilibrium plus 5 degrees and no area is asked.
+    pub const ADN_9_3_1_INTERMEDIATE: DamageCriteria = DamageCriteria {
+        max_heel_deg: 90.0,
+        min_gz_m: 0.03,
+        min_area_m_rad: 0.0,
+        limit_deg: 0.0,
+        range_beyond_deg: Some(5.0),
+    };
+
+    /// ES-TRIN 2025/1 28.03(6)(b) and (6)(c), the final stage: a heel of at most 12 degrees and, beyond it, a
+    /// righting lever of 0.05 m with an area of 0.0065 m.rad before 27 degrees (the figures for containers that
+    /// are not secured are not used).
+    pub const ES_TRIN_28_03_FINAL: DamageCriteria = DamageCriteria {
+        max_heel_deg: 12.0,
+        min_gz_m: 0.05,
+        min_area_m_rad: 0.0065,
+        limit_deg: 27.0,
+        range_beyond_deg: None,
+    };
+
+    /// ES-TRIN 2025/1 28.03(5)(a) and (5)(b), an intermediate stage: a heel of at most 15 degrees and, beyond it,
+    /// a righting lever of at least 0.02 m before 27 degrees.
+    pub const ES_TRIN_28_03_INTERMEDIATE: DamageCriteria = DamageCriteria {
+        max_heel_deg: 15.0,
+        min_gz_m: 0.02,
+        min_area_m_rad: 0.0,
+        limit_deg: 27.0,
+        range_beyond_deg: None,
+    };
+
+    /// NORMAM-202/DPC 5.23.9 (a), (b), (c): a range of 20 degrees beyond the equilibrium with 0.1 m and
+    /// 0.0175 m.rad, and a final heel of at most 25 degrees, or 30 degrees when the deck is not immersed. The
+    /// heel limit here is the wider 30; the caller holds the heel above 25 degrees to the deck-edge test.
+    pub const NORMAM_5_23_9: DamageCriteria = DamageCriteria {
         max_heel_deg: 30.0,
         min_gz_m: 0.1,
         min_area_m_rad: 0.0175,

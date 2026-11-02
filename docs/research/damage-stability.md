@@ -115,10 +115,15 @@ completeness.
 
 ### 2.6 MARPOL I reg. 28 and NORMAM-202
 
-Built for liquid bulk (#341). NORMAM 5.23.8/9 copies the MARPOL extents and criteria; its rows say
-"ADN extents only" and stay `not evaluated`. Inference: the IGC case generator in this spec is the
-MARPOL generator with other numbers (B/15 capped at 2 m, not 6 m), so NORMAM 5.23.8 can be evaluated
-from the same code at no extra cost.
+Built for liquid bulk (#341). NORMAM 5.23.8/9 copies the MARPOL extents and criteria; its rows said
+"ADN extents only" and stayed `not evaluated` until issue #763. Read from the text (normam-202.pdf, printed
+pp. 5-37 and 5-38): the extents of 5.23.8 (a) and (b) are those of MARPOL I 28.2 (side 1/3 L^(2/3) or 14.5 m long
+and B/5 or 11.5 m inboard; bottom B/6 wide and B/15 or 6 m high, 6 m, not the 2 m of IGC 2.3.1.2.3), so the MARPOL
+box generator evaluates NORMAM 5.23.8 with a different standard of damage: anywhere in the length, the end
+bulkheads of the main engine room intact (5.23.8 (c), (d)). Its permeability (5.23.8 (f)) is 0.95, 0.85 in a
+machinery space, and 0 or 0.95 in an oil tank, "according to its function", so a full cargo tank floods nothing;
+MARPOL 28.4 floods it at 95 % and loses the oil. The criteria of 5.23.9 are those of MARPOL 28.3.2 and 28.3.3, with
+the deck-immersion allowance of 30 degrees.
 
 ## 3. Method
 

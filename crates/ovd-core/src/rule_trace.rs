@@ -34,10 +34,16 @@ pub enum ObjectType {
     MarpolDamageCase,
     /// The mean oil outflow of a liquid bulk hull (MARPOL Annex I regulation 23, issue #341): one object.
     OilOutflow,
+    /// One assumed damage of ADN 2025 9.3.1.15 on a gas hull (spec 0012 D3, issue #763).
+    AdnGasDamageCase,
+    /// One assumed damage of ES-TRIN 2025/1 28.03(4) on a craft over 110 m (spec 0012 D2, issue #763).
+    EsTrinDamageCase,
+    /// One assumed damage of NORMAM-202 5.23.8 on a liquid bulk hull (spec 0012 D2, issue #763).
+    NormamDamageCase,
 }
 
 impl ObjectType {
-    pub const ALL: [ObjectType; 10] = [
+    pub const ALL: [ObjectType; 13] = [
         ObjectType::Option,
         ObjectType::Hull,
         ObjectType::Tank,
@@ -48,6 +54,9 @@ impl ObjectType {
         ObjectType::DamageCase,
         ObjectType::MarpolDamageCase,
         ObjectType::OilOutflow,
+        ObjectType::AdnGasDamageCase,
+        ObjectType::EsTrinDamageCase,
+        ObjectType::NormamDamageCase,
     ];
 
     /// The object type of a key, or `None` for a key OVD does not declare.
@@ -67,6 +76,9 @@ impl ObjectType {
             ObjectType::DamageCase => "damage-case",
             ObjectType::MarpolDamageCase => "marpol-damage-case",
             ObjectType::OilOutflow => "oil-outflow",
+            ObjectType::AdnGasDamageCase => "adn-gas-damage-case",
+            ObjectType::EsTrinDamageCase => "es-trin-damage-case",
+            ObjectType::NormamDamageCase => "normam-damage-case",
         }
     }
 }
@@ -600,6 +612,51 @@ pub static MEASURES: &[MeasureDef] = &[
         value: ValueKind::Bool,
         args: &[],
         method: "The damaged hull floats where the heel at the stage of equilibrium is at most 25 degrees and the righting lever stays positive over 20 degrees beyond it, reaching 0.1 m with an area of 0.0175 m.rad within that range (MARPOL Annex I regulation 28.3.2 and 28.3.3). Lost buoyancy method on the Sections Table, final stage of flooding, for the extents of regulation 28.2; a damaged cargo tank is flooded at 95 % and its oil leaves the loading condition (regulation 28.4.1, any outflow of liquids from damaged compartments; spec 0012 D20)",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "stability.damage_adn_gas",
+        unit: "",
+        object: ObjectType::AdnGasDamageCase,
+        value: ValueKind::Bool,
+        args: &[],
+        method: "The damaged gas hull meets ADN 2025 9.3.1.15.2 at the stage of equilibrium: a heel of at most 12 degrees and, beyond it, a righting lever of 0.05 m with an area of 0.0065 m.rad up to 27 degrees. Assumed damage of 9.3.1.15.1: side 0.10 L (at least 5.00 m) long and 0.79 m inboard, bottom 0.10 L (at least 5.00 m) long, 3.00 m wide and 0.59 m high, every compartment the extent touches flooded (athwartships neighbours too for a bottom damage), the end bulkheads of the main engine room intact; permeability 95 %, 85 % in a machinery space, 0 or 95 % in a tank by its filling, a full cargo tank 0 %. Every IS Code loading condition. Lost buoyancy method on the Sections Table, final stage; an intact Type C tank keeps its buoyancy in a flooded hold. The openings (9.3.1.15.1 (c), 9.3.1.15.2) and cross-flooding (9.3.1.15.3, 9.3.1.15.4) are not modelled",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "stability.damage_adn_gas_intermediate",
+        unit: "",
+        object: ObjectType::AdnGasDamageCase,
+        value: ValueKind::Bool,
+        args: &[],
+        method: "Every intermediate stage of flooding (25, 50 and 75 % of the final flood, by added mass as for `stability.damage_stage_heel`) floats and has a righting lever of at least 0.03 m over a positive range of 5 degrees beyond its equilibrium (ADN 2025 9.3.1.15.2). The text names no fractions and no heel limit for the intermediate stage; OVD's three fractions are those of ES-TRIN 28.03(3) (spec 0012 D15)",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "stability.damage_es_trin",
+        unit: "",
+        object: ObjectType::EsTrinDamageCase,
+        value: ValueKind::Bool,
+        args: &[],
+        method: "The damaged hull meets ES-TRIN 2025/1 28.03(6) at the final stage of flooding: a heel of at most 12 degrees and, beyond it, a righting lever of 0.05 m with an area of 0.0065 m.rad up to 27 degrees. Assumed damage of 28.03(4): side at least 0.10 L long and 0.59 m inboard, bottom at least 0.10 L long, 3.00 m wide and 0.39 m high, every compartment the extent touches flooded (athwartships neighbours too for a bottom damage), the end bulkheads of the main engine room intact; permeability 95 %, 85 % in a machinery space or pump room, a cargo hold at the greater of 95 % of its volume less the intact tanks in it and 70 % of its gross volume (28.03(4)(d)), 95 % in a void, 0 or 95 % in a tank by its function. A craft over 110 m, on the full load departure (28.03(3): the cargo for the maximum draught, evenly spread, full supplies), for a gas hull and a liquid bulk hull alike. Lost buoyancy method on the Sections Table; an intact Type C tank keeps its buoyancy in a flooded hold. The openings (28.03(6)(a), (6)(d)) and cross-flooding (28.03(7)) are not modelled",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "stability.damage_es_trin_intermediate",
+        unit: "",
+        object: ObjectType::EsTrinDamageCase,
+        value: ValueKind::Bool,
+        args: &[],
+        method: "Every intermediate stage of flooding (25, 50 and 75 % of the final flood, by added mass with the free surface of the gross surface, as for `stability.damage_stage_heel`) floats at a heel of at most 15 degrees and has a righting lever of at least 0.02 m beyond it, before 27 degrees (ES-TRIN 2025/1 28.03(5)(a), (5)(b)). The stage immediately before transverse equilibrium and the openings of 28.03(5)(c) are not modelled",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "stability.damage_normam",
+        unit: "",
+        object: ObjectType::NormamDamageCase,
+        value: ValueKind::Bool,
+        args: &[],
+        method: "The damaged hull meets NORMAM-202/DPC 5.23.9: at the final stage a heel of at most 25 degrees (up to 30 degrees when the deck edge is not immersed), a positive righting lever over at least 20 degrees beyond the equilibrium, and in that range an area of 0.0175 m.rad with a residual righting lever of 0.1 m. Standard damage of 5.23.8 (a), (b), (c), (d): the extents of MARPOL Annex I regulation 28.2 (side 1/3 L^(2/3) or 14.5 m long, B/5 or 11.5 m inboard; bottom B/6 wide and B/15 or 6 m high), placed anywhere in the length, every bulkhead in the damage damaged, the end bulkheads of the main engine room intact; permeability 95 %, 85 % in a machinery space, 0 or 95 % in a tank by its function (5.23.8 (f)), so a full cargo tank is 0 %. Lost buoyancy method on the Sections Table, final stage, on the laden departure. The lesser damage of 5.23.8 (g) and the openings of 5.23.8 (e) and 5.23.9 (b) are not modelled",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {

@@ -65,6 +65,9 @@ pub fn permeability_table(set: &RuleSet, table_id: &str) -> Result<PermeabilityT
     let table =
         find(table_id).ok_or_else(|| format!("{} holds no table `{table_id}`", set.key()))?;
     let by_filling = find(&format!("{table_id}-by-filling"));
+    // Issue #763: the kinds that table `<table_id>-gross-floor` names take the greater of their value times the net
+    // volume and the floor times the gross volume.
+    let gross_floor = find(&format!("{table_id}-gross-floor"));
     let mut rows = Vec::new();
     for kind in SpaceKind::ALL {
         let key = MeasureValue::Text(kind.key().to_string());
@@ -76,12 +79,13 @@ pub fn permeability_table(set: &RuleSet, table_id: &str) -> Result<PermeabilityT
             )
         })?;
         let liquid = by_filling.is_some_and(|t| table_value(t, &key).is_ok_and(|v| v != 0.0));
+        let floor = gross_floor.and_then(|t| table_value(t, &key).ok());
         rows.push((
             kind,
-            if liquid {
-                Permeability::ByFilling(value)
-            } else {
-                Permeability::Fixed(value)
+            match floor {
+                Some(floor) => Permeability::WithGrossFloor { net: value, floor },
+                None if liquid => Permeability::ByFilling(value),
+                None => Permeability::Fixed(value),
             },
         ));
     }
@@ -133,19 +137,8 @@ pub fn gas_damage_verdicts(
     conditions: &[ovd_core::loading_conditions::LoadedCondition],
     density: f64,
 ) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), String> {
-    use ovd_core::damage_cases::{
-        StandardOfDamage, deck_edge_immersed, gas_flooding, igc_damage_cases,
-        without_breached_cargo,
-    };
-    use ovd_core::damage_stability::{
-        DamageCriteria, Floats, INTERMEDIATE_FRACTIONS, assess, intermediate_stages,
-        righting_lever_at,
-    };
-    use ovd_core::sections::{Gravity, Waterplane};
-    use serde_json::json;
-    let num = crate::eval::num;
-    let mut rows: Vec<serde_json::Value> = Vec::new();
-    let mut governing: Vec<serde_json::Value> = Vec::new();
+    use ovd_core::damage_cases::{StandardOfDamage, igc_damage_cases};
+    use ovd_core::damage_stability::DamageCriteria;
     let (loa, beam) = (hull.spec.loa, hull.spec.beam);
     let data = igc_damage_data(set, loa, beam)?;
     let table = permeability_table(set, "igc-permeability")?;
@@ -153,8 +146,62 @@ pub fn gas_damage_verdicts(
     let cases = igc_damage_cases(spaces, loa, beam, &data.extents, &standard, &|k| {
         table.of(k, 0.0).unwrap_or(0.95)
     });
+    run_gas_damage(
+        &GasRun {
+            cases,
+            table,
+            criteria: DamageCriteria::IGC_2_7,
+            stage_criteria: DamageCriteria::IGC_2_7,
+            set_key: set.key(),
+            method: "lost buoyancy, final stage of flooding (IGC 2.7.1.2, 2.7.2.1)",
+            full_load_only: false,
+        },
+        spaces,
+        hull,
+        conditions,
+        density,
+    )
+}
+
+/// What a gas damage run is given: the cases, the Permeability Table, the criteria of the final stage and of the
+/// intermediate stages, and how the block names its Rule Set and its method.
+pub(crate) struct GasRun {
+    pub cases: Vec<ovd_core::damage_cases::DamageCase>,
+    pub table: PermeabilityTable,
+    pub criteria: ovd_core::damage_stability::DamageCriteria,
+    pub stage_criteria: ovd_core::damage_stability::DamageCriteria,
+    pub set_key: String,
+    pub method: &'static str,
+    /// Damage the full load departure only (ES-TRIN 28.03(3): the cargo for the maximum draught, evenly spread,
+    /// with full supplies), not every IS Code condition.
+    pub full_load_only: bool,
+}
+
+/// The damage cases of `run` on every loading condition of a gas hull, as [`gas_damage_verdicts`] gives them for
+/// IGC (spec 0012, issues #759, #760, #763).
+pub(crate) fn run_gas_damage(
+    run: &GasRun,
+    spaces: &[ovd_core::compartments::Space],
+    hull: &ovd_core::hydrostatics::Hull,
+    conditions: &[ovd_core::loading_conditions::LoadedCondition],
+    density: f64,
+) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), String> {
+    use ovd_core::damage_cases::{deck_edge_immersed, gas_flooding, without_breached_cargo};
+    use ovd_core::damage_stability::{
+        Floats, INTERMEDIATE_FRACTIONS, assess, intermediate_stages, righting_lever_at,
+    };
+    use ovd_core::sections::{Gravity, Waterplane};
+    use serde_json::json;
+    let num = crate::eval::num;
+    let mut rows: Vec<serde_json::Value> = Vec::new();
+    let mut governing: Vec<serde_json::Value> = Vec::new();
+    let (loa, beam) = (hull.spec.loa, hull.spec.beam);
+    let (cases, table) = (&run.cases, &run.table);
     let mut out: Vec<ovd_core::measured::DamageVerdict> = Vec::new();
     for c in conditions {
+        if run.full_load_only && c.role != ovd_core::loading_conditions::Role::FullLoadDeparture {
+            continue;
+        }
         let mass: f64 = c.weights.iter().map(|(_, i)| i.mass_t).sum();
         if mass.is_nan() || mass <= 0.0 {
             continue;
@@ -200,8 +247,8 @@ pub fn gas_damage_verdicts(
             f64,
             Gravity,
         )> = None;
-        for case in &cases {
-            let f = gas_flooding(case, spaces, &table, &filling);
+        for case in cases {
+            let f = gas_flooding(case, spaces, table, &filling);
             let (m, gd) = without_breached_cargo(mass, g, cargo, spaces, &f.breached);
             let outcome = assess(
                 &hull.table,
@@ -210,7 +257,7 @@ pub fn gas_damage_verdicts(
                 gd,
                 density,
                 start,
-                &DamageCriteria::IGC_2_7,
+                &run.criteria,
             );
             // Issue #760: the intermediate stages, by added mass with the cargo still aboard (D15 to D18).
             let stages = intermediate_stages(
@@ -220,7 +267,7 @@ pub fn gas_damage_verdicts(
                 (mass, g),
                 density,
                 start,
-                &DamageCriteria::IGC_2_7,
+                &run.stage_criteria,
             );
             let deck = outcome.floats == Floats::Yes
                 && deck_edge_immersed(
@@ -336,10 +383,108 @@ pub fn gas_damage_verdicts(
     Ok((
         out,
         json!({
-            "rule_set": set.key(),
-            "method": "lost buoyancy, final stage of flooding (IGC 2.7.1.2, 2.7.2.1)",
+            "rule_set": run.set_key,
+            "method": run.method,
             "cases": rows,
             "governing": governing,
         }),
     ))
 }
+
+/// The box rules a gas hull is run through besides IGC (issue #763).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GasBoxRule {
+    /// ADN 2025 9.3.1.15 (type G), from the `adn-gas` set.
+    AdnGas,
+    /// ES-TRIN 2025/1 28.03(4) to (6), a craft over 110 m, from the `es-trin-2025` set.
+    EsTrin,
+}
+
+/// Issue #763 (spec 0012 D2, D3): the damage cases of ADN 9.3.1.15 or ES-TRIN 28.03 on every loading condition of
+/// a gas hull, final stage by lost buoyancy and the intermediate stages by added mass (D15 to D18).
+///
+/// The Permeability Table is the set's: `adn-gas-permeability` or `es-trin-permeability`. A full cargo tank is 0 %
+/// under both texts ("full or empty at the maximum draught", 9.3.1.15.1 (c), 28.03(4)(d)), so no case breaches a
+/// tank and every cargo mass stays aboard. The block is shaped as the IGC one is ([`gas_damage_verdicts`]).
+pub fn gas_box_damage_verdicts(
+    rule: GasBoxRule,
+    set: &RuleSet,
+    spaces: &[ovd_core::compartments::Space],
+    hull: &ovd_core::hydrostatics::Hull,
+    conditions: &[ovd_core::loading_conditions::LoadedCondition],
+    density: f64,
+) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), String> {
+    use ovd_core::damage_cases::{
+        AdnExtents, CaseOptions, adn_damage_cases_with, es_trin_longitudinal_extent_m,
+        longitudinal_extent_m, machinery_bulkheads_intact,
+    };
+    use ovd_core::damage_stability::DamageCriteria;
+    let (loa, beam) = (hull.spec.loa, hull.spec.beam);
+    let table = permeability_table(
+        set,
+        match rule {
+            GasBoxRule::AdnGas => "adn-gas-permeability",
+            GasBoxRule::EsTrin => "es-trin-permeability",
+        },
+    )?;
+    let (extents, long_m) = match rule {
+        GasBoxRule::AdnGas => (AdnExtents::TYPE_G, longitudinal_extent_m(loa)),
+        GasBoxRule::EsTrin => (
+            AdnExtents::ES_TRIN_28_03,
+            es_trin_longitudinal_extent_m(loa),
+        ),
+    };
+    let intact = machinery_bulkheads_intact(spaces, loa);
+    let cases = adn_damage_cases_with(
+        spaces,
+        loa,
+        beam,
+        &extents,
+        &CaseOptions {
+            long_m,
+            // a gas hull is cut at its hold bulkheads already (spec 0012 D6)
+            cut: false,
+            intact_bulkheads_m: &intact,
+        },
+        &|k| {
+            if k == ovd_core::compartments::SpaceKind::CargoTank {
+                0.0
+            } else {
+                table.of(k, 0.0).unwrap_or(0.95)
+            }
+        },
+    );
+    let (criteria, stage_criteria, method) = match rule {
+        GasBoxRule::AdnGas => (
+            DamageCriteria::ADN_9_3_1_FINAL,
+            DamageCriteria::ADN_9_3_1_INTERMEDIATE,
+            "lost buoyancy, final stage; intermediate stages by added mass at 25, 50 and 75 % (ADN 2025 9.3.1.15.1, 9.3.1.15.2)",
+        ),
+        GasBoxRule::EsTrin => (
+            DamageCriteria::ES_TRIN_28_03_FINAL,
+            DamageCriteria::ES_TRIN_28_03_INTERMEDIATE,
+            "lost buoyancy, final stage; intermediate stages by added mass at 25, 50 and 75 % (ES-TRIN 2025/1 28.03(3) to (6)); full load departure",
+        ),
+    };
+    run_gas_damage(
+        &GasRun {
+            cases,
+            table,
+            criteria,
+            stage_criteria,
+            set_key: set.key(),
+            method,
+            full_load_only: rule == GasBoxRule::EsTrin,
+        },
+        spaces,
+        hull,
+        conditions,
+        density,
+    )
+}
+
+/// How the `damage_by_rule` block names the method of the ES-TRIN 28.03 damage cases on a liquid bulk hull.
+pub(crate) const ES_TRIN_METHOD: &str = "lost buoyancy, final stage; intermediate stages by added mass at 25, 50 and 75 % (ES-TRIN 2025/1 28.03(3) to (6)); laden departure";
+/// How the `damage_by_rule` block names the method of the NORMAM 5.23.8 damage cases.
+pub(crate) const NORMAM_METHOD: &str =
+    "lost buoyancy, final stage (NORMAM-202/DPC 5.23.8, 5.23.9); laden departure";

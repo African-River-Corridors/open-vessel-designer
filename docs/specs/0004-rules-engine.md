@@ -99,7 +99,7 @@ wins.
 
 **Objects.** A Measure is computed for one object of one **object type**: `option`, `hull`, `tank`
 (a Type C gas cargo tank), `loading-condition`, and one type per liquid bulk tank role:
-`cargo-tank`, `ballast-tank`, `slop-tank` (spec 0006 §5.2, #336), `damage-case` (one assumed damage of the ADN extents), `marpol-damage-case` (one assumed damage of MARPOL Annex I Reg. 28) and `oil-outflow` (the one mean oil outflow of Reg. 23), all on a liquid bulk hull; spec 0006, #341). A Rule on cargo tanks so never reaches a ballast or slop tank. An Option has one `option` and one `hull`, zero or more `tank`s, and zero or more
+`cargo-tank`, `ballast-tank`, `slop-tank` (spec 0006 §5.2, #336), `damage-case` (one assumed damage of the ADN extents), `marpol-damage-case` (one assumed damage of MARPOL Annex I Reg. 28), `oil-outflow` (the one mean oil outflow of Reg. 23), all on a liquid bulk hull; spec 0006, #341), and the damage cases of one rule each (spec 0012, #763): `adn-gas-damage-case` (ADN 9.3.1.15, a gas hull), `es-trin-damage-case` (ES-TRIN 28.03(4), a gas or liquid bulk craft over 110 m) and `normam-damage-case` (NORMAM-202 5.23.8, a liquid bulk hull). A Rule on cargo tanks so never reaches a ballast or slop tank. An Option has one `option` and one `hull`, zero or more `tank`s, and zero or more
 `loading-condition`s. Objects of one type are listed in a fixed order (tank 1, 2, …; loading conditions
 in the order the engine builds them), so a trace is the same on every run and platform.
 
@@ -163,6 +163,8 @@ types them (spec 0006 §5.2, #336):
   result's deadweight, at the thresholds of MARPOL Annex I Reg. 19 ("x tonnes deadweight and above" is
   in the band that starts at x). So the 5,000 t switch of the MARPOL construction rules stays
   `input ∈ {values}`.
+- `gross_tonnage_band`: `20-or-under`, `over-20`, from the result's gross tonnage (ITC 1969, issue #777), at the
+  threshold of NORMAM-202/DPC 5.23 ("embarcações com AB superior a 20"; issue #763).
 - `length_band`: `under-45-m`, `45-to-110-m`, `over-110-m`, from the length overall of the Option, at
   the thresholds of SOLAS V/22.1 ("not less than 45 m": 45 m is in the band that starts at 45) and
   ES-TRIN 28.02 ("exceeds 110 m": 110 m is in the band below). The length overall stands in for the
@@ -332,7 +334,7 @@ The model, the schema, the loader, the content hash, the library, Applicability 
 a domain-free crate, `arc-rules`, that a second tool shares. OVD registers its side with it:
 
 - **Object types are string keys** (`option`, `hull`, `tank`, `loading-condition`, `cargo-tank`,
-  `ballast-tank`, `slop-tank`, `damage-case`, `marpol-damage-case`, `oil-outflow`). The caller declares them; `option` is OVD's design object.
+  `ballast-tank`, `slop-tank`, `damage-case`, `marpol-damage-case`, `oil-outflow`, `adn-gas-damage-case`, `es-trin-damage-case`, `normam-damage-case`). The caller declares them; `option` is OVD's design object.
 - **The caller passes in** the Measure registry, the applicability vocabulary and the formula shapes
   (`less-input`, `clamp`, `at-least`, `max-capped-less`, `lesser-ratio` are OVD's). The table row
   shapes `const`, `a+v*b/c` and `a+v/c` are the kernel's.

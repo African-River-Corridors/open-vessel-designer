@@ -2,7 +2,7 @@
   "$schema": "../rule-set.schema.json",
   "id": "es-trin-2025",
   "family": "es-trin",
-  "title": "ES-TRIN 2025/1: safety clearance and freeboard (Chapter 4), wheelhouse view and speed (Chapters 5, 7), craft over 110 m (Chapter 28)",
+  "title": "ES-TRIN 2025/1: safety clearance and freeboard (Chapter 4), wheelhouse view and speed (Chapters 5, 7), craft over 110 m (Chapter 28: damage stability 28.03, propulsion 28.04)",
   "version": "2.0.0",
   "edition": {
     "document": "ES-TRIN, Edition 2025/1",
@@ -53,8 +53,7 @@
           "when": {
             "in": [
               "machinery",
-              "pump_room",
-              "void"
+              "pump_room"
             ]
           },
           "shape": "const",
@@ -67,13 +66,14 @@
             ]
           },
           "shape": "const",
-          "a": 0.7
+          "a": 0.95
         },
         {
           "when": {
             "in": [
               "cofferdam",
-              "peak_void"
+              "peak_void",
+              "void"
             ]
           },
           "shape": "const",
@@ -120,6 +120,29 @@
           },
           "shape": "const",
           "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "es-trin-permeability-gross-floor",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "locator": "28.03(4)(d)",
+        "page": "Edition 2025/1, page 200"
+      },
+      "input": {
+        "name": "space kind"
+      },
+      "unit": "-",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "cargo_hold"
+            ]
+          },
+          "shape": "const",
+          "a": 0.7
         }
       ]
     }
@@ -584,6 +607,342 @@
       "evaluated": true,
       "finding": "#361",
       "since": "1.0.0"
+    },
+    {
+      "id": "es-trin/28.03(4)/damage-stability",
+      "title": "A craft over 110 m survives the assumed side and bottom damage of 28.03(4) (side: 0.10 L long and 0.59 m deep; bottom: 0.10 L long, 3.00 m wide and 0.39 m high), with the final-stage criteria of 28.03(6): a heel of at most 12 degrees, a righting lever of 0.05 m and an area of 0.0065 m.rad",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(4)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 199 to 201",
+        "access": "free",
+        "also": [
+          "28.03(3)",
+          "28.03(6)"
+        ]
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_es_trin"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(5)/intermediate-stages",
+      "title": "A craft over 110 m at the intermediate stages of flooding (25, 50 and 75 % of the final flood): a heel of at most 15 degrees and a righting lever of at least 0.02 m before 27 degrees",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(5)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 200",
+        "access": "free",
+        "also": [
+          "28.03(5)(a)",
+          "28.03(5)(b)"
+        ]
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_es_trin_intermediate"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(2)/heeling-test",
+      "title": "The lightweight and its centre of gravity of a craft over 110 m are found by a heeling test to Annex 1 of IMO Resolution MSC.267(85)",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(2)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 199",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.heeling_test"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A heeling test is made on the built craft; a concept design has none, and OVD works the lightweight out by mass calculation",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(5)(c)/openings-intermediate",
+      "title": "Non-watertight openings are not immersed before the heel of the equilibrium position of the intermediate stage in question",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(5)(c)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 200",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_openings_es_trin_intermediate"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "The openings of the hull are not an input yet, so the damaged waterline cannot be checked against them (spec 0012, roadmap)",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(6)(a)/openings-above-damage-waterline",
+      "title": "At the final stage of flooding the lower edge of non-watertight openings is at least 0.10 m above the damaged waterline",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(6)(a)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 200",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_openings_es_trin_final"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "The openings of the hull are not an input yet, so the damaged waterline cannot be checked against them (spec 0012, roadmap)",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(6)(d)/openings-flooded-before-equilibrium",
+      "title": "If non-watertight openings are immersed before the equilibrium position is reached, the rooms they give access to count as flooded",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(6)(d)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 201",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_openings_es_trin_flooded"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "The openings of the hull are not an input yet, so the rooms they give access to cannot be flooded (spec 0012, roadmap)",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(7)/cross-flooding",
+      "title": "Cross-flood openings that reduce asymmetrical flooding are self-acting, have no shut-off device, are calculated to IMO Resolution A.266 (VIII), and equalise within 15 minutes",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(7)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 201",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.cross_flooding"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "OVD models no flow between compartments (spec 0012 D16), so no cross-flooding time is calculated",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(8)/closing-instruction",
+      "title": "Shut-off devices on openings through which undamaged compartments may flood bear the instruction 'Close immediately after passage' on both sides",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(8)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 201",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.closing_instruction"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A marking on the built craft; OVD models no such openings or markings",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(9)/adn-part-9-proof",
+      "title": "The proof by calculation of 28.03(3) to (7) is considered given if damage stability calculations to Part 9 of the ADN are produced with a positive result",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(9)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 201",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.adn_part_9_proof"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "OVD does not take its ADN damage rows (adn-tank, adn-gas) as this proof: the ES-TRIN rows above are evaluated on their own",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(10)/maximum-draught",
+      "title": "Where needed to meet 28.03(3), the plane of maximum draught is re-established",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(10)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 201",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.maximum_draught_reset"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "OVD does not lower the maximum draught to meet the damage rows; the draught is an input",
+      "finding": null,
+      "since": "2.0.0"
     }
   ]
 }
