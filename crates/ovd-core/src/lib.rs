@@ -44,6 +44,7 @@ pub mod lpg_saturation;
 pub mod machinery;
 pub mod measured;
 pub mod mesh;
+pub mod methane_saturation;
 pub mod models;
 pub mod offsets;
 pub mod powering;
