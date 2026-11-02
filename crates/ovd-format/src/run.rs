@@ -623,7 +623,8 @@ pub fn run_option_with(
         inputs: rule_inputs(option),
     };
     let mut params = params;
-    let (outcome, mut measured) = settle_rooms(option, library, &mut params, &rules);
+    let (outcome, mut measured, _rooms_settled) =
+        settle_rooms(option, library, &mut params, &rules);
     match outcome {
         Outcome::Result(v) => match v.get("error").and_then(Value::as_str) {
             Some(message) => RunOutcome::Failed(message.to_string()),
@@ -749,6 +750,13 @@ pub fn run_option_with(
                         o.insert("crew".to_string(), c);
                     }
                     if let Some(r) = rooms_block {
+                        if r["settled"] == json!(false)
+                            && let Some(w) = o.get_mut("warnings").and_then(Value::as_array_mut)
+                        {
+                            w.push(json!(
+                                "The deckhouse rooms did not settle: the berths of the crew model still changed after the last pass, so the rooms are sized from the berths of the pass before. The crew block and the rooms table may differ by a berth or two (issue #780)."
+                            ));
+                        }
                         o.insert("rooms".to_string(), r);
                     }
                     // Spec 0009, D1 (b): the Type C tank Spaces, one row each (ADR 0021). Hashed:
@@ -832,32 +840,56 @@ fn settle_rooms(
     library: &Library,
     params: &mut Map<String, Value>,
     rules: &RunRules,
-) -> (Outcome, crate::simulate::Measured) {
-    let (mut outcome, mut measured) = simulate_params_measured(params, rules);
+) -> (Outcome, crate::simulate::Measured, bool) {
     if params.get("arrangement_style").and_then(Value::as_str) != Some("deckhouse") {
-        return (outcome, measured);
+        let (outcome, measured) = simulate_params_measured(params, rules);
+        return (outcome, measured, true);
     }
-    for _ in 0..ROOMS_PASSES {
-        let Outcome::Result(v) = &outcome else { break };
-        if v.get("error").is_some() {
-            break;
+    let mut last: Option<(Outcome, crate::simulate::Measured)> = None;
+    let settled = iterate_berths(ROOMS_PASSES, |used| {
+        if let Some(b) = used {
+            params.insert("crew_berths".to_string(), json!(b));
         }
-        measured.gross_tonnage = gross_tonnage_of(option, &measured);
-        let Some(crew) = crew_block_of(option, library, v, &measured) else {
-            break;
-        };
-        let Some((berths, sea, mode_b)) = rooms_facts_of(&crew) else {
-            break;
-        };
-        if params.get("crew_berths").and_then(Value::as_i64) == Some(berths) {
-            break;
+        let (outcome, mut measured) = simulate_params_measured(params, rules);
+        let mut wanted = None;
+        if let Outcome::Result(v) = &outcome
+            && v.get("error").is_none()
+        {
+            measured.gross_tonnage = gross_tonnage_of(option, &measured);
+            if let Some(crew) = crew_block_of(option, library, v, &measured)
+                && let Some((berths, sea, mode_b)) = rooms_facts_of(&crew)
+            {
+                params.insert("crew_reaches_sea".to_string(), json!(sea));
+                params.insert("crew_mode_b".to_string(), json!(mode_b));
+                wanted = Some(berths);
+            }
         }
-        params.insert("crew_berths".to_string(), json!(berths));
-        params.insert("crew_reaches_sea".to_string(), json!(sea));
-        params.insert("crew_mode_b".to_string(), json!(mode_b));
-        (outcome, measured) = simulate_params_measured(params, rules);
+        last = Some((outcome, measured));
+        wanted
+    });
+    let (outcome, measured) = last.expect("one pass ran");
+    (outcome, measured, settled)
+}
+
+/// The loop of `settle_rooms`, apart from the engine so a test can drive it. `pass(used)` runs with the
+/// berths `used` (none on the first pass) and gives the berths the crew model then wants, or none when
+/// it gives none. True when a pass wants the berths it ran with (or none are wanted); false when
+/// `max` further passes still want a change.
+pub(crate) fn iterate_berths(max: usize, mut pass: impl FnMut(Option<i64>) -> Option<i64>) -> bool {
+    let mut used = None;
+    for n in 0..=max {
+        let Some(wanted) = pass(used) else {
+            return true;
+        };
+        if Some(wanted) == used {
+            return true;
+        }
+        if n == max {
+            return false;
+        }
+        used = Some(wanted);
     }
-    (outcome, measured)
+    false
 }
 
 /// Issue #780: the `rooms` results block of a deckhouse stern: the rooms table, each row with its
@@ -1177,4 +1209,38 @@ pub fn summary_lines(name: &str, results: &Value) -> Vec<String> {
         }
     }
     lines
+}
+
+#[cfg(test)]
+mod rooms_passes_tests {
+    use super::{ROOMS_PASSES, iterate_berths};
+
+    #[test]
+    fn berths_that_settle_stop_the_loop() {
+        let mut runs = 0;
+        // The crew wants 10, then (given 10) 10 again.
+        let ok = iterate_berths(ROOMS_PASSES, |_| {
+            runs += 1;
+            Some(10)
+        });
+        assert!(ok);
+        assert_eq!(runs, 2);
+    }
+
+    #[test]
+    fn berths_that_keep_changing_hit_the_cap_and_are_not_settled() {
+        let mut runs = 0;
+        // Given none the crew wants 10; given 10 it wants 12; given 12 it wants 10: it never settles.
+        let ok = iterate_berths(ROOMS_PASSES, |used| {
+            runs += 1;
+            Some(if used == Some(10) { 12 } else { 10 })
+        });
+        assert!(!ok);
+        assert_eq!(runs, ROOMS_PASSES + 1);
+    }
+
+    #[test]
+    fn a_crew_that_gives_no_berths_stops_at_once() {
+        assert!(iterate_berths(ROOMS_PASSES, |_| None));
+    }
 }

@@ -129,7 +129,7 @@ pub fn size_rooms(b: &RoomsBasis) -> Rooms {
         );
         if b.mode_b {
             cabin_row.clause.push_str(
-                "; RPN 18.02(4) (one cabin each, mode B, rest underway; from docs/research/manning.md, text not in the rule sources)",
+                "; RPN 18.02(4) via docs/research/manning.md (one cabin each in mode B with rest underway; the RPN text is not in the rule sources)",
             );
         }
         rows.push(cabin_row);
@@ -140,8 +140,8 @@ pub fn size_rooms(b: &RoomsBasis) -> Rooms {
             1,
             communal,
             "15.02(8), 15.02(7), 15.04(3)",
-            "sourced",
-            "2 m2 per person, and 8 m2 in all; one sitting; partitioned from the cabins (15.02(7)).",
+            "derived",
+            "2 m2 per person, and 8 m2 in all, of free floor not counting furniture (15.02(8)), so a lower bound: furniture is not added, so the room is larger. One sitting; partitioned from the cabins (15.02(7)).",
         ));
         let toilets = ceil_div(n, PERSONS_PER_TOILET);
         rows.push(row(

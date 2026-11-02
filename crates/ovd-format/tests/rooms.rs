@@ -85,9 +85,15 @@ fn the_cabins_of_a_sea_going_hull_are_es_trin_and_say_mlc_is_not_applied() {
     let r = results("coastal-and-river", json!({}));
     assert_eq!(r["rooms"]["mlc_applied"], json!(false));
     assert!(r["rooms"]["rule"].as_str().unwrap().contains("not applied"));
-    // The floor is no smaller than the interim one (the rooms alone may be under it).
+    // Hand value: for b berths, cabins 3.5 b, communal max(2 b, 8), toilets ceil(b / 6) x 1.0,
+    // corridor 0.6 x ceil(b / 2) x 1.75; the sea floor is the larger of that and the interim floor of
+    // 2 gas accommodation units of 12.192 x 2.438 m (= 59.4 m2).
+    let b = r["crew"]["berths"].as_f64().unwrap();
+    let rooms = 3.5 * b + (2.0 * b).max(8.0) + (b / 6.0).ceil() + 0.6 * (b / 2.0).ceil() * 1.75;
+    let interim = 2.0 * 12.192 * 2.438;
+    assert!((r["rooms"]["total_m2"].as_f64().unwrap() - rooms).abs() < 1e-9);
     let req = r["rooms"]["required_area_m2"].as_f64().unwrap();
-    assert!(req >= r["rooms"]["total_m2"].as_f64().unwrap());
+    assert!((req - rooms.max(interim)).abs() < 1e-9, "{req}");
     assert_eq!(r["rooms"]["settled"], json!(true));
 }
 
@@ -98,4 +104,27 @@ fn a_container_block_option_has_no_rooms_block() {
         json!({ "arrangement_style": "container_block" }),
     );
     assert!(r.get("rooms").is_none());
+}
+
+#[test]
+fn mode_a_and_mode_b_differ_in_the_crew_and_the_citation_not_in_the_cabin_rule() {
+    // In this model every berth gets its own cabin (the cautious reading of ES-TRIN 15.02(10)), so
+    // operating mode A1 (14 h) and mode B (24 h) both give one cabin each. What differs is the crew
+    // table cell (so the berths) and that only mode B cites RPN 18.02(4) on the cabin row. The model
+    // has no rule that lets a mode A crew share a cabin.
+    let a = results("river-only", json!({ "navigation_hours_per_day": 14.0 }));
+    let b = results("river-only", json!({ "navigation_hours_per_day": 24.0 }));
+    assert_eq!(a["crew"]["rpn"]["operating_mode"], json!("A1"));
+    assert_eq!(b["crew"]["rpn"]["operating_mode"], json!("B"));
+    for r in [&a, &b] {
+        assert_eq!(row(r, "cabin")["count"], r["crew"]["berths"]);
+    }
+    assert!(!row(&a, "cabin")["clause"].as_str().unwrap().contains("RPN"));
+    assert!(
+        row(&b, "cabin")["clause"]
+            .as_str()
+            .unwrap()
+            .contains("via docs/research/manning.md")
+    );
+    assert!(b["crew"]["berths"].as_i64() >= a["crew"]["berths"].as_i64());
 }
