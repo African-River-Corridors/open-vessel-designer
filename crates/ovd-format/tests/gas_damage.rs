@@ -123,3 +123,34 @@ fn breached_tanks_are_named_and_only_when_flooded() {
         }
     }
 }
+
+/// Issue #760: every case has its intermediate stages at 25, 50 and 75 %, and the IGC 2.7.1.2 and 2.7.1.3 rows
+/// are evaluated on each case (a case whose final stage does not float has no heel value, so its 2.7.1.2 row
+/// says why).
+#[test]
+fn every_case_has_three_intermediate_stages_and_their_rules_are_evaluated() {
+    let r = new_gas_results(json!({}));
+    let cases = r["damage"]["cases"].as_array().unwrap();
+    for c in cases {
+        let fractions: Vec<f64> = c["stages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["fraction"].as_f64().unwrap())
+            .collect();
+        assert_eq!(fractions, vec![0.25, 0.5, 0.75], "{}", c["name"]);
+    }
+    let heel = rows(&r, "igc/2.7.1.2/heel-any-stage");
+    let residual = rows(&r, "igc/2.7.1.3/intermediate-residual-stability");
+    assert_eq!(heel.len(), cases.len());
+    assert_eq!(residual.len(), cases.len());
+    assert!(
+        residual
+            .iter()
+            .all(|x| x["outcome"] == "pass" || x["outcome"] == "fail")
+    );
+    assert!(heel.iter().any(|x| x["outcome"] == "pass"));
+    assert!(heel.iter().all(|x| x["outcome"] == "pass"
+        || x["outcome"] == "fail"
+        || x["outcome"] == "not evaluated"));
+}

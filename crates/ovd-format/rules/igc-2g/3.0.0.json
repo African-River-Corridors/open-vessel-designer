@@ -892,6 +892,70 @@
       "gap": "the openings of the hull are not an input yet, so the damaged waterline cannot be checked against them"
     },
     {
+      "id": "igc/2.7.1.2/heel-any-stage",
+      "title": "The angle of heel due to unsymmetrical flooding does not exceed 30 degrees at any stage of flooding",
+      "origin": "regulation",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "edition": "IGC Code as adopted by MSC.370(93), amended by MSC.411(97), MSC.441(99), MSC.476(102), MSC.492(104), MSC.523(106) and MSC.566(109); none changes 2.3, 2.4 or 4.23; MSC.492(104) replaces 2.7.1.1",
+        "locator": "2.7.1.2",
+        "page": "MSC.370-93.pdf, annex p. 31",
+        "access": "free",
+        "also": []
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#760"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "stability.damage_stage_heel"
+      },
+      "compare": "le",
+      "limit": {
+        "value": 30.0,
+        "unit": "deg"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "3.0.0"
+    },
+    {
+      "id": "igc/2.7.1.3/intermediate-residual-stability",
+      "title": "The residual stability at the intermediate stages of flooding is not less than 2.7.2.1 requires",
+      "origin": "regulation",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "edition": "IGC Code as adopted by MSC.370(93), amended by MSC.411(97), MSC.441(99), MSC.476(102), MSC.492(104), MSC.523(106) and MSC.566(109); none changes 2.3, 2.4 or 4.23; MSC.492(104) replaces 2.7.1.1",
+        "locator": "2.7.1.3",
+        "page": "MSC.370-93.pdf, annex p. 31",
+        "access": "free",
+        "also": [
+          "2.7.2.1"
+        ]
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#760"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_intermediate"
+      },
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "3.0.0"
+    },
+    {
       "id": "igc/2.7.2.2/emergency-power",
       "title": "The emergency source of power is capable of operating at final equilibrium after flooding",
       "origin": "regulation",

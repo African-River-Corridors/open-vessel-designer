@@ -137,7 +137,10 @@ pub fn gas_damage_verdicts(
         StandardOfDamage, deck_edge_immersed, gas_flooding, igc_damage_cases,
         without_breached_cargo,
     };
-    use ovd_core::damage_stability::{DamageCriteria, Floats, assess, righting_lever_at};
+    use ovd_core::damage_stability::{
+        DamageCriteria, Floats, INTERMEDIATE_FRACTIONS, assess, intermediate_stages,
+        righting_lever_at,
+    };
     use ovd_core::sections::{Gravity, Waterplane};
     use serde_json::json;
     let num = crate::eval::num;
@@ -209,6 +212,16 @@ pub fn gas_damage_verdicts(
                 start,
                 &DamageCriteria::IGC_2_7,
             );
+            // Issue #760: the intermediate stages, by added mass with the cargo still aboard (D15 to D18).
+            let stages = intermediate_stages(
+                &hull.table,
+                &f.flooded,
+                &outcome,
+                (mass, g),
+                density,
+                start,
+                &DamageCriteria::IGC_2_7,
+            );
             let deck = outcome.floats == Floats::Yes
                 && deck_edge_immersed(
                     &Waterplane {
@@ -246,6 +259,18 @@ pub fn gas_damage_verdicts(
                 "area_m_rad": num(outcome.area_m_rad),
                 "deck_edge_immersed": deck,
                 "ok": outcome.ok,
+                "stages": stages.iter().zip(INTERMEDIATE_FRACTIONS).map(|(st, fr)| json!({
+                    "fraction": num(fr),
+                    "floats": match st.floats {
+                        Floats::Yes => "yes",
+                        Floats::Sinks => "sinks",
+                        Floats::NoEquilibrium => "no equilibrium",
+                    },
+                    "heel_deg": num(st.heel_deg),
+                    "max_gz_m": num(st.max_gz_m),
+                    "area_m_rad": num(st.area_m_rad),
+                    "ok": st.ok,
+                })).collect::<Vec<_>>(),
             }));
             if worse {
                 worst = Some((out.len(), f.flooded.clone(), m, gd));
@@ -254,6 +279,7 @@ pub fn gas_damage_verdicts(
                 name: format!("{}: {}", c.condition.name, case.name),
                 flooded: case.flooded.iter().map(|v| v.name.clone()).collect(),
                 outcome,
+                stages,
             });
         }
         if let Some((i, flooded, m, gd)) = worst {
