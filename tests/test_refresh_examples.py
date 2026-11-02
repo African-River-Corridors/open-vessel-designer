@@ -30,6 +30,7 @@ def readme(tmp_path, text=TABLE):
 
 
 def test_sensitivities_cells_are_replaced(tmp_path):
+    """Label: property"""
     d = readme(tmp_path)
     assert tool.update_sensitivities(d, [option("I lift"), option("M river", cargo=7.0)]) == []
     text = (d / "README.md").read_text()
@@ -37,6 +38,7 @@ def test_sensitivities_cells_are_replaced(tmp_path):
 
 
 def test_a_renamed_row_fails(tmp_path):
+    """Label: property"""
     d = readme(tmp_path, TABLE.replace("| M river |", "| M  river |"))
     problems = tool.update_sensitivities(d, [option("I lift"), option("M river")])
     assert any("'M  river' matches no Option" in p for p in problems)
@@ -44,24 +46,29 @@ def test_a_renamed_row_fails(tmp_path):
 
 
 def test_a_row_with_the_wrong_cell_count_fails(tmp_path):
+    """Label: property"""
     d = readme(tmp_path, TABLE.replace("| M river | b | 1.00 |", "| M river | b |"))
     assert any("cells, not 6" in p for p in tool.update_sensitivities(d, [option("I lift"), option("M river")]))
 
 
 def test_an_option_with_no_row_fails(tmp_path):
+    """Label: property"""
     d = readme(tmp_path)
     assert any("'K both' has no row" in p for p in tool.update_sensitivities(d, [option("I lift"), option("M river"), option("K both")]))
 
 
 def test_a_missing_table_fails(tmp_path):
+    """Label: property"""
     assert tool.update_sensitivities(readme(tmp_path, "# nothing\n"), [option("I lift")])
 
 
 def test_every_examples_folder_is_handled():
+    """Label: property"""
     assert tool.unhandled_examples() == []
 
 
 def test_an_unlisted_example_folder_fails(tmp_path):
+    """Label: property"""
     (tmp_path / "examples" / "new-one").mkdir(parents=True)
     (tmp_path / "examples" / "new-one" / "a.vdesign").write_text("{}")
     name = tool.EXAMPLES[0][0]
@@ -72,6 +79,7 @@ def test_an_unlisted_example_folder_fails(tmp_path):
 
 
 def test_check_with_from_results_is_refused(monkeypatch):
+    """Label: property"""
     monkeypatch.setattr(sys, "argv", ["refresh_examples.py", "--check", "--from-results", "r.json"])
     with pytest.raises(SystemExit) as e:
         tool.main()
@@ -79,6 +87,7 @@ def test_check_with_from_results_is_refused(monkeypatch):
 
 
 def test_an_untabulated_option_must_match_the_declared_pattern(tmp_path):
+    """Label: property"""
     d = readme(tmp_path)
     opts = [option("I lift"), option("M river"), option("N1 Cb 0.97"), option("Z other")]
     problems = tool.update_sensitivities(d, opts, r"[NP][1-9] Cb \d\.\d+")
