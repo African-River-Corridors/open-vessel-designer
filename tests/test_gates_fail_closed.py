@@ -17,7 +17,7 @@ GATES = ROOT / "tools" / "gates.sh"
 # Every external tool the script calls. Each must be in the tool check, or a missing one can make a
 # step run inert (a missing `mktemp` or `chmod` leaves the no-Python shims unmade, and cargo test
 # then runs with the real Python on PATH and still reports ok).
-GATES_TOOLS = ["dirname", "git", "mktemp", "chmod", "cat", "env", "mv"]
+GATES_TOOLS = ["dirname", "git", "mktemp", "chmod", "cat", "env"]
 
 
 def _path_with_only(tmp_path: Path, tools: list[str], stubs: tuple[str, ...] = ()) -> str:
@@ -241,3 +241,10 @@ def test_the_whole_gate_still_counts_every_step(tmp_path):
     assert r.returncode == 0, r.stderr
     assert r.stdout.count("gates: ok:") == 10
     assert "all 10 steps passed" in r.stdout
+
+
+def test_a_partition_past_the_last_fails(tmp_path):
+    """Label: property"""
+    r = _stub_gates(tmp_path, GATES_PARTITION="13/12")
+    assert r.returncode != 0
+    assert "GATES_PARTITION must look like 2/4" in r.stderr
