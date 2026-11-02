@@ -87,8 +87,11 @@ esac
 selected() { [ "$SELECTED" = all ] || case ",$SELECTED," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 [ -d "$(rustc --print target-libdir --target "$WASM_TARGET" 2>/dev/null)" ] \
   || fail "the $WASM_TARGET target is not installed (rustup target add $WASM_TARGET)"
-"$PY" -c "import pytest" 2>/dev/null || fail "pytest is not importable by $PY (pip install -e '.[dev]')"
-"$PY" -c "import xdist" 2>/dev/null || fail "pytest-xdist is not importable by $PY (pip install -e '.[dev]')"
+# pytest is checked only when its step runs: the Rust test jobs do not install the package (issue #819).
+if selected pytest; then
+  "$PY" -c "import pytest" 2>/dev/null || fail "pytest is not importable by $PY (pip install -e '.[dev]')"
+  "$PY" -c "import xdist" 2>/dev/null || fail "pytest-xdist is not importable by $PY (pip install -e '.[dev]')"
+fi
 
 # Note: "$@" runs inside `||`, so bash ignores `set -e` in it. A step that is a shell function
 # must return non-zero on every failure itself (see cargo_test_without_python).
