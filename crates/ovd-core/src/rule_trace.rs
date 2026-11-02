@@ -571,7 +571,7 @@ pub static MEASURES: &[MeasureDef] = &[
         object: ObjectType::MarpolDamageCase,
         value: ValueKind::Bool,
         args: &[],
-        method: "The damaged hull floats where the heel at the stage of equilibrium is at most 25 degrees and the righting lever stays positive over 20 degrees beyond it, reaching 0.1 m with an area of 0.0175 m.rad within that range (MARPOL Annex I regulation 28.3.2 and 28.3.3). Lost buoyancy method on the Sections Table, final stage of flooding, for the extents of regulation 28.2; a damaged cargo tank is flooded at 95 % and the oil keeps its mass",
+        method: "The damaged hull floats where the heel at the stage of equilibrium is at most 25 degrees and the righting lever stays positive over 20 degrees beyond it, reaching 0.1 m with an area of 0.0175 m.rad within that range (MARPOL Annex I regulation 28.3.2 and 28.3.3). Lost buoyancy method on the Sections Table, final stage of flooding, for the extents of regulation 28.2; a damaged cargo tank is flooded at 95 % and its oil leaves the loading condition (regulation 28.4.1, any outflow of liquids from damaged compartments; spec 0012 D20)",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {

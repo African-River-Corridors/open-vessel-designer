@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- MARPOL I 28.4.1 (issue #764, spec 0012 D20): on the MARPOL damage path a breached cargo tank's oil now leaves the laden condition ("any outflow of liquids from damaged compartments"), taken out by volume share from the tank's centre. Crude results move in the unhashed `marpol_damage` block (the coastal crude fixture: 28 of 33 cases move, all still meet regulation 28.3); no hashed result moves.
