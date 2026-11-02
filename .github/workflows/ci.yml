@@ -68,7 +68,7 @@ jobs:
           python3 -c 'import json, os, sys
           parts = json.loads(os.environ["PARTS"])
           total = int(os.environ["TOTAL"])
-          if parts != list(range(1, len(parts) + 1)) or len(parts) != total:
+          if any(type(p) is not int for p in parts) or parts != list(range(1, len(parts) + 1)) or len(parts) != total:
               sys.exit(f"CI_RUST_PARTS must be [1, ..., N], not {parts}")'
       - uses: actions/checkout@v4
       - uses: ./.github/actions/gate-env

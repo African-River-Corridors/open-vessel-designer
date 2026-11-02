@@ -290,8 +290,10 @@ def test_every_placed_test_runs_in_exactly_one_job_for_any_job_count(tmp_path, t
     libdir.mkdir()
     path = _path_with_only(tmp_path, GATES_TOOLS)
     bin_dir = Path(path)
+    # One file per call: the placed run and the rest run call cargo at the same time.
     calls = tmp_path / "calls"
-    (bin_dir / "cargo").write_text(f'#!/bin/sh\nprintf "%s\\n" "$*" >> "{calls}"\nexit 0\n')
+    calls.mkdir()
+    (bin_dir / "cargo").write_text(f'#!/bin/sh\nprintf "%s\\n" "$*" > "{calls}/$$"\nexit 0\n')
     (bin_dir / "rustc").write_text(f'#!/bin/sh\necho "{libdir}"\n')
     (bin_dir / "py-stub").write_text("#!/bin/sh\nexit 0\n")
     for stub in ("cargo", "rustc", "py-stub"):
@@ -303,10 +305,11 @@ def test_every_placed_test_runs_in_exactly_one_job_for_any_job_count(tmp_path, t
     every = {f"binary_id({b}) & test(={t})" for _, b, t, _ in lines}
     seen = []
     for k in range(1, total + 1):
-        calls.write_text("")
+        for f in calls.iterdir():
+            f.unlink()
         r = _gates(path, OVD_PYTHON=str(bin_dir / "py-stub"), GATES_STEPS="rust", GATES_PARTITION=f"{k}/{total}")
         assert r.returncode == 0, r.stderr
-        runs = [c for c in calls.read_text().splitlines() if c.startswith("nextest run ")]
+        runs = [c for f in calls.iterdir() for c in f.read_text().splitlines() if c.startswith("nextest run ")]
         placed = [c for c in runs if "--profile pr-placed" in c]
         rest = [c for c in runs if f"--partition hash:{k}/{total}" in c]
         assert len(rest) == 1 and set(re.findall(r"\((binary_id\([^)]*\) & test\(=[^)]*\))\)", rest[0])) == every
