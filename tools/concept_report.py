@@ -653,7 +653,7 @@ def _summary(o):
 
 
 def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", title=None, commit=None, assets=None,
-          status="draft"):
+          status="draft", prepared=None, checked=None):
     """The concept report of one Option of `run` (an `ovd run --json` output) as an ORD document.
 
     The document has the three zones of spec 0015 section 4, with every heading always present: the summary and
@@ -666,6 +666,11 @@ def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", t
     r = next(x for x in run["options"] if x["name"] == ref) if ref else None
     assets = assets or {}
     status = check_status(status)
+    need = {"for-checking": ["prepared"], "for-approval": ["prepared", "checked"]}.get(status, [])
+    given = {"prepared": prepared, "checked": checked}
+    lacking = [k for k in need if not given[k]]
+    if lacking:
+        raise ValueError(f"status {status!r} needs {' and '.join(need)} (ORD004); missing: {', '.join(lacking)}")
     if not re.fullmatch(r"[A-Z]{1,2}", str(revision)):
         raise ValueError(f"revision {revision!r} must be a letter: a concept report never passes a working status")
     states = chapter_states(o, r, assets)
@@ -701,6 +706,9 @@ def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", t
     control = {"revision": revision, "date": date, "status": status}
     if number:
         control["number"] = number
+    for k, v in given.items():
+        if v:
+            control[k] = v
     doc = {
         "ord": "0.2", "class": "technical-note",
         "title": title or f"Concept design report: {o['name']}",
@@ -768,6 +776,8 @@ def main(argv=None):
     ap.add_argument("--revision", default="A")
     ap.add_argument("--date", default="1970-01-01")
     ap.add_argument("--status", default="draft", help=f"an ORD status, at most {STATUS_CAP!r} (a concept report is never for approval)")
+    ap.add_argument("--prepared", help="who prepared it (ORD needs it from status for-checking)")
+    ap.add_argument("--checked", help="who checked it (ORD needs it at status for-approval)")
     ap.add_argument("--title")
     ap.add_argument("--commit", help="the engine commit the run was made at")
     ap.add_argument("-o", "--out", type=pathlib.Path, required=True, help="the ORD document to write")
@@ -775,7 +785,7 @@ def main(argv=None):
     ap.add_argument("--ord", default="ord", help="the ord binary (for --render)")
     a = ap.parse_args(argv)
     run = json.loads(a.run.read_text(encoding="utf-8"))
-    doc = build(run, a.option, a.ref, a.number, a.revision, a.date, a.title, a.commit, status=a.status)
+    doc = build(run, a.option, a.ref, a.number, a.revision, a.date, a.title, a.commit, status=a.status, prepared=a.prepared, checked=a.checked)
     a.out.write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     if a.render:
         a.render.mkdir(parents=True, exist_ok=True)

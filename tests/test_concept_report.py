@@ -316,12 +316,33 @@ def test_the_status_cannot_be_set_above_the_cap(status):
         cr.build(RUN, "A basis", status=status)
 
 
+@pytest.mark.parametrize("status,kw", [("for-checking", {}), ("for-approval", {}), ("for-approval", {"prepared": "A"})])
+def test_a_status_that_needs_a_sign_off_name_fails_clearly_without_it(status, kw):
+    """Label: property"""
+    with pytest.raises(ValueError, match="ORD004"):
+        cr.build(RUN, "A basis", status=status, **kw)
+
+
+@needs_ord
+def test_ord_check_passes_at_for_approval_with_both_names_and_fails_without(tmp_path):
+    """Label: property"""
+    doc = cr.build(RUN, "A basis", status="for-approval", prepared="Preparer", checked="Checker", number="TN-0001")
+    assert doc["control"]["prepared"] == "Preparer" and doc["control"]["checked"] == "Checker"
+    src = tmp_path / "ok.json"
+    src.write_text(json.dumps(doc), encoding="utf-8")
+    assert subprocess.run([ORD, "check", str(src)], capture_output=True).returncode == 0
+    del doc["control"]["checked"]
+    src.write_text(json.dumps(doc), encoding="utf-8")
+    bad = subprocess.run([ORD, "check", str(src)], capture_output=True, text=True)
+    assert bad.returncode != 0 and "ORD004" in bad.stderr
+
+
 @pytest.mark.parametrize("status,want", [("draft", "draft"), ("for-checking", "for-checking"), ("For Review", "for-checking"),
                                          ("for_checking", "for-checking"), ("for-approval", "for-approval"),
                                          ("For Approval", "for-approval"), ("for-sign-off", "for-approval")])
 def test_a_status_at_or_below_the_cap_is_kept(status, want):
     """Label: property"""
-    assert cr.build(RUN, "A basis", status=status)["control"]["status"] == want
+    assert cr.build(RUN, "A basis", status=status, prepared="P", checked="C")["control"]["status"] == want
     assert cr.STATUS_CAP == "for-approval"
 
 
