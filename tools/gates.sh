@@ -58,7 +58,7 @@ cd "$(dirname "$0")/.."
 PY="${OVD_PYTHON:-python3}"
 WASM_TARGET="wasm32-unknown-unknown"
 PROFILE="${GATES_NEXTEST_PROFILE:-pr}"
-EXPECTED_STEPS=10
+EXPECTED_STEPS=11
 steps_run=0
 steps_wanted=0
 GROUPS_ALL="lint rust rules impact pytest"
