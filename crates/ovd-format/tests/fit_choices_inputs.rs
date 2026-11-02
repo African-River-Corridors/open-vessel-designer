@@ -34,6 +34,14 @@ fn design(extra: Value) -> Value {
     })
 }
 
+/// Issue #779: the same hull on the container block. A coastal Option takes the deckhouse; the tests
+/// that call this are about the lifting wheelhouse and the arrangements it rejects.
+fn block(extra: Value) -> Value {
+    let mut extra = extra;
+    extra["arrangement_style"] = json!("container_block");
+    design(extra)
+}
+
 fn run(file: &Value) -> Value {
     let filled = fill_as_new(&file.to_string(), &Profile::built_in());
     assert_eq!(filled.report.errors, Vec::<String>::new());
@@ -123,7 +131,7 @@ fn tanks_across_is_a_whole_number_of_at_least_one() {
 #[test]
 fn the_wing_tank_warning_shows_with_no_wing_tank_and_a_least_side_space_clears_it() {
     // The issue's case: three across on the IGC minimum, which is under the wing tank gap.
-    let plain = run(&design(json!({})));
+    let plain = run(&block(json!({})));
     let side = plain["arrangement"]["side_clearance_m"].as_f64().unwrap();
     let chosen: Vec<&Value> = plain["fit_tried"]
         .as_array()
@@ -137,7 +145,7 @@ fn the_wing_tank_warning_shows_with_no_wing_tank_and_a_least_side_space_clears_i
     assert!(no_wing_warning(&plain), "{:?}", plain["warnings"]);
 
     let min = 2.0;
-    let wide = run(&design(json!({ "min_side_space_m": min })));
+    let wide = run(&block(json!({ "min_side_space_m": min })));
     let side = wide["arrangement"]["side_clearance_m"].as_f64().unwrap();
     assert!(side + 1e-9 >= min, "side {side} m");
     assert!(!no_wing_warning(&wide), "{:?}", wide["warnings"]);
@@ -151,7 +159,7 @@ fn the_wing_tank_warning_shows_with_no_wing_tank_and_a_least_side_space_clears_i
 
 #[test]
 fn each_arrangement_lost_for_a_reason_and_the_list_is_not_hashed() {
-    let r = run(&design(json!({})));
+    let r = run(&block(json!({})));
     assert!(UNHASHED_KEYS.contains(&"fit_tried"));
     let tried = r["fit_tried"].as_array().unwrap();
     for t in tried {
@@ -218,4 +226,21 @@ fn the_wheelhouse_lift_is_an_estimate_in_the_published_range_and_names_its_datum
         o.input("wheelhouse_max_lift_m").unwrap().value.as_f64(),
         Some(6.0)
     );
+}
+
+#[test]
+fn a_deckhouse_wheelhouse_lifts_only_with_an_air_draft_limit_however_much_lift_is_typed() {
+    // Issue #779, spec 0011 D4: the twin of the lift test above for the deckhouse. The typed lift
+    // (an estimate in the published range) is read only when an air-draft limit makes the wheelhouse
+    // elevating; otherwise the wheelhouse is fixed and the house gets the tiers.
+    let fixed = run(&design(json!({ "wheelhouse_max_lift_m": 6.0 })));
+    let aft = &fixed["drawing"]["aft_arrangement"];
+    assert_eq!(aft["deckhouse"]["wheelhouse"], json!("fixed"));
+    assert_eq!(aft["wheelhouse_lift_m"].as_f64(), Some(0.0));
+    let elevating = run(&design(
+        json!({ "wheelhouse_max_lift_m": 6.0, "air_draft_limit_m": 40.0 }),
+    ));
+    let aft = &elevating["drawing"]["aft_arrangement"];
+    assert_eq!(aft["deckhouse"]["wheelhouse"], json!("elevating"));
+    assert!(aft["wheelhouse_lift_m"].as_f64().unwrap() <= 6.0 + 1e-9);
 }

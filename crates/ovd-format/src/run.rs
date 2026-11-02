@@ -199,6 +199,7 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         "bollard_pull_factor",
         "sightline_method",
         "wheelhouse_type",
+        "arrangement_style",
         "tank_head_type",
         "tank_liquid_pressure",
         "tank_allowable_stress_basis",
@@ -269,6 +270,8 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
     put("eta_d", "propulsive_efficiency");
     put("speed_max_kn", "max_speed_kn");
     put("air_draft_limit_m", "air_draft_limit_m");
+    // Issue #779: a coastal deckhouse is sized to SOLAS V/22 as well as ES-TRIN.
+    put("service_area", "service_area");
     put("draught_limit_m", "draught_limit_m");
     put("downflooding_angle_deg", "downflooding_angle_deg");
     put("downflooding_openings", "downflooding_openings");

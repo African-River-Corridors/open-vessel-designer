@@ -293,6 +293,7 @@ fn aft_from_json(value: &Value, ctx: &str) -> Result<AftArrangementResult, EvalE
             Some(_) => o.f64("deck_length_m")?,
         },
         machinery: None,
+        deckhouse: None,
     })
 }
 

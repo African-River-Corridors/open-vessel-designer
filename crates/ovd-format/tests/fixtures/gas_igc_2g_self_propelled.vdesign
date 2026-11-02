@@ -577,6 +577,10 @@
           "value": "river-only",
           "source": "default"
         },
+        "arrangement_style": {
+          "value": "container_block",
+          "source": "default"
+        },
         "rule_sets": {
           "value": [
             {

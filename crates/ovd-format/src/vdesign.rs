@@ -71,6 +71,9 @@ pub const KEYED_DEFAULTS: &[(&str, &str, &[&str])] = &[
     // Issue #331 (spec 0006 section 3.2): the slop share by Service Area (MARPOL Annex I Reg. 29 is
     // for sea-going tankers).
     ("slop_share", "service_area", SERVICE_AREAS),
+    // Issue #779 (spec 0011 D3): a new coastal Option takes the deckhouse, a river-only one the
+    // container block.
+    ("arrangement_style", "service_area", SERVICE_AREAS),
     ("battery_unit_count", "cargo_phase", CARGO_PHASES),
     ("accommodation_unit_count", "cargo_phase", CARGO_PHASES),
     // Issue #347 (spec 0007, maintainer decision 7): a new Option's stern by Cargo phase.
@@ -176,6 +179,10 @@ pub const BATTERY_POWER_SOURCES: &[&str] = &["battery_electric", "battery_hybrid
 pub const BOW_THRUSTERS: &[&str] = &["none", "channel_jet", "tunnel"];
 pub const BOW_THRUSTERS_FITTED: &[&str] = &["channel_jet", "tunnel"];
 pub const WHEELHOUSE_TYPES: &[&str] = &["elevating", "fixed"];
+/// How the stern is laid out (spec 0011 D3, issue #779): today's container block, or a deckhouse of
+/// tiers over the machinery space. Held in step with `ovd_core::aft_arrangement::ARRANGEMENT_STYLES`
+/// by a test.
+pub const ARRANGEMENT_STYLES: &[&str] = &["container_block", "deckhouse"];
 pub const SIGHTLINE_METHODS: &[&str] = &["margin", "blind_distance"];
 
 /// The tank insulation types. `unspecified` is the generic insulation the engine used before the
@@ -1208,6 +1215,12 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
         applies_to: AppliesTo::All,
         value: "\"elevating\"",
     },
+    // Issue #779 (spec 0011 D3): a file saved before has today's stern block, exactly.
+    LegacyFixedJson {
+        name: "arrangement_style",
+        applies_to: AppliesTo::All,
+        value: "\"container_block\"",
+    },
     LegacyFixedJson {
         name: "sightline_method",
         applies_to: AppliesTo::All,
@@ -1781,6 +1794,8 @@ pub const CHOICE_LABELS: &[(&str, &str)] = &[
     ("battery_hybrid", "Battery hybrid"),
     ("channel_jet", "Channel jet"),
     ("elevating", "Elevating"),
+    ("container_block", "Container block"),
+    ("deckhouse", "Deckhouse"),
     ("fixed", "Fixed"),
     ("margin", "Margin over the obstruction"),
     ("blind_distance", "Blind distance (ES-TRIN 7.02)"),
@@ -3470,6 +3485,14 @@ pub const INPUTS: &[InputSpec] = &[
         InputKind::Choice(SERVICE_AREAS),
         false,
         Group::Rules,
+    ),
+    // Issue #779 (spec 0011 D3): after the Service Area, which sets its default (a new coastal Option
+    // takes the deckhouse).
+    self_propelled(
+        "arrangement_style",
+        "Arrangement Style",
+        InputKind::Choice(ARRANGEMENT_STYLES),
+        Group::AftBlock,
     ),
     // Issue #331: after the Service Area, which sets its default.
     only(
