@@ -34,7 +34,9 @@ fn the_cn_ii_benchmark_is_reproduced() {
     // 2021.2487121368047.
     // Re-pinned again (issue #381, the opening setback is measured from the cargo area: 0.20 m more
     // aft separation); was 2033.4091181911363.
-    assert_eq!(f.payload_t, 2025.3032139076731);
+    // Re-pinned again (spec 0011 D17, no hull length for the opening setback); was
+    // 2025.3032139076731.
+    assert_eq!(f.payload_t, 2106.1768017414365);
     assert_eq!((f.n_tanks, f.n_tanks_wide, f.n_tanks_long), (2, 1, 2));
     // Re-pinned (issue #264); was "volume" under the stepped IGC_2G and "draft" (issue #237): the
     // arrangement that passes stability is smaller, so the volume binds again.
@@ -104,7 +106,8 @@ fn the_smallest_viable_loa_is_found_to_a_tenth_of_a_metre() {
         // 35.6 under the stepped IGC_2G. Re-pinned (#722, the hull steel from the panel model); was 37.8.
         // Re-pinned (#740, the scantlings take the rule length of ABS 3-1-1/3.1); was 41.4.
         // Re-pinned (#745, the lightship takes the plate model's ordered weight); was 41.6.
-        41.7
+        // Re-pinned again (spec 0011 D17, no hull length for the opening setback); was 41.7.
+        38.5
     );
 }
 
@@ -167,8 +170,9 @@ fn a_cap_clearance_a_hair_under_the_rule_is_accepted_not_refused() {
     };
     // Issue #280: the end spaces took 0.30 m less (2.2 m, not 2.5 m); issue #381: the aft separation
     // is 0.20 m more (the setback from the cargo area), so the hull is 0.10 m shorter than before
-    // for the same tank.
-    let f = fit(45.15667782, 10.0, "LNG", 4.0, &o).unwrap();
+    // for the same tank. Spec 0011 (D17): the aft separation is 2.00 m less (no setback length), so
+    // the hull is 2.00 m shorter for the same tank (was 45.15667782).
+    let f = fit(43.15667782, 10.0, "LNG", 4.0, &o).unwrap();
     // ce96e66
     assert_eq!(f.payload_t, 427.5000000542083);
     assert_eq!(f.side_clearance_m, 0.9999999995);
@@ -319,29 +323,29 @@ fn no_feasible_fit_has_a_tank_longer_than_seven_diameters() {
 // Issue #57: `smallest_viable_loa` must treat a length with exactly zero capacity as NOT viable
 // (`volume_capacity_t > 0.0`). The mutant `>=` would treat it as viable.
 //
-// Worked out. Beam 12 m, LNG, draught cap 3 m, search range 10 m to 60 m:
-//  - the first midpoint is 0.5 * (10 + 60) = 35 m;
-//  - at 35 m the hull has no cargo area, so the capacity is exactly 0.0 (asserted below);
-//  - at 60 m the capacity is positive (asserted below), so the search does not return infinity;
-//  - the real code therefore moves `lo` up to 35 and can only return a length above 35 m;
-//  - the mutant would move `hi` down to 35 and keep halving towards 10 m, so it could only return
-//    a length at most 35 m (it would stop at 10.1 m).
-// The answer must lie above the last length known to have zero capacity (35 m). Since issue #264 a
-// viable length must also pass every check, stability included, so a length with capacity (40 m,
-// asserted below) need not be viable: on the hull's sections (issue #448) the answer is above it.
+// Worked out. Beam 12 m, LNG, draught cap 3 m, search range 10 m to 50 m:
+//  - the first midpoint is 0.5 * (10 + 50) = 30 m;
+//  - at 30 m the hull has no cargo area, so the capacity is exactly 0.0 (asserted below);
+//  - at 50 m the capacity is positive (asserted below), so the search does not return infinity;
+//  - the real code therefore moves `lo` up to 30 and can only return a length above 30 m;
+//  - the mutant would move `hi` down to 30 and keep halving towards 10 m, so it could only return
+//    a length at most 30 m (it would stop at 10.1 m).
+// The answer must lie above the last length known to have zero capacity (30 m). Since issue #264 a
+// viable length must also pass every check, stability included. Spec 0011 (D17) took the 2.00 m
+// setback out of the hull, so 35 m (the midpoint of 10 m to 60 m before) now has capacity; the
+// range moved to keep the first midpoint at zero capacity.
 #[test]
 fn the_bisection_treats_a_zero_capacity_midpoint_as_not_viable() {
     let o = FitOptions::for_smallest_viable_loa();
     let cap = |loa: f64| fit(loa, 12.0, "LNG", 3.0, &o).unwrap().volume_capacity_t;
     assert_eq!(
-        cap(35.0),
+        cap(30.0),
         0.0,
-        "35 m (the first midpoint) must have exactly zero capacity"
+        "30 m (the first midpoint) must have exactly zero capacity"
     );
-    assert!(cap(40.0) > 0.0);
-    assert!(cap(60.0) > 0.0);
-    let loa = smallest_viable_loa(12.0, "LNG", 3.0, 10.0, 60.0, &o).unwrap();
-    assert!(loa > 35.0 && loa <= 60.0, "got {loa}");
+    assert!(cap(50.0) > 0.0);
+    let loa = smallest_viable_loa(12.0, "LNG", 3.0, 10.0, 50.0, &o).unwrap();
+    assert!(loa > 30.0 && loa <= 50.0, "got {loa}");
     assert!(cap(loa) > 0.0);
 }
 

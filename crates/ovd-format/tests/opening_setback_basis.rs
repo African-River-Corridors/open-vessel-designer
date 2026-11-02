@@ -2,11 +2,14 @@
 //! 3.3.7 and 3.3.11 ask for entrances and openable windows at least 2.00 m from the cargo area, and
 //! the cofferdam (the aft end space) stands inside the cargo area (ADN 1.2.1). A new Option measures
 //! from the aft face of the end space (`cargo_area`): the aft separation is the end space plus the
-//! setback. A file that stores no choice keeps `tank_end`, the earlier reading, so its results do not
-//! move.
+//! setback. A file that stores no choice keeps `tank_end`, the earlier reading.
 //!
-//! Label: sourced - LR inland waterways rules Pt 4 Ch 4 3.3.7 and 3.3.11 (2.00 m from the cargo area);
-//! the rest is property.
+//! Spec 0011 (D17): the hull keeps no length for the setback, so neither choice changes the hull; the
+//! setback is checked on the opening distances (LR 3.3.7, 3.3.8, 3.3.11; IGC 3.2.4.1), and a hold
+//! cofferdam is chosen only in place of the A-60 bulkhead (IGC 3.1.2, D18).
+//!
+//! Label: sourced - IGC Code, MSC.370(93), 3.1.2 (gastight A-60 bulkhead or cofferdam) and 3.2.4.1
+//! (openings measured on the deckhouse); the rest is property.
 
 use ovd_format::vdesign::{INPUTS, LEGACY_FIXED_OTHER};
 use ovd_format::{DesignSession, HashStatus, Profile, RunOutcome, check, run_design};
@@ -86,32 +89,26 @@ fn a_file_that_stores_the_choice_as_tank_end_keeps_its_hash_and_a_file_without_i
 }
 
 #[test]
-fn from_the_cargo_area_the_aft_separation_is_the_end_space_plus_the_setback() {
+fn neither_choice_keeps_a_length_for_the_setback() {
     // The fixture stores 0.60 m aft and a 2.00 m setback.
     let tank_end = results_of(&with_basis("gas_igc_2g_exact", "tank_end"));
     let cargo_area = results_of(&with_basis("gas_igc_2g_exact", "cargo_area"));
     let sep = |r: &Value, key: &str| r["drawing"]["separation"][key].as_f64().unwrap();
-    assert_eq!(sep(&tank_end, "aft_separation_m"), 2.0);
-    assert_eq!(sep(&tank_end, "service_space_m"), 1.4);
-    assert!((sep(&cargo_area, "aft_separation_m") - 2.6).abs() < 1e-9);
-    assert!((sep(&cargo_area, "service_space_m") - 2.0).abs() < 1e-9);
-    // The aft block moves aft by the end space, so the cargo zone is that much shorter.
-    let zone = |r: &Value| r["geometry"]["cargo_zone_length_m"].as_f64().unwrap();
-    assert!((zone(&tank_end) - zone(&cargo_area) - 0.6).abs() < 1e-9);
-    assert!(
-        r_cargo(&cargo_area) < r_cargo(&tank_end),
-        "a shorter cargo zone carries less"
-    );
-    // Both pass the opening check: the distance from the cargo area is 2.00 m.
     for r in [&tank_end, &cargo_area] {
-        let check = r["drawing"]["separation"]["checks"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|c| c["name"] == "opening_setback")
-            .unwrap();
-        assert_eq!(check["ok"], true, "{check}");
+        assert!((sep(r, "aft_separation_m") - 0.6).abs() < 1e-9);
+        assert_eq!(sep(r, "service_space_m"), 0.0);
+        assert!(
+            r["drawing"]["separation"]["checks"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|c| c["name"] != "opening_setback"),
+            "the setback is checked on the openings, not on the hull"
+        );
     }
+    let zone = |r: &Value| r["geometry"]["cargo_zone_length_m"].as_f64().unwrap();
+    assert!((zone(&tank_end) - zone(&cargo_area)).abs() < 1e-9);
+    assert!((r_cargo(&tank_end) - r_cargo(&cargo_area)).abs() < 1e-9);
 }
 
 fn r_cargo(r: &Value) -> f64 {

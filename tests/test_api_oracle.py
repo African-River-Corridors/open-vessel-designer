@@ -48,19 +48,19 @@ KNOWN_DIFFERENCES: dict = {
     # Issue #215: the inland type-G floors (`side_clearance_type_g_floor`, `double_bottom_type_g_floor`)
     # are removed, so a gas result lists two checks fewer, and a search that used to reject an
     # arrangement for them can pick another one. Each scenario below holds a gas check list or fit.
-    "barge_capacity.compute.gas": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "barge_capacity.compute.gas_counts": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "barge_capacity.compute.nested": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "ga_adapter.to_ga": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "gas_arrangement.fit": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "gas_arrangement.fit.exact": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "gas_separation.compute": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "simulate.gas": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "simulate.gas_igc_channel": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "simulate.gas_optimise_depth": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "edited.to_ga_with_other_draft": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "edited.to_ga_with_rebuilt_result": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
-    "reuse.is_gas_and_to_ga_over_a_sweep": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13)",
+    "barge_capacity.compute.gas": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "barge_capacity.compute.gas_counts": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "barge_capacity.compute.nested": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "ga_adapter.to_ga": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "gas_arrangement.fit": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "gas_arrangement.fit.exact": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "gas_separation.compute": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "simulate.gas": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "simulate.gas_igc_channel": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "simulate.gas_optimise_depth": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "edited.to_ga_with_other_draft": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "edited.to_ga_with_rebuilt_result": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
+    "reuse.is_gas_and_to_ga_over_a_sweep": "issue #215: the inland type-G floors are removed; issue #280: the aft end-bulkhead space check (3.5.3) replaces the cofferdam check (3.6.13); spec 0011 D17: no hull length for the opening setback",
     # Issue #237: one gas rule set, `IGC_2G`, the per-tank d(Vc) of IGC 2.4.1.1 (the stepped
     # `distance_d_vc` and the `IGC_2G_EXACT` name are gone; the dome now counts in Vc). A gas design
     # has less side clearance, so its tanks, cargo, weights and stability move. The scenarios below

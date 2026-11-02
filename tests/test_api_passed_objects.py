@@ -109,7 +109,8 @@ def test_a_result_rebuilt_with_replace_still_works():
     # (5.20345064134188, 7.565823765632389, 12.558720422799523).
     # Re-pinned (issue #745: the plate model's ordered steel); were (5.250643355578404,
     # 7.661805406134341, 12.800389514554132).
-    assert gm_fluid(gas) == close((5.3029579075663325, 7.768716812350073, 13.072670733155338))
+    # Re-pinned again (spec 0011 D17); was (5.3029579075663325, 7.768716812350073, 13.072670733155338).
+    assert gm_fluid(gas) == close((5.608357300023035, 7.668926490684012, 12.836468776928992))
     assert ga_adapter.is_gas(gas) is True
 
 
@@ -133,6 +134,8 @@ def test_assess_uses_the_gas_basis_and_density_it_is_given():
     # Re-pinned (issue #745, the plate model's ordered steel); were (5.059177590043261,
     # 7.271197388617316, 11.825690145442854) and (5.059177590043261, 7.347871928812869,
     # 11.825690145442854).
-    assert gm_fluid(res) == close((5.107412742431723, 7.367897195368848, 12.061114251838024))
+    # Re-pinned again (spec 0011 D17); were (5.107412742431723, 7.367897195368848, 12.061114251838024)
+    # and (5.107412742431723, 7.445445231457552, 12.061114251838024).
+    assert gm_fluid(res) == close((5.404512998930595, 7.2771102974128, 11.856335993139451))
     res.cargo_density_t_per_m3 = 0.45
-    assert gm_fluid(res) == close((5.107412742431723, 7.445445231457552, 12.061114251838024))
+    assert gm_fluid(res) == close((5.063147393400398, 7.346184318857567, 11.856335993139451))
