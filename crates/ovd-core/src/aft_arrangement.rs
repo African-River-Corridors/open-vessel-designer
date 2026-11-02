@@ -94,6 +94,11 @@ pub mod deckhouse_sizes {
     /// would have in the container block: the unit's floor, length x width (m2). The deckhouse
     /// takes this as an interim stand-in until the rooms are sized from MLC A3.1 and ES-TRIN 15
     /// (issue #780), which replaces it.
+    pub const REQUIRED_AREA_BASIS_ROOMS: &str =
+        "the rooms of the crew's berths, sized to ES-TRIN 2025/1 Chapter 15 (issue #780)";
+    /// A hull that reaches sea: MLC 2006 A3.1 applies and its text is not in the rule sources, so the
+    /// floor is the larger of the ES-TRIN rooms and the interim stand-in.
+    pub const REQUIRED_AREA_BASIS_SEA: &str = "the larger of the ES-TRIN 2025/1 Chapter 15 rooms of the crew's berths and the interim floor of the 40 ft accommodation units; MLC 2006 A3.1 applies to this Service Area and is not applied (text not in the rule sources) (issue #780)";
     pub const REQUIRED_AREA_BASIS: &str = "interim: the floor area of the 40 ft accommodation units the Option holds, until the rooms are sized (issue #780)";
 }
 
@@ -124,6 +129,9 @@ pub struct AftDesign {
     pub wheelhouse_max_lift_m: f64,
     /// How the stern is laid out (issue #779). `ContainerBlock`: today's block.
     pub arrangement_style: ArrangementStyle,
+    /// Issue #780: what the deckhouse rooms are sized from (the crew model's berths). `None`: the
+    /// interim stand-in floor.
+    pub rooms_basis: Option<crate::rooms::RoomsBasis>,
 }
 
 impl Default for AftDesign {
@@ -147,6 +155,7 @@ impl Default for AftDesign {
             sightline_margin_m: DEFAULT_SIGHTLINE_MARGIN_M,
             wheelhouse_max_lift_m: DEFAULT_WHEELHOUSE_MAX_LIFT_M,
             arrangement_style: ArrangementStyle::ContainerBlock,
+            rooms_basis: None,
         }
     }
 }
@@ -367,6 +376,8 @@ pub struct AftArrangementInputs {
     pub machinery: Option<crate::machinery::MachineryInputs>,
     /// How the stern is laid out (issue #779). `ContainerBlock`: today's block, exactly.
     pub arrangement_style: ArrangementStyle,
+    /// Issue #780: what the deckhouse rooms are sized from. `None`: the interim stand-in floor.
+    pub rooms_basis: Option<crate::rooms::RoomsBasis>,
     /// Issue #779: the lowest eye height above the keel a fixed deckhouse wheelhouse needs for its
     /// Blind Distance (the capacity run works it out); the house gets tiers to reach it. `None`:
     /// no such need. Not read by the container block or an elevating wheelhouse.
@@ -412,6 +423,7 @@ impl AftArrangementInputs {
             gvu_room_length_m: 2.0,
             machinery: None,
             arrangement_style: ArrangementStyle::ContainerBlock,
+            rooms_basis: None,
             wheelhouse_eye_min_m: None,
         }
     }
@@ -549,6 +561,8 @@ pub struct Deckhouse {
     pub required_area_m2: f64,
     /// What `required_area_m2` rests on.
     pub required_area_basis: String,
+    /// Issue #780: the rooms table the floor comes from; `None` on the interim stand-in.
+    pub rooms: Option<crate::rooms::Rooms>,
     /// The wheelhouse lifts: an air-draft limit is set (D4). `false`: it is fixed.
     pub wheelhouse_elevating: bool,
 }
@@ -1050,16 +1064,27 @@ fn py_floor_div(a: f64, b: f64) -> f64 {
 /// Size the deckhouse over a machinery space that ends at `x_fwd` (issue #779, spec 0011 D3, D4, D6).
 ///
 /// The deckhouse spans the machinery space from the stern, and is the beam less a side deck each
-/// side wide. It has as many tiers as hold the accommodation floor it must provide. That floor is an
-/// interim stand-in until the rooms are sized (issue #780): the floor of the 40 ft accommodation
+/// side wide. It has as many tiers as hold the accommodation floor it must provide: the rooms of the
+/// crew's berths (issue #780), or, with no berths given, the interim floor of the 40 ft accommodation
 /// units the Option holds. The main deck is its first floor; the wheelhouse stands on its top.
 fn size_deckhouse(inp: &AftArrangementInputs, x_fwd: f64) -> Deckhouse {
     use deckhouse_sizes::*;
     let width = py_max(inp.beam - 2.0 * SIDE_DECK_M, 0.0);
     let length = py_max(x_fwd, 0.0);
     let tier_area = length * width;
-    let required =
+    let interim =
         py_max(inp.n_accom_units as f64, 0.0) * inp.container_length_m * inp.container_width_m;
+    // Issue #780: the rooms of the crew's berths replace the interim floor. A hull that reaches sea
+    // is bound by MLC A3.1, which is not applied (its text is not in the rule sources), so the
+    // interim floor stays its lower bound.
+    let rooms = inp.rooms_basis.as_ref().map(crate::rooms::size_rooms);
+    let (required, required_basis) = match (&rooms, inp.rooms_basis) {
+        (Some(r), Some(b)) if b.reaches_sea => {
+            (py_max(r.total_m2, interim), REQUIRED_AREA_BASIS_SEA)
+        }
+        (Some(r), _) => (r.total_m2, REQUIRED_AREA_BASIS_ROOMS),
+        (None, _) => (interim, REQUIRED_AREA_BASIS),
+    };
     // A whole number of tiers, and at least one: the wheelhouse needs a house to stand on. A
     // quotient a hair over a whole number (rounding) does not add a tier.
     let tiers = if tier_area > 0.0 && required > 0.0 {
@@ -1103,7 +1128,8 @@ fn size_deckhouse(inp: &AftArrangementInputs, x_fwd: f64) -> Deckhouse {
         area_m2: tiers as f64 * tier_area,
         volume_m3: tiers as f64 * tier_area * TIER_HEIGHT_M,
         required_area_m2: required,
-        required_area_basis: REQUIRED_AREA_BASIS.to_string(),
+        required_area_basis: required_basis.to_string(),
+        rooms,
         wheelhouse_elevating: inp.wheelhouse_max_lift_m > 0.0,
     }
 }
@@ -1510,14 +1536,38 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
         ));
         warnings.push(Text::fixed(
             "warn-aft-deckhouse-estimates",
-            "Deckhouse stern: the tier height, the side deck and the tier limit are ESTIMATES, and the \
-             accommodation floor it holds is an interim stand-in (the floor of the 40 ft accommodation \
-             units the Option holds) until the rooms are sized from MLC A3.1 and ES-TRIN 15. A fixed wheelhouse \
+            "Deckhouse stern: the tier height, the side deck and the tier limit are ESTIMATES. A fixed wheelhouse \
              is given the tiers its Blind Distance needs, to the stricter of ES-TRIN 7.02(2) and, on a \
              coastal Option, SOLAS V/22.1.1: the first pass sizes the eye for a waterline at \
              the keel, which is never too low and can add a tier; a second pass on the trimmed light \
              waterline of the first keeps the lower tier count only if the sightline still passes.",
         ));
+        match &d.rooms {
+            None => warnings.push(Text::fixed(
+                "warn-aft-deckhouse-interim-floor",
+                "The accommodation floor of the deckhouse is the interim stand-in (the floor of the 40 ft \
+                 accommodation units the Option holds): no crew gave berths to size rooms from.",
+            )),
+            Some(r) => {
+                warnings.push(Text::fixed(
+                    "warn-aft-deckhouse-rooms-estimates",
+                    "Deckhouse rooms (ES-TRIN 2025/1 Chapter 15): the galley, the work-clothes room, the \
+                     washbasins, the showers and the stairway are required but the text gives no floor \
+                     area, so each has a stated ESTIMATE area, marked estimate in the rooms table with its \
+                     working. The cabin, communal room, toilet and corridor areas are worked from the \
+                     paragraphs the table cites.",
+                ));
+                if r.reaches_sea {
+                    warnings.push(Text::fixed(
+                        "warn-aft-deckhouse-mlc-not-applied",
+                        "This Service Area reaches sea, so MLC 2006 Standard A3.1 sets the cabin sizes. Its \
+                         text is not in the rule sources, so it is not applied: the rooms are sized to \
+                         ES-TRIN 2025/1 Chapter 15, and the deckhouse floor is no smaller than the interim \
+                         floor of the 40 ft accommodation units.",
+                    ));
+                }
+            }
+        }
     }
     if gas {
         let msg = if beside {

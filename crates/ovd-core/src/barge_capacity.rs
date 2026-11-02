@@ -1315,6 +1315,8 @@ fn arrangement(inp: &BargeCapacityInputs, class: CargoClass) -> Result<Arrangeme
             // Issue #779 (spec 0011 D3, D4): the deckhouse style takes a fixed wheelhouse, which
             // lifts only when an air-draft limit is set.
             a.arrangement_style = d.arrangement_style;
+            // Issue #780: the berths the deckhouse rooms are sized from.
+            a.rooms_basis = d.rooms_basis;
             if d.arrangement_style == crate::aft_arrangement::ArrangementStyle::Deckhouse
                 && inp.air_draft_limit_m.is_none()
             {

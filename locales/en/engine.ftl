@@ -20,7 +20,10 @@ check-deckhouse-has-a-footprint = deckhouse { $length } m over the machinery spa
 check-name-deckhouse-tier-count = deckhouse tier count
 check-deckhouse-tier-count = { $tiers } tier(s) of { $tier_area } m2 hold the { $required } m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over { $max } tiers is a tall house over a short machinery space (ESTIMATE limit)
 warn-aft-deckhouse-no-outfit = The deckhouse carries no outfit mass: the outfit of the accommodation units left with them, and no outfit rate has been found, so the lightship is under-stated and GM over-stated until the calibration set (issue #782) gives one.
-warn-aft-deckhouse-estimates = Deckhouse stern: the tier height, the side deck and the tier limit are ESTIMATES, and the accommodation floor it holds is an interim stand-in (the floor of the 40 ft accommodation units the Option holds) until the rooms are sized from MLC A3.1 and ES-TRIN 15. A fixed wheelhouse is given the tiers its Blind Distance needs, to the stricter of ES-TRIN 7.02(2) and, on a coastal Option, SOLAS V/22.1.1: the first pass sizes the eye for a waterline at the keel, which is never too low and can add a tier; a second pass on the trimmed light waterline of the first keeps the lower tier count only if the sightline still passes.
+warn-aft-deckhouse-estimates = Deckhouse stern: the tier height, the side deck and the tier limit are ESTIMATES. A fixed wheelhouse is given the tiers its Blind Distance needs, to the stricter of ES-TRIN 7.02(2) and, on a coastal Option, SOLAS V/22.1.1: the first pass sizes the eye for a waterline at the keel, which is never too low and can add a tier; a second pass on the trimmed light waterline of the first keeps the lower tier count only if the sightline still passes.
+warn-aft-deckhouse-interim-floor = The accommodation floor of the deckhouse is the interim stand-in (the floor of the 40 ft accommodation units the Option holds): no crew gave berths to size rooms from.
+warn-aft-deckhouse-rooms-estimates = Deckhouse rooms (ES-TRIN 2025/1 Chapter 15): the galley, the work-clothes room, the washbasins, the showers and the stairway are required but the text gives no floor area, so each has a stated ESTIMATE area, marked estimate in the rooms table with its working. The cabin, communal room, toilet and corridor areas are worked from the paragraphs the table cites.
+warn-aft-deckhouse-mlc-not-applied = This Service Area reaches sea, so MLC 2006 Standard A3.1 sets the cabin sizes. Its text is not in the rule sources, so it is not applied: the rooms are sized to ES-TRIN 2025/1 Chapter 15, and the deckhouse floor is no smaller than the interim floor of the 40 ft accommodation units.
 check-accom-beside-wheelhouse = { $units } x 40 ft units beside a { $wheelhouse } m wheelhouse need { $needed } m of { $beam } m beam
 check-accom-beside-wheelhouse-rows = { $units } x 40 ft units beside a { $wheelhouse } m wheelhouse need { $needed } m of { $beam } m beam; they go in a row aft of the cab instead, which lengthens the block
 check-name-accom-beside-wheelhouse = accom beside wheelhouse
@@ -285,6 +288,7 @@ msg-opening-height = opening { $row }: height_above_deck_m = { $value } is below
 ## crates/ovd-format/src/run.rs
 
 msg-convoy-not-available = convoy results not yet available
+warn-aft-deckhouse-rooms-not-settled = The deckhouse rooms did not settle: the berths of the crew model still changed after the last pass, so the rooms are sized from the berths of the pass before. The crew block and the rooms table may differ by a berth or two (issue #780).
 
 ## crates/ovd-format/src/session.rs
 

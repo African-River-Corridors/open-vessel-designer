@@ -479,7 +479,7 @@ pub fn crew_json(
     block["notes"] = json!(notes);
     block["status"] = json!("estimate");
     block["basis"] = json!(
-        "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. No result reads the crew yet (the deckhouse rooms come with issue #780)."
+        "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. The deckhouse rooms read the berths (issue #780)."
     );
     Ok(block)
 }
