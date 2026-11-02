@@ -245,6 +245,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "max_speed_kn": {
           "value": 12.0,
           "source": "typed"
@@ -571,7 +575,7 @@
           "source": "default"
         }
       },
-      "results_hash": "5dab84f19aa13012a9630e3c98f43abb341bba569980f7848a8dde33977f8dcd"
+      "results_hash": "95f3c3575190e037d3cecda1e5d8ff73ff440c0e5ab2fb600f4506e27d7b44ee"
     },
     {
       "name": "B profile",
@@ -814,6 +818,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "max_speed_kn": {
           "value": 12.0,
           "source": "typed"
@@ -1140,7 +1148,7 @@
           "source": "default"
         }
       },
-      "results_hash": "4d9fd553d4f001b28cf2202085b88184b3d5d2ee8a673dc0404d7a992b461ac9"
+      "results_hash": "6d27514f217f1c52b42dd8c1b5bdde6df4ed690ee96b9a00f0e684c38f11d51b"
     },
     {
       "name": "C deep",
@@ -1383,6 +1391,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "max_speed_kn": {
           "value": 12.0,
           "source": "typed"
@@ -1709,7 +1721,7 @@
           "source": "default"
         }
       },
-      "results_hash": "910f03aaed6898d80d13fb032356ce667efdd46bc0045b45257fb6b348cc6c34"
+      "results_hash": "c41cb9437a5f010d99398a9877f6e313f5bda9872efa032fa7e50973e2ca7e72"
     }
   ],
   "defaults_profile": "built-in"

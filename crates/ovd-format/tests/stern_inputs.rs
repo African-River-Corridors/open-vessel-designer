@@ -311,3 +311,17 @@ fn the_stern_block_api_takes_power_source_as_the_name_of_propulsion() {
     a["power_source"] = json!("battery_electric");
     assert!(run(a).is_err(), "the two names disagree");
 }
+
+#[test]
+fn an_old_file_reads_no_gas_combustion_unit_and_holds_it_only_on_a_gas_power_source() {
+    // Issue #775: the input is shown only for a gas-fuelled power source. The old file's power
+    // source is battery electric, so it holds none; switched to gas it reads false (the fixed value).
+    let (mut s, _) =
+        DesignSession::open(&legacy("v2_gas_lpg_before_313"), Profile::built_in()).unwrap();
+    let name = s.design().options[0].name.clone();
+    assert!(s.design().options[0].input("gas_combustion_unit").is_none());
+    s.set_input(&name, "power_source", json!("gas_fuelled"))
+        .unwrap();
+    let held = s.design().options[0].input("gas_combustion_unit").unwrap();
+    assert_eq!(held.value, json!(false));
+}

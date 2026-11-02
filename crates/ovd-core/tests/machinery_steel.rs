@@ -165,6 +165,7 @@ fn a_gas_block_seats_its_gensets_at_the_maker_speed() {
         &SternMassInputs {
             battery_unit_energy_kwh: 5000.0,
             installed_power_kw: None,
+            gas_combustion_unit: false,
         },
         1.0,
     );
@@ -189,6 +190,7 @@ fn dry_hull(source: PowerSource, with_mass: bool) -> BargeCapacityInputs {
         i.stern_block_mass = Some(SternMassInputs {
             battery_unit_energy_kwh: 5000.0,
             installed_power_kw: None,
+            gas_combustion_unit: false,
         });
     }
     i

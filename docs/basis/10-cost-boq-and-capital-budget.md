@@ -83,8 +83,9 @@ What OVD does **not** compute today:
      (a hull with no specified Propulsor, or the stern block mass not in the lightship).
    - **Deckhouse** = deckhouse deck area (m²) × `deckhouse_rate_per_m2`. 0: no deckhouse model yet
      (issue #779 gives the area). The wheelhouse and accommodation lump stays for today's stern block.
-   - **Gas fuel system** = the power it serves (kW) × `gas_fuel_system_rate_per_kw`. 0 until the gas fuel
-     system allowances give the figure (issue #775).
+   - **Gas fuel system** = the power it serves (kW) × `gas_fuel_system_rate_per_kw`. The power is the
+     installed rating of the gas gensets, the reserve set included (issue #775); 0 for a hull that is not
+     gas-fuelled. The cost does not respond to the gas combustion unit (that input adds mass only); the mass items are in the lightship (page 02).
 
    **The split of the propulsion rate's basis.** The propulsion line stays installed propulsion power ×
    `propulsion_rate_per_kw` (1,000 per kW), and its basis now reads propulsors, drives, motors and
@@ -157,7 +158,7 @@ Id prefix `CB` (cost and budget).
 | CB-A48a | Genset line | installed genset kWe (every set, the reserve included) × `genset_rate_per_kwe` 500 | Estimate | Example rate, no source (issue #773) | `barge_cost.rs` `item_lines`; `aft_arrangement.rs` `installed_genset_kwe`; `builtin_profile.json` | Unknown |
 | CB-A48b | Machinery steel line | engine-room steel + engine seats (t) × `machinery_steel_rate` 2,500 (the hull steel example rate, taken again) | Estimate | Example rate, no source (issue #773); 0 where the results hold no machinery steel | `cost.rs` `item_quantities_of` | Unknown |
 | CB-A48c | Deckhouse line | deckhouse area (m²) × `deckhouse_rate_per_m2` 3,000; the area is 0 until a deckhouse model exists | Estimate | Example rate, no source (issue #773) | `cost.rs` `with_stern_items` | Unknown |
-| CB-A48d | Gas fuel system line | gas fuel system kW × `gas_fuel_system_rate_per_kw` 200; the kW is 0 until the gas fuel system allowances exist | Estimate | Example rate, no source (issue #773) | `cost.rs` `with_stern_items` | Unknown |
+| CB-A48d | Gas fuel system line | gas fuel system kW × `gas_fuel_system_rate_per_kw` 200; the kW is the installed gas genset rating (issue #775), 0 if not gas-fuelled | Estimate | Example rate, no source (issue #773) | `cost.rs` `with_stern_items` | Unknown |
 | CB-A48e | Propulsion rate basis | per kW of installed propulsion power: propulsors, drives, motors, switchboard; gensets are their own line | Estimate | Spec 0011 sec. 7 (the basis is split); the value 1,000 is unchanged | `builtin_profile.json` | Unknown |
 | CB-A48 | Scope of the budget | Gas Options only; one barge plus one electric pusher tug as one unit | Fixed in code | Core models a gas ATB unit | `cost.rs` lines 1-6; `simulate.rs` lines 809, 1095 | Unknown for other Formations |
 

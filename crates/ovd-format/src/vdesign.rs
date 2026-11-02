@@ -169,6 +169,8 @@ pub const POWER_SOURCES: &[&str] = &[
     "diesel_electric",
     "battery_hybrid",
 ];
+/// The Power Sources that fit a gas fuel system.
+pub const GAS_POWER_SOURCES: &[&str] = &["gas_fuelled"];
 /// The Power Sources that carry a battery.
 pub const BATTERY_POWER_SOURCES: &[&str] = &["battery_electric", "battery_hybrid"];
 pub const BOW_THRUSTERS: &[&str] = &["none", "channel_jet", "tunnel"];
@@ -1213,6 +1215,12 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
     },
     LegacyFixedJson {
         name: "stern_block_mass_included",
+        applies_to: AppliesTo::All,
+        value: "false",
+    },
+    // Issue #775: a file saved before fits no gas combustion unit.
+    LegacyFixedJson {
+        name: "gas_combustion_unit",
         applies_to: AppliesTo::All,
         value: "false",
     },
@@ -2813,6 +2821,16 @@ pub const INPUTS: &[InputSpec] = &[
         "Stern block mass in the lightship",
         InputKind::Bool,
         Group::SternAndPropulsion,
+    ),
+    when(
+        self_propelled(
+            "gas_combustion_unit",
+            "Gas combustion unit",
+            InputKind::Bool,
+            Group::SternAndPropulsion,
+        ),
+        "power_source",
+        GAS_POWER_SOURCES,
     ),
     // Issue #357: the tug of a barge Formation (spec 0007 "Formation and Tug").
     tug("tug_included", "Tug included", InputKind::Bool),

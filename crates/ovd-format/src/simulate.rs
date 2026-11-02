@@ -1717,6 +1717,7 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
                     &r.stern_block_items,
                     &r.trim_conditions,
                     r.machinery_summary.as_ref(),
+                    r.gas_fuel_system.as_ref(),
                 ),
             ),
             is_code_stability,
@@ -2489,18 +2490,24 @@ fn stern_mass_of(p: &Map<String, Value>) -> R<Option<ovd_core::aft_arrangement::
     Ok(Some(ovd_core::aft_arrangement::SternMassInputs {
         battery_unit_energy_kwh: get_or(p, "battery_unit_energy_kwh", 5000.0)?,
         installed_power_kw: truthy_float(p, "installed_power_kw")?,
+        gas_combustion_unit: p.get("gas_combustion_unit").is_some_and(truthy),
     }))
 }
+
+/// What `with_stern_mass` writes: the block's items, the trim conditions, the machinery steel summary
+/// and the gas fuel system.
+type SternMassParts<'a> = (
+    &'a [ovd_core::weights::MassItem],
+    &'a [(&'a str, ovd_core::models::TrimResult)],
+    Option<&'a ovd_core::aft_arrangement::MachinerySummary>,
+    Option<&'a ovd_core::gas_fuel::FuelSystem>,
+);
 
 /// The stern block's mass items in the results (issue #348), only when they are in the lightship:
 /// a file without the stern mass gets no new field, so its results hash is unchanged.
 fn with_stern_mass(
     mut result: Value,
-    (items, trims, machinery): (
-        &[ovd_core::weights::MassItem],
-        &[(&str, ovd_core::models::TrimResult)],
-        Option<&ovd_core::aft_arrangement::MachinerySummary>,
-    ),
+    (items, trims, machinery, gas_fuel): SternMassParts,
 ) -> Value {
     // Issue #349: a dry-bulk hull's trim, laden and light, beside the block.
     if !trims.is_empty() {
@@ -2529,8 +2536,28 @@ fn with_stern_mass(
         if let Some(m) = machinery {
             result["stern_block_mass"]["machinery_steel"] = machinery_steel_json(m);
         }
+        if let Some(f) = gas_fuel {
+            result["stern_block_mass"]["gas_fuel_system"] = gas_fuel_system_json(f);
+        }
     }
     result
+}
+
+/// Issue #775: the gas fuel system's allowances, each with its status and basis (all estimates), as
+/// items of their own beside the gensets.
+fn gas_fuel_system_json(f: &ovd_core::gas_fuel::FuelSystem) -> Value {
+    json!({
+        "served_kwe": num(f.served_kwe),
+        "total_t": num(f.total_t()),
+        "gas_combustion_unit": f.gas_combustion_unit,
+        "reliquefaction": "not modelled",
+        "items": f.items.iter().map(|i| json!({
+            "label": i.label,
+            "mass_t": num(i.mass_t),
+            "status": ovd_core::gas_fuel::FUEL_SYSTEM_STATUS,
+            "basis": i.basis,
+        })).collect::<Vec<_>>(),
+    })
 }
 
 /// Issue #774: what the engine-room steel and the engine seats were worked from, with the status of
@@ -3148,7 +3175,7 @@ fn simulate_gas(
             "steel_list": steel.as_ref().map_or(Value::Null, |s| crate::steel::steel_list_json(&s.1)),
             "structure_geometry": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_geometry_json(&s.1)),
         }),
-            (&r.stern_block_items, &r.trim_conditions, r.machinery_summary.as_ref()),
+            (&r.stern_block_items, &r.trim_conditions, r.machinery_summary.as_ref(), r.gas_fuel_system.as_ref()),
         ),
             is_code_stability,
             loading_conditions,

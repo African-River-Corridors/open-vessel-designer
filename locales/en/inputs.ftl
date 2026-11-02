@@ -339,6 +339,8 @@ choice-sightline-method-blind-distance = Blind distance (ES-TRIN 7.02)
 
 input-stern-block-mass-included = Stern block mass in the lightship
 
+input-gas-combustion-unit = Gas combustion unit
+
 input-tug-included = Tug included
 
 input-tug-preset = Tug preset

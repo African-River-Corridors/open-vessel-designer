@@ -705,7 +705,8 @@ fn each_item_rate_says_it_is_an_example_rate_and_what_it_prices() {
         );
         assert!(!r["quantity_basis"].as_str().unwrap().is_empty());
     }
-    // No deckhouse and no gas fuel system model yet: both lines are 0 and say why.
+    // No deckhouse model yet: its line is 0 and says why. The gas fuel system line prices the
+    // installed gas genset rating (issue #775); this fixture is not gas-fuelled, so it is 0.
     assert_eq!(item(&cost, "deckhouse")["quantity"], json!(0.0));
     assert!(
         item(&cost, "deckhouse")["quantity_basis"]
@@ -713,12 +714,18 @@ fn each_item_rate_says_it_is_an_example_rate_and_what_it_prices() {
             .unwrap()
             .contains("#779")
     );
-    assert_eq!(item(&cost, "gas_fuel_system")["quantity"], json!(0.0));
+    let kwe =
+        results(&open(&raw_fixture("gas_igc_2g_self_propelled")), 0)["cost_masses"]["stern_items"]
+            ["gas_fuel_system_kw"]
+            .clone();
+    // This fixture's power source is not gas-fuelled: no gas gensets, so 0 kW.
+    assert_eq!(kwe, json!(0.0));
+    assert_eq!(item(&cost, "gas_fuel_system")["quantity"], kwe);
     assert!(
         item(&cost, "gas_fuel_system")["quantity_basis"]
             .as_str()
             .unwrap()
-            .contains("#775")
+            .contains("gas gensets")
     );
     // Each profile default is an example rate, and says so.
     let profile = Profile::built_in();

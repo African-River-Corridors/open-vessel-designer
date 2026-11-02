@@ -194,6 +194,7 @@ fn a_tunnel_stern_moves_the_lcb_of_a_dry_bulk_trim_forward() {
     i.stern_block_mass = Some(SternMassInputs {
         battery_unit_energy_kwh: 5000.0,
         installed_power_kw: None,
+        gas_combustion_unit: false,
     });
     let square = compute(&i).unwrap();
     let hull = HullDims {

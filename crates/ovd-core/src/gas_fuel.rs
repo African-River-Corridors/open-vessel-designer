@@ -120,3 +120,92 @@ pub fn tank_heat_leak_kw(
 pub fn boil_off_kg_per_h(kw: f64, latent_kj_per_kg: f64) -> f64 {
     kw * 3600.0 / latent_kj_per_kg
 }
+
+// --- Spec 0011 D8 (issue #775): the gas fuel system's mass allowances. ----------------------------
+//
+// A gas-fuelled stern block carries a gas fuel supply system beyond its gensets: a gas valve unit
+// (GVU) for each gas engine, a fuel-gas heater, a boil-off compressor and, as an input, a gas
+// combustion unit (GCU). The mass of none of them was found in a source read (docs/research/
+// stern-arrangement.md sec. 3: "GVU, GCU, reliquefaction mass or cost ... not found"; the same
+// section, citing DNV for SEA\LNG 2019, gives the fuel-gas process system's cost as not given in
+// the literature; the mass of the heater and compressor was not looked for). Every
+// allowance below is therefore an ESTIMATE: a round placeholder for the size class, not a quote and
+// not from a source. The calibration ticket (spec 0011 D11) replaces them. Reliquefaction is not
+// modelled (spec 0011 D8: later).
+
+use alloc::vec::Vec;
+
+/// What the allowances are, in the results: no source was read for any of them.
+pub const FUEL_SYSTEM_STATUS: &str = "estimate";
+
+/// Mass of one gas valve unit (t): one per gas engine, the reserve set included. Estimate.
+pub const GVU_T_EACH: f64 = 0.4;
+/// Mass of the fuel-gas heater and its skid (t per kWe of the gas gensets it serves). Estimate.
+pub const HEATER_T_PER_KWE: f64 = 0.0002;
+/// Mass of the boil-off compressor and its skid (t per kWe of the gas gensets it serves). Estimate.
+pub const COMPRESSOR_T_PER_KWE: f64 = 0.0006;
+/// Mass of a gas combustion unit (t), when the Option asks for one. Estimate.
+pub const GCU_T: f64 = 2.0;
+
+/// One allowance of the gas fuel system.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct FuelSystemItem {
+    pub label: &'static str,
+    pub mass_t: f64,
+    /// What the figure is worked from; every one is an estimate.
+    pub basis: &'static str,
+}
+
+/// The gas fuel system of a stern block: its items, and the power it serves.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct FuelSystem {
+    /// The installed rating of the gas gensets the system serves (kWe), the reserve set included.
+    pub served_kwe: f64,
+    pub gas_combustion_unit: bool,
+    pub items: Vec<FuelSystemItem>,
+}
+
+impl FuelSystem {
+    pub fn total_t(&self) -> f64 {
+        self.items.iter().map(|i| i.mass_t).sum()
+    }
+}
+
+/// The allowances for `n_sets` gas engines of `served_kwe` in all, and a gas combustion unit when
+/// asked. `None` when there are no gas sets.
+pub fn fuel_system(n_sets: u32, served_kwe: f64, gas_combustion_unit: bool) -> Option<FuelSystem> {
+    if n_sets == 0 || served_kwe <= 0.0 {
+        return None;
+    }
+    let mut items = alloc::vec![
+        FuelSystemItem {
+            label: "gas valve units",
+            mass_t: f64::from(n_sets) * GVU_T_EACH,
+            basis: "estimate: 0.4 t per gas engine, the reserve set included; no source read",
+        },
+        FuelSystemItem {
+            label: "gas heater",
+            mass_t: HEATER_T_PER_KWE * served_kwe,
+            basis: "estimate: 0.2 kg per kWe of the gas gensets; no source read",
+        },
+        FuelSystemItem {
+            label: "gas compressor",
+            mass_t: COMPRESSOR_T_PER_KWE * served_kwe,
+            basis: "estimate: 0.6 kg per kWe of the gas gensets; no source read",
+        },
+    ];
+    if gas_combustion_unit {
+        items.push(FuelSystemItem {
+            label: "gas combustion unit",
+            mass_t: GCU_T,
+            basis: "estimate: 2 t for one unit, fitted when the Option asks for it; no source read",
+        });
+    }
+    Some(FuelSystem {
+        served_kwe,
+        gas_combustion_unit,
+        items,
+    })
+}

@@ -1302,6 +1302,11 @@
       "status": "estimate",
       "basis": "Whether the stern block's mass (thrusters, machinery, units, wheelhouse) counts in the lightship (the WC-A29 finding; spec 0007). Inputs only until the stern block mass ticket (#348). A file saved before keeps false (0 t), as today"
     },
+    "gas_combustion_unit": {
+      "default": false,
+      "status": "estimate",
+      "basis": "Whether a gas combustion unit is fitted to a gas-fuelled hull's gas fuel system (spec 0011 D8, issue #775). It adds an allowance of 2 t (an estimate, no source read) to the stern block mass when that mass is in the lightship. Reliquefaction is not modelled. A file saved before keeps false"
+    },
     "loading_conditions": {
       "default": "is_code_2008",
       "status": "estimate",

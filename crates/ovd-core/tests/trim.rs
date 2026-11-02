@@ -17,6 +17,7 @@ fn gas_hull(with_mass: bool) -> BargeCapacityInputs {
         i.stern_block_mass = Some(SternMassInputs {
             battery_unit_energy_kwh: 5000.0,
             installed_power_kw: None,
+            gas_combustion_unit: false,
         });
     }
     i
@@ -121,6 +122,7 @@ fn a_dry_bulk_hull_trims_laden_and_light_with_the_block() {
     i.stern_block_mass = Some(SternMassInputs {
         battery_unit_energy_kwh: 5000.0,
         installed_power_kw: None,
+        gas_combustion_unit: false,
     });
     let r = compute(&i).unwrap();
     let names: Vec<&str> = r.trim_conditions.iter().map(|(n, _)| *n).collect();

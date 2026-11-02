@@ -417,6 +417,7 @@ pub(crate) fn capacity_result_from_json(
         // The Python API result has no stern block mass (issue #348).
         stern_block_items: Vec::new(),
         machinery_summary: None,
+        gas_fuel_system: None,
         dome_items: Vec::new(),
         trim_conditions: Vec::new(),
         stern_geometry: None,

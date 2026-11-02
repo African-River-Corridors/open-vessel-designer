@@ -94,8 +94,9 @@ const ITEM_BASES: [(&str, &str, &str, &str); 4] = [
         "gas_fuel_system",
         "gas_fuel_system_rate_per_kw",
         "kW",
-        "The power the gas fuel system serves. 0: the gas fuel system allowances are not built yet \
-         (issue #775 gives the figure).",
+        "The installed rating of the gas gensets the gas fuel system serves, the reserve set included \
+         (`cost_masses.stern_items.gas_fuel_system_kw`). 0 for a hull that is not gas-fuelled. The \
+         cost does not respond to the gas combustion unit; that input adds mass only.",
     ),
 ];
 
@@ -120,7 +121,7 @@ fn item_rates_of(option: &DesignOption) -> Option<ItemRates> {
 }
 
 /// The `stern_items` of `cost_masses` (issue #773): what the item rates price that the stern block
-/// gives. The deckhouse area and the gas fuel system power are 0 until their models exist. `v` is
+/// gives. The deckhouse area is 0 until its model exists; the gas fuel system power is the gas gensets' rating. `v` is
 /// returned as it is when it is null or the hull has no stern block (a barge of a tug Formation).
 pub fn with_stern_items(
     mut v: Value,
@@ -135,7 +136,11 @@ pub fn with_stern_items(
     v["stern_items"] = json!({
         "genset_kwe": ovd_core::aft_arrangement::installed_genset_kwe(a),
         "deckhouse_area_m2": 0.0,
-        "gas_fuel_system_kw": 0.0,
+        "gas_fuel_system_kw": if a.propulsion == "gas_fuelled" {
+            a.installed_kwe
+        } else {
+            0.0
+        },
     });
     v
 }
