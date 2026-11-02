@@ -405,6 +405,18 @@ input-battery-rate-per-kwh = Tarifa de baterías
 input-propulsion-rate-per-kw = Tarifa de propulsión
 
 # status: draft
+input-genset-rate-per-kwe = Tarifa de grupos electrógenos
+
+# status: draft
+input-machinery-steel-rate = Tarifa del acero de maquinaria
+
+# status: draft
+input-deckhouse-rate-per-m2 = Tarifa de la caseta
+
+# status: draft
+input-gas-fuel-system-rate-per-kw = Tarifa del sistema de combustible de gas
+
+# status: draft
 input-wheelhouse-accom-lump = Puente de gobierno y alojamiento
 
 # status: draft

@@ -450,6 +450,13 @@ pub struct AftArrangementResult {
     pub machinery: Option<crate::machinery::Machinery>,
 }
 
+/// The installed genset rating of a stern block (kWe), every set and the reserve included: a
+/// gas-fuelled block's sets, else a diesel-electric machinery's (issue #773: the genset cost line).
+/// Zero where the block has no gensets.
+pub fn installed_genset_kwe(res: &AftArrangementResult) -> f64 {
+    res.installed_kwe + res.machinery.as_ref().map_or(0.0, |m| m.genset_kwe)
+}
+
 /// The rates of the stern block mass (issue #348, spec 0007 "Machinery space and mass"; Hekkenberg
 /// 2013, Appendix B pp. 221-225, as the research note gives them).
 pub mod stern_mass {

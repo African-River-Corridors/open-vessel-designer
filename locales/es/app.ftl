@@ -499,6 +499,14 @@ app-cost-item-battery = Batería
 # status: draft
 app-cost-item-propulsion = Propulsión
 # status: draft
+app-cost-item-gensets = Grupos electrógenos
+# status: draft
+app-cost-item-machinery-steel = Acero de maquinaria
+# status: draft
+app-cost-item-deckhouse = Caseta
+# status: draft
+app-cost-item-gas-fuel-system = Sistema de combustible de gas
+# status: draft
 app-cost-item-wheelhouse-accommodation = Puente de gobierno y alojamiento
 
 ## Pantalla de inicio

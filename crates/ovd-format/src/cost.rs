@@ -9,7 +9,10 @@ use crate::vdesign::TANK_INTERNALS_BASIS;
 use crate::vdesign::{
     COST_RATES_BASIS, COST_RATES_BASIS_USER, DesignOption, Source, cost_prices_basis,
 };
-use ovd_core::barge_cost::{BargeCostInputs, BargeCostRates, BargeCostResult, compute_for};
+use ovd_core::barge_cost::{
+    BargeCostInputs, BargeCostRates, BargeCostResult, ItemQuantities, ItemRates,
+    compute_with_items, item_lines,
+};
 use ovd_core::liquid_bulk::LiquidBulkResult;
 use ovd_core::liquid_bulk::cost::{self as liquid_cost, CostQuantities, LiquidCostRates};
 use ovd_core::models::WeightBreakdown;
@@ -46,6 +49,164 @@ pub fn rates_of(option: &DesignOption) -> Option<BargeCostRates> {
         set(&mut rates, option.input(name)?.value.as_f64()?);
     }
     Some(rates)
+}
+
+/// The item rates of a self-propelled hull's own stern (spec 0011 D9, issue #773), as `(input name,
+/// unit, how to set it)`. They are Option inputs only: the rates file of the ATB budget keeps its 14
+/// keys (its tug has none of these items).
+type SetItemRate = fn(&mut ItemRates, f64);
+pub const ITEM_RATE_INPUTS: [(&str, SetItemRate); 4] = [
+    ("genset_rate_per_kwe", |r, v| r.genset_rate_per_kwe = v),
+    ("machinery_steel_rate", |r, v| r.machinery_steel_rate = v),
+    ("deckhouse_rate_per_m2", |r, v| r.deckhouse_rate_per_m2 = v),
+    ("gas_fuel_system_rate_per_kw", |r, v| {
+        r.gas_fuel_system_rate_per_kw = v
+    }),
+];
+
+/// What each item line prices, in the order of [`item_lines`]: (item, rate input, quantity unit,
+/// what the quantity is).
+const ITEM_BASES: [(&str, &str, &str, &str); 4] = [
+    (
+        "gensets",
+        "genset_rate_per_kwe",
+        "kWe",
+        "Installed genset rating, every set and the reserve included: a gas-fuelled stern block's sets, \
+         or a diesel-electric plant's N + 1 sets of P / N each. 0 where the stern has no gensets. The \
+         propulsion line keeps the installed propulsion power (propulsors, drives, motors, switchboard); \
+         the gensets that make the power were in no line before.",
+    ),
+    (
+        "machinery_steel",
+        "machinery_steel_rate",
+        "t",
+        "The engine-room steel and engine seats of the stern block mass (`stern_block_mass.machinery_steel`). \
+         0 when the results have none.",
+    ),
+    (
+        "deckhouse",
+        "deckhouse_rate_per_m2",
+        "m2",
+        "Deckhouse deck area. 0: OVD has no deckhouse model yet (issue #779 gives the area); the \
+         wheelhouse and accommodation lump stands for today's stern block.",
+    ),
+    (
+        "gas_fuel_system",
+        "gas_fuel_system_rate_per_kw",
+        "kW",
+        "The power the gas fuel system serves. 0: the gas fuel system allowances are not built yet \
+         (issue #775 gives the figure).",
+    ),
+];
+
+/// What an example item rate is (issue #773): no source was read for any of them.
+pub const ITEM_RATE_EXAMPLE_BASIS: &str = "example rate: a round placeholder, not a market quote and not from a source. Replace it with your own.";
+
+/// What a default item rate of 0 is: a file saved before the item rates (issue #773).
+pub const ITEM_RATE_LEGACY_BASIS: &str = "0: the file was saved before this item rate existed, so the item is not priced, as before. Type a rate to price it.";
+
+/// The item rates of an Option; `None` if one is missing or not a number.
+fn item_rates_of(option: &DesignOption) -> Option<ItemRates> {
+    let mut rates = ItemRates {
+        genset_rate_per_kwe: 0.0,
+        machinery_steel_rate: 0.0,
+        deckhouse_rate_per_m2: 0.0,
+        gas_fuel_system_rate_per_kw: 0.0,
+    };
+    for (name, set) in ITEM_RATE_INPUTS {
+        set(&mut rates, option.input(name)?.value.as_f64()?);
+    }
+    Some(rates)
+}
+
+/// The `stern_items` of `cost_masses` (issue #773): what the item rates price that the stern block
+/// gives. The deckhouse area and the gas fuel system power are 0 until their models exist. `v` is
+/// returned as it is when it is null or the hull has no stern block (a barge of a tug Formation).
+pub fn with_stern_items(
+    mut v: Value,
+    aft: Option<&ovd_core::aft_arrangement::AftArrangementResult>,
+) -> Value {
+    let Some(a) = aft else {
+        return v;
+    };
+    if v.is_null() {
+        return v;
+    }
+    v["stern_items"] = json!({
+        "genset_kwe": ovd_core::aft_arrangement::installed_genset_kwe(a),
+        "deckhouse_area_m2": 0.0,
+        "gas_fuel_system_kw": 0.0,
+    });
+    v
+}
+
+/// The item quantities of an Option's results: the stern items of `cost_masses`, and the machinery
+/// steel of the stern block mass when the results hold it (else 0).
+fn item_quantities_of(results: &Value) -> ItemQuantities {
+    let s = &results["cost_masses"]["stern_items"];
+    let g = |k: &str| s[k].as_f64().unwrap_or(0.0);
+    let steel = &results["stern_block_mass"]["machinery_steel"];
+    let t = |k: &str| steel[k].as_f64().unwrap_or(0.0);
+    ItemQuantities {
+        genset_kwe: g("genset_kwe"),
+        machinery_steel_t: t("engine_room_steel_t") + t("seats_t"),
+        deckhouse_area_m2: g("deckhouse_area_m2"),
+        gas_fuel_system_kw: g("gas_fuel_system_kw"),
+    }
+}
+
+/// The item lines of a Formation with no tug, and what each prices (rate, quantity, unit, whether the
+/// rate is the example's), for the results. With a tug: no lines.
+fn items_of(
+    option: &DesignOption,
+    results: &Value,
+    tug: bool,
+) -> Option<(Vec<(&'static str, f64)>, Value)> {
+    if tug {
+        return Some((Vec::new(), Value::Null));
+    }
+    let rates = item_rates_of(option)?;
+    let q = item_quantities_of(results);
+    let lines = item_lines(&q, &rates);
+    let quantity = [
+        q.genset_kwe,
+        q.machinery_steel_t,
+        q.deckhouse_area_m2,
+        q.gas_fuel_system_kw,
+    ];
+    let rate = [
+        rates.genset_rate_per_kwe,
+        rates.machinery_steel_rate,
+        rates.deckhouse_rate_per_m2,
+        rates.gas_fuel_system_rate_per_kw,
+    ];
+    let trace: Vec<Value> = ITEM_BASES
+        .iter()
+        .enumerate()
+        .map(|(i, (item, input, unit, basis))| {
+            let example = option
+                .input(input)
+                .is_some_and(|x| x.source == Source::Default);
+            // A file saved before the item rates reads each as 0 (marked default): not priced.
+            let (status, rate_basis) = match (example, rate[i] == 0.0) {
+                (true, true) => ("not priced", ITEM_RATE_LEGACY_BASIS),
+                (true, false) => ("example rate", ITEM_RATE_EXAMPLE_BASIS),
+                (false, _) => ("user rate", COST_RATES_BASIS_USER),
+            };
+            json!({
+                "item": item,
+                "quantity": quantity[i],
+                "unit": unit,
+                "rate": rate[i],
+                "rate_input": input,
+                "rate_unit": format!("per {unit}"),
+                "rate_status": status,
+                "rate_basis": rate_basis,
+                "quantity_basis": basis,
+            })
+        })
+        .collect();
+    Some((lines.to_vec(), Value::Array(trace)))
 }
 
 /// The cargo tank rates of a tank barge, as `(input name, how to set it)`: the inputs of the
@@ -295,6 +456,7 @@ fn rates_kind(option: &DesignOption) -> &'static str {
         .iter()
         .map(|(name, _)| name)
         .chain(LIQUID_RATE_INPUTS.iter().map(|(name, _)| name))
+        .chain(ITEM_RATE_INPUTS.iter().map(|(name, _)| name))
         .chain(["currency"].iter())
         .any(|name| {
             option
@@ -382,12 +544,18 @@ pub fn cost_of(option: &DesignOption, results: &Value) -> Value {
     let masses = &masses;
     // Only a Formation with a tug costs one (issue #403): a self-propelled vessel has none.
     let tug = has_tug(option);
-    match compute_for(&inputs, &rates, tug) {
+    let Some((lines, items)) = items_of(option, results, tug) else {
+        return Value::Null;
+    };
+    match compute_with_items(&inputs, &rates, tug, &lines) {
         Ok(r) => {
             let date = option
                 .input("price_base_date")
                 .and_then(|i| i.value.as_str());
-            result_json(&r, masses, tug, rates_kind(option), date)
+            with_items(
+                result_json(&r, masses, tug, rates_kind(option), date),
+                items,
+            )
         }
         Err(_) => Value::Null,
     }
@@ -416,14 +584,17 @@ fn liquid_cost_of(option: &DesignOption, results: &Value) -> Value {
             from_design.extend(["battery_kwh", "propulsion_kw"]);
         }
     }
-    match liquid_cost::compute(&q, &liquid_rates, &inputs, &rates, tug) {
+    let Some((lines, items)) = items_of(option, results, tug) else {
+        return Value::Null;
+    };
+    match liquid_cost::compute_with_items(&q, &liquid_rates, &inputs, &rates, tug, &lines) {
         Ok(r) => {
             let date = option
                 .input("price_base_date")
                 .and_then(|i| i.value.as_str());
             let mut m = liquid_masses_json(&q, &inputs, &from_design);
             m["steel"] = Value::Null;
-            result_json(&r, &m, tug, rates_kind(option), date)
+            with_items(result_json(&r, &m, tug, rates_kind(option), date), items)
         }
         Err(_) => Value::Null,
     }
@@ -461,6 +632,15 @@ fn liquid_masses_json(q: &CostQuantities, m: &BargeCostInputs, from_design: &[&s
     })
 }
 
+/// The budget with its `items` (issue #773): what each item line of a self-propelled hull prices, and
+/// whether its rate is an example rate. A Formation with a tug has none, and no `items` key.
+fn with_items(mut v: Value, items: Value) -> Value {
+    if !items.is_null() {
+        v["items"] = items;
+    }
+    v
+}
+
 /// Whether the Option's Formation has a tug: every one but `self_propelled`.
 fn has_tug(option: &DesignOption) -> bool {
     let kind = option
@@ -468,4 +648,27 @@ fn has_tug(option: &DesignOption) -> bool {
         .and_then(|i| i.value.get("kind"))
         .and_then(Value::as_str);
     kind != Some("self_propelled")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Issue #773: the machinery steel line reads the stern block mass's machinery steel (the
+    /// engine-room steel and the seats) when the results hold it, and 0 when they do not.
+    /// Label: sourced - hand sum: 15.2560044 + 2.96562 = 18.2216244 t (the two figures are the
+    /// machinery steel test's hand sums for two Cat 3512C, used here as plain inputs).
+    #[test]
+    fn the_machinery_steel_quantity_is_the_room_steel_and_the_seats_or_zero() {
+        let mut r = json!({ "cost_masses": { "stern_items": { "genset_kwe": 3150.0 } } });
+        let q = item_quantities_of(&r);
+        assert_eq!(q.machinery_steel_t, 0.0);
+        assert_eq!(q.genset_kwe, 3150.0);
+        assert_eq!((q.deckhouse_area_m2, q.gas_fuel_system_kw), (0.0, 0.0));
+        r["stern_block_mass"] = json!({
+            "machinery_steel": { "engine_room_steel_t": 15.2560044, "seats_t": 2.96562 }
+        });
+        let q = item_quantities_of(&r);
+        assert!((q.machinery_steel_t - 18.2216244).abs() < 1e-9);
+    }
 }

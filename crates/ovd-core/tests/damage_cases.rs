@@ -389,3 +389,48 @@ fn the_deck_edge_test_finds_an_immersed_deck_edge() {
     };
     assert!(deck_edge_immersed(&heeled, (0.0, 60.0), 6.0, 6.0));
 }
+
+/// MARPOL Annex I 28.4.1 (spec 0012 D20, issue #764): a breached prism cargo tank loses its share of the oil by
+/// volume, from the middle of its length and the centre of its section. Two cargo tanks, 20 x 4 x 3 m to port
+/// (y -4 to 0) and starboard (y 0 to 4), 300 t of oil at KG 2.5 m: breaching the starboard tank takes 150 t from
+/// x = 30, y = 2.
+#[test]
+fn a_breached_prism_cargo_tank_loses_its_share_of_the_oil() {
+    let spaces = vec![
+        space(
+            "1P",
+            SpaceKind::CargoTank,
+            (20.0, 40.0),
+            (-4.0, 0.0),
+            (1.0, 4.0),
+        ),
+        space(
+            "1S",
+            SpaceKind::CargoTank,
+            (20.0, 40.0),
+            (0.0, 4.0),
+            (1.0, 4.0),
+        ),
+        space(
+            "WB1S",
+            SpaceKind::WingBallast,
+            (20.0, 40.0),
+            (4.0, 5.0),
+            (0.0, 4.0),
+        ),
+    ];
+    let g = Gravity {
+        lcg_m: 30.0,
+        tcg_m: 0.0,
+        kg_m: 2.0,
+    };
+    let (m, gd) = without_breached_cargo(1500.0, g, (300.0, 2.5), &spaces, &["1S".to_string()]);
+    assert_eq!(m, 1350.0);
+    assert!((gd.lcg_m - 30.0).abs() < 1e-9);
+    assert!(
+        (gd.tcg_m - (-150.0 * 2.0) / 1350.0).abs() < 1e-9,
+        "{}",
+        gd.tcg_m
+    );
+    assert!((gd.kg_m - (1500.0 * 2.0 - 150.0 * 2.5) / 1350.0).abs() < 1e-9);
+}

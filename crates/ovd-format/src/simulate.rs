@@ -1742,7 +1742,13 @@ fn with_liquid(
         );
         // Issue #334: what the cargo tank items of the budget are priced on (unhashed, with the rest of
         // `cost_masses`).
-        o.insert("cost_masses".to_string(), crate::cost::liquid_masses(l));
+        o.insert(
+            "cost_masses".to_string(),
+            crate::cost::with_stern_items(
+                crate::cost::liquid_masses(l),
+                r.aft_arrangement.as_ref(),
+            ),
+        );
         // Issue #341: what each assumed damage does (unhashed: it is an output of the Rule Trace's input).
         if !damage.is_empty() {
             o.insert("damage".to_string(), crate::liquid::damage_json(damage));
@@ -3128,7 +3134,7 @@ fn simulate_gas(
             "stability": stability,
             "stability_marks": stability_marks,
             "fit_tried": fit_tried,
-            "cost_masses": r.gas_basis.as_ref().map_or(Value::Null, |b| crate::cost::with_hull_panels(match &powering_block {
+            "cost_masses": r.gas_basis.as_ref().map_or(Value::Null, |b| crate::cost::with_stern_items(crate::cost::with_hull_panels(match &powering_block {
                 // Issue #353: the Option's own battery and Installed Power, not a tug's.
                 Some(pw) => crate::cost::self_propelled_gas_masses(
                     &b.weights,
@@ -3136,7 +3142,7 @@ fn simulate_gas(
                     pw["installed_power_kw"].as_f64().unwrap_or(0.0),
                 ),
                 None => crate::cost::gas_masses(&b.weights),
-            }, steel.as_ref().map(|s| &s.0))),
+            }, steel.as_ref().map(|s| &s.0)), r.aft_arrangement.as_ref())),
             // Issue #742: the plate model's steel list, groups and purchase, and its geometry.
             "structure": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_json(&s.1)),
             "steel_list": steel.as_ref().map_or(Value::Null, |s| crate::steel::steel_list_json(&s.1)),

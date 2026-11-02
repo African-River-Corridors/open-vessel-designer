@@ -496,6 +496,14 @@ app-cost-item-battery = 电池
 # status: draft
 app-cost-item-propulsion = 推进装置
 # status: draft
+app-cost-item-gensets = 发电机组
+# status: draft
+app-cost-item-machinery-steel = 机舱钢结构
+# status: draft
+app-cost-item-deckhouse = 甲板室
+# status: draft
+app-cost-item-gas-fuel-system = 燃气供应系统
+# status: draft
 app-cost-item-wheelhouse-accommodation = 驾驶室与居住舱室
 
 ## The splash screen

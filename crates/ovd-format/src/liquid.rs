@@ -206,22 +206,47 @@ pub(crate) fn damage_verdicts(
         float.equilibrium.waterplane.c,
         float.equilibrium.waterplane.trim_deg,
     );
-    let verdicts = |cases: Vec<DamageCase>, criteria: &DamageCriteria| {
+    // MARPOL Annex I 28.4.1 (spec 0012 D20, issue #764): "any outflow of liquids from damaged compartments"
+    // is accounted for, so a breached cargo tank's oil leaves the condition. The cargo tanks are filled alike;
+    // the slop tanks are empty in the loading conditions, so they lose nothing. ADN keeps the mass (its cargo
+    // tanks are not breached: their permeability is 0).
+    let cargo = laden
+        .weights
+        .iter()
+        .find(|(n, _)| n == "Cargo")
+        .map_or((0.0, 0.0), |(_, i)| (i.mass_t, i.kcg_m));
+    let verdicts = |cases: Vec<DamageCase>, criteria: &DamageCriteria, outflow: bool| {
         cases
             .into_iter()
-            .map(|case| ovd_core::measured::DamageVerdict {
-                flooded: case.flooded.iter().map(|f| f.name.clone()).collect(),
-                outcome: assess(
-                    &hull.table,
-                    &case.flooded,
-                    mass,
-                    g,
-                    density,
-                    start,
-                    criteria,
-                ),
-                name: case.name,
-                stages: Vec::new(),
+            .map(|case| {
+                let (m, gd) = if outflow {
+                    let breached: Vec<String> = case
+                        .flooded
+                        .iter()
+                        .filter(|f| {
+                            liquid
+                                .spaces
+                                .iter()
+                                .any(|s| s.name == f.name && s.kind == SpaceKind::CargoTank)
+                        })
+                        .map(|f| f.name.clone())
+                        .collect();
+                    ovd_core::damage_cases::without_breached_cargo(
+                        mass,
+                        g,
+                        cargo,
+                        &liquid.spaces,
+                        &breached,
+                    )
+                } else {
+                    (mass, g)
+                };
+                ovd_core::measured::DamageVerdict {
+                    flooded: case.flooded.iter().map(|f| f.name.clone()).collect(),
+                    outcome: assess(&hull.table, &case.flooded, m, gd, density, start, criteria),
+                    name: case.name,
+                    stages: Vec::new(),
+                }
             })
             .collect::<Vec<_>>()
     };
@@ -245,12 +270,14 @@ pub(crate) fn damage_verdicts(
                 &|kind| adn_permeability.of(kind, 0.0).unwrap_or(0.0),
             ),
             &DamageCriteria::ADN_2025,
+            false,
         )
     });
     let by_marpol = if marpol {
         verdicts(
             marpol_damage_cases(&liquid.spaces, hull.spec.loa, hull.spec.beam),
             &DamageCriteria::MARPOL_I_28,
+            true,
         )
     } else {
         Vec::new()

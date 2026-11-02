@@ -499,6 +499,14 @@ app-cost-item-battery = Bateria
 # status: draft
 app-cost-item-propulsion = Propulsão
 # status: draft
+app-cost-item-gensets = Grupos geradores
+# status: draft
+app-cost-item-machinery-steel = Aço da maquinaria
+# status: draft
+app-cost-item-deckhouse = Casaria
+# status: draft
+app-cost-item-gas-fuel-system = Sistema de combustível a gás
+# status: draft
 app-cost-item-wheelhouse-accommodation = Casa do leme e acomodações
 
 ## A tela de abertura
