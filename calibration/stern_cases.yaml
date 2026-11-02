@@ -5,7 +5,7 @@
 # Phase 2 (a separate, reviewed change) fits the deckhouse and engine-room steel rates from it.
 #
 # Conventions
-#   held_out: true        every case here. None may be used to fit until phase 2 is reviewed and says so.
+#   held_out: "<reason>"  every case here (a one-line reason, as elsewhere in this folder). None may be used to fit until phase 2 is reviewed and says so.
 #   Each measured value is {value, unit, drawing, scale_ref, unc}:
 #     drawing    where on which source the feature is drawn (document, page or figure)
 #     scale_ref  the dimension that sets the scale (a stated LOA, LBP, beam, or a frame ruler)
@@ -34,7 +34,7 @@ held_out_note: "Phase 1 of #782. Collected and recorded only; used for no fit."
 
 stern_cases:
   - id: S01-webb-lngbv-4200
-    held_out: true
+    held_out: "phase 1 of #782; collected only, not fitted"
     vessel: "4,200 m3 LNG bunkering vessel (SNAME 2020 student ship design entry, 'LNG Bunkering Solutions')"
     kind: gas_bunker_vessel
     status: concept design (not built)
@@ -60,6 +60,7 @@ stern_cases:
         drawing: "same plan and profile; machinery block including steering gear room and ECR (no aft peak split drawn)"
         scale_ref: "frame ruler"
         unc: 0.6
+        note: "not independent of stern_block_m (includes steering gear)"
       deckhouse_length_m:
         value: 12.0
         drawing: "GA part 1, weather deck (01 deck) plan: galley block, frames 133 to 113"
@@ -106,11 +107,12 @@ stern_cases:
         title: "Webb Institute 3-page project handout (principal characteristics: 95 m LOA, 20 m beam, 10 m depth, 4.1 m draft, 2,687 MT lightship, complement 15)"
         url: "https://www.webb.edu/wp-content/uploads/2020/05/Group-Handouts-LNG-Bunkering-Vessel.pdf"
         retrieved: 2026-11-02
+        sha256: e40ee14584bfa1f78f9892474f9a0b63b52cea7a7b0a1aceebb8502b3682f6b3
         note: "its LOA 95 m and draft 4.1 m differ from the GA (92.9 m, 3.75 m); the GA values are used"
     licence: "student design report; facts and figures cited only; no image is reproduced here"
 
   - id: S02-khi-lngbv-6000
-    held_out: true
+    held_out: "phase 1 of #782; collected only, not fitted"
     vessel: "Kawasaki Heavy Industries 6,000 m3 LNG fuel bunkering ship (concept, 2012)"
     kind: gas_bunker_vessel
     status: concept design (not built)
@@ -143,7 +145,7 @@ stern_cases:
         scale_ref: "LBP as above"
         unc: 1.0
         note: "the lower three tiers are 9.8 m long; the block above the engine room is 15.6 m long and lower"
-      deckhouse_breadth_m: {value: 18.8, drawing: "slide 18 plan: the block is full beam", scale_ref: "stated beam", unc: 0.4}
+      deckhouse_breadth_m: {value: 18.8, drawing: "slide 18 plan: the block is full beam at the main-deck level; the plan does not show the upper tiers", scale_ref: "stated beam", unc: 1.5, note: "upper-tier breadth not shown; may be narrower"}
       deckhouse_tiers: {value: 4, drawing: "slide 18 profile: four levels above the main deck at the aft end", unc: 1, note: "tier heights not dimensioned; deckhouse volume not derived"}
       deckhouse_volume_m3: null
     lightship: null
@@ -156,7 +158,7 @@ stern_cases:
     licence: "copyright Kawasaki Heavy Industries; facts cited only; no image is reproduced here"
 
   - id: S03-ral-rastar-3800-df
-    held_out: true
+    held_out: "phase 1 of #782; collected only, not fitted"
     vessel: "RAstar 3800-DF dual-fuel (LNG/MDO) ASD escort/ship-assist tug, Yong Gang Xiao Tuo 60 (Ningbo Zhoushan Port)"
     kind: gas_fuelled_tug
     status: built (delivered 2020-01)
@@ -176,12 +178,12 @@ stern_cases:
       stern_block_note: "the GA has profile, second deck and main deck plans only; no below-deck plan, so no engine-room length"
       deckhouse_length_m:
         value: 14.8
-        drawing: "RAL GA, outboard profile: house aft base to forward face on the deck (px 308 to 663)"
+        drawing: "RAL GA rev 30000R7 (2020), outboard profile: house aft base to forward face on the deck (px 308 to 663)"
         scale_ref: "stated LOA 38.00 m over the drawn hull extent 21 to 917 px (896 px, 0.0424 m/px); plan gives 0.0412"
         unc: 0.5
-      deckhouse_breadth_m: {value: 9.4, drawing: "RAL GA, main deck plan: house width between side decks (227 px)", scale_ref: "LOA over the plan's drawn length, 0.0412 m/px", unc: 0.4}
-      deckhouse_tiers: {value: 3, drawing: "RAL GA, profile: main-deck level, second deck, wheelhouse", unc: 0}
-      deckhouse_height_m: {value: 7.3, drawing: "RAL GA profile: sheer line to wheelhouse roof (about 4.0 m to the wheelhouse floor, 3.3 m wheelhouse)", scale_ref: "0.0424 m/px", unc: 0.5}
+      deckhouse_breadth_m: {value: 9.4, drawing: "RAL GA rev 30000R5 (2016), main deck plan: house width between side decks (227 px)", scale_ref: "LOA over the plan's drawn length, 0.0412 m/px", unc: 0.4}
+      deckhouse_tiers: {value: 3, drawing: "RAL GA rev 30000R5 (2016), profile: main-deck level, second deck, wheelhouse", unc: 0}
+      deckhouse_height_m: {value: 7.3, drawing: "RAL GA rev 30000R7 (2020) profile: sheer line to wheelhouse roof (about 4.0 m to the wheelhouse floor, 3.3 m wheelhouse)", scale_ref: "0.0424 m/px", unc: 0.7}
       deckhouse_volume_m3: null
       deckhouse_volume_note: "not derived: tier heights are not dimensioned; an envelope of the three tiers is about 700 m3 +/- 25 %"
     lightship: null
@@ -199,7 +201,7 @@ stern_cases:
     licence: "copyright Robert Allan Ltd; facts cited only; no image is reproduced here"
 
   - id: S04-ral-rastar-4000-df-dux
-    held_out: true
+    held_out: "phase 1 of #782; collected only, not fitted"
     vessel: "RAstar 4000-DF dual-fuel (LNG/diesel) escort tug 'Dux' (Ostensjo Rederi, built by Astilleros Gondan)"
     kind: gas_fuelled_tug
     status: built (delivered 2017-05)
@@ -227,7 +229,7 @@ stern_cases:
         scale_ref: "0.0455 m/px as above"
         unc: 0.7
       deckhouse_breadth_m: {value: 11.4, drawing: "RAL GA main deck plan: house between the side decks (250 px)", scale_ref: "0.0455 m/px", unc: 0.5}
-      deckhouse_tiers: {value: 2, drawing: "RAL GA profile and bridge deck plan: main-deck house and the bridge tier", unc: 0}
+      deckhouse_tiers: {value: 2, drawing: "RAL GA profile and bridge deck plan: main-deck house and the bridge tier", unc: 1}
       deckhouse_volume_m3: null
       deckhouse_volume_note: "not derived: tier heights are not dimensioned"
     lightship: null
