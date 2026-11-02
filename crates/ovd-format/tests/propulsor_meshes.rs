@@ -22,7 +22,7 @@ use std::path::{Path, PathBuf};
 
 use ovd_core::machinery::layout_rates::DISC_THICKNESS_OVER_D;
 use ovd_core::mesh::{Mesh, PartSource};
-use ovd_format::export::option_glb;
+use ovd_format::export::gltf_glb;
 use ovd_format::{Profile, RunOutcome, check, option_vessel_run, run_option};
 use serde_json::Value;
 
@@ -53,8 +53,15 @@ fn design_files() -> Vec<PathBuf> {
 
 /// Every computed Option with a Propulsor Layout.
 fn cases() -> Vec<Case> {
+    let out = cases_of(design_files());
+    assert!(out.len() >= 5, "{} self-propelled designs", out.len());
+    out
+}
+
+/// The computed Options with a Propulsor Layout of `files`.
+fn cases_of(files: Vec<PathBuf>) -> Vec<Case> {
     let mut out = Vec::new();
-    for path in design_files() {
+    for path in files {
         let text = std::fs::read_to_string(&path).unwrap();
         let design = check(&text, &Profile::built_in())
             .design
@@ -78,7 +85,6 @@ fn cases() -> Vec<Case> {
             });
         }
     }
-    assert!(out.len() >= 5, "{} self-propelled designs", out.len());
     out
 }
 
@@ -335,8 +341,13 @@ fn every_propulsor_part_is_closed_and_faces_out() {
     }
 }
 
+/// The first case of the design file `name`: only that file is run (issue #819).
 fn case(name: &str) -> Case {
-    cases()
+    let files = design_files()
+        .into_iter()
+        .filter(|p| p.file_name().is_some_and(|f| f == name))
+        .collect();
+    cases_of(files)
         .into_iter()
         .find(|c| c.at.starts_with(name))
         .unwrap_or_else(|| panic!("no case {name}"))
@@ -441,7 +452,8 @@ fn every_propulsor_part_is_a_named_gltf_node_with_the_propulsor_material() {
             if !mesh.groups.iter().any(|g| g.layer == "propulsor") {
                 continue;
             }
-            let glb = option_glb(option).unwrap();
+            // `option_glb` is `gltf_glb` of this mesh (export_gltf.rs tests it): one run, not two.
+            let glb = gltf_glb(&mesh);
             let json_len = u32::from_le_bytes(glb[12..16].try_into().unwrap()) as usize;
             let doc: Value = serde_json::from_slice(&glb[20..20 + json_len]).unwrap();
             let nodes = doc["nodes"].as_array().unwrap();
