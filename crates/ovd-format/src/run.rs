@@ -750,12 +750,26 @@ pub fn run_option_with(
                         o.insert("crew".to_string(), c);
                     }
                     if let Some(r) = rooms_block {
-                        if r["settled"] == json!(false)
-                            && let Some(w) = o.get_mut("warnings").and_then(Value::as_array_mut)
-                        {
-                            w.push(json!(
-                                "The deckhouse rooms did not settle: the berths of the crew model still changed after the last pass, so the rooms are sized from the berths of the pass before. The crew block and the rooms table may differ by a berth or two (issue #780)."
-                            ));
+                        if r["settled"] == json!(false) {
+                            // A Message Id (ADR 0015): the English is in `locales/en/engine.ftl`.
+                            let t = ovd_core::text::Text::fixed(
+                                "warn-aft-deckhouse-rooms-not-settled",
+                                "The deckhouse rooms did not settle: the berths of the crew model still changed after the last pass, so the rooms are sized from the berths of the pass before. The crew block and the rooms table may differ by a berth or two (issue #780).",
+                            );
+                            let mut ids = crate::text_ids::TextIds::default();
+                            ids.text(&t);
+                            let english = t.en.clone();
+                            let new_ids = ids.finish(&json!([english.clone()]));
+                            if let Some(w) = o.get_mut("warnings").and_then(Value::as_array_mut) {
+                                w.push(json!(english));
+                            }
+                            if let (Some(Value::Object(have)), Value::Object(add)) =
+                                (o.get_mut("text_ids"), new_ids)
+                            {
+                                for (k, val) in add {
+                                    have.entry(k).or_insert(val);
+                                }
+                            }
                         }
                         o.insert("rooms".to_string(), r);
                     }

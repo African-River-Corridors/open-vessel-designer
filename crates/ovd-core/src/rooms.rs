@@ -4,9 +4,8 @@
 //! Source read: ES-TRIN 2025/1, Chapter 15, Articles 15.02, 15.03, 15.04 and 15.07 (the PDF text in
 //! the rule sources). **MLC 2006 Standard A3.1 is not in the rule sources, so it is not applied**:
 //! a hull whose Service Area reaches sea is sized to the ES-TRIN rooms and the result says so; the
-//! deckhouse keeps the interim floor as its lower bound there (see `aft_arrangement`). RPN 18.02(4)
-//! (rest underway in a room assigned to one crew member only) is cited from the CCNR RPN, state
-//! 1 January 2026, English unofficial translation (`rpn/` in the rule sources).
+//! deckhouse keeps the interim floor as its lower bound there (see `aft_arrangement`). One cabin per crew member is OVD's own rule; RPN 18.02(4) (a derogation for modes A1 and A2) is
+//! mentioned as context only (CCNR RPN, state 1 January 2026, English unofficial translation).
 //!
 //! Each row says how its area came: `sourced` (a figure in the paragraph), `derived` (worked from
 //! figures in the paragraph, the working named in the note) or `estimate` (the paragraph
@@ -65,7 +64,8 @@ pub struct RoomsBasis {
     pub berths: u32,
     /// The Service Area reaches sea: MLC A3.1 would apply, and is not applied (text not read).
     pub reaches_sea: bool,
-    /// Inland operating mode B (RPN 18.01): rest may be taken underway, one cabin each (18.02(4)).
+    /// Inland operating mode B (RPN 18.01). It does not change the rooms: every berth has its own
+    /// cabin in every mode. Kept so the results show the mode the crew was sized for.
     pub mode_b: bool,
 }
 
@@ -128,13 +128,14 @@ pub fn size_rooms(b: &RoomsBasis) -> Rooms {
     let n = b.berths;
     let mut rows: Vec<Room> = Vec::new();
     if n > 0 {
-        // One cabin per berth: ES-TRIN 15.02(10) allows two to a cabin, but one each is the cautious
-        // reading, and RPN 18.02(4) requires it in mode B when rest is taken underway.
+        // One cabin per berth in every mode: OVD's own cautious rule. ES-TRIN 15.02(10) allows two to a
+        // cabin. RPN 18.02(4) is a derogation from (1) and (2) (modes A1 and A2) that allows rest
+        // underway in a room assigned to one crew member; it is context, not the source of this rule.
         let berth_floor = BERTH_LENGTH_M * BERTH_WIDTH_M;
         let cabin = (CABIN_VOLUME_M3 / HEADROOM_M)
             .max(CABIN_AIR_FIRST_M3 / HEADROOM_M)
             .max(berth_floor);
-        let mut cabin_row = row(
+        let cabin_row = row(
             "cabin",
             "Sleeping cabin (one berth)",
             n,
@@ -142,13 +143,8 @@ pub fn size_rooms(b: &RoomsBasis) -> Rooms {
             "15.02(9), 15.02(10), 15.02(6), 15.07(1)",
             "derived",
             "The largest of 7 m3 / 2.00 m headroom, 5 m3 of air / 2.00 m, and the 2.00 x 0.90 m berth. \
-             Furniture volume is not added. One cabin each: the cautious reading of 15.02(10), which allows two.",
+             Furniture volume is not added. One cabin per crew member in every mode: OVD's own cautious rule (15.02(10) allows two to a cabin). Context: CCNR RPN, state 1 January 2026 (English unofficial translation), 18.02(4) is a derogation from (1) and (2), modes A1 and A2, allowing rest underway in a room assigned to one crew member only; it names no mode B and is not the source of this rule.",
         );
-        if b.mode_b {
-            cabin_row.clause.push_str(
-                "; CCNR RPN, state 1 January 2026 (English unofficial translation; French, German and Dutch are authoritative), 18.02(4): rest underway in a room assigned to one crew member only. 18.02(4) derogates from (1) and (2), the modes A1 and A2, and names no mode B; the ticket and the manning note apply it to mode B",
-            );
-        }
         rows.push(cabin_row);
         let communal = (COMMUNAL_PER_PERSON_M2 * n as f64).max(COMMUNAL_MIN_M2);
         rows.push(row(

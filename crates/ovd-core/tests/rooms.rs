@@ -124,16 +124,18 @@ fn the_stairway_estimate_is_one_stairway_of_1_6_m2() {
 }
 
 #[test]
-fn mode_b_rest_underway_cites_the_one_cabin_each_rule() {
+fn every_mode_gets_one_cabin_per_berth_on_the_same_rule() {
+    // One cabin per crew member is OVD's own cautious rule in every mode; the mode changes no row.
     let b = RoomsBasis {
         berths: 4,
         reaches_sea: false,
         mode_b: true,
     };
-    let r = size_rooms(&b);
-    assert_eq!(row(&r, "cabin").count, 4);
-    assert!(row(&r, "cabin").clause.contains("18.02(4)"));
-    assert!(!row(&size_rooms(&basis(4)), "cabin").clause.contains("RPN"));
+    let (rb, ra) = (size_rooms(&b), size_rooms(&basis(4)));
+    assert_eq!(row(&rb, "cabin").count, 4);
+    assert_eq!(rb, ra);
+    assert_eq!(row(&rb, "cabin").basis, "derived");
+    assert!(row(&rb, "cabin").note.contains("OVD's own cautious rule"));
 }
 
 #[test]

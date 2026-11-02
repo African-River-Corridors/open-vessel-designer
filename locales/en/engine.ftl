@@ -288,6 +288,7 @@ msg-opening-height = opening { $row }: height_above_deck_m = { $value } is below
 ## crates/ovd-format/src/run.rs
 
 msg-convoy-not-available = convoy results not yet available
+warn-aft-deckhouse-rooms-not-settled = The deckhouse rooms did not settle: the berths of the crew model still changed after the last pass, so the rooms are sized from the berths of the pass before. The crew block and the rooms table may differ by a berth or two (issue #780).
 
 ## crates/ovd-format/src/session.rs
 

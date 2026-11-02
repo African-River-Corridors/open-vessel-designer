@@ -2,7 +2,7 @@
 //!
 //! Label: property. The rooms table is in the results of a deckhouse Option; its cabins are the
 //! berths of the crew block; the tier count follows its floor; a river-only hull in mode B with rest
-//! underway gets one cabin each (RPN 18.02(4)); a hull that reaches sea says MLC A3.1 is not applied.
+//! underway gets one cabin each (OVD's own rule in every mode); a hull that reaches sea says MLC A3.1 is not applied.
 
 use ovd_format::{Profile, RunOutcome, fill_as_new, run_option};
 use serde_json::{Value, json};
@@ -44,18 +44,13 @@ fn row<'a>(r: &'a Value, id: &str) -> &'a Value {
 
 #[test]
 fn a_river_only_mode_b_hull_gets_one_cabin_each() {
-    // 24 navigation hours is operating mode B (RPN 18.01); rest underway: one cabin each.
+    // 24 navigation hours is operating mode B (RPN 18.01); one cabin each, as in every mode.
     let r = results("river-only", json!({ "navigation_hours_per_day": 24.0 }));
     let berths = r["crew"]["berths"].as_i64().unwrap();
     assert!(berths > 0);
     assert_eq!(r["crew"]["rpn"]["operating_mode"], json!("B"));
     assert_eq!(row(&r, "cabin")["count"].as_i64().unwrap(), berths);
-    assert!(
-        row(&r, "cabin")["clause"]
-            .as_str()
-            .unwrap()
-            .contains("18.02(4)")
-    );
+    assert_eq!(row(&r, "cabin")["basis"], json!("derived"));
     assert_eq!(r["rooms"]["rule"], json!("es-trin-2025-ch15"));
     assert_eq!(r["rooms"]["settled"], json!(true));
 }
@@ -113,11 +108,10 @@ fn a_container_block_option_has_no_rooms_block() {
 }
 
 #[test]
-fn mode_a_and_mode_b_differ_in_the_crew_and_the_citation_not_in_the_cabin_rule() {
+fn mode_a_and_mode_b_differ_in_the_crew_not_in_the_cabin_rule() {
     // In this model every berth gets its own cabin (the cautious reading of ES-TRIN 15.02(10)), so
     // operating mode A1 (14 h) and mode B (24 h) both give one cabin each. What differs is the crew
-    // table cell (so the berths) and that only mode B cites RPN 18.02(4) on the cabin row. The model
-    // has no rule that lets a mode A crew share a cabin.
+    // table cell (so the berths) and nothing else. The model has no rule that lets any crew share a cabin.
     let a = results("river-only", json!({ "navigation_hours_per_day": 14.0 }));
     let b = results("river-only", json!({ "navigation_hours_per_day": 24.0 }));
     assert_eq!(a["crew"]["rpn"]["operating_mode"], json!("A1"));
@@ -125,12 +119,6 @@ fn mode_a_and_mode_b_differ_in_the_crew_and_the_citation_not_in_the_cabin_rule()
     for r in [&a, &b] {
         assert_eq!(row(r, "cabin")["count"], r["crew"]["berths"]);
     }
-    assert!(!row(&a, "cabin")["clause"].as_str().unwrap().contains("RPN"));
-    assert!(
-        row(&b, "cabin")["clause"]
-            .as_str()
-            .unwrap()
-            .contains("CCNR RPN, state 1 January 2026")
-    );
+    assert_eq!(row(&a, "cabin")["clause"], row(&b, "cabin")["clause"]);
     assert!(b["crew"]["berths"].as_i64() >= a["crew"]["berths"].as_i64());
 }
