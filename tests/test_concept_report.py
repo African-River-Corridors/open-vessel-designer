@@ -164,9 +164,11 @@ def test_the_document_has_every_heading_of_the_skeleton_in_order():
     """Label: property"""
     doc = cr.build(RUN, "A basis", number="TN-0001", date="2026-10-30")
     assert doc["ord"] == "0.2"
-    assert [s["id"] for s in doc["body"]] == ["summary"] + [f"p{i}" for i in range(1, 10)]
-    assert doc["body"][0]["numbered"] is False
-    assert [s["title"] for s in doc["body"][1:]] == [
+    assert [s["id"] for s in doc["body"]] == ["body"]
+    parts = doc["body"][0]["body"]
+    assert [s["id"] for s in parts] == ["summary"] + [f"p{i}" for i in range(1, 10)]
+    assert parts[0]["numbered"] is False
+    assert [s["title"] for s in parts[1:]] == [
         "The vessel and its brief", "Capacity and arrangement", "Structure, powering and machinery", "Weights",
         "Floating, freeboard and stability", "Damage stability", "Compliance", "Cost", "Limits and open items"]
     a, b = doc["appendices"]
@@ -305,7 +307,7 @@ def test_the_control_block_has_a_revision_letter_and_date_and_no_change_table():
         cr.build(RUN, "A basis", revision="1")
 
 
-@pytest.mark.parametrize("status", ["for-approval", "For Approval", "for_approval", "approved", "issued", "final", "superseded", "bogus"])
+@pytest.mark.parametrize("status", ["approved", "issued", "final", "superseded", "bogus"])
 def test_the_status_cannot_be_set_above_the_cap(status):
     """Label: property
     Spec 0015 P7.
@@ -314,11 +316,13 @@ def test_the_status_cannot_be_set_above_the_cap(status):
         cr.build(RUN, "A basis", status=status)
 
 
-@pytest.mark.parametrize("status,want", [("draft", "draft"), ("for-checking", "for-checking"), ("For Review", "for-checking"), ("for_checking", "for-checking")])
+@pytest.mark.parametrize("status,want", [("draft", "draft"), ("for-checking", "for-checking"), ("For Review", "for-checking"),
+                                         ("for_checking", "for-checking"), ("for-approval", "for-approval"),
+                                         ("For Approval", "for-approval"), ("for-sign-off", "for-approval")])
 def test_a_status_at_or_below_the_cap_is_kept(status, want):
     """Label: property"""
     assert cr.build(RUN, "A basis", status=status)["control"]["status"] == want
-    assert cr.STATUS_CAP == "for-checking"
+    assert cr.STATUS_CAP == "for-approval"
 
 
 def test_the_page_budget_warns_above_twelve_body_pages_and_not_at_twelve():
@@ -347,6 +351,17 @@ def test_the_page_budget_fires_on_a_rendered_body_of_thirteen_pages_and_not_twel
     assert cr.page_budget_warnings(12) == []
     assert cr.body_pages(doc_of(13 - base + 1), ORD, tmp_path) == 13
     assert cr.page_budget_warnings(13) != []
+
+
+@needs_ord
+def test_the_example_body_fits_the_page_budget_with_no_warning(tmp_path):
+    """Label: property
+    The summary and the nine parts flow under one level-1 section, so the body is far under the budget.
+    """
+    doc = cr.build(RUN, "A basis", number="TN-0001", date="2026-11-02")
+    pages = cr.body_pages(doc, ORD, tmp_path)
+    assert pages <= cr.BODY_PAGE_LIMIT, pages
+    assert cr.page_budget_warnings(pages) == []
 
 
 @needs_ord

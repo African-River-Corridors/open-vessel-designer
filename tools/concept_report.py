@@ -413,11 +413,12 @@ def provenance(engine_version, commit, options):
 
 # --- the skeleton (spec 0015 sections 4, 5, 10) ---
 
-# The statuses of ORD's `standard` lifecycle that ask for no approval, lowest first. Spec 0015 P7: a concept
-# report never passes the highest of them. `for-approval` asks for approval, so the cap is `for-checking`.
-WORKING_STATUSES = ["draft", "for-checking"]
+# The statuses of ORD's `standard` lifecycle a concept report may carry, lowest first. Spec 0015 P7: it may be
+# sent for approval and is never approved, so the cap is `for-approval` (the maintainer's decision; the ticket
+# said "below"). `approved`, `issued` and `superseded` are refused.
+WORKING_STATUSES = ["draft", "for-checking", "for-approval"]
 STATUS_CAP = WORKING_STATUSES[-1]
-STATUS_ALIASES = {"for-review": "for-checking"}
+STATUS_ALIASES = {"for-review": "for-checking", "for-sign-off": "for-approval"}
 BODY_PAGE_LIMIT = 12   # spec 0015 section 4.1: a warning above this many body pages, never an error
 
 # One row per Appendix A chapter, in the order of section 4.2: id, title, body part, the run fields it needs
@@ -656,7 +657,7 @@ def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", t
     """The concept report of one Option of `run` (an `ovd run --json` output) as an ORD document.
 
     The document has the three zones of spec 0015 section 4, with every heading always present: the summary and
-    nine body parts, Appendix A (chapters A.1 to A.14) and Appendix B (sections B.1 to B.8). A chapter or part the
+    nine body parts (under one level-1 section), Appendix A (chapters A.1 to A.14) and Appendix B (sections B.1 to B.8). A chapter or part the
     run cannot fill carries the "not evaluated" block (section 5). `ref` names a reference Option shown beside the
     main one. `assets` maps asset ids to PNG paths: "gz" adds the GZ chart, "ga-side" and "ga-mid" add the GA views.
     `status` is an ORD status; one above `STATUS_CAP` raises ValueError (P7). The control block holds the revision
@@ -670,8 +671,11 @@ def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", t
     states = chapter_states(o, r, assets)
     states["a14"] = {"blocks": [open_items(o, states, "tbl-open-items")]}
 
-    body = [dict(section("summary", "Summary", _summary(o)), numbered=False)]
-    body += [_part(o, pid, ptitle, cids, states) for pid, ptitle, cids in BODY_PARTS]
+    # One level-1 section holds the summary and the nine parts, so they flow without page breaks (spec 0015
+    # section 4.1); the chapters are the appendices, which stay level 1.
+    parts = [dict(section("summary", "Summary", _summary(o)), numbered=False)]
+    parts += [_part(o, pid, ptitle, cids, states) for pid, ptitle, cids in BODY_PARTS]
+    body = [section("body", "The concept design", parts)]
 
     chapters = []
     for cid, ctitle, _p, _n, shows, closes, _t in CHAPTERS:
