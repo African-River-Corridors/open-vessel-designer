@@ -245,6 +245,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "max_speed_kn": {
           "value": 12.0,
           "source": "typed"
@@ -812,6 +816,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "max_speed_kn": {
@@ -1383,6 +1391,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "max_speed_kn": {
           "value": 12.0,
           "source": "typed"
@@ -1950,6 +1962,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "max_speed_kn": {
@@ -2521,6 +2537,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "max_speed_kn": {
           "value": 12.0,
           "source": "typed"
@@ -3086,6 +3106,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "resistance_method": {
@@ -3677,6 +3701,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "resistance_method": {
           "value": "by_block_coefficient",
           "source": "typed"
@@ -4264,6 +4292,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "resistance_method": {
@@ -4855,6 +4887,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "resistance_method": {
           "value": "by_block_coefficient",
           "source": "typed"
@@ -5442,6 +5478,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "resistance_method": {
@@ -6033,6 +6073,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "resistance_method": {
           "value": "by_block_coefficient",
           "source": "typed"
@@ -6620,6 +6664,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "resistance_method": {
@@ -7211,6 +7259,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "resistance_method": {
           "value": "by_block_coefficient",
           "source": "typed"
@@ -7798,6 +7850,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "resistance_method": {
@@ -8389,6 +8445,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "resistance_method": {
           "value": "barge_form_factor",
           "source": "typed"
@@ -8976,6 +9036,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "resistance_method": {
@@ -9567,6 +9631,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "resistance_method": {
           "value": "barge_form_factor",
           "source": "typed"
@@ -10154,6 +10222,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "resistance_method": {
@@ -10745,6 +10817,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "resistance_method": {
           "value": "barge_form_factor",
           "source": "typed"
@@ -11332,6 +11408,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "resistance_method": {
@@ -11923,6 +12003,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "resistance_method": {
           "value": "barge_form_factor",
           "source": "typed"
@@ -12512,6 +12596,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "resistance_method": {
           "value": "barge_form_factor",
           "source": "typed"
@@ -13099,6 +13187,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "resistance_method": {

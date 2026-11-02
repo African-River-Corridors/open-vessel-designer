@@ -245,6 +245,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "max_speed_kn": {
           "value": 12.0,
           "source": "typed"
@@ -814,6 +818,10 @@
           "value": true,
           "source": "default"
         },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
         "max_speed_kn": {
           "value": 12.0,
           "source": "typed"
@@ -1381,6 +1389,10 @@
         },
         "stern_block_mass_included": {
           "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
           "source": "default"
         },
         "max_speed_kn": {
