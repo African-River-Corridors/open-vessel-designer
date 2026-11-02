@@ -1,6 +1,6 @@
 # 140 x 29 m coastal LNG gas barge: review run
 
-**Concept and preliminary design only. Not verified. Never for approval.** This folder is a worked example for an expert review of the tool, first run on 2026-10-29 and re-run with `ovd` on 2026-10-30 (the rename to OVD, spec 0010). The re-run takes in the propulsor layout changes since the first run (#694, #702, #708): the thruster and propulsor positions in the drawings and the results hashes moved; no figure in the tables below did. Re-run again after #722: the gas-hull lightship and cost now take the hull steel from the panel model (structural members with ABS barge minimum scantlings), so the lightship, draught, stability and cost figures moved. Re-run again after #740: the hull steel scantlings take the rule length of ABS 3-1-1/3.1 (96 % of the length on a waterline at 85 % of the depth) in place of the length overall, so the lightship, draught, stability and cost figures moved again (the tank, cargo, installed power, boil-off and gas use rows did not; the power curve moved by under 0.2 %). The numbers are what the tool prints; nothing here is a design.
+**Concept and preliminary design only. Not verified. Never for approval.** This folder is a worked example for an expert review of the tool, first run on 2026-10-29 and re-run with `ovd` on 2026-10-30 (the rename to OVD, spec 0010). The re-run takes in the propulsor layout changes since the first run (#694, #702, #708): the thruster and propulsor positions in the drawings and the results hashes moved; no figure in the tables below did. Re-run again after #722: the gas-hull lightship and cost now take the hull steel from the panel model (structural members with ABS barge minimum scantlings), so the lightship, draught, stability and cost figures moved. Re-run again after #740: the hull steel scantlings take the rule length of ABS 3-1-1/3.1 (96 % of the length on a waterline at 85 % of the depth) in place of the length overall, so the lightship, draught, stability and cost figures moved again (the tank, cargo, installed power, boil-off and gas use rows did not; the power curve moved by under 0.2 %). Re-run again after #745: the lightship and cost take the plate model's ordered steel (the plates laid out on the hull's Sections Table, the raked bow included, and the rule length on it), so the lightship fell by 266 to 385 t and the draught, stability, cost and power figures moved (the tank and cargo rows did not). The numbers are what the tool prints; nothing here is a design.
 
 ## The design
 
@@ -25,25 +25,25 @@ Self-propelled gas barge, IGC Type C tanks, LNG, 140.0 m x 29.0 m, raked box hul
 | Stern void (m) | 22.5 | 22.1 | 22.5 |
 | Cargo volume at 0.98 fill (m3) | 14,355 | 14,469 | 15,890 |
 | Cargo (t) | 6,460 | 6,511 | 7,150 |
-| Lightship (t) | 5,169 | 5,178 | 5,843 |
-| Displacement, laden (t) | 11,663 | 11,724 | 13,032 |
-| Draught, laden (m) | 3.54 | 3.55 | 4.30 |
+| Lightship (t) | 4,903 | 4,911 | 5,458 |
+| Displacement, laden (t) | 11,397 | 11,457 | 12,647 |
+| Draught, laden (m) | 3.46 | 3.48 | 4.18 |
 | Draught cap (depth less freeboard) (m) | 10.19 | 10.19 | 14.14 |
-| Freeboard, laden (m) | 8.46 | 8.45 | 11.65 |
-| Air draft, laden (m) | 11.86 | 11.85 | 15.05 |
-| Air draft, light (m) | 13.79 | 13.79 | 17.36 |
-| GM fluid, full load departure (m) | 16.16 | 16.07 | 12.24 |
-| Max GZ, full load departure (m) | 6.19 | 6.18 | 5.57 |
-| GM fluid, ballast departure (m) | 25.13 | 25.04 | 20.41 |
+| Freeboard, laden (m) | 8.54 | 8.52 | 11.77 |
+| Air draft, laden (m) | 11.94 | 11.92 | 15.17 |
+| Air draft, light (m) | 13.88 | 13.87 | 17.49 |
+| GM fluid, full load departure (m) | 16.57 | 16.47 | 12.69 |
+| Max GZ, full load departure (m) | 6.21 | 6.20 | 5.60 |
+| GM fluid, ballast departure (m) | 26.03 | 25.93 | 21.53 |
 | Installed power (design speed 9.7 kn, margin 1.2) (kW) | 1,717 | 1,717 | 2,022 |
 | Service speed, deep water (kn) | 11.4 | 11.4 | 12.0 |
-| Power at the service speed (kW) | 1,431 | 1,431 | 1,626 |
+| Power at the service speed (kW) | 1,431 | 1,431 | 1,610 |
 | Boil-off (IGC 7.2 ambient) (kg/h) | 731 | 737 | 747 |
-| Gas use at the service speed (kg/h) | 261 | 261 | 291 |
+| Gas use at the service speed (kg/h) | 261 | 261 | 289 |
 | Checks | boil-off within gas use | boil-off within gas use | boil-off within gas use |
-| Results hash | 9e39d165f61e | 3d9a7dffe060 | 522a28a727de |
+| Results hash | cd91b47db39f | 19b5d4defd1e | 17f9fe1844e7 |
 
-Power curve, deep water (kW at kn): 8 kn 641; 9 kn 906; 10 kn 1,239; 11 kn 1,648; 12 kn 2,145 (A basis).
+Power curve, deep water (kW at kn): 8 kn 637; 9 kn 901; 10 kn 1,231; 11 kn 1,639; 12 kn 2,132 (A basis).
 
 Every Option meets every evaluated blocking Rule. Four blocking Rules are not evaluated by the tool: IGC 2.7 damage survival, the IS Code weather criterion, the inland tank-capacity table and the hull-design clause. One warning check is not met in every Option: the boil-off exceeds the gas use at the service speed, so the excess needs reliquefaction, pressure accumulation or a gas combustion unit (IGC 7.1).
 
@@ -51,11 +51,11 @@ Every Option meets every evaluated blocking Rule. Four blocking Rules are not ev
 
 | Option | Change from A | Tank OD (m) | Cargo (m3) | Cargo (t) | Draught (m) |
 |---|---|---:|---:|---:|---:|
-| I lift 9 m | wheelhouse lift cap 6 to 9 m | 12.00 | 17,135 | 7,711 | 3.93 |
-| J bow 12 m | bow rake typed 12 m (default 1.6 x depth = 19.2 m) | 11.00 | 15,535 | 6,991 | 3.53 |
-| K both | both of the above | 12.00 | 18,554 | 8,349 | 3.94 |
-| L depth 14 | as K at depth 14 m | 12.00 | 18,554 | 8,349 | 4.12 |
-| M river | Service Area river-only (same hash as A) | 11.00 | 14,355 | 6,460 | 3.54 |
+| I lift 9 m | wheelhouse lift cap 6 to 9 m | 12.00 | 17,135 | 7,711 | 3.85 |
+| J bow 12 m | bow rake typed 12 m (default 1.6 x depth = 19.2 m) | 11.00 | 15,535 | 6,991 | 3.48 |
+| K both | both of the above | 12.00 | 18,554 | 8,349 | 3.89 |
+| L depth 14 | as K at depth 14 m | 12.00 | 18,554 | 8,349 | 4.07 |
+| M river | Service Area river-only (same hash as A) | 11.00 | 14,355 | 6,460 | 3.46 |
 
 The river blind-distance Rule (ES-TRIN 7.02(2), 250 m) with the 6 m lift cap is what keeps the tank at 11 m instead of the 12 m cap on a 12 m hull. The bow rake default takes 19.2 m of the 140 m. Together they are the difference between 14,355 and 18,554 m3.
 
@@ -66,6 +66,8 @@ ovd run examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign
 ovd run --json examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign > results.json
 ovd draw --out ga examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign
 ```
+
+`results.json` holds the steel summary of each Option (`structure`: weight per member group, scrap, plates bought). The per-item steel list is not stored: `ovd run --json --steel-list` adds it, and `ovd export --format steel-csv --option "A basis" -o steel.csv examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign` writes it as CSV.
 
 `trace.md` lists every Rule of Option A with its outcome, value, limit, status and citation (from `rule_trace` in `results.json`). `ga/` holds the three GA views of each Option as PDF and SVG.
 

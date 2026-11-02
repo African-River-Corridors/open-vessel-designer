@@ -883,3 +883,114 @@ fn finish(panels: &HullPanelModel, spec: &HullStructureSpec, acc: Acc) -> HullPl
         rule_edition: panels.rule_edition,
     }
 }
+
+/// The panel table as a roll-up of the plate model (issue #745, spec 0013 D9): one member per group
+/// of the plate model, its plate area, plate weight and stiffener weight the plate model's at the
+/// ordered thickness. A group the panel model does not hold (the end plating) is added with its
+/// first item's citation. The net weight is the plate model's ordered weight; the allowance and the
+/// total are the plate model's. The hull girder check stays the panel model's.
+pub fn rolled_up(panels: &HullPanelModel, plates: &HullPlateModel) -> HullPanelModel {
+    let mut members = Vec::with_capacity(plates.groups.len());
+    for g in &plates.groups {
+        let mine: Vec<&SteelItem> = plates
+            .items
+            .iter()
+            .filter(|i| i.member == g.member && i.region == g.region)
+            .collect();
+        let area: f64 = mine.iter().map(|i| i.area_m2).sum();
+        let plate_t: f64 = mine
+            .iter()
+            .filter(|i| i.section.is_none())
+            .map(|i| i.ordered_t)
+            .sum();
+        let stiffeners_t: f64 = mine
+            .iter()
+            .filter(|i| i.section.is_some())
+            .map(|i| i.ordered_t)
+            .sum();
+        let length: f64 = mine
+            .iter()
+            .filter(|i| i.section.is_some())
+            .map(|i| i.length_m)
+            .sum();
+        let mut m = match panels
+            .members
+            .iter()
+            .find(|p| p.member == g.member && p.region == g.region)
+        {
+            Some(p) => p.clone(),
+            None => {
+                let first = mine.first();
+                PanelMember {
+                    member: g.member.clone(),
+                    region: g.region.clone(),
+                    x_m: (0.0, 0.0),
+                    y_m: (0.0, 0.0),
+                    z_m: (0.0, 0.0),
+                    count: 1,
+                    plate_area_m2: 0.0,
+                    plate_mm: first.map_or(0.0, |i| i.rule_net_mm),
+                    stiffener_direction: crate::hull_panels::StiffenerDirection::None,
+                    stiffener_spacing_mm: 0.0,
+                    stiffener: None,
+                    stiffener_length_m: 0.0,
+                    stiffeners: Vec::new(),
+                    primary_members: Vec::new(),
+                    primary_spacing_m: None,
+                    primary: None,
+                    plate_t: 0.0,
+                    stiffeners_t: 0.0,
+                    total_t: 0.0,
+                    rule: first.map_or(String::new(), |i| i.rule.clone()),
+                    rule_set: first.map_or("", |i| i.rule_set),
+                    edition: first.map_or("", |i| i.edition),
+                    paragraph: first.map_or(String::new(), |i| i.paragraph.clone()),
+                    basis: first.map_or("estimate", |i| i.basis),
+                    note: "added by the plate model, which lays the shell out on the hull's Sections Table"
+                        .into(),
+                }
+            }
+        };
+        let xs = || {
+            mine.iter()
+                .flat_map(|i| i.geometry.points.iter())
+                .map(|p| p.0)
+        };
+        if let (Some(a), Some(b)) = (xs().reduce(f64::min), xs().reduce(f64::max))
+            && m.x_m == (0.0, 0.0)
+        {
+            m.x_m = (a, b);
+        }
+        m.plate_area_m2 = area;
+        m.plate_t = plate_t;
+        m.stiffeners_t = stiffeners_t;
+        m.stiffener_length_m = length;
+        m.total_t = g.ordered_t;
+        members.push(m);
+    }
+    HullPanelModel {
+        members,
+        hull_girder: panels.hull_girder,
+        net_t: plates.ordered_t,
+        allowance_pct: plates.allowance_pct,
+        allowance_t: plates.allowance_t,
+        total_t: plates.total_t,
+        rule_edition: panels.rule_edition,
+    }
+}
+
+/// The hull steel of a gas hull (issue #745, spec 0013 D9): the panel model of `spec`, its plate
+/// model (on the Sections Table and the hold bulkheads when given, else on the panel-equivalent
+/// rectangles) and the panel table rolled up from it. The lightship, the cost and the results all
+/// take this one figure: the plate model's ordered weight plus the allowance.
+pub fn gas_hull_steel(
+    spec: &HullStructureSpec,
+    on: Option<(&crate::sections::SectionsTable, &[f64])>,
+) -> (HullPanelModel, HullPlateModel) {
+    let panels = crate::hull_panels::hull_panels(spec);
+    let plates = match on {
+        Some((table, holds)) => hull_plates_on(&panels, spec, table, holds),
+        None => hull_plates(&panels, spec),
+    };
+    (rolled_up(&panels, &plates), plates)
+}

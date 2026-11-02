@@ -279,9 +279,10 @@ for example full load departure or ballast arrival.
 _Avoid_: load case, governing condition
 
 **Damage Case**:
-One assumed damage of a liquid bulk hull (a side or a bottom damage of stated extent at a stated place along the
-hull) and the compartments it floods, checked on the laden departure Loading Condition: the floating position of
-the damaged hull, then its righting lever. The result is a verdict for one Rule object.
+One assumed damage of a hull (a side or a bottom damage of stated extent at a stated place along the hull) and
+the compartments it floods, checked on a Loading Condition: the floating position of the damaged hull, then its
+righting lever. A liquid bulk hull is damaged in the laden departure condition; a gas hull in every IS Code
+condition, its breached Type C tanks losing their cargo. The result is a verdict for one Rule object.
 _Avoid_: damage scenario, damage condition (a Loading Condition is intact)
 
 **Damage Extent**:
@@ -289,6 +290,12 @@ The size of a Rule's assumed damage, from the Rule Set as data: a side damage (h
 or a bottom damage (how long, how wide, how high), with a forward zone where the bottom set differs. IGC 2.3.1 and
 MARPOL I 28.2 give one.
 _Avoid_: damage size, damage box
+
+**Permeability Table**:
+The permeability of a damaged Space by its kind, from a Rule Set as data (IGC 2.5.2, ADN 9.3.2.15.1 (c),
+ES-TRIN 28.03(4)(d)). A liquid space may take its value from the Loading Condition's filling: the full value
+when empty, none when full.
+_Avoid_: permeability list, flooding factor
 
 **Standard of Damage**:
 Where along the hull a Damage Extent may lie and which bulkheads it may not involve: anywhere in the length, or

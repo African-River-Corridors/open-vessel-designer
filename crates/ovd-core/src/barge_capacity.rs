@@ -40,7 +40,7 @@ use crate::tanks::{INT_OVERFLOW_MESSAGE, calculate_tank_arrangement_wide};
 use crate::text;
 use crate::text::{Arg, Text};
 
-use crate::weights::{TankMassOptions, calculate_weights_with, dome_items};
+use crate::weights::{TankMassOptions, calculate_weights_on, dome_items};
 
 /// Default cap on a gas tank's outer diameter (m). It is a design limit of this tool, not a rule of
 /// the IGC Code: above it the engine goes to more tanks across the beam. The cap is an input
@@ -765,6 +765,7 @@ fn gas_volumetric(
     inp: &BargeCapacityInputs,
     bow_void_m: f64,
     stern_void_m: f64,
+    table: Option<&crate::sections::SectionsTable>,
 ) -> Result<Volumetric, PyError> {
     let mut base = BargeInputs::new(inp.loa, inp.beam, inp.depth, inp.depth, inp.depth * 10.0);
     base.vessel_type = inp.vessel_type.clone();
@@ -884,7 +885,20 @@ fn gas_volumetric(
         hull_panels: true,
         structure: inp.structure,
     };
-    let weights = calculate_weights_with(&bi, &hull, &tanks, &mass_opts)?;
+    // Issue #745: the plate model on the hull's Sections Table and the hold bulkheads, as the
+    // Vessel Model places them (`compartments::gas_hold_bounds`).
+    let holds = crate::compartments::gas_hold_bulkheads(
+        (stern_void_m, (inp.loa - bow_void_m).max(stern_void_m)),
+        &bi,
+        &tanks,
+    );
+    let weights = calculate_weights_on(
+        &bi,
+        &hull,
+        &tanks,
+        &mass_opts,
+        table.map(|t| (t, &holds[..])),
+    )?;
     let dome_mass_items = dome_items(&bi, &tanks, &mass_opts)?;
     let lightship = weights.lightship;
     let h_top = db + inp.tank_support_height + tanks.outer_diameter + dome.1;
@@ -1374,7 +1388,27 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
     };
     let vol = match class {
         CargoClass::DryBulk => bulk_volumetric(inp, bow_void, stern_void)?,
-        CargoClass::Gas => match gas_volumetric(inp, bow_void, stern_void) {
+        CargoClass::Gas => match gas_volumetric(
+            inp,
+            bow_void,
+            stern_void,
+            // Issue #745: the hull's Sections Table, for the plate model of the lightship; the same
+            // table the hydrostatics build below.
+            crate::hydrostatics::Hull::build(&crate::hydrostatics::HullSpec {
+                loa: inp.loa,
+                beam: inp.beam,
+                depth: inp.depth,
+                bow_rake_length_m: rake,
+                bow_rake_rise_m: inp.bow_rake_rise_m.unwrap_or(inp.depth),
+                stern: inp.stern_geometry.clone(),
+                shape: inp.hull_shape.clone(),
+                downflooding_deg: inp.downflooding_angle_deg,
+                openings: inp.downflooding_openings.clone(),
+            })
+            .ok()
+            .as_ref()
+            .map(|h| &h.table),
+        ) {
             Ok(v) => v,
             Err(e) => infeasible(
                 e,

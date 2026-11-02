@@ -282,6 +282,7 @@ fn a_gas_hull_gets_a_plate_model() {
         &b.tanks,
         b.inputs.block_coefficient,
         StructureBlock::default(),
+        None,
     );
     let p = hull_panels(&s);
     let m = hull_plates(&p, &s);

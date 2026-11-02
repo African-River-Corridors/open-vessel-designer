@@ -4,7 +4,7 @@
 <!-- design-impact -->
 ### ticket/774-machinery-steel (2026-11-02)
 
-Between `main 2f376bc` and `this branch 3738a0df`.
+Between `main 2f376bc` and `this branch 9be0385f`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|
@@ -48,4 +48,4 @@ Between `main 2f376bc` and `this branch 3738a0df`.
 | sweep CN-derived bulk 2 (130x16.3) | `stern_block_mass.items[12].label` | absent | engine-room steel | changed |
 | sweep CN-derived bulk 2 (130x16.3) | `stern_block_mass.items[12].lcg_m` | absent | 15.9336110575 | changed |
 | sweep CN-derived bulk 2 (130x16.3) | `stern_block_mass.items[12].mass_t` | absent | 35.3207683351 | changed |
-| ... | 117142 more changed quantities | | | |
+| ... | 3381619 more changed quantities | | | |

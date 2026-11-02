@@ -51,6 +51,13 @@ lightship.
    of 5 % for brackets, collars, welds and small items (an Estimate: no primary source gives one figure)**. The
    structure factor of 2.0 (#401, step 2) is retired. Concept and preliminary design only (ADR 0011): class minimum
    scantlings, not a structural approval.
+   - **Since issue #745 the weight is the plate model's** (`hull_plates.rs`, spec 0013 D9 and D10): the panels are
+     re-cut into plates, stiffeners and primary members, the shell and the end structure laid out on the hull's
+     Sections Table (raked bow and Stern Form included, issue #743), each plate at its ordered thickness (the rule
+     thickness rounded up to the `thickness_step_mm` of the `structure` block). Lightship, piping, outfitting and
+     cost take that ordered weight plus the 5 % allowance. The panel table in the results is its roll-up, one member
+     per plate-model group; the steel list is the `structure` block. The rule length L is now 3-1-1/3.1 on the
+     Sections Table (96 % of the waterline length at 85 % of D), not 0.96 x LOA.
    - **In the panel weight:** shell, deck, inner bottom, inner side and wing tank top plating; their longitudinals;
      transverse bulkhead plating with its stiffeners and vertical webs; double-bottom girders and floors with the
      floor stiffeners; wing web frames (plate diaphragms); side web frames; deck transverses.

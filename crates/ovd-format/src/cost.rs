@@ -190,10 +190,10 @@ fn steel_json(w: &WeightBreakdown) -> Value {
     })
 }
 
-/// Issue #722: the gas hull steel built up from its structural members (`ovd_core::hull_panels`), set
-/// beside the two steel figures as `steel.panel_t`, and the panel table as `hull_panels`, for a later
-/// ticket to draw. Neither the lightship nor the cost reads it yet: which figure drives them is the
-/// maintainer's question on issue #722. Concept and preliminary design only; not a structural approval.
+/// Issue #722: the gas hull steel built up from its structural members, set beside the two steel
+/// figures as `steel.panel_t`, and the panel table as `hull_panels`. Since issue #745 the table is the
+/// plate model rolled up (`ovd_core::hull_plates::rolled_up`), and its total is the hull steel the
+/// lightship and the cost take. Concept and preliminary design only; not a structural approval.
 pub fn with_hull_panels(mut v: Value, m: Option<&ovd_core::hull_panels::HullPanelModel>) -> Value {
     let Some(m) = m else {
         return v;
