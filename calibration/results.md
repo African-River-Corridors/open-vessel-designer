@@ -281,7 +281,7 @@ Published empty weights of marine LNG Type C tanks over their gross volume. They
 |---|---|---|---|---|---|---|
 | lng-bunker-barge-tank-1350 | low | 1,350 | 155 | 0.115 | empty tank: 300 mm insulation, internal piping, instruments, equipment and access structures (P6); 'empty' (P7) | no diameter or length with a stated basis: 25.2 x 9 x 12.2 m is a transport envelope |
 | lng-bunker-vessel-bilobe-2500 | low | 2,500 | 240 | 0.096 | 'light weight' of the tank, as printed; what it covers is not stated | bilobe tanks are not modelled, and no diameter is printed |
-| lng-bilobe-coral-16000 | low | 16,000 | 1,400 | 0.087 | not stated ('single tank weight about 1400 t'); probably an all-in tank, scope unknown | bilobe tanks are not modelled, and no diameter or length is printed |
+| lng-bilobe-coral-16000 | low | 16,000 | 1,400 | 0.087 | not stated ('single tank weight about 1400 t') | bilobe tanks are not modelled, and no diameter or length is printed |
 | lng-ferry-vacuum-147 | low | 147 | 88 | 0.599 | not stated whether fittings or saddles are in ('an 88-tonne LNG tank was delivered') | no diameter or length with a stated basis (20.4 m by 4 m, datum not stated); a double-shell vacuum tank is not modelled |
 | lng-supply-vessel-vacuum-220 | low | 220 | 115 | 0.523 | not stated ('weighs 115 metric tons') | no length with a stated basis; the diameter basis is not stated; a double-shell vacuum tank is not modelled |
 | lng-icebreaker-vacuum-400 | low | 400 | 175 | 0.438 | not stated ('will weigh 175 tonnes') | no diameter or length printed; a double-shell vacuum tank is not modelled |

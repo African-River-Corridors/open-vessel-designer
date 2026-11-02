@@ -139,12 +139,12 @@ tank_weight_records:
     cargo: LNG
     gross_volume_m3: 16000.0
     tank_weight_t: 1400.0
-    weight_includes: "not stated ('single tank weight about 1400 t'); probably an all-in tank, scope unknown"
+    weight_includes: "not stated ('single tank weight about 1400 t')"
     published: "单罐舱容达16000立方米 ... 单罐重量约1400吨 (single-tank capacity 16,000 m3; single-tank weight about 1,400 t)"
     source: "P15 — Pai Pai News, 12 October 2022, accessed 2026-11-02"
     confidence: low
     held_out: "tank weight records (issue #317); never used to fit the structure factor; the maintainer decided no refit (2026-11-02)"
-    flags: "Single shell. A bilobe tank, which the engine does not model. 'About' 1,400 t, so the 0.0875 t per m3 is approximate. D, L, design pressure and steel are not printed"
+    flags: "Single shell is INFERRED, not stated by the source. Scope of the weight is not stated (an all-in tank is inferred, not printed). A bilobe tank, which the engine does not model. 'About' 1,400 t, so the 0.0875 t per m3 is approximate. D, L, design pressure and steel are not printed"
     not_yet_runnable: "bilobe tanks are not modelled, and no diameter or length is printed"
   - id: lng-ferry-vacuum-147
     what: "One 147 m3 vacuum-insulated LNG fuel tank of a ferry, single cylinder, double shell"
@@ -153,11 +153,11 @@ tank_weight_records:
     tank_weight_t: 88.0
     vacuum_insulated: true
     weight_includes: "not stated whether fittings or saddles are in ('an 88-tonne LNG tank was delivered')"
-    published: "an 88-tonne liquefied natural gas (LNG) tank ... The 147m3 tank (P9); 20.4 metres in length and 4 metres in diameter ... weighs over 80 tonnes ... internal volume of 149m3 (P10)"
+    published: "an 88-tonne liquefied natural gas (LNG) tank ... The 147m3 tank (P9); 20.4 metres in length and 4 metres in diameter (P10); 'over 20 metres in length, 4.5 metres high and weighs over 80 tonnes' and 'an internal volume of 149m3' (P10, in the served page source; a rendered fetch may not show them)"
     source: "P9 — CMAL press release, 14 July 2017; P10 — CMAL project page, accessed 2026-11-02"
     confidence: low
     held_out: "tank weight records (issue #317); never used to fit the structure factor; the maintainer decided no refit (2026-11-02)"
-    flags: "vacuum_insulated: double shell with a vacuum between, never read against single-shell cases. Sources disagree: 88 t against 'over 80 t', and 147 m3 against 149 m3 (0.599 t per m3 with the press-release pair; 0.537 with 80 t and 149 m3). The 88 t, 147 m3 pair of P9 is recorded. 20.4 m by 4 m: datum not stated; one page says 4.5 metres high"
+    flags: "vacuum_insulated: double shell with a vacuum between, never read against single-shell cases. Sources disagree: 88 t against 'over 80 t', and 147 m3 against 149 m3 (0.599 t per m3 with the press-release pair; 0.537 with 80 t and 149 m3). The 88 t, 147 m3 pair of P9 is recorded. 20.4 m by 4 m: datum not stated; P10 also says '4.5 metres high'"
     not_yet_runnable: "no diameter or length with a stated basis (20.4 m by 4 m, datum not stated); a double-shell vacuum tank is not modelled"
   - id: lng-supply-vessel-vacuum-220
     what: "One 220 m3 vacuum-insulated LNG fuel tank of an offshore supply vessel (delivered 2003), stainless steel"
@@ -197,7 +197,7 @@ tank_weight_records:
     source: "P13 — gCaptain, 8 August 2014; P14 — LNG Industry, 15 July 2014, accessed 2026-11-02"
     confidence: low
     held_out: "tank weight records (issue #317); never used to fit the structure factor; the maintainer decided no refit (2026-11-02)"
-    flags: "vacuum_insulated: double shell, never read against single-shell cases (inferred from the maker's tank type; the sources do not say). Unit of 'tons' not stated: 0.422 t per m3 if metric, 0.383 if short. 26 m by 8.3 m is a transport envelope; its datum is not stated"
+    flags: "vacuum_insulated: double shell, never read against single-shell cases (INFERRED from the maker's tank type; the sources do not say). Unit of 'tons' not stated: 0.422 t per m3 if metric, 0.383 if short. 26 m by 8.3 m is a transport envelope; its datum is not stated"
     not_yet_runnable: "26 m by 8.3 m is a transport envelope with no stated datum; a double-shell vacuum tank is not modelled"
   - id: ref-land-vacuum-chart-hs-500
     what: "Reference row, not IMO: 500 m3 horizontal vacuum-insulated LNG land tank, 3.45 barg"
