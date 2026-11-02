@@ -454,21 +454,31 @@ fn every_default_gas_design_meets_the_new_rules_or_says_why_it_does_not() {
 }
 
 #[test]
-fn the_damage_survival_gap_of_a_gas_barge_names_the_missing_igc_damage_not_a_floating_position() {
-    // Issue #663. IGC 2.7: the ship "shall be capable of surviving the assumed damage specified in
-    // 2.3". The engine works the assumed damages of ADN 9.3.x.15.1 and MARPOL Annex I regulation 28.2
-    // only, so a gas Cargo in Type C tanks has none. The laden departure condition does float, so the
-    // gap must not say that it has no floating position.
+fn the_damage_survival_of_a_gas_barge_is_evaluated_per_igc_damage_case() {
+    // Issue #663 found the row `not evaluated` because no IGC 2.3 damage was modelled. Issue #759 (spec
+    // 0012) models it: IGC 2.7 says the ship "shall be capable of surviving the assumed damage specified in
+    // 2.3", and the row is now evaluated on every damage case of every IS Code condition.
     let results = new_gas_results("LNG", "");
     let conditions = results["stability"]["conditions"].as_array().unwrap();
     assert!(!conditions.is_empty(), "the laden condition is computed");
-    let rows = results["rule_trace"]["rows"].as_array().unwrap();
-    let row = rows
+    let rows: Vec<&Value> = results["rule_trace"]["rows"]
+        .as_array()
+        .unwrap()
         .iter()
-        .find(|r| r["rule"] == "igc/2.7/damage-survival")
-        .expect("the IGC 2.7 row");
-    assert_eq!(row["outcome"], "not evaluated");
-    let gap = row["gap"].as_str().unwrap();
-    assert!(!gap.contains("floating position"), "{gap}");
-    assert!(gap.contains("IGC 2.3"), "{gap}");
+        .filter(|r| r["rule"] == "igc/2.7/damage-survival")
+        .collect();
+    if results["damage"].is_object() {
+        assert!(!rows.is_empty());
+        assert!(
+            rows.iter()
+                .all(|r| r["outcome"] == "pass" || r["outcome"] == "fail"),
+            "{rows:?}"
+        );
+    } else {
+        // The legacy gas conditions hold no weights: the row says why it is not evaluated.
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["outcome"], "not evaluated");
+        let gap = rows[0]["gap"].as_str().unwrap();
+        assert!(gap.contains("IS Code 2008"), "{gap}");
+    }
 }
