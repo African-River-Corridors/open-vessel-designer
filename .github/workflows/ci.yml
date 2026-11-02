@@ -46,26 +46,39 @@ jobs:
   # Twelve jobs, with the slow tests placed by their measured time (.config/rust-partitions.txt,
   # issue #819). Line tables only: a failing test still names its line, and the test binaries link
   # faster. The setting is in the cache key, so the cached dependencies match it.
+  # Two repository variables change the runner and the number of jobs, for a runner trial (issue #847;
+  # docs/agents/build-process.md, "Which CI jobs run where"). Unset, they give the values written here.
   gate-rust:
-    name: gate-rust (${{ matrix.part }}/12)
-    runs-on: ubuntu-latest
+    name: gate-rust (${{ matrix.part }}/${{ strategy.job-total }})
+    runs-on: ${{ vars.CI_RUST_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 30
     env:
       CARGO_PROFILE_DEV_DEBUG: line-tables-only
     strategy:
       fail-fast: false
       matrix:
-        part: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        part: ${{ fromJSON(vars.CI_RUST_PARTS || '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]') }}
     steps:
+      # A list that is not 1 to N (a gap or a repeat) would leave a partition unrun: fail instead.
+      - name: The partitions are 1 to N, each once
+        env:
+          PARTS: ${{ vars.CI_RUST_PARTS || '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]' }}
+          TOTAL: ${{ strategy.job-total }}
+        run: |
+          python3 -c 'import json, os, sys
+          parts = json.loads(os.environ["PARTS"])
+          total = int(os.environ["TOTAL"])
+          if parts != list(range(1, len(parts) + 1)) or len(parts) != total:
+              sys.exit(f"CI_RUST_PARTS must be [1, ..., N], not {parts}")'
       - uses: actions/checkout@v4
       - uses: ./.github/actions/gate-env
         with:
           cache-key: gate-rust
           python-package: "false"
-      - name: Rust tests, partition ${{ matrix.part }} of 12
+      - name: Rust tests, partition ${{ matrix.part }} of ${{ strategy.job-total }}
         env:
           GATES_STEPS: rust
-          GATES_PARTITION: ${{ matrix.part }}/12
+          GATES_PARTITION: ${{ matrix.part }}/${{ strategy.job-total }}
         run: bash tools/gates.sh
       - name: Upload the nextest times (JUnit)
         if: always()

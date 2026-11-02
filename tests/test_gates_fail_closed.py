@@ -275,3 +275,41 @@ def test_a_failing_placed_run_or_rest_run_fails_the_rust_step(tmp_path, failing)
     assert r.returncode != 0
     assert "gates: FAIL: cargo test (no Python)" in r.stderr
     assert "gates: ok: cargo test (no Python)" not in r.stdout
+
+
+@pytest.mark.parametrize("total", [1, 2, 4, 12])
+def test_every_placed_test_runs_in_exactly_one_job_for_any_job_count(tmp_path, total):
+    """The placement file is written for twelve jobs; CI_RUST_PARTS can set another count (issue
+    #847). Across the jobs 1 to N, each placed test is in the placed run of exactly one job, and every
+    job's rest run leaves out all of them.
+
+    Label: property"""
+    import re
+
+    libdir = tmp_path / "wasm-libdir"
+    libdir.mkdir()
+    path = _path_with_only(tmp_path, GATES_TOOLS)
+    bin_dir = Path(path)
+    calls = tmp_path / "calls"
+    (bin_dir / "cargo").write_text(f'#!/bin/sh\nprintf "%s\\n" "$*" >> "{calls}"\nexit 0\n')
+    (bin_dir / "rustc").write_text(f'#!/bin/sh\necho "{libdir}"\n')
+    (bin_dir / "py-stub").write_text("#!/bin/sh\nexit 0\n")
+    for stub in ("cargo", "rustc", "py-stub"):
+        (bin_dir / stub).chmod(0o755)
+    lines = [
+        l.split() for l in (ROOT / ".config" / "rust-partitions.txt").read_text().splitlines()
+        if l.strip() and not l.startswith("#")
+    ]
+    every = {f"binary_id({b}) & test(={t})" for _, b, t, _ in lines}
+    seen = []
+    for k in range(1, total + 1):
+        calls.write_text("")
+        r = _gates(path, OVD_PYTHON=str(bin_dir / "py-stub"), GATES_STEPS="rust", GATES_PARTITION=f"{k}/{total}")
+        assert r.returncode == 0, r.stderr
+        runs = [c for c in calls.read_text().splitlines() if c.startswith("nextest run ")]
+        placed = [c for c in runs if "--profile pr-placed" in c]
+        rest = [c for c in runs if f"--partition hash:{k}/{total}" in c]
+        assert len(rest) == 1 and set(re.findall(r"\((binary_id\([^)]*\) & test\(=[^)]*\))\)", rest[0])) == every
+        for c in placed:
+            seen += re.findall(r"\((binary_id\([^)]*\) & test\(=[^)]*\))\)", c)
+    assert sorted(seen) == sorted(every)

@@ -22,7 +22,9 @@ def _lines():
 
 def test_every_placed_test_is_in_a_job_that_exists_and_is_placed_once():
     """Label: property"""
-    jobs = len(CI["jobs"]["gate-rust"]["strategy"]["matrix"]["part"])
+    from test_workflows_gate_split import rust_parts_default
+
+    jobs = len(rust_parts_default())
     lines = _lines()
     assert lines
     for k, binary, test, seconds in lines:

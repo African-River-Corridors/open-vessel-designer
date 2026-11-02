@@ -33,7 +33,8 @@
 # (steps 1 to 3), `rust` (step 4), `rules` (steps 4a and 5), `impact` (step 6) and `pytest` (step 7).
 # It is unset for the whole gate. A group that is named runs in full; a name that is not a group fails.
 # GATES_PARTITION=k/N runs partition k of N of the Rust tests: the slow tests that
-# .config/rust-partitions.txt places in job k (by measured time, tools/rust_partitions.py, issue #819),
+# .config/rust-partitions.txt places in job k (by measured time, tools/rust_partitions.py, issue #819;
+# with N other than the file's number of jobs, file job j runs in job (j - 1) mod N + 1, issue #847),
 # then partition k of N of every test the file does not place (cargo nextest --partition hash:k/N);
 # the doctests run with partition 1. The required CI check `test` passes only when every group ran
 # in a job that passed.
@@ -89,15 +90,17 @@ esac
 [ -z "$PARTITION" ] || [ "${PARTITION%/*}" -le "${PARTITION#*/}" ] \
   || fail "GATES_PARTITION must look like 2/4, not '$PARTITION'"
 # The placed slow tests (issue #819): one line each, `job binary test seconds`. A filterset of the
-# lines of job $1, or of every line with `all`. A job number outside 1..N fails here, before any step.
+# lines of job $1, or of every line with `all`. A job number below 1 fails here, before any step. The
+# file is written for one number of jobs; the job count can be set in CI (issue #847), so file job k
+# runs in job (k - 1) mod N + 1: each placed test still runs in exactly one of the N jobs.
 PLACED=.config/rust-partitions.txt
 placed() {
   local expr="" k bin name _
   while read -r k bin name _; do
     case "$k" in "" | \#*) continue ;; esac
-    case "$PARTITION" in "") ;; *) [ "$k" -ge 1 ] && [ "$k" -le "${PARTITION#*/}" ] \
-      || fail "$PLACED places $name in job $k, not one of 1 to ${PARTITION#*/}" ;; esac
-    [ "$1" = all ] || [ "$k" = "$1" ] || continue
+    case "$PARTITION" in "") ;; *) [ "$k" -ge 1 ] 2>/dev/null \
+      || fail "$PLACED places $name in job $k, which is not a job number" ;; esac
+    [ "$1" = all ] || [ $(( (k - 1) % ${PARTITION#*/} + 1 )) = "$1" ] || continue
     expr="${expr:+$expr | }(binary_id($bin) & test(=$name))"
   done < "$PLACED"
   echo "$expr"
