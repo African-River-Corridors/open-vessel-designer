@@ -164,10 +164,8 @@ pub(crate) fn damage_verdicts(
     Vec<ovd_core::measured::DamageVerdict>,
     Vec<ovd_core::measured::DamageVerdict>,
 ) {
+    use ovd_core::damage_cases::{AdnExtents, DamageCase, adn_damage_cases, marpol_damage_cases};
     use ovd_core::damage_stability::{DamageCriteria, assess};
-    use ovd_core::liquid_bulk::damage::{
-        AdnExtents, DamageCase, damage_cases, marpol_damage_cases,
-    };
     use ovd_core::loading_conditions::Role;
     use ovd_core::sections::Gravity;
     let adn = crate::trace::adn_vessel_type_of(cargo_key);
@@ -233,7 +231,7 @@ pub(crate) fn damage_verdicts(
             AdnExtents::TYPE_N
         };
         verdicts(
-            damage_cases(&liquid.spaces, hull.spec.loa, hull.spec.beam, &extents),
+            adn_damage_cases(&liquid.spaces, hull.spec.loa, hull.spec.beam, &extents),
             &DamageCriteria::ADN_2025,
         )
     });

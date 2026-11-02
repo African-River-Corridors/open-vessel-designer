@@ -1,30 +1,43 @@
-//! The damage cases of a liquid bulk layout (issue #341, spec 0006 section 5, ADN 2025 9.3.2.15 and
-//! 9.3.3.15), as Flooded Volumes (boxes) for [`crate::damage_stability`].
+//! The damage cases of a hull (spec 0012, issue #757): one generator for every rule whose assumed damage is a
+//! box, as Flooded Volumes for [`crate::damage_stability`].
 //!
-//! The cargo zone is the Spaces. A ballast space (a double bottom or a wing tank) is cut at the transverse
-//! bulkheads of the cargo tanks beside it, so a damage floods one compartment of it, not the whole length of
-//! the tank block: the cut is an assumption of this model (the Spaces hold each ballast tank as one prism).
-//! A cofferdam and a pump room are single compartments. The end spaces beyond the cargo zone (peaks, an engine
-//! room) are not modelled, so a damage there floods nothing.
+//! - ADN 2025 9.3.2.15 and 9.3.3.15 (issue #341, spec 0006 section 5): [`adn_damage_cases`].
+//! - MARPOL Annex I regulation 28 (issue #341): [`marpol_damage_cases`].
+//! - IGC Code 2.3 and 2.6 (spec 0012): [`igc_damage_cases`]. The extents ([`BoxExtents`]) and the standard of
+//!   damage ([`StandardOfDamage`]) come from the Rule Set's data; `ovd-format` reads them.
 //!
-//! The extents are those of the ADN text: a longitudinal extent of 0.10 L but not less than 5.00 m, placed
-//! anywhere along the hull; a side damage 0.79 m (type C, 9.3.2.15.1) or 0.59 m (type N, 9.3.3.15.1) inboard
-//! of the side, from the base line up without limit; a bottom damage 3.00 m wide and 0.59 m (type C) or 0.49 m
-//! (type N) high. A bulkhead within the damage is damaged, so every compartment the extent touches floods,
-//! and for a bottom damage the adjacent compartments athwartships flood too. Permeability is 95 % in a space
-//! that is empty at the maximum draught (ballast, cofferdams, pump room) and 0 % in a cargo or slop tank,
-//! which is full.
+//! The cargo zone is the Spaces. On a liquid bulk layout a ballast space (a double bottom or a wing tank) is
+//! cut at the transverse bulkheads of the cargo tanks beside it, so a damage floods one compartment of it, not
+//! the whole length of the tank block: the cut is an assumption of this model (the Spaces hold each ballast
+//! tank as one prism). A gas hull is already cut at its hold bulkheads (spec 0012 D6), so the IGC generator
+//! takes its Spaces as they are. A Type C tank reaches across and up the hull as far as its outer diameter. A
+//! cofferdam and a pump room are single compartments. A space that is not among the Spaces floods nothing.
 //!
-//! MARPOL Annex I regulation 28 has its own extents ([`MarpolExtents`], [`marpol_damage_cases`]): they reach the
-//! cargo tanks. A damaged cargo or slop tank is flooded at 95 % (the oil is lost and sea water takes its
-//! place, regulation 28.4.2 "other liquids 0 to 0.95"); the loading condition keeps the mass of the oil, as the
-//! lost buoyancy method keeps the mass of the damaged hull.
+//! ADN. The extents are those of the ADN text: a longitudinal extent of 0.10 L but not less than 5.00 m,
+//! placed anywhere along the hull; a side damage 0.79 m (type C, 9.3.2.15.1) or 0.59 m (type N, 9.3.3.15.1)
+//! inboard of the side, from the base line up without limit; a bottom damage 3.00 m wide and 0.59 m (type C)
+//! or 0.49 m (type N) high. A bulkhead within the damage is damaged, so every compartment the extent touches
+//! floods, and for a bottom damage the adjacent compartments athwartships flood too. Permeability is 95 % in a
+//! space that is empty at the maximum draught (ballast, cofferdams, pump room) and 0 % in a cargo or slop
+//! tank, which is full.
+//!
+//! MARPOL Annex I regulation 28 has its own extents ([`BoxExtents::marpol`]): they reach the cargo tanks. A
+//! damaged cargo or slop tank is flooded at 95 % (the oil is lost and sea water takes its place, regulation
+//! 28.4.2 "other liquids 0 to 0.95"); the loading condition keeps the mass of the oil, as the lost buoyancy
+//! method keeps the mass of the damaged hull.
+//!
+//! IGC. The extents of IGC 2.3.1 have the shape of MARPOL's (side: (1/3) L^(2/3) or 14.5 m long, B/5 or
+//! 11.5 m inboard, without vertical limit; bottom: B/6 or 10 m wide in the forward 0.3 L and B/6 or 5 m
+//! elsewhere), but the bottom damage is B/15 or 2 m high (2.3.1.2.3), not 6 m. A type 2G ship is damaged
+//! anywhere in its length (2.6.1.2); at 150 m or less, not involving either bulkhead of a machinery space aft
+//! (2.6.1.3). `L` is the overall length here, as on the MARPOL path (IGC 1.2.31 names the load line length).
+//! The lesser damage of 2.3.2.1 and the local damage of 2.3.2.2 are not generated.
 
 use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use crate::compartments::{Space, SpaceKind};
+use crate::compartments::{Space, SpaceKind, SpaceShape};
 use crate::damage_stability::FloodedVolume;
 
 /// The extents of the assumed damage (ADN 2025 9.3.2.15.1 and 9.3.3.15.1).
@@ -66,32 +79,41 @@ pub struct DamageCase {
     pub flooded: Vec<FloodedVolume>,
 }
 
-/// The extents of the assumed damage of MARPOL Annex I regulation 28.2, for a hull of length L and beam B.
-///
-/// The bottom damage has two sets: for 0.3 L from the forward perpendicular and for any other part.
+/// The extents of a box damage with a side and a bottom set, the bottom set in two zones: MARPOL Annex I
+/// regulation 28.2 and IGC 2.3.1 have this shape.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct MarpolExtents {
-    /// Side damage: longitudinal extent, `(1/3) L^(2/3)` or 14.5 m, whichever is less (28.2.1.1).
+pub struct BoxExtents {
+    /// Side damage: longitudinal extent, m (MARPOL 28.2.1.1, IGC 2.3.1.1.1).
     pub side_long_m: f64,
-    /// Side damage: how far inboard of the side, `B/5` or 11.5 m, whichever is less (28.2.1.2).
+    /// Side damage: how far inboard of the side, m (MARPOL 28.2.1.2, IGC 2.3.1.1.2).
     pub side_inboard_m: f64,
-    /// Bottom damage, forward 0.3 L: longitudinal extent, `(1/3) L^(2/3)` or 14.5 m (28.2.2.1).
+    /// Bottom damage, forward zone: longitudinal extent, m (MARPOL 28.2.2.1, IGC 2.3.1.2.1).
     pub bottom_fwd_long_m: f64,
-    /// Bottom damage, forward 0.3 L: width, `B/6` or 10 m, whichever is less (28.2.2.2).
+    /// Bottom damage, forward zone: width, m (MARPOL 28.2.2.2, IGC 2.3.1.2.2).
     pub bottom_fwd_width_m: f64,
-    /// Bottom damage, any other part: longitudinal extent, `(1/3) L^(2/3)` or 5 m (28.2.2.1).
+    /// Bottom damage, any other part: longitudinal extent, m.
     pub bottom_aft_long_m: f64,
-    /// Bottom damage, any other part: width, `B/6` or 5 m (28.2.2.2).
+    /// Bottom damage, any other part: width, m.
     pub bottom_aft_width_m: f64,
-    /// Bottom damage: height from the moulded line of the bottom shell, `B/15` or 6 m (28.2.2.3).
+    /// Bottom damage: height from the moulded line of the bottom shell, m (MARPOL 28.2.2.3, IGC 2.3.1.2.3).
     pub bottom_height_m: f64,
+    /// The forward zone of the bottom damage, as a fraction of L from the forward end: 0.3 in both texts.
+    pub forward_zone: f64,
 }
 
-impl MarpolExtents {
-    pub fn of(loa_m: f64, beam_m: f64) -> MarpolExtents {
+/// The extents of MARPOL Annex I regulation 28.2 (the name before spec 0012).
+pub type MarpolExtents = BoxExtents;
+
+impl BoxExtents {
+    /// The extents of MARPOL Annex I regulation 28.2, for a hull of length L and beam B.
+    ///
+    /// Side: `(1/3) L^(2/3)` or 14.5 m long (28.2.1.1), `B/5` or 11.5 m inboard (28.2.1.2). Bottom, forward
+    /// 0.3 L: `(1/3) L^(2/3)` or 14.5 m long, `B/6` or 10 m wide; any other part: `(1/3) L^(2/3)` or 5 m long,
+    /// `B/6` or 5 m wide (28.2.2.1, 28.2.2.2); `B/15` or 6 m high (28.2.2.3).
+    pub fn marpol(loa_m: f64, beam_m: f64) -> BoxExtents {
         let cbrt = libm::cbrt(loa_m);
         let third_l23 = cbrt * cbrt / 3.0;
-        MarpolExtents {
+        BoxExtents {
             side_long_m: third_l23.min(14.5),
             side_inboard_m: (beam_m / 5.0).min(11.5),
             bottom_fwd_long_m: third_l23.min(14.5),
@@ -99,6 +121,62 @@ impl MarpolExtents {
             bottom_aft_long_m: third_l23.min(5.0),
             bottom_aft_width_m: (beam_m / 6.0).min(5.0),
             bottom_height_m: (beam_m / 15.0).min(6.0),
+            forward_zone: 0.3,
+        }
+    }
+}
+
+/// Where along the hull a box damage may lie.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Placement {
+    /// Anywhere in the length: every bulkhead within the damage is damaged.
+    Anywhere,
+    /// Between adjacent transverse bulkheads (MARPOL 28.1.3): a bulkhead is damaged only where it is next to a
+    /// bay shorter than the damage (28.2.5.1).
+    BetweenBulkheads,
+}
+
+/// The Standard of Damage: where a damage may lie, and the bulkheads it may not involve.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StandardOfDamage {
+    pub placement: Placement,
+    /// Transverse bulkheads (x, m) a damage may not involve: no damage spans one.
+    pub intact_bulkheads_m: Vec<f64>,
+}
+
+impl StandardOfDamage {
+    /// MARPOL Annex I regulation 28.1: anywhere in the length above 150 m (28.1.1; the machinery space of 28.1.2
+    /// is not modelled), between adjacent transverse bulkheads at 150 m or less (28.1.3).
+    pub fn marpol(loa_m: f64) -> StandardOfDamage {
+        StandardOfDamage {
+            placement: if loa_m <= BETWEEN_BULKHEADS_UP_TO_M {
+                Placement::BetweenBulkheads
+            } else {
+                Placement::Anywhere
+            },
+            intact_bulkheads_m: Vec::new(),
+        }
+    }
+
+    /// IGC 2.6.1.2 and 2.6.1.3, a type 2G ship: anywhere in its length; when `machinery_aft_intact` (150 m or
+    /// less, a value the Rule Set gives), not involving either bulkhead of a machinery space aft. A machinery
+    /// Space is aft when its middle lies in the aft half of the hull.
+    pub fn igc_2g(spaces: &[Space], loa_m: f64, machinery_aft_intact: bool) -> StandardOfDamage {
+        let mut intact: Vec<f64> = Vec::new();
+        if machinery_aft_intact {
+            for s in spaces
+                .iter()
+                .filter(|s| s.kind == SpaceKind::Machinery && s.x_aft + s.x_fwd < loa_m)
+            {
+                intact.push(s.x_aft);
+                intact.push(s.x_fwd);
+            }
+        }
+        intact.sort_by(f64::total_cmp);
+        intact.dedup_by(|a, b| (*a - *b).abs() < 1e-9);
+        StandardOfDamage {
+            placement: Placement::Anywhere,
+            intact_bulkheads_m: intact,
         }
     }
 }
@@ -120,7 +198,19 @@ fn permeability(kind: SpaceKind) -> f64 {
     }
 }
 
+/// The extent of a Space across and up the hull: the bounding box of its section, or for a Type C tank the
+/// square that holds its outer diameter.
 fn bbox(s: &Space) -> ((f64, f64), (f64, f64)) {
+    if let SpaceShape::Tank {
+        y,
+        z,
+        outer_diameter,
+        ..
+    } = &s.shape
+    {
+        let r = 0.5 * outer_diameter;
+        return ((y - r, y + r), (z - r, z + r));
+    }
     let (mut y0, mut y1, mut z0, mut z1) = (
         f64::INFINITY,
         f64::NEG_INFINITY,
@@ -137,8 +227,9 @@ fn bbox(s: &Space) -> ((f64, f64), (f64, f64)) {
 }
 
 /// The compartments: every Space, with each ballast space cut at the transverse bulkheads of the cargo
-/// tanks.
-fn compartments(spaces: &[Space]) -> Vec<Compartment> {
+/// tanks when `cut` is set (a liquid bulk layout holds each ballast tank as one prism; a gas hull is already
+/// cut at its hold bulkheads, spec 0012 D6).
+fn compartments(spaces: &[Space], cut: bool) -> Vec<Compartment> {
     let mut bulkheads: Vec<f64> = spaces
         .iter()
         .filter(|s| matches!(s.kind, SpaceKind::CargoTank | SpaceKind::Slop))
@@ -149,10 +240,11 @@ fn compartments(spaces: &[Space]) -> Vec<Compartment> {
     let mut out = Vec::new();
     for s in spaces {
         let (y, z) = bbox(s);
-        let cuts = matches!(
-            s.kind,
-            SpaceKind::DoubleBottomBallast | SpaceKind::WingBallast | SpaceKind::PeakBallast
-        );
+        let cuts = cut
+            && matches!(
+                s.kind,
+                SpaceKind::DoubleBottomBallast | SpaceKind::WingBallast | SpaceKind::PeakBallast
+            );
         let mut edges = alloc::vec![s.x_aft];
         if cuts {
             edges.extend(
@@ -187,13 +279,13 @@ fn overlaps(a: (f64, f64), b: (f64, f64)) -> bool {
 /// The damage cases of a layout: the side damage to starboard (the hull is symmetric, so port is its
 /// mirror) and the bottom damage, each at every position along the hull that floods a different set of
 /// compartments. The damage is placed with an edge on each bulkhead and on each end of the hull.
-pub fn damage_cases(
+pub fn adn_damage_cases(
     spaces: &[Space],
     loa_m: f64,
     beam_m: f64,
     extents: &AdnExtents,
 ) -> Vec<DamageCase> {
-    let parts = compartments(spaces);
+    let parts = compartments(spaces, true);
     let len = longitudinal_extent_m(loa_m).min(loa_m);
     let mut edges: Vec<f64> = parts.iter().flat_map(|c| [c.x.0, c.x.1]).collect();
     edges.push(0.0);
@@ -261,17 +353,62 @@ pub fn damage_cases(
 const BETWEEN_BULKHEADS_UP_TO_M: f64 = 150.0;
 
 /// The damage cases of MARPOL Annex I regulation 28 (issue #341): the side damage to starboard and the bottom
+/// damage at each position along and across the hull that floods a different set of compartments, every
+/// damaged compartment at 95 %. See [`box_damage_cases`] and [`StandardOfDamage::marpol`].
+pub fn marpol_damage_cases(spaces: &[Space], loa_m: f64, beam_m: f64) -> Vec<DamageCase> {
+    box_damage_cases(
+        spaces,
+        loa_m,
+        beam_m,
+        &BoxExtents::marpol(loa_m, beam_m),
+        &StandardOfDamage::marpol(loa_m),
+        true,
+        &|_| 0.95,
+    )
+}
+
+/// The damage cases of IGC 2.3 under the standard of damage of 2.6.1 (spec 0012): the box generator on the
+/// Spaces as they are (a gas hull is cut at its hold bulkheads), with the extents, standard and permeability
+/// the caller reads from the Rule Set.
+pub fn igc_damage_cases(
+    spaces: &[Space],
+    loa_m: f64,
+    beam_m: f64,
+    extents: &BoxExtents,
+    standard: &StandardOfDamage,
+    permeability: &dyn Fn(SpaceKind) -> f64,
+) -> Vec<DamageCase> {
+    box_damage_cases(
+        spaces,
+        loa_m,
+        beam_m,
+        extents,
+        standard,
+        false,
+        permeability,
+    )
+}
+
+/// The damage cases of a box damage with a side and a bottom set: the side damage to starboard and the bottom
 /// damage at each position along and across the hull that floods a different set of compartments.
 ///
-/// Placement. Above 150 m the damage is anywhere in the length (28.1.1; the machinery space of 28.1.2 is not
-/// modelled). At 150 m or less (28.1.3) it lies between adjacent transverse bulkheads, and a bulkhead is damaged
-/// only where it is next to a bay shorter than the damage (28.2.5.1; 28.2.5.2, the step or recess, is not
-/// modelled). A bottom damage is in the forward set when its centre is in the forward 0.3 L, which takes
-/// `L` as the overall length. The bottom damage lies across the beam wherever it floods a different set, from the
-/// centre line to starboard (the hull is symmetric).
-pub fn marpol_damage_cases(spaces: &[Space], loa_m: f64, beam_m: f64) -> Vec<DamageCase> {
-    let ext = MarpolExtents::of(loa_m, beam_m);
-    let parts = compartments(spaces);
+/// Placement. The damage starts and ends on each bulkhead and each end of the hull, and just beyond each
+/// bulkhead, so the compartments on both sides of it flood. [`Placement::BetweenBulkheads`] keeps only the
+/// windows whose bulkheads are next to a bay shorter than the damage (MARPOL 28.2.5.1; 28.2.5.2, the step or
+/// recess, is not modelled). No window spans an intact bulkhead of the standard. A bottom damage is in the
+/// forward set when its centre is in the forward zone, which takes `L` as the overall length. The bottom
+/// damage lies across the beam wherever it floods a different set, from the centre line to starboard (the
+/// hull is symmetric). `cut` cuts the ballast spaces at the cargo tank bulkheads (a liquid bulk layout).
+pub fn box_damage_cases(
+    spaces: &[Space],
+    loa_m: f64,
+    beam_m: f64,
+    ext: &BoxExtents,
+    standard: &StandardOfDamage,
+    cut: bool,
+    permeability: &dyn Fn(SpaceKind) -> f64,
+) -> Vec<DamageCase> {
+    let parts = compartments(spaces, cut);
     let half = 0.5 * beam_m;
     let mut bulkheads: Vec<f64> = parts
         .iter()
@@ -283,7 +420,8 @@ pub fn marpol_damage_cases(spaces: &[Space], loa_m: f64, beam_m: f64) -> Vec<Dam
     let mut bounds = alloc::vec![0.0];
     bounds.extend(bulkheads.iter().copied());
     bounds.push(loa_m);
-    let between = loa_m <= BETWEEN_BULKHEADS_UP_TO_M;
+    let between = standard.placement == Placement::BetweenBulkheads;
+    let intact = &standard.intact_bulkheads_m;
     // The windows of one longitudinal extent: with an edge on each bulkhead and on each end of the hull, and
     // just beyond each bulkhead, so the compartments on both sides of it flood.
     let windows = |len: f64| -> Vec<(f64, f64)> {
@@ -299,6 +437,7 @@ pub fn marpol_damage_cases(spaces: &[Space], loa_m: f64, beam_m: f64) -> Vec<Dam
         starts
             .into_iter()
             .map(|s| (s, s + len))
+            .filter(|&(a, b)| !intact.iter().any(|&k| k > a + 1e-9 && k < b - 1e-9))
             .filter(|&(a, b)| {
                 !between
                     || bulkheads
@@ -319,7 +458,7 @@ pub fn marpol_damage_cases(spaces: &[Space], loa_m: f64, beam_m: f64) -> Vec<Dam
     };
     let flooded_of = |hit: &[&Compartment]| -> Vec<FloodedVolume> {
         hit.iter()
-            .map(|c| FloodedVolume::from_box(&c.name, c.x, c.y, c.z, 0.95))
+            .map(|c| FloodedVolume::from_box(&c.name, c.x, c.y, c.z, permeability(c.kind)))
             .collect()
     };
     let mut cases: Vec<DamageCase> = Vec::new();
@@ -351,6 +490,7 @@ pub fn marpol_damage_cases(spaces: &[Space], loa_m: f64, beam_m: f64) -> Vec<Dam
         );
     }
     // The forward set and the other set differ in length and width; a window belongs to the set its centre is in.
+    let forward_from = (1.0 - ext.forward_zone) * loa_m;
     for (forward, long_m, width_m) in [
         (true, ext.bottom_fwd_long_m, ext.bottom_fwd_width_m),
         (false, ext.bottom_aft_long_m, ext.bottom_aft_width_m),
@@ -368,7 +508,7 @@ pub fn marpol_damage_cases(spaces: &[Space], loa_m: f64, beam_m: f64) -> Vec<Dam
         y_starts.sort_by(f64::total_cmp);
         y_starts.dedup_by(|a, b| (*a - *b).abs() < 1e-9);
         for (a, b) in windows(long_m) {
-            if (0.5 * (a + b) >= 0.7 * loa_m - 1e-9) != forward {
+            if (0.5 * (a + b) >= forward_from - 1e-9) != forward {
                 continue;
             }
             for &y0 in &y_starts {
