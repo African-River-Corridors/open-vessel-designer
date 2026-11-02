@@ -4,7 +4,7 @@
 <!-- design-impact -->
 ### ticket/780-rooms (2026-11-02)
 
-Between `the parent commit 657ad27` and `this branch 8e3675cc`.
+Between `main 8e3675c` and `this branch 6de4f708`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|
