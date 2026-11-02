@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { Evaluation, HullViews, OptionEvaluation } from "./api";
   import StaleWhy from "./StaleWhy.svelte";
+  import PrincipalStrip from "./PrincipalStrip.svelte";
   import HullView from "./HullView.svelte";
   import SpeedPower from "./views/SpeedPower.svelte";
   import Ballast from "./views/Ballast.svelte";
@@ -115,6 +116,7 @@
       <button type="button" role="tab" aria-selected={v.id === current} class:on={v.id === current} onclick={() => (current = v.id)}>{t(v.label)}</button>
     {/each}
   </div>
+  <PrincipalStrip {results} />
   {#if stale}<div class="whyrow"><StaleWhy {blockers} /></div>{/if}
 
   <div class="view" data-view={current}>

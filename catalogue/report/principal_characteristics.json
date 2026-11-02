@@ -1,0 +1,161 @@
+{
+  "_comment": "The principal characteristics of an Option: one data file read by the app strip (app/src/lib/principal.ts) and by the report summary table (tools/concept_report.py, spec 0015 4.1). `path` is the key path in the Option's run results; a `name=X` key picks the list item named X. `label` is the English text of Message Id `label_id` (locales/en/app.ftl). A value the run does not hold shows as not evaluated. Never edit one consumer without this file.",
+  "rows": [
+    {
+      "id": "loa",
+      "path": [
+        "dims",
+        "loa_m"
+      ],
+      "label_id": "app-principal-loa",
+      "label": "Length overall (LOA)",
+      "unit": "m",
+      "decimals": 2
+    },
+    {
+      "id": "beam",
+      "path": [
+        "dims",
+        "beam_m"
+      ],
+      "label_id": "app-principal-beam",
+      "label": "Beam",
+      "unit": "m",
+      "decimals": 2
+    },
+    {
+      "id": "depth",
+      "path": [
+        "dims",
+        "depth_m"
+      ],
+      "label_id": "app-principal-depth",
+      "label": "Depth, moulded",
+      "unit": "m",
+      "decimals": 2
+    },
+    {
+      "id": "draught-laden",
+      "path": [
+        "results",
+        "draught_m"
+      ],
+      "label_id": "app-principal-draught-laden",
+      "label": "Draught, laden",
+      "unit": "m",
+      "decimals": 2
+    },
+    {
+      "id": "draught-light",
+      "path": [
+        "results",
+        "light_draught_m"
+      ],
+      "label_id": "app-principal-draught-light",
+      "label": "Draught, light",
+      "unit": "m",
+      "decimals": 2
+    },
+    {
+      "id": "displacement",
+      "path": [
+        "results",
+        "displacement_t"
+      ],
+      "label_id": "app-principal-displacement",
+      "label": "Displacement",
+      "unit": "t",
+      "decimals": 0
+    },
+    {
+      "id": "lightship",
+      "path": [
+        "results",
+        "lightship_t"
+      ],
+      "label_id": "app-principal-lightship",
+      "label": "Lightship",
+      "unit": "t",
+      "decimals": 0
+    },
+    {
+      "id": "deadweight",
+      "path": [
+        "results",
+        "deadweight_t"
+      ],
+      "label_id": "app-principal-deadweight",
+      "label": "Deadweight",
+      "unit": "t",
+      "decimals": 0
+    },
+    {
+      "id": "cargo",
+      "path": [
+        "results",
+        "cargo_t"
+      ],
+      "label_id": "app-principal-cargo",
+      "label": "Cargo",
+      "unit": "t",
+      "decimals": 0
+    },
+    {
+      "id": "gross-tonnage",
+      "path": [
+        "gross_tonnage",
+        "gross_tonnage"
+      ],
+      "label_id": "app-principal-gross-tonnage",
+      "label": "Gross tonnage",
+      "unit": "GT",
+      "decimals": 0
+    },
+    {
+      "id": "installed-power",
+      "path": [
+        "powering",
+        "installed_power_kw"
+      ],
+      "label_id": "app-principal-installed-power",
+      "label": "Installed power",
+      "unit": "kW",
+      "decimals": 0
+    },
+    {
+      "id": "service-speed",
+      "path": [
+        "powering",
+        "environments",
+        "name=Deep water",
+        "service_speed_kn"
+      ],
+      "label_id": "app-principal-service-speed",
+      "label": "Service speed, deep water",
+      "unit": "kn",
+      "decimals": 1
+    },
+    {
+      "id": "crew-minimum",
+      "path": [
+        "crew",
+        "minimum"
+      ],
+      "label_id": "app-principal-crew-minimum",
+      "label": "Crew, minimum",
+      "unit": "",
+      "decimals": 0
+    },
+    {
+      "id": "crew-berths",
+      "path": [
+        "crew",
+        "berths"
+      ],
+      "label_id": "app-principal-crew-berths",
+      "label": "Berths",
+      "unit": "",
+      "decimals": 0
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- App: a principal characteristics strip above every view of an Option (issue #889): length overall, beam, depth, laden and light draught, displacement, lightship, deadweight, cargo, gross tonnage, installed power, service speed, minimum crew and berths. The concept report summary has the same table. One data file, `catalogue/report/principal_characteristics.json`, holds the rows, units and decimals, and both read it; a value the run does not hold shows "not evaluated". No result moves.

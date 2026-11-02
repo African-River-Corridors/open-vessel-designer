@@ -421,3 +421,75 @@ def test_the_cli_writes_a_document_that_ord_accepts(tmp_path):
     if ord_bin is None:
         pytest.skip("ord is not on the path")
     subprocess.run([ord_bin, "check", str(out)], check=True)
+
+
+# --- issue #889: the principal characteristics, one data file for the report summary and the app strip ---
+
+PRINCIPAL = json.loads((ROOT / "catalogue" / "report" / "principal_characteristics.json").read_text(encoding="utf-8"))["rows"]
+
+
+def _expected_principal(results):
+    def pick(cur, path):
+        for k in path:
+            if isinstance(cur, list) and k.startswith("name="):
+                cur = next((x for x in cur if x.get("name") == k[5:]), None)
+            elif isinstance(cur, dict):
+                cur = cur.get(k)
+            else:
+                return None
+        return cur
+    out = []
+    for r in PRINCIPAL:
+        v = pick(results, r["path"])
+        out.append([r["label"], "not evaluated" if not isinstance(v, (int, float)) else (f"{v:,.{r['decimals']}f} " + r["unit"]).strip()])
+    return out
+
+
+def test_the_data_file_has_the_rows_of_the_ticket_in_order_and_english_labels_in_the_text_library():
+    """Label: property"""
+    assert [r["id"] for r in PRINCIPAL] == ["loa", "beam", "depth", "draught-laden", "draught-light", "displacement", "lightship",
+                                            "deadweight", "cargo", "gross-tonnage", "installed-power", "service-speed",
+                                            "crew-minimum", "crew-berths"]
+    ftl = (ROOT / "locales" / "en" / "app.ftl").read_text(encoding="utf-8")
+    for r in PRINCIPAL:
+        assert f"{r['label_id']} = {r['label']}\n" in ftl
+
+
+def test_the_report_summary_table_is_the_data_file_applied_to_the_run():
+    """Label: property"""
+    for o in (A, C):
+        t = next(b for b in _section(cr.build(RUN, o["name"]), "summary")["body"] if b["type"] == "table")
+        assert t["rows"] == _expected_principal(o["results"])
+        assert [r[0] for r in t["rows"]] == [r["label"] for r in PRINCIPAL]
+    # The stored gas run has no crew block: those rows say so, the others hold numbers.
+    rows = dict(next(b for b in _section(cr.build(RUN, "A basis"), "summary")["body"] if b["type"] == "table")["rows"])
+    assert rows["Crew, minimum"] == "not evaluated" and rows["Berths"] == "not evaluated"
+    assert rows["Gross tonnage"].endswith(" GT") and rows["Length overall (LOA)"] == "140.00 m"
+
+
+def test_a_run_with_crew_and_one_without_both_follow_the_file():
+    """Label: property"""
+    run = json.loads(json.dumps(RUN))
+    res = next(o for o in run["options"] if o["name"] == "A basis")["results"]
+    res["crew"] = {"minimum": 7, "berths": 11}
+    rows = dict(next(b for b in _section(cr.build(run, "A basis"), "summary")["body"] if b["type"] == "table")["rows"])
+    assert rows["Crew, minimum"] == "7" and rows["Berths"] == "11"
+
+
+def test_the_app_strip_shows_what_the_report_summary_shows():
+    """Label: property"""
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node is not installed")
+    script = (
+        "import {principalItems} from './app/src/lib/principal.ts';"
+        "import fs from 'node:fs';"
+        "const run = JSON.parse(fs.readFileSync('examples/gas-140x29-coastal-lng/results.json','utf8'));"
+        "const f=(v,d)=>v.toLocaleString('en-GB',{minimumFractionDigits:d,maximumFractionDigits:d});"
+        "console.log(JSON.stringify(run.options.map(o=>principalItems(o.results,f,'not evaluated').map(i=>i.text))));"
+    )
+    out = subprocess.run([node, "--input-type=module", "-e", script], cwd=ROOT, capture_output=True, text=True, check=True).stdout
+    for texts, o in zip(json.loads(out), RUN["options"]):
+        report = [(r[1].rsplit(" ", 1)[0] if r[1] != "not evaluated" and PRINCIPAL[i]["unit"] else r[1])
+                  for i, r in enumerate(_expected_principal(o["results"]))]
+        assert texts == report
