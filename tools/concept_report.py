@@ -15,7 +15,7 @@ that no figure is typed:
   not_evaluated(o)          the Rules the run does not evaluate
   provenance(...)           engine version, commit and results hashes
   ga_figures(...)           the GA sheets of the Option, drawn by `ovd draw`, as cropped PNGs
-  build(run, option, ...)   the whole document: the parts above in five sections and an appendix
+  build(run, option, ...)   the whole document: the summary, nine body parts, Appendix A (14 chapters) and Appendix B (8 sections)
   render(ord, doc, stem)    `ord check` and `ord render` to PDF, HTML and Word
 
 A project's own narrative and trade studies stay outside this repo: import this module, call the parts,
@@ -49,8 +49,12 @@ POWERING_METHOD = (
 
 # --- ORD blocks ---
 
+NOT_EVALUATED = "not evaluated"
+
+
 def n(x, dp=0):
-    return f"{x:,.{dp}f}"
+    """A number with thousands separators; a missing value prints "not evaluated", never blank or zero (spec 0015 section 5)."""
+    return NOT_EVALUATED if x is None else f"{x:,.{dp}f}"
 
 
 def table(tid, caption, columns, rows, notes=None, aligns=None, widths=None):
@@ -61,6 +65,7 @@ def table(tid, caption, columns, rows, notes=None, aligns=None, widths=None):
     for i, w in enumerate(widths or []):
         if w:
             cols[i]["width"] = w
+    rows = [[NOT_EVALUATED if c is None or c == "" else c for c in row] for row in rows]
     t = {"type": "table", "id": tid, "caption": caption, "columns": cols, "rows": rows}
     if notes:
         t["notes"] = notes
@@ -89,24 +94,45 @@ def cond(o, name):
     return next(c for c in R(o)["stability"]["conditions"] if c["name"] == name)
 
 
+def _get(d, *keys):
+    """A value of a nested run block, or None when any step is missing."""
+    for k in keys:
+        if isinstance(d, (dict, list)) and (k in d if isinstance(d, dict) else -len(d) <= k < len(d)):
+            d = d[k]
+        else:
+            return None
+    return d
+
+
+def _u(x, dp=0, unit=""):
+    """A number with its unit; a missing value is "not evaluated" alone, never "not evaluated m"."""
+    return NOT_EVALUATED if x is None else f"{n(x, dp)}{' ' + unit if unit else ''}"
+
+
 def _particular_rows(o):
-    r, res, g, h = R(o), R(o)["results"], R(o)["geometry"], R(o)["hydrostatics"]
-    d = r["dims"]
+    r = R(o)
+    d, res, g, h, p = r["dims"], r["results"], r["geometry"], r["hydrostatics"], r.get("powering")
+    tanks = (NOT_EVALUATED if _get(g, "n_tanks_total") is None or _get(g, "tank_outer_diameter_m") is None else
+             f"{g['n_tanks_total']} × IMO Type C, {n(g['tank_outer_diameter_m'], 2)} m OD")
+    air = (NOT_EVALUATED if _get(res, "air_draft_loaded_m") is None or _get(res, "air_draft_light_m") is None else
+           f"{n(res['air_draft_loaded_m'], 2)} / {n(res['air_draft_light_m'], 2)} m")
+    cargo = (NOT_EVALUATED if _get(res, "cargo_volume_m3") is None or _get(res, "cargo_t") is None else
+             f"{n(res['cargo_volume_m3'])} m³ / {n(res['cargo_t'])} t")
     return [
-        ["Length overall", f"{n(d['loa_m'], 1)} m", "Input"],
-        ["Beam, moulded", f"{n(d['beam_m'], 1)} m", "Input"],
-        ["Depth, moulded", f"{n(d['depth_m'], 2)} m", "Input"],
-        ["Draught, laden (98 % fill)", f"{n(res['draught_m'], 2)} m", "Hydrostatics"],
-        ["Draught, light", f"{n(res['light_draught_m'], 2)} m", "Hydrostatics"],
-        ["Block coefficient Cb, laden", f"{n(h['cb'], 3)}", f"On Lwl {n(h['l_wl_m'], 1)} m (ES-TRIN 1.01)"],
-        ["Cargo tanks", f"{g['n_tanks_total']} × IMO Type C, {n(g['tank_outer_diameter_m'], 2)} m OD", "Fit search, IGC 2.4"],
-        ["Cargo at 98 % fill", f"{n(res['cargo_volume_m3'])} m³ / {n(res['cargo_t'])} t", "Tank volume × fill × density"],
-        ["Lightship", f"{n(res['lightship_t'])} t", "Build-up, uncalibrated"],
-        ["Displacement, laden", f"{n(res['displacement_t'])} t", "Hydrostatics"],
-        ["Freeboard, laden", f"{n(res['freeboard_m'], 2)} m", "Depth less draught"],
-        ["Air draught, laden / light", f"{n(res['air_draft_loaded_m'], 2)} / {n(res['air_draft_light_m'], 2)} m", "Top of the weather shield"],
-        ["Installed power", f"{n(r['powering']['installed_power_kw'])} kW", "Sized to the design speed × margin"],
-        ["Service speed, deep water", f"{n(r['powering']['environments'][0]['service_speed_kn'], 1)} kn", "Resistance at installed power"],
+        ["Length overall", _u(_get(d, "loa_m"), 1, "m"), "Input"],
+        ["Beam, moulded", _u(_get(d, "beam_m"), 1, "m"), "Input"],
+        ["Depth, moulded", _u(_get(d, "depth_m"), 2, "m"), "Input"],
+        ["Draught, laden (98 % fill)", _u(_get(res, "draught_m"), 2, "m"), "Hydrostatics"],
+        ["Draught, light", _u(_get(res, "light_draught_m"), 2, "m"), "Hydrostatics"],
+        ["Block coefficient Cb, laden", _u(_get(h, "cb"), 3), f"On Lwl {_u(_get(h, 'l_wl_m'), 1, 'm')} (ES-TRIN 1.01)"],
+        ["Cargo tanks", tanks, "Fit search, IGC 2.4"],
+        ["Cargo at 98 % fill", cargo, "Tank volume × fill × density"],
+        ["Lightship", _u(_get(res, "lightship_t"), 0, "t"), "Build-up, uncalibrated"],
+        ["Displacement, laden", _u(_get(res, "displacement_t"), 0, "t"), "Hydrostatics"],
+        ["Freeboard, laden", _u(_get(res, "freeboard_m"), 2, "m"), "Depth less draught"],
+        ["Air draught, laden / light", air, "Top of the weather shield"],
+        ["Installed power", _u(_get(p, "installed_power_kw"), 0, "kW"), "Sized to the design speed × margin"],
+        ["Service speed, deep water", _u(_get(p, "environments", 0, "service_speed_kn"), 1, "kn"), "Resistance at installed power"],
     ]
 
 
@@ -188,6 +214,8 @@ def hydrostatics(o, draughts=None):
 
 
 def _is_code_note(o):
+    if not _has(R(o), "rule_trace"):
+        return None   # no trace, no statement about the criteria
     rows = [r for r in R(o)["rule_trace"]["rows"] if r["rule"].startswith("is2008/")]
     crit = [r for r in rows if r["rule"].startswith("is2008/A.2.2")]
     bad = sorted({r["rule"] for r in crit if r["outcome"] in ("fail", "warn")})
@@ -265,7 +293,9 @@ def set_and_clause(rule_id):
 
 def _fmt(x, unit):
     u = "" if unit in ("", "-", None) else f" {unit}"
-    return "—" if x is None or isinstance(x, bool) else f"{x:.4g}{u}"
+    if x is None:
+        return NOT_EVALUATED
+    return "—" if isinstance(x, bool) else f"{x:.4g}{u}"
 
 
 def _outcome(r):
@@ -376,49 +406,269 @@ def _crop_views(png):
 
 
 def provenance(engine_version, commit, options):
-    rows = [[o["name"], (o.get("results_hash") or "—")[:12], (o.get("hash_status") or "—").replace("_", " ")] for o in options]
+    rows = [[o["name"], (o["results_hash"][:12] if o.get("results_hash") else NOT_EVALUATED), (o.get("hash_status") or NOT_EVALUATED).replace("_", " ")] for o in options]
     note = f"Open Vessel Designer {engine_version}" + (f", commit {commit[:12]}." if commit else ".")
     return table("tbl-provenance", "The run behind every figure", ["Option", "Results hash", "Hash check"], rows, notes=note)
 
 
-# --- the document ---
+# --- the skeleton (spec 0015 sections 4, 5, 10) ---
 
-def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", title=None, commit=None, assets=None):
-    """The concept report of one Option of `run` (an `ovd run --json` output) as an ORD document.
+# The statuses of ORD's `standard` lifecycle that ask for no approval, lowest first. Spec 0015 P7: a concept
+# report never passes the highest of them. `for-approval` asks for approval, so the cap is `for-checking`.
+WORKING_STATUSES = ["draft", "for-checking"]
+STATUS_CAP = WORKING_STATUSES[-1]
+STATUS_ALIASES = {"for-review": "for-checking"}
+BODY_PAGE_LIMIT = 12   # spec 0015 section 4.1: a warning above this many body pages, never an error
 
-    `ref` names a reference Option shown beside it. `assets` maps asset ids to PNG paths: "gz" adds the GZ
-    chart, "ga-side" and "ga-mid" add the GA views. With no assets the document has tables and text only."""
-    o = next(x for x in run["options"] if x["name"] == option)
-    r = next(x for x in run["options"] if x["name"] == ref) if ref else None
-    assets = assets or {}
-    d, res = R(o)["dims"], R(o)["results"]
-    counts = rule_counts(o)
-    ne = not_evaluated(o)
+# One row per Appendix A chapter, in the order of section 4.2: id, title, body part, the run fields it needs
+# (a tuple is "any of"; a dotted name walks into a block), what it would show, what would close it, and the
+# issue that builds it (None when this module builds it already).
+CHAPTERS = [
+    ("a1", "Brief", "p1", [], "what the vessel must do and under which rules", "nothing: the brief is the input", None),
+    ("a2", "Main dimensions and form", "p1", ["dims", "hydrostatics", "geometry", "results"],
+     "the size and shape, and what bounds each dimension", "a run that holds the dimensions, the hydrostatics and the geometry", None),
+    ("a3", "Cargo system and capacity", "p2", ["results", "geometry", "spaces"],
+     "how much cargo, in what, and whether volume or weight binds", "a run that holds the cargo results, the geometry and the Spaces", 830),
+    ("a4", "General arrangement", "p2", ["drawing"],
+     "where everything is, as the general arrangement sheets", "the sheets drawn with `ovd draw` and passed to the build", None),
+    ("a5", "Structure", "p3", ["cost_masses"], "the midship section, the scantlings and the hull steel",
+     "a run that holds the hull steel masses", None),
+    ("a6", "Powering, propulsion and machinery", "p3", ["powering", "boil_off", "drawing"],
+     "how fast, on what power, with which propulsors, stern and machinery", "a run that holds the powering, the boil-off and the drawing blocks", None),
+    ("a7", "Weights", "p4", ["cost_masses", "stern_block_mass", "results"], "lightship by item, deadweight by item, centres",
+     "a run that holds the mass build-up and the stern block", None),
+    ("a8", "Hydrostatics and loading conditions", "p5", ["hydrostatic_table", "hydrostatics"], "how it floats in each condition",
+     "a run that holds the hydrostatic table", None),
+    ("a9", "Freeboard", "p5", ["results.freeboard_m"], "the freeboard carried against the freeboard required",
+     "a run that holds the freeboard", 831),
+    ("a10", "Intact stability", "p5", ["stability"], "whether it stands up, condition by condition",
+     "a run that holds the loading conditions and their GZ curves", None),
+    ("a11", "Damage stability", "p6", [("damage", "marpol_damage")], "whether it survives the rule damages",
+     "damage cases computed for the hull type and rule set (spec 0012)", 838),
+    ("a12", "Compliance", "p7", ["rule_trace"], "every Rule, its outcome, and what was not evaluated",
+     "a run that holds the rule trace", None),
+    ("a13", "Cost", "p8", ["cost"], "what it costs, on which rates and price date", "a run that holds the cost block", 831),
+    ("a14", "Limits and open items", "p9", [], "what could not be checked, and what would close it", "nothing: it is gathered from the run", None),
+]
 
-    design = [prose(f"Option \"{o['name']}\": {n(d['loa_m'], 1)} m × {n(d['beam_m'], 1)} m × {n(d['depth_m'], 2)} m, "
-                    f"{n(res['cargo_volume_m3'])} m³ of cargo at a laden draught of {n(res['draught_m'], 2)} m. "
-                    f"The cargo is {res['governs']}-bound."),
-              particulars(o, r)]
+# The body parts, in the order of section 4.1: id, title, the chapters it digests.
+BODY_PARTS = [
+    ("p1", "The vessel and its brief", ["a1", "a2"]),
+    ("p2", "Capacity and arrangement", ["a3", "a4"]),
+    ("p3", "Structure, powering and machinery", ["a5", "a6"]),
+    ("p4", "Weights", ["a7"]),
+    ("p5", "Floating, freeboard and stability", ["a8", "a9", "a10"]),
+    ("p6", "Damage stability", ["a11"]),
+    ("p7", "Compliance", ["a12"]),
+    ("p8", "Cost", ["a13"]),
+    ("p9", "Limits and open items", ["a14"]),
+]
+
+# Appendix B, in the order of section 4.3: id, title, what it holds, the issue that builds it (None: built here).
+EVIDENCE = [
+    ("b1", "Run provenance", "engine version, commit, results hash and hash status per Option", None),
+    ("b2", "Full rule trace", "every Rule row, clause by clause", 826),
+    ("b3", "Calibration", "the evidence behind each calibrated method, with ranges", 826),
+    ("b4", "Drawings", "the drawings list and the full sheets", 826),
+    ("b5", "Full tables", "hydrostatics, loading condition items and Spaces", 826),
+    ("b6", "Trade studies", "trade studies, when supplied", None),
+    ("b7", "Sources", "documents cited, by edition and paragraph", 826),
+    ("b8", "Symbols and terms", "the glossary terms", 826),
+]
+
+
+def resolve_status(status):
+    """A status as ORD names it: case, spaces and underscores do not matter; the one alias of the cap's range resolves."""
+    s = re.sub(r"[\s_]+", "-", str(status).strip().lower())
+    return STATUS_ALIASES.get(s, s)
+
+
+def check_status(status):
+    """The ORD status of a concept report, or ValueError. A concept report never passes `STATUS_CAP` (spec 0015 P7)."""
+    s = resolve_status(status)
+    if s not in WORKING_STATUSES:
+        raise ValueError(f"status {status!r} is above the cap: a concept report is at most {STATUS_CAP!r} "
+                         f"(ADR 0011: concept and preliminary design, never approval); allowed: {', '.join(WORKING_STATUSES)}")
+    return s
+
+
+def _has(r, spec):
+    """True when the run block `spec` (a dotted name, or a tuple of them for any-of) is present and not null."""
+    if isinstance(spec, tuple):
+        return any(_has(r, x) for x in spec)
+    cur = r
+    for part in spec.split("."):
+        if not isinstance(cur, dict) or cur.get(part) is None:
+            return False
+        cur = cur[part]
+    return True
+
+
+def _names(spec):
+    return " or ".join(f"`{x}`" for x in spec) if isinstance(spec, tuple) else f"`{spec}`"
+
+
+def _brief(o):
+    r, t = R(o), R(o).get("rule_trace") or {}
+    sets = t.get("rule_sets")
+    rows = [["Vessel", r.get("vessel")], ["Cargo", r.get("cargo")], ["Phase", r.get("phase")],
+            ["Service Area", t.get("service_area")],
+            ["Rule Sets", ", ".join(sets) if isinstance(sets, list) else sets]]
+    return [table("tbl-brief", f"The brief, {o['name']}", ["Item", "Value"], rows)]
+
+
+def _ga(assets):
+    out = []
     for fid, cap in (("ga-side", "Side elevation"), ("ga-mid", "Midship section")):
         if fid in assets:
-            design.append(figure(fid, f"{cap}, {o['name']} (drawn by OVD)", f"{cap} drawing of the Option"))
-    stab = [hydrostatics(o), stability(o)]
-    if "gz" in assets:
-        stab.append(figure("gz", "Righting lever (GZ) curves", "GZ curves of the loading conditions"))
-    body = [
-        section("design", "The design at a glance", design),
-        section("lightship", "Lightship and hull steel", [lightship(o), steel(o)]),
-        section("stability", "Hydrostatics and stability", stab),
-        section("powering", "Powering and gas balance", [prose(f"**How OVD works out the power.** {POWERING_METHOD}"), powering(o)]),
-        section("rules", "How the rules were applied", [
-            prose(f"{counts['pass']} trace lines pass, {counts['warn']} warn, {counts.get('fail', 0)} fail and "
+            out.append(figure(fid, f"{cap} (drawn by OVD)", f"{cap} drawing of the Option"))
+    return out
+
+
+def _compliance_blocks(o):
+    ne = not_evaluated(o)
+    counts = rule_counts(o)
+    return [prose(f"{counts['pass']} trace lines pass, {counts['warn']} warn, {counts.get('fail', 0)} fail and "
                   f"{counts['not evaluated']} are not evaluated. The matrix shows each governing Rule and every warning once."),
             compliance(o),
             prose("**The governing Rules, one by one.**\n\n" + rule_paragraphs(o)),
-            prose("**Not evaluated in this run:**\n\n" + ("\n".join(f"- `{x}`" for x in ne) or "- none")),
-        ]),
-    ]
-    control = {"revision": revision, "date": date, "status": "draft"}
+            prose("**Rules not evaluated in this run:**\n\n" + ("\n".join(f"- `{x}`" for x in ne) or "- none"))]
+
+
+def _chapter_builders(o, ref, assets):
+    """The chapters this module builds today: id -> a function giving blocks (an empty list: nothing to show)."""
+    def stab():
+        out = [stability(o)]
+        if "gz" in assets:
+            out.append(figure("gz", "Righting lever (GZ) curves", "GZ curves of the loading conditions"))
+        return out
+    return {
+        "a1": lambda: _brief(o),
+        "a2": lambda: [particulars(o, ref)],
+        "a4": lambda: _ga(assets),
+        "a5": lambda: [steel(o)],
+        "a6": lambda: [prose(f"**How OVD works out the power.** {POWERING_METHOD}"), powering(o)],
+        "a7": lambda: [lightship(o)],
+        "a8": lambda: [hydrostatics(o)],
+        "a10": stab,
+        "a12": lambda: _compliance_blocks(o),
+    }
+
+
+def chapter_states(o, ref=None, assets=None):
+    """Each Appendix A chapter's state: {"blocks": [...]} or {"why": reason}. A chapter whose run fields are
+    missing, that this module does not build yet, or that has nothing to show, is not evaluated."""
+    r = R(o)
+    builders = _chapter_builders(o, ref, assets or {})
+    states = {}
+    for cid, _title, _part, needs, _shows, _closes, ticket in CHAPTERS:
+        missing = [x for x in needs if not _has(r, x)]
+        if missing:
+            states[cid] = {"why": "The run holds no " + ", ".join(_names(x) for x in missing) + "."}
+        elif cid == "a14":
+            states[cid] = {"blocks": []}   # gathered in build(), from the other states
+        elif cid in builders:
+            blocks = builders[cid]()
+            states[cid] = {"blocks": blocks} if blocks else {"why": "No general arrangement sheet was drawn for this build."}
+        else:
+            states[cid] = {"why": f"The report build does not hold this chapter yet (issue #{ticket})."}
+    return states
+
+
+def not_evaluated_block(shows, why, closes):
+    """The fixed appendix block of spec 0015 section 5: what the part would show, why it is not evaluated, what would close it."""
+    return prose(f"**Not evaluated.**\n\n- What this part would show: {shows}.\n- Why it is not evaluated: {why}\n"
+                 f"- What would close it: {closes}.")
+
+
+def _rule_gaps(o):
+    seen = {}
+    for r in R(o).get("rule_trace", {}).get("rows", []):
+        if r["outcome"] == "not evaluated" and r["rule"] not in seen:
+            seen[r["rule"]] = r
+    return [[f"Rule {k}: {_rule_label(r, 90)}", (r.get("gap") or "The run does not evaluate it.").rstrip(".") + ".",
+             "The engine capability the gap names" + (f" (issue {r['finding']})" if r.get("finding") else "")]
+            for k, r in sorted(seen.items())]
+
+
+def open_items(o, states, tid):
+    """The open-items table (A.14 and body part 9): every not-evaluated chapter and Rule, with why and how it closes."""
+    rows = [[f"Chapter {title}", states[cid]["why"], closes]
+            for cid, title, _p, _n, _s, closes, _t in CHAPTERS if "why" in states[cid]]
+    rows += _rule_gaps(o)
+    if not rows:
+        return prose("Nothing in this run is not evaluated.")
+    return table(tid, f"Open items, {o['name']}: what the run did not evaluate", ["Item", "Why", "What would close it"], rows,
+                 notes="The table states facts from the run. It asks nothing.", widths=[0.30, 0.40, 0.30])
+
+
+def _part(o, pid, title, chapter_ids, states):
+    by = {c[0]: c for c in CHAPTERS}
+    lines, items = [], []
+    for cid in chapter_ids:
+        _id, ctitle, _p, needs, _s, _c, _t = by[cid]
+        if "why" in states[cid]:
+            lines.append(f"**Not evaluated.** {ctitle}: {states[cid]['why']} See [[#{cid}]].")
+            items.append({"label": ctitle, "value": NOT_EVALUATED})
+        else:
+            items.append({"label": ctitle, "value": ", ".join(_names(x).replace("`", "") for x in needs) or "the run's inputs"})
+    ok = [c for c in chapter_ids if "blocks" in states[c]]
+    if ok:
+        lines.append("The full " + ("chapter is " if len(ok) == 1 else "chapters are ") + " and ".join(f"[[#{c}]]" for c in ok) + ".")
+    body = [prose("\n\n".join(lines))]
+    if pid == "p9":
+        body.append(open_items(o, states, "tbl-open-items-body"))
+    body.append({"type": "data_box", "id": f"data-{pid}", "title": "Data and limits", "items": items})
+    return section(pid, title, body)
+
+
+def _summary(o):
+    if not _has(R(o), "rule_trace"):
+        return [prose("**Not evaluated.** The run holds no `rule_trace`, so there is no verdict.")]
+    c = rule_counts(o)
+    return [prose(f"Trace verdict: {c['pass']} pass, {c['warn']} warn, {c.get('fail', 0)} fail and {c['not evaluated']} not evaluated.")]
+
+
+def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", title=None, commit=None, assets=None,
+          status="draft"):
+    """The concept report of one Option of `run` (an `ovd run --json` output) as an ORD document.
+
+    The document has the three zones of spec 0015 section 4, with every heading always present: the summary and
+    nine body parts, Appendix A (chapters A.1 to A.14) and Appendix B (sections B.1 to B.8). A chapter or part the
+    run cannot fill carries the "not evaluated" block (section 5). `ref` names a reference Option shown beside the
+    main one. `assets` maps asset ids to PNG paths: "gz" adds the GZ chart, "ga-side" and "ga-mid" add the GA views.
+    `status` is an ORD status; one above `STATUS_CAP` raises ValueError (P7). The control block holds the revision
+    letter, the date, the status and the number; it has no change table (section 10)."""
+    o = next(x for x in run["options"] if x["name"] == option)
+    r = next(x for x in run["options"] if x["name"] == ref) if ref else None
+    assets = assets or {}
+    status = check_status(status)
+    if not re.fullmatch(r"[A-Z]{1,2}", str(revision)):
+        raise ValueError(f"revision {revision!r} must be a letter: a concept report never passes a working status")
+    states = chapter_states(o, r, assets)
+    states["a14"] = {"blocks": [open_items(o, states, "tbl-open-items")]}
+
+    body = [dict(section("summary", "Summary", _summary(o)), numbered=False)]
+    body += [_part(o, pid, ptitle, cids, states) for pid, ptitle, cids in BODY_PARTS]
+
+    chapters = []
+    for cid, ctitle, _p, _n, shows, closes, _t in CHAPTERS:
+        st = states[cid]
+        blocks = st["blocks"] if "blocks" in st else [not_evaluated_block(shows, st["why"], closes)]
+        chapters.append(section(cid, ctitle, blocks))
+
+    evidence = []
+    for bid, btitle, holds, ticket in EVIDENCE:
+        if bid == "b1":
+            blocks = [provenance(run.get("engine_version", NOT_EVALUATED), commit, [o] + ([r] if r else []))]
+        elif bid == "b6":
+            blocks = [prose("None supplied.")]
+        else:
+            blocks = [not_evaluated_block(holds, f"The report build does not hold this section yet (issue #{ticket}).",
+                                          "the report build of that issue")]
+        evidence.append(section(bid, btitle, blocks))
+
+    control = {"revision": revision, "date": date, "status": status}
     if number:
         control["number"] = number
     doc = {
@@ -426,13 +676,39 @@ def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", t
         "title": title or f"Concept design report: {o['name']}",
         "language": "en-GB", "contents": True, "notice": NOTICE, "control": control,
         "body": body,
-        "appendices": [{"id": "provenance", "title": "Run provenance",
-                        "body": [provenance(run.get("engine_version", "—"), commit, [o] + ([r] if r else []))]}],
+        "appendices": [{"id": "appendix-a", "title": "The technical chapters", "body": chapters},
+                       {"id": "appendix-b", "title": "The evidence", "body": evidence}],
     }
     if assets:
         doc["assets"] = {k: {"media_type": "image/png", "path": str(p)} for k, p in assets.items()}
     return doc
 
+
+# --- the page budget (spec 0015 section 4.1) ---
+
+def pdf_pages(pdf):
+    """The page count of a PDF file, read with `pdfinfo` (poppler)."""
+    out = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True, check=True).stdout
+    return int(re.search(r"^Pages:\s+(\d+)", out, re.M).group(1))
+
+
+def body_pages(doc, ord_bin, work_dir):
+    """The pages of the report without its appendices: the cover, the contents and the body, rendered to PDF."""
+    work_dir = pathlib.Path(work_dir)
+    work_dir.mkdir(parents=True, exist_ok=True)
+    src = work_dir / "body-only.json"
+    # The appendices go; a cross-reference into them becomes a text of the length ORD prints, so the pages stay the same.
+    text = re.sub(r"\[\[#[^\]]+\]\]", "Appendix A.14", json.dumps({k: v for k, v in doc.items() if k != "appendices"}, ensure_ascii=False))
+    src.write_text(text, encoding="utf-8")
+    subprocess.run([str(ord_bin), "render", str(src), "--format", "pdf", "-o", str(work_dir)], check=True, capture_output=True)
+    return pdf_pages(work_dir / "body-only.pdf")
+
+
+def page_budget_warnings(pages, limit=BODY_PAGE_LIMIT):
+    """A warning when the body is longer than `limit` pages; none at `limit` pages or fewer. Never an error."""
+    if pages > limit:
+        return [f"the body is {pages} pages; the budget is {limit} (spec 0015 section 4.1)"]
+    return []
 
 def render(ord_bin, doc, out_stem):
     """Write `<stem dir>/report.json`, check it with `ord check`, and render PDF, HTML and Word beside `out_stem`."""
@@ -461,6 +737,7 @@ def main(argv=None):
     ap.add_argument("--number")
     ap.add_argument("--revision", default="A")
     ap.add_argument("--date", default="1970-01-01")
+    ap.add_argument("--status", default="draft", help=f"an ORD status, at most {STATUS_CAP!r} (a concept report is never for approval)")
     ap.add_argument("--title")
     ap.add_argument("--commit", help="the engine commit the run was made at")
     ap.add_argument("-o", "--out", type=pathlib.Path, required=True, help="the ORD document to write")
@@ -468,12 +745,14 @@ def main(argv=None):
     ap.add_argument("--ord", default="ord", help="the ord binary (for --render)")
     a = ap.parse_args(argv)
     run = json.loads(a.run.read_text(encoding="utf-8"))
-    doc = build(run, a.option, a.ref, a.number, a.revision, a.date, a.title, a.commit)
+    doc = build(run, a.option, a.ref, a.number, a.revision, a.date, a.title, a.commit, status=a.status)
     a.out.write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     if a.render:
         a.render.mkdir(parents=True, exist_ok=True)
         for p in render(a.ord, doc, a.render / slug(a.option)):
             print(p)
+        for w in page_budget_warnings(body_pages(doc, a.ord, a.render / ".budget")):
+            print(f"warning: {w}", file=sys.stderr)
     return 0
 
 
