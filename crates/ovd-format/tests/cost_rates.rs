@@ -615,3 +615,167 @@ fn the_share_changes_no_hash_and_a_file_saved_before_keeps_its_cost() {
         ovd_format::Source::Default
     );
 }
+
+// --- Item rates of a self-propelled hull (issue #773, spec 0011 D9) ------------------------------
+
+const ITEM_RATES: [&str; 4] = [
+    "genset_rate_per_kwe",
+    "machinery_steel_rate",
+    "deckhouse_rate_per_m2",
+    "gas_fuel_system_rate_per_kw",
+];
+
+fn line(cost: &Value, item: &str) -> f64 {
+    cost["barge"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["item"] == item)
+        .unwrap_or_else(|| panic!("{item}: {cost}"))["amount"]
+        .as_f64()
+        .unwrap()
+}
+
+fn item<'a>(cost: &'a Value, name: &str) -> &'a Value {
+    cost["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["item"] == name)
+        .unwrap_or_else(|| panic!("{name}: {cost}"))
+}
+
+/// The self-propelled tank barge, diesel-electric at a typed 2,000 kW on its two propulsors.
+fn diesel_electric() -> (DesignSession, String) {
+    let mut s = open(&raw_fixture("crude_integral_tanks_self_propelled"));
+    let first = s.design().options[0].name.clone();
+    s.set_input(&first, "power_source", json!("diesel_electric"))
+        .unwrap();
+    s.set_input(&first, "installed_power_kw", json!(2000.0))
+        .unwrap();
+    (s, first)
+}
+
+#[test]
+fn a_self_propelled_budget_prices_its_gensets_apart_from_propulsion() {
+    let (s, _) = diesel_electric();
+    let r = results(&s, 0);
+    let cost = &r["cost"];
+    // Three sets of 1,000 kWe (N + 1 on two propulsors) at the example 500 per kWe; the propulsion
+    // line keeps 2,000 kW at 1,000 per kW.
+    assert_eq!(r["cost_masses"]["stern_items"]["genset_kwe"], json!(3000.0));
+    let g = item(cost, "gensets");
+    assert_eq!(g["quantity"], json!(3000.0));
+    assert_eq!(g["unit"], json!("kWe"));
+    assert_eq!(g["rate"], json!(500.0));
+    assert_eq!(line(cost, "gensets"), 1_500_000.0);
+    assert_eq!(line(cost, "propulsion"), 2_000_000.0);
+    // The budget is still the sum of its parts.
+    let sum: f64 = cost["barge"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["amount"].as_f64().unwrap())
+        .sum();
+    let n = cost["barge"].as_array().unwrap().len() as f64;
+    assert!((sum - cost["barge_subtotal"].as_f64().unwrap()).abs() <= n);
+}
+
+#[test]
+fn each_item_rate_says_it_is_an_example_rate_and_what_it_prices() {
+    let cost = results(&open(&raw_fixture("gas_igc_2g_self_propelled")), 0)["cost"].clone();
+    let listed: Vec<&str> = cost["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["item"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        listed,
+        ["gensets", "machinery_steel", "deckhouse", "gas_fuel_system"]
+    );
+    for r in cost["items"].as_array().unwrap() {
+        assert_eq!(r["rate_status"], json!("example rate"), "{r}");
+        assert!(
+            r["rate_basis"]
+                .as_str()
+                .unwrap()
+                .starts_with("example rate"),
+            "{r}"
+        );
+        assert!(!r["quantity_basis"].as_str().unwrap().is_empty());
+    }
+    // No deckhouse and no gas fuel system model yet: both lines are 0 and say why.
+    assert_eq!(item(&cost, "deckhouse")["quantity"], json!(0.0));
+    assert!(
+        item(&cost, "deckhouse")["quantity_basis"]
+            .as_str()
+            .unwrap()
+            .contains("#779")
+    );
+    assert_eq!(item(&cost, "gas_fuel_system")["quantity"], json!(0.0));
+    assert!(
+        item(&cost, "gas_fuel_system")["quantity_basis"]
+            .as_str()
+            .unwrap()
+            .contains("#775")
+    );
+    // Each profile default is an example rate, and says so.
+    let profile = Profile::built_in();
+    for name in ITEM_RATES {
+        let basis = profile.basis(name);
+        assert!(basis.starts_with("example rate"), "{name}: {basis}");
+    }
+}
+
+#[test]
+fn a_file_saved_before_the_item_rates_prices_none_of_them() {
+    let (s, first) = diesel_electric();
+    let mut typed = s;
+    for name in ITEM_RATES {
+        typed.set_input(&first, name, json!(0.0)).unwrap();
+    }
+    let zero = results(&typed, 0)["cost"].clone();
+    // The same Option with the four keys taken out, as a file saved before them.
+    let mut file: Value = serde_json::from_str(&typed.save().unwrap()).unwrap();
+    for o in file["options"].as_array_mut().unwrap() {
+        let inputs = o["inputs"].as_object_mut().unwrap();
+        for name in ITEM_RATES {
+            inputs.remove(name);
+        }
+    }
+    let old = open(&file.to_string());
+    let cost = results(&old, 0)["cost"].clone();
+    assert_eq!(cost["unit_total"], zero["unit_total"]);
+    assert_eq!(line(&cost, "gensets"), 0.0);
+    let g = item(&cost, "gensets");
+    assert_eq!(g["rate_status"], json!("not priced"));
+    assert_eq!(g["quantity"], json!(3000.0));
+}
+
+#[test]
+fn an_item_rate_moves_only_the_budget_and_a_pushed_option_has_no_item_lines() {
+    let (mut s, first) = diesel_electric();
+    let before = results(&s, 0);
+    s.set_input(&first, "genset_rate_per_kwe", json!(800.0))
+        .unwrap();
+    let after = results(&s, 0);
+    assert_eq!(results_hash(&before), results_hash(&after));
+    assert_eq!(line(&after["cost"], "gensets"), 2_400_000.0);
+    assert_eq!(after["cost"]["rates"], json!("user"));
+    assert_eq!(
+        item(&after["cost"], "gensets")["rate_status"],
+        json!("user rate")
+    );
+    // A tug Formation: its tug is the battery-electric pusher of the ATB budget.
+    let cost = results(&open(&raw_fixture("gas_igc_2g_exact")), 0)["cost"].clone();
+    assert!(cost.get("items").is_none());
+    for key in ["barge", "tug"] {
+        for name in ["gensets", "machinery_steel", "deckhouse", "gas_fuel_system"] {
+            assert!(
+                !items(&cost, key).contains(&name.to_string()),
+                "{key} {name}"
+            );
+        }
+    }
+}

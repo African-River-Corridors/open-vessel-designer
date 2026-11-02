@@ -317,6 +317,18 @@ input-paint-anodes-misc = 油漆、阳极及其他
 input-battery-rate-per-kwh = 电池单价
 # status: draft
 input-propulsion-rate-per-kw = 推进装置单价
+
+# status: draft
+input-genset-rate-per-kwe = 发电机组单价
+
+# status: draft
+input-machinery-steel-rate = 机舱钢结构单价
+
+# status: draft
+input-deckhouse-rate-per-m2 = 甲板室单价
+
+# status: draft
+input-gas-fuel-system-rate-per-kw = 燃气供应系统单价
 # status: draft
 input-wheelhouse-accom-lump = 驾驶室与居住舱室
 # status: draft

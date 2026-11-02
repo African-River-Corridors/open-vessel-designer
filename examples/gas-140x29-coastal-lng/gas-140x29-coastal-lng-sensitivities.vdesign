@@ -449,6 +449,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -1000,6 +1016,22 @@
         },
         "propulsion_rate_per_kw": {
           "value": 1000.0,
+          "source": "default"
+        },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {
@@ -1555,6 +1587,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -2106,6 +2154,22 @@
         },
         "propulsion_rate_per_kw": {
           "value": 1000.0,
+          "source": "default"
+        },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {
@@ -2661,6 +2725,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -3214,6 +3294,22 @@
         },
         "propulsion_rate_per_kw": {
           "value": 1000.0,
+          "source": "default"
+        },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {
@@ -3789,6 +3885,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -4360,6 +4472,22 @@
         },
         "propulsion_rate_per_kw": {
           "value": 1000.0,
+          "source": "default"
+        },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {
@@ -4935,6 +5063,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -5506,6 +5650,22 @@
         },
         "propulsion_rate_per_kw": {
           "value": 1000.0,
+          "source": "default"
+        },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {
@@ -6081,6 +6241,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -6652,6 +6828,22 @@
         },
         "propulsion_rate_per_kw": {
           "value": 1000.0,
+          "source": "default"
+        },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {
@@ -7227,6 +7419,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -7798,6 +8006,22 @@
         },
         "propulsion_rate_per_kw": {
           "value": 1000.0,
+          "source": "default"
+        },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {
@@ -8373,6 +8597,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -8944,6 +9184,22 @@
         },
         "propulsion_rate_per_kw": {
           "value": 1000.0,
+          "source": "default"
+        },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {
@@ -9519,6 +9775,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -10090,6 +10362,22 @@
         },
         "propulsion_rate_per_kw": {
           "value": 1000.0,
+          "source": "default"
+        },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {
@@ -10665,6 +10953,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -11236,6 +11540,22 @@
         },
         "propulsion_rate_per_kw": {
           "value": 1000.0,
+          "source": "default"
+        },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {
@@ -11811,6 +12131,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -12384,6 +12720,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -12955,6 +13307,22 @@
         },
         "propulsion_rate_per_kw": {
           "value": 1000.0,
+          "source": "default"
+        },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {

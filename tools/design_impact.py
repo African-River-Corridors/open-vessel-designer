@@ -314,6 +314,12 @@ OPTIONAL_INPUT_CASES = (
     ("paint_anodes_misc", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, {"paint_anodes_misc": 100000.0}),
     ("battery_rate_per_kwh", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, {"battery_rate_per_kwh": 250.0}),
     ("propulsion_rate_per_kw", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, {"propulsion_rate_per_kw": 1000.0}),
+    # The item rates of a self-propelled hull (issue #773), at their example defaults: budget only.
+    ("genset_rate_per_kwe", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, {"genset_rate_per_kwe": 500.0}),
+    ("machinery_steel_rate", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, {"machinery_steel_rate": 2500.0}),
+    ("deckhouse_rate_per_m2", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, {"deckhouse_rate_per_m2": 3000.0}),
+    ("gas_fuel_system_rate_per_kw", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"gas_fuel_system_rate_per_kw": 200.0}),
     ("wheelhouse_accom_lump", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, {"wheelhouse_accom_lump": 450000.0}),
     ("tug_outfitting_lump", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, {"tug_outfitting_lump": 200000.0}),
     ("yard_margin_fraction", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, {"yard_margin_fraction": 0.1}),

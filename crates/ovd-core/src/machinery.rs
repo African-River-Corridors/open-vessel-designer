@@ -227,6 +227,10 @@ pub struct Machinery {
     pub battery_room_x0_m: f64,
     pub battery_room_x1_m: f64,
     pub battery_room_m3: f64,
+    /// The installed rating of the diesel gensets (kWe): the N + 1 sets of a diesel-electric plant,
+    /// each of P / N, as their mass takes them (issue #773: the genset cost line). Zero for every
+    /// other Power Source; a gas-fuelled block's gensets are `aft_arrangement`'s.
+    pub genset_kwe: f64,
     #[cfg_attr(feature = "serde", serde(skip))]
     pub checks: Vec<Check>,
     #[cfg_attr(feature = "serde", serde(skip))]
@@ -269,6 +273,7 @@ pub fn arrange(
     let mut shaft_length_m = if inp.shaft_drive() { drive } else { 0.0 };
 
     let (mut engine, mut n_engines) = (None, 0);
+    let mut genset_kwe = 0.0;
     let (mut er0, mut er1, mut br0, mut br1, mut br_m3) = (0.0, 0.0, 0.0, 0.0, 0.0);
     let power = inp.installed_power_kw.filter(|p| *p > 0.0);
     let engine_room = |e: &Engine, extra: f64, x: f64| {
@@ -308,6 +313,7 @@ pub fn arrange(
                     x = er1;
                     engine = Some(e);
                     n_engines = n + 1;
+                    genset_kwe = f64::from(n_engines) * p / f64::from(n);
                 }
                 None => warnings.push(no_engine(p / f64::from(n))),
             },
@@ -379,6 +385,7 @@ pub fn arrange(
         battery_room_x0_m: br0,
         battery_room_x1_m: br1,
         battery_room_m3: br_m3,
+        genset_kwe,
         checks,
         warnings,
     }

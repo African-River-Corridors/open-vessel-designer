@@ -789,6 +789,31 @@ pub const LEGACY_FIXED_INPUTS: &[LegacyFixed] = &[
         formations: None,
         value: 1000.0,
     },
+    // Issue #773: a file saved before the item rates prices none of the items, as before.
+    LegacyFixed {
+        name: "genset_rate_per_kwe",
+        applies_to: AppliesTo::All,
+        formations: None,
+        value: 0.0,
+    },
+    LegacyFixed {
+        name: "machinery_steel_rate",
+        applies_to: AppliesTo::All,
+        formations: None,
+        value: 0.0,
+    },
+    LegacyFixed {
+        name: "deckhouse_rate_per_m2",
+        applies_to: AppliesTo::All,
+        formations: None,
+        value: 0.0,
+    },
+    LegacyFixed {
+        name: "gas_fuel_system_rate_per_kw",
+        applies_to: AppliesTo::All,
+        formations: None,
+        value: 0.0,
+    },
     LegacyFixed {
         name: "wheelhouse_accom_lump",
         applies_to: AppliesTo::All,
@@ -3273,6 +3298,35 @@ pub const INPUTS: &[InputSpec] = &[
     spec(
         "propulsion_rate_per_kw",
         "Propulsion rate",
+        NUM,
+        false,
+        Group::CostRates,
+    ),
+    // Issue #773 (spec 0011 D9): the item rates of a self-propelled hull's own stern.
+    spec(
+        "genset_rate_per_kwe",
+        "Genset rate",
+        NUM,
+        false,
+        Group::CostRates,
+    ),
+    spec(
+        "machinery_steel_rate",
+        "Machinery steel rate",
+        NUM,
+        false,
+        Group::CostRates,
+    ),
+    spec(
+        "deckhouse_rate_per_m2",
+        "Deckhouse rate",
+        NUM,
+        false,
+        Group::CostRates,
+    ),
+    spec(
+        "gas_fuel_system_rate_per_kw",
+        "Gas fuel system rate",
         NUM,
         false,
         Group::CostRates,

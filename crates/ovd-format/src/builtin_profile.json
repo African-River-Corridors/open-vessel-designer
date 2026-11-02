@@ -1631,7 +1631,31 @@
       "default": 1000.0,
       "unit": "per kW",
       "hard": { "ge": 0, "le": 1000000000 },
-      "basis": "example rate per kW installed in the tug: thrusters, drives, switchboard. Not a market quote: replace with your own"
+      "basis": "example rate per kW of installed propulsion power, in the tug or a self-propelled hull: propulsors, drives, motors, switchboard. A self-propelled hull's gensets are a line of their own, at the genset rate (issue #773). Not a market quote: replace with your own"
+    },
+    "genset_rate_per_kwe": {
+      "default": 500.0,
+      "unit": "per kWe",
+      "hard": { "ge": 0, "le": 1000000000 },
+      "basis": "example rate per kWe of installed genset rating of a self-propelled hull, every set and the reserve included: engine and alternator. Not from a source. Not a market quote: replace with your own (issue #773)"
+    },
+    "machinery_steel_rate": {
+      "default": 2500.0,
+      "unit": "per t",
+      "hard": { "ge": 0, "le": 1000000000 },
+      "basis": "example rate per t of machinery steel of a self-propelled hull: the engine-room steel and the engine seats of the stern block mass. The hull steel example rate, taken again. Not from a source. Not a market quote: replace with your own (issue #773)"
+    },
+    "deckhouse_rate_per_m2": {
+      "default": 3000.0,
+      "unit": "per m2",
+      "hard": { "ge": 0, "le": 1000000000 },
+      "basis": "example rate per m2 of deckhouse deck area of a self-propelled hull. No deckhouse is modelled yet, so the line is 0. Not from a source. Not a market quote: replace with your own (issue #773)"
+    },
+    "gas_fuel_system_rate_per_kw": {
+      "default": 200.0,
+      "unit": "per kW",
+      "hard": { "ge": 0, "le": 1000000000 },
+      "basis": "example rate per kW the gas fuel system of a self-propelled hull serves. The gas fuel system is not modelled yet, so the line is 0. Not from a source. Not a market quote: replace with your own (issue #773)"
     },
     "wheelhouse_accom_lump": {
       "default": 450000.0,

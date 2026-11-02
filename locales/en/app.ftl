@@ -350,6 +350,10 @@ app-cost-item-outfitting = Outfitting
 app-cost-item-paint-anodes-misc = Paint, anodes and miscellaneous
 app-cost-item-battery = Battery
 app-cost-item-propulsion = Propulsion
+app-cost-item-gensets = Gensets
+app-cost-item-machinery-steel = Machinery steel
+app-cost-item-deckhouse = Deckhouse
+app-cost-item-gas-fuel-system = Gas fuel system
 app-cost-item-wheelhouse-accommodation = Wheelhouse and accommodation
 
 ## The splash screen
