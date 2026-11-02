@@ -524,15 +524,23 @@ mod tests {
                 .contains("has no `lpg_carriage_condition`"),
             "{notes:?}"
         );
-        // Issue #739: the structure block's own note comes before the note of the fixed values.
+        // Issue #822: the vent mast inputs have a note of their own, and the results move.
         assert!(
             notes[6]
+                .as_str()
+                .unwrap()
+                .contains("cargo vent mast inputs"),
+            "{notes:?}"
+        );
+        // Issue #739: the structure block's own note comes before the note of the fixed values.
+        assert!(
+            notes[7]
                 .as_str()
                 .unwrap()
                 .contains("before the structure block of the Hull"),
             "{notes:?}"
         );
-        let last = notes[7].as_str().unwrap();
+        let last = notes[8].as_str().unwrap();
         assert!(
             last.contains("has no `")
                 && last.contains("`bow_rake_length_m`")
@@ -580,7 +588,7 @@ mod tests {
 
         state.rename_option("Option 1", "Laden case").unwrap();
         let after = notes(&state);
-        assert_eq!(after.len(), 8);
+        assert_eq!(after.len(), 9);
         for (old, new) in before.iter().zip(&after) {
             let old = old.as_str().unwrap();
             let new = new.as_str().unwrap();
