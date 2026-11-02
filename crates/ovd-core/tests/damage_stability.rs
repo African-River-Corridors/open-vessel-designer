@@ -261,6 +261,15 @@ fn the_verdict_is_the_criteria_applied_to_the_numbers_it_reports() {
 use ovd_core::compartments::{Side, Space, SpaceKind, SpaceShape};
 use ovd_core::damage_cases::{AdnExtents, adn_damage_cases as damage_cases, longitudinal_extent_m};
 
+/// ADN 9.3.2.15.1 (c): 95 % in a space empty at the maximum draught, 0 % in a full cargo or slop tank (the
+/// `adn-tank` table holds the same values; `crates/ovd-format/tests/permeability_tables.rs` checks it).
+fn adn_0_95(kind: SpaceKind) -> f64 {
+    match kind {
+        SpaceKind::CargoTank | SpaceKind::Slop => 0.0,
+        _ => 0.95,
+    }
+}
+
 fn space(name: &str, kind: SpaceKind, x: (f64, f64), y: (f64, f64), z: (f64, f64)) -> Space {
     Space {
         name: name.to_string(),
@@ -303,7 +312,7 @@ fn the_side_damage_reaches_079_m_inboard_for_type_c_and_059_m_for_type_n() {
         ),
     ];
     let flooded = |ext: &AdnExtents| -> Vec<String> {
-        damage_cases(&spaces, 60.0, 10.0, ext)
+        damage_cases(&spaces, 60.0, 10.0, ext, &adn_0_95)
             .into_iter()
             .filter(|c| c.name.starts_with("side"))
             .flat_map(|c| c.flooded.into_iter().map(|f| f.name))
@@ -353,7 +362,7 @@ fn a_ballast_space_is_cut_at_the_bulkheads_of_the_tanks_beside_it_and_a_window_f
             (0.0, 4.0),
         ),
     ];
-    let cases = damage_cases(&spaces, 60.0, 10.0, &AdnExtents::TYPE_C);
+    let cases = damage_cases(&spaces, 60.0, 10.0, &AdnExtents::TYPE_C, &adn_0_95);
     let side: Vec<Vec<String>> = cases
         .iter()
         .filter(|c| c.name.starts_with("side"))

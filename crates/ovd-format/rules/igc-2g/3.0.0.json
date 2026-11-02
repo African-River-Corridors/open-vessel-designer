@@ -447,6 +447,106 @@
           "a": 0.0
         }
       ]
+    },
+    {
+      "id": "igc-permeability",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.5.2",
+        "page": "MSC.370-93.pdf, annex p. 29"
+      },
+      "input": {
+        "name": "space kind"
+      },
+      "unit": "-",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "double_bottom_ballast",
+              "wing_ballast",
+              "peak_ballast",
+              "consumables",
+              "cargo_tank",
+              "slop"
+            ]
+          },
+          "shape": "const",
+          "a": 0.95
+        },
+        {
+          "when": {
+            "in": [
+              "cofferdam",
+              "void",
+              "peak_void"
+            ]
+          },
+          "shape": "const",
+          "a": 0.95
+        },
+        {
+          "when": {
+            "in": [
+              "cargo_hold"
+            ]
+          },
+          "shape": "const",
+          "a": 0.95
+        },
+        {
+          "when": {
+            "in": [
+              "machinery",
+              "pump_room"
+            ]
+          },
+          "shape": "const",
+          "a": 0.85
+        }
+      ]
+    },
+    {
+      "id": "igc-permeability-by-filling",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.5.2",
+        "page": "MSC.370-93.pdf, annex p. 29"
+      },
+      "input": {
+        "name": "space kind"
+      },
+      "unit": "1 = by filling, 0 = fixed",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "double_bottom_ballast",
+              "wing_ballast",
+              "peak_ballast",
+              "consumables",
+              "cargo_tank",
+              "slop"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "cofferdam",
+              "void",
+              "peak_void",
+              "cargo_hold",
+              "machinery",
+              "pump_room"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
     }
   ],
   "rules": [
