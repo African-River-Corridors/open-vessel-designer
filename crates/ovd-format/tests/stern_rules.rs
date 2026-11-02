@@ -136,10 +136,10 @@ fn a_coastal_option_is_checked_against_two_lengths_and_the_light_blind_distance_
 
 #[test]
 fn a_deckhouse_coastal_option_passes_the_light_blind_zone_of_two_lengths() {
-    // Issue #779: the twin of the test above for the deckhouse. The fixed wheelhouse is sized to the
-    // ES-TRIN limit (250 m), not to SOLAS V/22.1.1 (2 L = 220 m at 110 m); on this hull the house
-    // that clears the cargo happens to meet 220 m too. Whether the deckhouse should be sized to the
-    // SOLAS limit is a question for the maintainer.
+    // Issue #779: the twin of the test above for the deckhouse. On a coastal Option the fixed
+    // wheelhouse eye is sized to the stricter of the ES-TRIN 7.02(2) limit (250 m) and SOLAS V/22.1.1
+    // (min(2 L, 500 m); 220 m at 110 m), adding tiers as needed (maintainer decision), so the light
+    // condition passes where the container block's warns.
     let r = results(&design(json!({ "service_area": "coastal-and-river" })));
     let light = rows(&r, "solas/V.22.1.1/blind-zone-light");
     assert_eq!(light[0]["outcome"], "pass", "{light:?}");

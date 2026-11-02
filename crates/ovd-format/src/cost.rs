@@ -679,8 +679,6 @@ fn liquid_masses_json(q: &CostQuantities, m: &BargeCostInputs, from_design: &[&s
     })
 }
 
-/// The budget with its `items` (issue #773): what each item line of a self-propelled hull prices, and
-/// whether its rate is an example rate. A Formation with a tug has none, and no `items` key.
 /// A deckhouse Option's results say how the wheelhouse and accommodation lump was split (issue #779).
 fn with_split(mut v: Value, split: Option<Value>) -> Value {
     if let (Some(split), Some(o)) = (split, v.as_object_mut()) {
@@ -689,6 +687,8 @@ fn with_split(mut v: Value, split: Option<Value>) -> Value {
     v
 }
 
+/// The budget with its `items` (issue #773): what each item line of a self-propelled hull prices, and
+/// whether its rate is an example rate. A Formation with a tug has none, and no `items` key.
 fn with_items(mut v: Value, items: Value) -> Value {
     if !items.is_null() {
         v["items"] = items;
