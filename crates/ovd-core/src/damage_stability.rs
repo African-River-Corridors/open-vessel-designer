@@ -573,6 +573,18 @@ impl DamageCriteria {
         limit_deg: 0.0,
         range_beyond_deg: Some(20.0),
     };
+
+    /// IGC Code 2.7.1.2 and 2.7.2.1 (MSC.370(93), annex p. 31): a heel of at most 30 degrees, and at final
+    /// equilibrium a range of 20 degrees with a righting lever of at least 0.1 m and an area of at least
+    /// 0.0175 m.rad within it. The range is measured from the equilibrium, the most conservative start 2.7.2.1
+    /// allows (spec 0012 D11).
+    pub const IGC_2_7: DamageCriteria = DamageCriteria {
+        max_heel_deg: 30.0,
+        min_gz_m: 0.1,
+        min_area_m_rad: 0.0175,
+        limit_deg: 0.0,
+        range_beyond_deg: Some(20.0),
+    };
 }
 
 /// How the damaged hull floats.

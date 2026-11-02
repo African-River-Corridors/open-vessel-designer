@@ -112,3 +112,208 @@ pub fn built_in_permeability(set_id: &str, table_id: &str) -> Result<Permeabilit
         .ok_or_else(|| format!("no built-in `{set_id}` holds table `{table_id}`"))?;
     permeability_table(set, table_id)
 }
+
+/// Issue #759 (spec 0012): the IGC damage cases of a gas hull on every loading condition, final stage of
+/// flooding by lost buoyancy, with the criteria of IGC 2.7.1.2 and 2.7.2.1.
+///
+/// The cases, the standard of damage and the permeabilities come from `set` (an `igc-2g` version that holds the
+/// tables; an older one gives an error naming the missing table). Every condition with weights is damaged
+/// (D10). A breached Type C tank loses its cargo, which leaves the condition (IGC 2.5.3, D8); an intact tank in
+/// a flooded hold keeps its buoyancy (D7); a ballast tank floods by its filling (D9). A condition that does not
+/// float intact has no cases. The verdicts are named `<condition>: <case>`.
+///
+/// The second value is the `damage` block of the results (unhashed, D21): every case with its condition, its
+/// floating position, its residual stability and the deck-edge test (D11), and for each condition the governing
+/// case with its righting lever curve over the 20 degree range (D12). The governing case is the first that does
+/// not meet the criteria, or else the one with the least maximum righting lever.
+pub fn gas_damage_verdicts(
+    set: &RuleSet,
+    spaces: &[ovd_core::compartments::Space],
+    hull: &ovd_core::hydrostatics::Hull,
+    conditions: &[ovd_core::loading_conditions::LoadedCondition],
+    density: f64,
+) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), String> {
+    use ovd_core::damage_cases::{
+        StandardOfDamage, deck_edge_immersed, gas_flooding, igc_damage_cases,
+        without_breached_cargo,
+    };
+    use ovd_core::damage_stability::{DamageCriteria, Floats, assess, righting_lever_at};
+    use ovd_core::sections::{Gravity, Waterplane};
+    use serde_json::json;
+    let num = crate::eval::num;
+    let mut rows: Vec<serde_json::Value> = Vec::new();
+    let mut governing: Vec<serde_json::Value> = Vec::new();
+    let (loa, beam) = (hull.spec.loa, hull.spec.beam);
+    let data = igc_damage_data(set, loa, beam)?;
+    let table = permeability_table(set, "igc-permeability")?;
+    let standard = StandardOfDamage::igc_2g(spaces, loa, data.machinery_aft_intact);
+    let cases = igc_damage_cases(spaces, loa, beam, &data.extents, &standard, &|k| {
+        table.of(k, 0.0).unwrap_or(0.95)
+    });
+    let mut out: Vec<ovd_core::measured::DamageVerdict> = Vec::new();
+    for c in conditions {
+        let mass: f64 = c.weights.iter().map(|(_, i)| i.mass_t).sum();
+        if mass.is_nan() || mass <= 0.0 {
+            continue;
+        }
+        let tcg_moment: f64 = c.ballast.iter().map(|t| t.mass_t * t.tcg_m).sum();
+        let g = Gravity {
+            lcg_m: c
+                .weights
+                .iter()
+                .map(|(_, i)| i.mass_t * i.lcg_m)
+                .sum::<f64>()
+                / mass,
+            tcg_m: tcg_moment / mass,
+            kg_m: c
+                .weights
+                .iter()
+                .map(|(_, i)| i.mass_t * i.kcg_m)
+                .sum::<f64>()
+                / mass,
+        };
+        let Ok(float) = hull.float(mass, g, density) else {
+            continue;
+        };
+        let start = (
+            float.equilibrium.waterplane.c,
+            float.equilibrium.waterplane.trim_deg,
+        );
+        let cargo = c
+            .weights
+            .iter()
+            .find(|(n, _)| n == "Cargo")
+            .map_or((0.0, 0.0), |(_, i)| (i.mass_t, i.kcg_m));
+        let filling = |name: &str| {
+            c.ballast
+                .iter()
+                .find(|t| t.name == name)
+                .map_or(0.0, |t| t.fill)
+        };
+        // (index into `out`, the flooding, the damaged mass and centre of gravity) of the governing case
+        let mut worst: Option<(
+            usize,
+            Vec<ovd_core::damage_stability::FloodedVolume>,
+            f64,
+            Gravity,
+        )> = None;
+        for case in &cases {
+            let f = gas_flooding(case, spaces, &table, &filling);
+            let (m, gd) = without_breached_cargo(mass, g, cargo, spaces, &f.breached);
+            let outcome = assess(
+                &hull.table,
+                &f.flooded,
+                m,
+                gd,
+                density,
+                start,
+                &DamageCriteria::IGC_2_7,
+            );
+            let deck = outcome.floats == Floats::Yes
+                && deck_edge_immersed(
+                    &Waterplane {
+                        heel_deg: outcome.heel_deg,
+                        trim_deg: outcome.trim_deg,
+                        c: outcome.waterplane_c_m,
+                    },
+                    (0.0, loa),
+                    0.5 * beam,
+                    hull.spec.depth,
+                );
+            let worse = match &worst {
+                None => true,
+                Some((i, ..)) => {
+                    let w = &out[*i];
+                    let o: &ovd_core::damage_stability::DamageOutcome = &w.outcome;
+                    (o.ok && !outcome.ok) || (o.ok == outcome.ok && outcome.max_gz_m < o.max_gz_m)
+                }
+            };
+            rows.push(json!({
+                "condition": c.condition.name,
+                "name": case.name,
+                "flooded": case.flooded.iter().map(|v| v.name.clone()).collect::<Vec<_>>(),
+                "breached_tanks": f.breached,
+                "floats": match outcome.floats {
+                    Floats::Yes => "yes",
+                    Floats::Sinks => "sinks",
+                    Floats::NoEquilibrium => "no equilibrium",
+                },
+                "heel_deg": num(outcome.heel_deg),
+                "trim_deg": num(outcome.trim_deg),
+                "draught_mid_m": num(outcome.draught_mid_m),
+                "range_end_deg": num(outcome.end_deg),
+                "max_gz_m": num(outcome.max_gz_m),
+                "area_m_rad": num(outcome.area_m_rad),
+                "deck_edge_immersed": deck,
+                "ok": outcome.ok,
+            }));
+            if worse {
+                worst = Some((out.len(), f.flooded.clone(), m, gd));
+            }
+            out.push(ovd_core::measured::DamageVerdict {
+                name: format!("{}: {}", c.condition.name, case.name),
+                flooded: case.flooded.iter().map(|v| v.name.clone()).collect(),
+                outcome,
+            });
+        }
+        if let Some((i, flooded, m, gd)) = worst {
+            let o = &out[i].outcome;
+            // The righting lever after damage over the 20 degree range of IGC 2.7.2.1, every 5 degrees.
+            let side = if o.heel_deg >= 0.0 { 1.0 } else { -1.0 };
+            let gz: Vec<serde_json::Value> = if o.floats == Floats::Yes {
+                (0..=4)
+                    .filter_map(|k| {
+                        let heel = o.heel_deg + side * 5.0 * k as f64;
+                        righting_lever_at(&hull.table, &flooded, m, gd, density, start, heel)
+                            .map(|v| json!([num(heel), num(side * v)]))
+                    })
+                    .collect()
+            } else {
+                Vec::new()
+            };
+            // What the damage drawing shows (issue #761): each Flooded Volume's shape, and the damaged
+            // waterplane.
+            let geometry: Vec<serde_json::Value> = flooded
+                .iter()
+                .map(|v| match &v.shape {
+                    ovd_core::compartments::SpaceShape::Prism { section } => json!({
+                        "name": v.name,
+                        "x_m": [num(v.x_aft_m), num(v.x_fwd_m)],
+                        "section_m": section.iter().map(|&(y, z)| json!([num(y), num(z)])).collect::<Vec<_>>(),
+                    }),
+                    ovd_core::compartments::SpaceShape::Tank {
+                        y,
+                        z,
+                        outer_diameter,
+                        ..
+                    } => json!({
+                        "name": v.name,
+                        "x_m": [num(v.x_aft_m), num(v.x_fwd_m)],
+                        "tank": { "y_m": num(*y), "z_m": num(*z), "diameter_m": num(*outer_diameter) },
+                    }),
+                })
+                .collect();
+            governing.push(json!({
+                "condition": c.condition.name,
+                "case": rows[i]["name"],
+                "ok": o.ok,
+                "floats": rows[i]["floats"],
+                "heel_deg": num(o.heel_deg),
+                "trim_deg": num(o.trim_deg),
+                "draught_mid_m": num(o.draught_mid_m),
+                "waterplane": { "heel_deg": num(o.heel_deg), "trim_deg": num(o.trim_deg), "c_m": num(o.waterplane_c_m) },
+                "flooded": geometry,
+                "gz_after_damage": gz,
+            }));
+        }
+    }
+    Ok((
+        out,
+        json!({
+            "rule_set": set.key(),
+            "method": "lost buoyancy, final stage of flooding (IGC 2.7.1.2, 2.7.2.1)",
+            "cases": rows,
+            "governing": governing,
+        }),
+    ))
+}

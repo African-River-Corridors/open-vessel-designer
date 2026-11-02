@@ -293,6 +293,19 @@ pub fn calculate_weights_with(
     tanks: &TankResult,
     opts: &TankMassOptions,
 ) -> Result<WeightBreakdown, PyError> {
+    calculate_weights_on(inputs, hull, tanks, opts, None)
+}
+
+/// [`calculate_weights_with`], the gas hull's plate model laid out on `on`: the hull's Sections
+/// Table and the x of its hold bulkheads (issue #745). Without it the plate model takes the panels'
+/// rectangles and the rule length 0.96 x the length overall.
+pub fn calculate_weights_on(
+    inputs: &BargeInputs,
+    hull: &HullGeometry,
+    tanks: &TankResult,
+    opts: &TankMassOptions,
+    on: Option<(&crate::sections::SectionsTable, &[f64])>,
+) -> Result<WeightBreakdown, PyError> {
     let steel_density = inputs.hull_steel_density; // t/m^3
     let t_side = inputs.side_plate_thickness / 1000.0;
 
@@ -424,8 +437,11 @@ pub fn calculate_weights_with(
             tanks,
             inputs.block_coefficient,
             opts.structure,
+            on.map(|o| o.0),
         );
-        let m = crate::hull_panels::hull_panels(&spec);
+        // Issue #745: the plate model's ordered weight plus the allowance, as the panel table rolled
+        // up from it (spec 0013 D9, D10).
+        let (m, _) = crate::hull_plates::gas_hull_steel(&spec, on);
         let plate_of = |function_type: &str| -> f64 {
             m.members
                 .iter()

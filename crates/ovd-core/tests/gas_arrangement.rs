@@ -103,7 +103,8 @@ fn the_smallest_viable_loa_is_found_to_a_tenth_of_a_metre() {
         // arrangement that passes every check, stability included); was 36.1 (issue #237) and
         // 35.6 under the stepped IGC_2G. Re-pinned (#722, the hull steel from the panel model); was 37.8.
         // Re-pinned (#740, the scantlings take the rule length of ABS 3-1-1/3.1); was 41.4.
-        41.6
+        // Re-pinned (#745, the lightship takes the plate model's ordered weight); was 41.6.
+        41.7
     );
 }
 

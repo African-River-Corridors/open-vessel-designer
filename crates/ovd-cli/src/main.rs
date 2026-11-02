@@ -44,9 +44,12 @@ Usage:
       List hard errors and soft warnings without running. --inputs also lists every input
       as used, typed or default. Exits 1 if there is any hard error. A file must store
       every input as used, so a left-out input is a hard error: run `ovd fill` first.
-  ovd run [--profile <profile.json>] [--rule-set <file>]... [--json] <file.vdesign>
+  ovd run [--profile <profile.json>] [--rule-set <file>]... [--json [--steel-list]] <file.vdesign>
       Compute every Option of a Design and print a short summary. --json prints the full
-      results instead. Each Option's results hash is compared with the one saved in the file;
+      results instead. A gas hull's steel comes as its summary (`structure`: weight and centre
+      per member group, scrap, plates bought); --steel-list adds the per-item steel list
+      (`steel_list`) and its geometry (`structure_geometry`), which are large and outside the
+      results hash (issue #745). `ovd export --format steel-csv` writes the list as CSV. Each Option's results hash is compared with the one saved in the file;
       a difference is a warning that the results differ from the hash saved in the file (an
       engine change, or an input edited by hand, can cause it). A pushed convoy prints its totals
       (cargo, lightship, deadweight, overall size) and then the numbers of one barge; the pusher
@@ -187,6 +190,7 @@ struct Flags<'a> {
     remove_rule_sets: Vec<&'a str>,
     inputs: bool,
     json: bool,
+    steel_list: bool,
     as_new: bool,
     files: Vec<&'a str>,
 }
@@ -204,6 +208,7 @@ fn parse_flags<'a>(
         remove_rule_sets: Vec::new(),
         inputs: false,
         json: false,
+        steel_list: false,
         as_new: false,
         files: Vec::new(),
     };
@@ -232,6 +237,7 @@ fn parse_flags<'a>(
             }
             "--inputs" if allow_inputs => flags.inputs = true,
             "--json" if allow_json => flags.json = true,
+            "--steel-list" if allow_json => flags.steel_list = true,
             "--as-new" if allow_as_new => flags.as_new = true,
             a if a.starts_with('-') => return Err(format!("unknown option `{a}`")),
             a => flags.files.push(a),
@@ -693,9 +699,24 @@ fn mesh(args: &[&str]) -> Result<(), String> {
     Ok(())
 }
 
+/// The results `ovd run --json` prints. Issue #745: the per-item steel list and its geometry are
+/// left out unless `--steel-list` asks for them. Both are outside the results hash, so the hash
+/// covers what a results file stores either way.
+fn stored_results(results: &serde_json::Value, steel_list: bool) -> serde_json::Value {
+    let mut out = results.clone();
+    if !steel_list && let Some(map) = out.as_object_mut() {
+        map.remove("steel_list");
+        map.remove("structure_geometry");
+    }
+    out
+}
+
 fn run(args: &[&str]) -> Result<bool, String> {
     use ovd_format::{HashStatus, RunOutcome};
     let flags = parse_flags(args, false, true, false)?;
+    if flags.steel_list && !flags.json {
+        return Err("--steel-list needs --json".into());
+    }
     let [path] = flags.files.as_slice() else {
         return Err("give exactly one .vdesign file".into());
     };
@@ -756,7 +777,7 @@ fn run(args: &[&str]) -> Result<bool, String> {
                     "status": r.outcome.status(),
                     "results_hash": hash,
                     "hash_status": r.hash_status.as_str(),
-                    "results": results,
+                    "results": stored_results(results, flags.steel_list),
                 }),
                 RunOutcome::NotAvailable(m) | RunOutcome::Failed(m) => serde_json::json!({
                     "name": r.name,

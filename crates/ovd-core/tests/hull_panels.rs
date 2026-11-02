@@ -177,8 +177,13 @@ fn a_gas_hull_gets_a_panel_model_from_its_arrangement() {
     i.cargo_type = "LPG_propane".into();
     let r = compute(&i).unwrap();
     let b = r.gas_basis.as_ref().unwrap();
-    let s =
-        HullStructureSpec::of_gas_arrangement(&b.inputs, &b.tanks, 0.9, StructureBlock::default());
+    let s = HullStructureSpec::of_gas_arrangement(
+        &b.inputs,
+        &b.tanks,
+        0.9,
+        StructureBlock::default(),
+        None,
+    );
     assert_eq!(s.loa_m, 110.0);
     assert_eq!(s.double_bottom_m, b.inputs.double_bottom_height.unwrap());
     let m = double_hull_panels(&s, &ScantlingChoices::default());
@@ -196,21 +201,35 @@ mod the_switch {
         compute(&i).unwrap()
     }
 
-    fn panel_of(b: &ovd_core::barge_capacity::GasBasis) -> ovd_core::hull_panels::HullPanelModel {
+    /// Issue #745: the panel table rolled up from the plate model on the hull's Sections Table and
+    /// hold bulkheads.
+    fn panel_of(
+        r: &ovd_core::barge_capacity::BargeCapacityResult,
+    ) -> ovd_core::hull_panels::HullPanelModel {
+        let b = r.gas_basis.as_ref().unwrap();
+        let table = ovd_core::hydrostatics::Hull::build(r.hull_spec.as_ref().unwrap())
+            .unwrap()
+            .table;
+        let zone = (
+            r.stern_void_length_m.unwrap_or(0.0),
+            110.0 - r.bow_void_length_m.unwrap_or(0.0),
+        );
+        let holds = ovd_core::compartments::gas_hold_bulkheads(zone, &b.inputs, &b.tanks);
         let s = HullStructureSpec::of_gas_arrangement(
             &b.inputs,
             &b.tanks,
             b.inputs.block_coefficient,
             StructureBlock::default(),
+            Some(&table),
         );
-        hull_panels(&s)
+        ovd_core::hull_plates::gas_hull_steel(&s, Some((&table, &holds))).0
     }
 
     #[test]
     fn the_hull_steel_is_the_panel_model() {
         let r = gas();
         let b = r.gas_basis.as_ref().unwrap();
-        let m = panel_of(b);
+        let m = panel_of(&r);
         assert_eq!(b.weights.hull_steel_total, m.total_t);
         let parts = b.weights.hull_bottom_plating
             + b.weights.hull_side_plating
@@ -378,8 +397,8 @@ mod from_the_vessel_model {
             &b.tanks,
             b.inputs.block_coefficient,
             i.structure,
+            Some(&model.hull),
         );
-        eprintln!("DBG v={v:?}\nDBG a={a:?}");
         for (name, x, y) in [
             ("loa", v.loa_m, a.loa_m),
             ("rule length", v.rule_length_m, a.rule_length_m),
@@ -408,11 +427,32 @@ mod from_the_vessel_model {
         assert_eq!(v.holds_along, a.holds_along);
         assert_eq!(v.tanks_abreast, a.tanks_abreast);
         assert_eq!(v.structure, a.structure);
-        assert!(close(hull_panels(&v).total_t, b.weights.hull_steel_total));
-        // The rule's own L on the hull's Sections Table is shorter: the raked bow is not in the
-        // lightship's rule length yet (an Estimate; the lightship switch moves to it).
-        let own = sections_rule_length(&model.hull, v.depth_m);
-        assert!(own < v.rule_length_m, "{own} vs {}", v.rule_length_m);
+        // Issue #745: the rule length is the rule's own on the hull's Sections Table, and the
+        // lightship takes the plate model laid out on the same table and hold bulkheads.
+        assert!(close(
+            v.rule_length_m,
+            sections_rule_length(&model.hull, v.depth_m)
+        ));
+        assert!(v.rule_length_m < 0.96 * v.loa_m, "the raked bow shortens L");
+        let holds: Vec<f64> = model
+            .bulkheads
+            .iter()
+            .filter(|b| {
+                b.watertight
+                    && (b.name == "cargo_zone_aft"
+                        || b.name == "cargo_zone_fwd"
+                        || b.name.starts_with("hold_"))
+            })
+            .map(|b| b.x_m)
+            .collect();
+        let steel = ovd_core::hull_plates::gas_hull_steel(&v, Some((&model.hull, &holds)));
+        assert!(
+            close(steel.0.total_t, b.weights.hull_steel_total),
+            "{} vs {}",
+            steel.0.total_t,
+            b.weights.hull_steel_total
+        );
+        assert!(close(steel.0.total_t, steel.1.total_t));
         a.wing_width_m
     }
 

@@ -2896,6 +2896,8 @@ fn simulate_gas(
     let mut conditions = Vec::new();
     let mut is_code_stability = Value::Null;
     let mut loading_conditions = Value::Null;
+    // Issue #759: the IS Code conditions with their weights, for the IGC damage cases.
+    let mut damaged_conditions: Vec<ovd_core::loading_conditions::LoadedCondition> = Vec::new();
     if let Some(ic) = options.is_code.as_ref().filter(|_| r.gas_basis.is_some()) {
         // The same conditions the search checked the arrangement in.
         let tanks = clipped_ballast_tanks(&f.engine_inputs, r, &fit_hull);
@@ -2906,6 +2908,7 @@ fn simulate_gas(
         is_code_stability = is_code_stability_json(&conds, false, &mut ids);
         loading_conditions = loading_conditions_json(&conds, &tanks, consumables_t, rho, false);
         conditions = conds.iter().map(|c| c.condition.clone()).collect();
+        damaged_conditions = conds;
     } else if f.payload_t > 0.0 && r.gas_basis.is_some() {
         let basis = GasCapacityResult::try_from(r)
             .map_err(|m| Stop::Eval(EvalError::BadInput(m.into())))?;
@@ -3007,6 +3010,30 @@ fn simulate_gas(
         hull: fit_hull.table.clone(),
         structure,
     };
+    // Issue #759 (spec 0012): the IGC damage cases on every IS Code condition, when the stack's `igc-2g`
+    // evaluates IGC 2.7 and holds the damage tables. Unhashed (D21).
+    let (gas_damage, gas_damage_block) = match rules.sets.iter().find(|s| {
+        s.id == "igc-2g"
+            && s.rule("igc/2.7/damage-survival")
+                .is_some_and(|r| r.evaluated)
+    }) {
+        Some(set) if !damaged_conditions.is_empty() => {
+            let model = ovd_core::vessel_model::assemble(&vessel_inputs);
+            let spaces: Vec<ovd_core::compartments::Space> =
+                model.spaces.iter().map(|c| c.space.clone()).collect();
+            match crate::damage::gas_damage_verdicts(
+                set,
+                &spaces,
+                &fit_hull,
+                &damaged_conditions,
+                rho,
+            ) {
+                Ok((v, block)) => (v, block),
+                Err(_) => (Vec::new(), Value::Null),
+            }
+        }
+        _ => (Vec::new(), Value::Null),
+    };
     // Issue #742: the panel model and its plate model (the steel list).
     let steel = r
         .gas_basis
@@ -3074,6 +3101,7 @@ fn simulate_gas(
             }, steel.as_ref().map(|s| &s.0))),
             // Issue #742: the plate model's steel list, groups and purchase, and its geometry.
             "structure": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_json(&s.1)),
+            "steel_list": steel.as_ref().map_or(Value::Null, |s| crate::steel::steel_list_json(&s.1)),
             "structure_geometry": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_geometry_json(&s.1)),
         }),
             (&r.stern_block_items, &r.trim_conditions),
@@ -3083,11 +3111,17 @@ fn simulate_gas(
         ),
         ids,
     )
-    .map(|v| {
+    .map(|mut v| {
+        if !gas_damage_block.is_null()
+            && let Some(o) = v.as_object_mut()
+        {
+            o.insert("damage".to_string(), gas_damage_block);
+        }
         (
             v,
             Measured {
                 conditions,
+                damage: gas_damage,
                 deadweight_t: Some(deadweight),
                 tank: r.tank_rules.clone(),
                 separation: r.separation.clone().map(|s| {
@@ -3577,7 +3611,6 @@ fn gas_steel(
         i.block_coefficient,
         i.hull_steel_density,
     )?;
-    let panels = ovd_core::hull_panels::hull_panels(&spec);
     // Issue #743: the shell and the end structure on the hull's Sections Table, the hold bulkheads
     // where the Vessel Model puts them (the ends of the cargo zone and the bulkheads between holds).
     let holds: Vec<f64> = model
@@ -3591,6 +3624,9 @@ fn gas_steel(
         })
         .map(|b| b.x_m)
         .collect();
-    let plates = ovd_core::hull_plates::hull_plates_on(&panels, &spec, &model.hull, &holds);
-    Some((panels, plates))
+    // Issue #745: the panel table rolled up from the plate model, the same steel the lightship takes.
+    Some(ovd_core::hull_plates::gas_hull_steel(
+        &spec,
+        Some((&model.hull, &holds)),
+    ))
 }

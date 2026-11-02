@@ -2,8 +2,8 @@
 //! inputs only.
 //!
 //! Label: property. Each test states a rule: a round bilge takes area from the midship section, and
-//! a sheer or a camber adds hull above the deck edge only, so the upright hydrostatics at the float
-//! keep their values while the results above the deck edge move.
+//! a sheer or a camber adds hull above the deck edge, whose shell plating the lightship weighs since
+//! issue #745.
 
 use ovd_format::{DesignSession, Profile, RunOutcome};
 use serde_json::{Value, json};
@@ -49,14 +49,16 @@ fn a_bilge_radius_takes_area_from_the_midship_section() {
 }
 
 #[test]
-fn a_sheer_or_a_camber_moves_only_what_is_above_the_deck_edge() {
+fn a_sheer_or_a_camber_adds_shell_steel_above_the_deck_edge() {
     // A gas barge: its IS Code GZ curves heel the deck edge under. Issue #740: the self-propelled
-    // gas fixture, whose arrangement passes every check; the 76.5 m pushed barge of
-    // `gas_igc_2g_exact` has none since the rule length of ABS 3-1-1/3.1 lightened its hull.
-    // The tank is held at 7.4 m so the search keeps one arrangement: a sheer moves the deck edge,
-    // and with it the light condition's stability, which can switch the arrangement it picks.
+    // gas fixture, whose arrangement passes every check. The tank is held at 7.4 m so the search
+    // keeps one arrangement. Issue #745: the lightship takes the plate model, whose shell follows the
+    // Sections Table, so the plating a sheer or a camber adds above the deck edge is in the lightship
+    // (before, the float was the same to rounding).
     let file = "gas_igc_2g_self_propelled";
     let base = results(file, &[("max_tank_od_m", 7.4)]);
+    let steel = |r: &Value| r["cost_masses"]["masses"]["hull_steel_t"].as_f64().unwrap();
+    let lightship = |r: &Value| r["results"]["lightship_t"].as_f64().unwrap();
     for typed in [
         &[
             ("max_tank_od_m", 7.4),
@@ -66,19 +68,13 @@ fn a_sheer_or_a_camber_moves_only_what_is_above_the_deck_edge() {
         &[("max_tank_od_m", 7.4), ("camber_m", 0.3)][..],
     ] {
         let r = results(file, typed);
-        // The float is below the deck edge: the same to rounding (the sheer adds Stations).
-        let (h0, h1) = (
-            base["hydrostatics"].as_object().unwrap(),
-            r["hydrostatics"].as_object().unwrap(),
+        assert!(
+            steel(&r) > steel(&base),
+            "{typed:?}: {} vs {}",
+            steel(&r),
+            steel(&base)
         );
-        assert_eq!(h0.len(), h1.len());
-        for (key, v0) in h0 {
-            let (x, y) = (v0.as_f64().unwrap(), h1[key].as_f64().unwrap());
-            assert!(
-                (x - y).abs() <= 1e-9 * x.abs().max(1.0),
-                "{typed:?}: hydrostatics.{key} {x} vs {y}"
-            );
-        }
+        assert!(lightship(&r) > lightship(&base), "{typed:?}");
         assert_ne!(
             base, r,
             "{typed:?}: the hull above the deck edge is in the results"

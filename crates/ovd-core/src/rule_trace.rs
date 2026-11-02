@@ -572,7 +572,7 @@ pub static MEASURES: &[MeasureDef] = &[
         object: ObjectType::DamageCase,
         value: ValueKind::Bool,
         args: &[],
-        method: "The damaged hull floats where the heel at the stage of equilibrium is at most 12 degrees and, beyond it, the righting lever reaches 0.05 m with an area of 0.0065 m.rad up to 27 degrees (ADN 2025 9.3.2.15.2 and 9.3.3.15.2). Lost buoyancy method on the Sections Table, final stage of flooding only: the intermediate stages, the non-watertight openings and the flooding of undamaged compartments are not modelled",
+        method: "The damaged hull meets the damage criteria of the Rule's set. ADN 2025 9.3.2.15.2 and 9.3.3.15.2 (liquid bulk): the heel at the stage of equilibrium is at most 12 degrees and, beyond it, the righting lever reaches 0.05 m with an area of 0.0065 m.rad up to 27 degrees. IGC 2.7.1.2 and 2.7.2.1 (gas, spec 0012): a heel of at most 30 degrees and a range of 20 degrees from the equilibrium with 0.1 m and 0.0175 m.rad, on every IS Code loading condition; a breached Type C tank loses its cargo, an intact one keeps its buoyancy in a flooded hold. Lost buoyancy method on the Sections Table, final stage of flooding only: the intermediate stages, the non-watertight openings and the flooding of undamaged compartments are not modelled. Probabilistic damage stability (SOLAS II-1 Part B-1) is not applied: OVD's vessels are outside its scope (ADR 0011; research note docs/research/damage-stability.md, 2.4)",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {

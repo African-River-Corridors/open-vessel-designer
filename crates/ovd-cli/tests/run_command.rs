@@ -416,9 +416,11 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
         .unwrap()
         .remove("results_hash");
     write_json(&file, &saved);
+    // `--steel-list`: the whole results, as `simulate` answers them (issue #745).
     let out = ovd(&[
         "run",
         "--json",
+        "--steel-list",
         "--rule-set",
         &is_code,
         "--rule-set",
@@ -472,7 +474,8 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
     // stern and covering inputs of the issues since #410 moved it from 1604.5823133024817).
     // Re-pinned again (issue #722, the hull steel from the panel model): lightship_t was
     // 1583.438359298561. Re-pinned again (issue #740, the scantlings take the rule length of ABS
-    // 3-1-1/3.1): lightship_t was 1569.7907856537108.
+    // 3-1-1/3.1): lightship_t was 1569.7907856537108. Re-pinned again (issue #745, the plate model's
+    // ordered weight): lightship_t was 1537.517376832394.
     let r = &results["results"];
     assert_close(
         r["cargo_t"].as_f64().unwrap(),
@@ -481,7 +484,7 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
     );
     assert_close(
         r["lightship_t"].as_f64().unwrap(),
-        1537.517376832394,
+        1506.0673218519578,
         "lightship_t",
     );
     // Re-pinned (issue #264); was "tank volume" (stepped IGC_2G) and "draught — Draught limit" (issue #237).
@@ -660,4 +663,46 @@ fn fill_adds_and_removes_rule_sets_and_run_states_the_scope() {
             .unwrap()
             .starts_with("Service Area river-only;")
     );
+}
+
+/// Issue #745: `ovd run --json` keeps the steel summary (`structure`: groups, scrap, purchase) and
+/// leaves out the per-item steel list and its geometry, so a committed results file stays small;
+/// `--steel-list` adds both. The results hash is the same either way: it covers the summary only.
+#[test]
+fn json_keeps_the_steel_summary_and_steel_list_adds_the_items() {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../ovd-format/tests/fixtures/gas_igc_2g_exact.vdesign");
+    let short = ovd(&["run", "--json", p(&fixture)]);
+    assert!(short.status.success(), "{}", stderr(&short));
+    let short: Value = serde_json::from_str(&stdout(&short)).unwrap();
+    let full = ovd(&["run", "--json", "--steel-list", p(&fixture)]);
+    assert!(full.status.success(), "{}", stderr(&full));
+    let full: Value = serde_json::from_str(&stdout(&full)).unwrap();
+    let (s, f) = (&short["options"][0], &full["options"][0]);
+    assert_eq!(s["results_hash"], f["results_hash"]);
+    assert_eq!(s["hash_status"], "matches");
+    let sr = &s["results"];
+    assert!(sr["structure"]["groups"]["ordered_t"].as_f64().unwrap() > 0.0);
+    assert!(sr["structure"]["groups"]["scrap_t"].as_f64().is_some());
+    assert!(sr["structure"]["purchase"]["plates"].is_array());
+    assert!(sr.get("steel_list").is_none());
+    assert!(sr.get("structure_geometry").is_none());
+    assert!(sr["structure"].get("steel_list").is_none());
+    let fr = &f["results"];
+    assert_eq!(sr["structure"], fr["structure"]);
+    let rows = fr["steel_list"].as_array().expect("the steel list");
+    assert!(!rows.is_empty());
+    assert_eq!(
+        fr["structure_geometry"].as_object().unwrap().len(),
+        rows.len()
+    );
+}
+
+#[test]
+fn steel_list_is_an_option_of_json_only() {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../ovd-format/tests/fixtures/gas_igc_2g_exact.vdesign");
+    let out = ovd(&["run", "--steel-list", p(&fixture)]);
+    assert!(!out.status.success());
+    assert!(stderr(&out).contains("--steel-list"), "{}", stderr(&out));
 }

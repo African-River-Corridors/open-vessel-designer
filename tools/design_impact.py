@@ -55,7 +55,7 @@ START, END = "<!-- design-impact:start -->", "<!-- design-impact:end -->"
 # Top-level results keys that are not results (drawing geometry, what a view marks). The results hash
 # leaves them out too: UNHASHED_KEYS in crates/ovd-format/src/run.rs. tests/test_design_impact_unhashed_keys.py
 # checks that the two lists agree.
-UNHASHED_KEYS = ("drawing", "stability_marks", "cost_masses", "cost", "text_ids", "rule_trace", "calibration", "damage", "marpol_damage", "oil_outflow", "fit_tried", "structure", "structure_geometry", "gross_tonnage")
+UNHASHED_KEYS = ("drawing", "stability_marks", "cost_masses", "cost", "text_ids", "rule_trace", "calibration", "damage", "marpol_damage", "oil_outflow", "fit_tried", "steel_list", "structure_geometry", "gross_tonnage")
 
 LABEL = "design-change"
 MAX_ROWS = 40

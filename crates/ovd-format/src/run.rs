@@ -338,10 +338,12 @@ pub use arc_rules::load::canonical_json;
 /// of the lightship (issue #434), and the gas tank arrangements the search tried (issue #675). They are left
 /// out of the results hash, so adding to one never changes a saved hash, and `tools/design_impact.py`
 /// leaves them out of its comparison (it holds the same list; `tests/test_design_impact_unhashed_keys.py` checks
-/// that the two lists agree). The plate model's steel list (`structure`, issue #742) is outside the hash
-/// until the lightship reads it (spec 0013, T7); its geometry (`structure_geometry`) stays outside, like
-/// the meshes. The gross tonnage (`gross_tonnage`, issue #777) is outside the hash until a Rule or
-/// a result reads it, so adding it moved no saved hash.
+/// that the two lists agree). The plate model's steel summary (`structure`) is in the hash since the
+/// lightship reads it (issue #745). The per-item list (`steel_list`) and its geometry
+/// (`structure_geometry`) stay outside, like the meshes: `ovd run --json` stores them only on request
+/// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
+/// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
+/// moved no saved hash.
 pub const UNHASHED_KEYS: [&str; 14] = [
     "drawing",
     "stability_marks",
@@ -354,7 +356,7 @@ pub const UNHASHED_KEYS: [&str; 14] = [
     "marpol_damage",
     "oil_outflow",
     "fit_tried",
-    "structure",
+    "steel_list",
     "structure_geometry",
     "gross_tonnage",
 ];

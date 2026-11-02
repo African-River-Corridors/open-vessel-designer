@@ -4524,7 +4524,7 @@ fn read_option(
             "this file was saved before the structure block of the Hull (format version 4); it \
              now holds the defaults (marked default): frame spacing 3.66 m, longitudinal spacing \
              700 mm, stock plate 3.0 x 12.0 m, thickness step 0.5 mm, ordinary-strength steel, no \
-             structural wing deck. No result reads them yet, so the results are unchanged",
+             structural wing deck. A gas hull's steel, and so its lightship, reads them",
         );
         report.migration_note(of_option(name, text), &structure);
     }
