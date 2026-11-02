@@ -118,12 +118,7 @@ pub fn exit_above_keel(i: &VentMastInputs) -> (f64, Governs) {
         }
     } else {
         // IGC 8.2.10.3 and 8.2.10.4.
-        let third = i.beam_m / 3.0;
-        let above_deck = if third > IGC_MIN_ABOVE_DECK_M {
-            third
-        } else {
-            IGC_MIN_ABOVE_DECK_M
-        };
+        let above_deck = igc_above_deck(i.beam_m);
         let deck = i.deck_m + above_deck;
         let working = working_area_top(i) + IGC_ABOVE_WORKING_AREA_M;
         if working > deck {
@@ -131,6 +126,17 @@ pub fn exit_above_keel(i: &VentMastInputs) -> (f64, Governs) {
         } else {
             (deck, Governs::Deck)
         }
+    }
+}
+
+/// The least height of an IGC 8.2.10.3 vent exit above the weather deck: B/3 or 6 m, whichever is the
+/// greater.
+pub fn igc_above_deck(beam_m: f64) -> f64 {
+    let third = beam_m / 3.0;
+    if third > IGC_MIN_ABOVE_DECK_M {
+        third
+    } else {
+        IGC_MIN_ABOVE_DECK_M
     }
 }
 
@@ -165,14 +171,29 @@ pub fn place(i: &VentMastInputs, lowerable: bool) -> VentMast {
         };
         (cap, to_openings)
     };
+    // Heights above the deck and above the working area are the exit less the datum. Where the IGC
+    // term sets the exit, the sum and the difference can differ from the term by one rounding step, which
+    // a Rule with no tolerance (IGC 8.2.10.3 and 8.2.10.4, issue #849) would read as a failure of the
+    // mast the engine itself placed: the height is then never less than the term.
+    let mut above_deck = exit - i.deck_m;
+    let mut above_working = exit - working;
+    if !i.river_only {
+        let term = igc_above_deck(i.beam_m);
+        if term > above_deck {
+            above_deck = term;
+        }
+        if IGC_ABOVE_WORKING_AREA_M > above_working {
+            above_working = IGC_ABOVE_WORKING_AREA_M;
+        }
+    }
     VentMast {
         river_only: i.river_only,
         x_m: i.mast_x_m,
         exit_above_keel_m: exit,
-        exit_above_deck_m: exit - i.deck_m,
+        exit_above_deck_m: above_deck,
         working_area_top_m: working,
         working_area_is_shield: i.shield_top_m.is_some(),
-        exit_above_working_area_m: exit - working,
+        exit_above_working_area_m: above_working,
         governs,
         distance_to_openings_m: to_openings,
         distance_to_accommodation_m: to_accommodation,
@@ -200,6 +221,27 @@ mod tests {
             entrance_m: 5.0,
             engine_room_vent_inlet_m: 5.0,
             funnel_outlet_m: 2.0,
+        }
+    }
+
+    #[test]
+    fn an_igc_exit_is_never_read_below_the_term_that_set_it() {
+        // Issue #849: the deck and the shield sit at heights whose sum and difference round, so the
+        // exit less the datum could fall one step under B/3 or 6 m. The Rules have no tolerance.
+        for deck in [4.5, 6.0, 7.3, 9.0, 9.1, 11.7] {
+            for beam in [11.4, 14.0, 17.2, 24.0, 29.0, 30.1] {
+                for tank_top in [3.3, 8.7, 12.4] {
+                    let i = VentMastInputs {
+                        beam_m: beam,
+                        deck_m: deck,
+                        tank_top_m: tank_top,
+                        ..base()
+                    };
+                    let m = place(&i, false);
+                    assert!(m.exit_above_deck_m >= igc_above_deck(beam), "{deck} {beam}");
+                    assert!(m.exit_above_working_area_m >= IGC_ABOVE_WORKING_AREA_M);
+                }
+            }
         }
     }
 

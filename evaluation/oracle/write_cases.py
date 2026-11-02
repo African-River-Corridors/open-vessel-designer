@@ -18,6 +18,7 @@ sys.path.insert(0, str(HERE))
 import box_oracle as oracle  # noqa: E402
 import stern_oracle  # noqa: E402
 import tank_oracle  # noqa: E402
+import vent_oracle  # noqa: E402
 
 CASES_DIR = HERE.parent / "cases"
 
@@ -333,6 +334,30 @@ STERN_BASES = [
 ]
 
 
+#: The cargo vent exits of the IGC Rules 8.2.10.3, 8.2.10.4 and 8.2.11.1 (issue #849): a beam and the three numbers a
+#: run reads from its results, chosen for this corpus. The verdicts are worked out by `vent_oracle.py` from the
+#: text of the IGC Code. Three beams: B/3 under 6 m, B/3 over 6 m with B under 25 m, and B over 25 m.
+VENT_HULL = {"length_overall_m": 100.0, "beam_m": 14.0, "depth_m": 4.5, "service_area": "coastal-and-river",
+             "vent_exit_above_deck_m": 8.0, "vent_exit_above_working_area_m": 7.0,
+             "vent_distance_to_openings_m": 20.0}
+
+
+def vent_base(id_: str, title: str, note: str, **inputs) -> dict:
+    return {"id": id_, "kind": "vent", "title": title, "note": note, "inputs": {**VENT_HULL, **inputs}}
+
+
+VENT_BASES = [
+    vent_base("vent_beam_14", "Gas barge of 14 m beam, coastal and river service, vent exit inside every limit",
+              "B/3 is 4.67 m, so the 6 m of 8.2.10.3 governs the height; the distance asked is B, 14 m."),
+    vent_base("vent_beam_24", "Gas barge of 24 m beam, coastal and river service, vent exit inside every limit",
+              "B/3 is 8 m and governs the height of 8.2.10.3; the distance asked is B, 24 m.", beam_m=24.0,
+              vent_exit_above_deck_m=9.0, vent_distance_to_openings_m=30.0),
+    vent_base("vent_beam_30", "Gas barge of 30 m beam, coastal and river service, vent exit inside every limit",
+              "B/3 is 10 m and governs the height of 8.2.10.3; the distance asked is 25 m, not B.", beam_m=30.0,
+              vent_exit_above_deck_m=11.0, vent_distance_to_openings_m=40.0),
+]
+
+
 def sig(x: float, n: int = 10) -> float:
     return float(f"{x:.{n}g}")
 
@@ -415,7 +440,32 @@ def stern_document(c: dict) -> dict:
     }
 
 
+def vent_document(c: dict) -> dict:
+    """A cargo vent exit case (`kind: vent`): the inputs, and the oracle's verdict for each Rule."""
+    expected = {k: {kk: vv for kk, vv in v.items() if kk != "compare"}
+                for k, v in vent_oracle.verdicts(c["inputs"]).items()}
+    return {
+        "id": c["id"], "title": c["title"], "kind": "vent",
+        "inputs": dict(c["inputs"]),
+        "expected": expected,
+        "provenance": {
+            "verdict_basis": "derived",
+            "inputs_basis": "chosen for this corpus (not from a publication)",
+            "source": "evaluation/oracle/vent_oracle.py (the text of IGC Code 8.2.10.3, 8.2.10.4 and 8.2.11.1)",
+            "edition": "IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), "
+                       "MSC.476(102), MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1",
+            "locator": "IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)",
+            "licence": "inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts",
+            "confidence": "high for the verdicts (the oracle states each limit as the text prints it); the case is "
+                          "not an external published example",
+            "note": c["note"],
+        },
+    }
+
+
 def case_document(c: dict) -> dict:
+    if c.get("kind") == "vent":
+        return vent_document(c)
     if c.get("kind") == "tank":
         return tank_document(c)
     if c.get("kind") == "stern":
@@ -485,7 +535,7 @@ def render(doc: dict) -> str:
 def main(argv: list[str]) -> int:
     check = "--check" in argv
     bad = 0
-    for c in BASE_CASES + TANK_BASES + STERN_BASES:
+    for c in BASE_CASES + TANK_BASES + STERN_BASES + VENT_BASES:
         path = CASES_DIR / f"{c['id']}.yaml"
         text = render(case_document(c))
         if check:

@@ -43,12 +43,13 @@ import yaml
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import rule_mutation  # noqa: E402
-from engine import DEFAULT_SELECT, box_trace, liquid_trace, stern_case_trace  # noqa: E402
+from engine import DEFAULT_SELECT, box_trace, liquid_trace, stern_case_trace, vent_case_trace  # noqa: E402
 
 CASES = HERE / "cases"
 MUTANTS = HERE / "mutants.yaml"
 TANK_MUTANTS = HERE / "tank_mutants.yaml"
 STERN_MUTANTS = HERE / "stern_mutants.yaml"
+VENT_MUTANTS = HERE / "vent_mutants.yaml"
 RESULTS = HERE / "results.md"
 
 #: The sets a liquid bulk (`kind: tank`) case selects (issue #338); `normam-202` is optional, never in a default
@@ -62,6 +63,11 @@ STERN_INPUTS = {"length_overall_m", "beam_m", "depth_m", "bow_thruster", "propul
                 "blind_distance_light_m", "blind_distance_laden_m", "speed_deep_water_kmh", "design_speed_kn",
                 "propeller_diameter_m", "propeller_d_max_m", "propeller_ducted", "aft_draught_light_m",
                 "blade_load_kw_m2"}
+#: The set a vent (`kind: vent`) case selects (issue #849): the cargo vent exit Rules of the IGC Code.
+VENT_SELECT = ("igc-2g@3.2.0",)
+#: The case inputs of a vent case; a case that gives any other is a model gap.
+VENT_INPUTS = {"length_overall_m", "beam_m", "depth_m", "service_area", "vent_exit_above_deck_m",
+               "vent_exit_above_working_area_m", "vent_distance_to_openings_m"}
 BUCKETS = ("model-gap", "known-limitation", "code-bug", "rule-suspect", "needs-expert")
 #: The trace inputs a box case gives; a case that needs any other input is a model gap.
 BOX_INPUTS = {"form", "vdesign", "length_m", "beam_m", "depth_m", "draught_m", "kg_m",
@@ -78,9 +84,10 @@ def kind_of(case: dict) -> str:
 
 def load_cases(cases_dir: Path = CASES, mutants_file: Path | None = MUTANTS,
                tank_mutants_file: Path | None = TANK_MUTANTS,
-               stern_mutants_file: Path | None = STERN_MUTANTS) -> list[dict]:
+               stern_mutants_file: Path | None = STERN_MUTANTS,
+               vent_mutants_file: Path | None = VENT_MUTANTS) -> list[dict]:
     cases = [yaml.safe_load(p.read_text(encoding="utf-8")) for p in sorted(cases_dir.glob("*.yaml"))]
-    for f in (mutants_file, tank_mutants_file, stern_mutants_file):
+    for f in (mutants_file, tank_mutants_file, stern_mutants_file, vent_mutants_file):
         if f is not None and f.exists():
             cases += yaml.safe_load(f.read_text(encoding="utf-8"))["mutants"]
     return cases
@@ -92,6 +99,8 @@ def trace_of(case: dict, rule_sets: tuple[str, ...] = (), select: tuple[str, ...
         return liquid_trace(i, rule_sets=rule_sets, select=select)
     if kind_of(case) == "stern":
         return stern_case_trace(i, rule_sets=rule_sets, select=select)
+    if kind_of(case) == "vent":
+        return vent_case_trace(i, rule_sets=rule_sets, select=select)
     return box_trace(i["beam_m"], i["depth_m"], i["draught_m"], i["kg_m"],
                      free_surface_m=i.get("free_surface_m", 0.0), rule_sets=rule_sets, select=select)
 
@@ -107,7 +116,7 @@ def engine_verdict(row: dict | None) -> str:
 def triage(case: dict, expected: dict, row: dict | None) -> str:
     """The bucket of one disagreement between `expected` (a case's entry for one Rule) and the
     engine's `row` for it."""
-    missing = sorted(set(case["inputs"]) - {"tank": TANK_INPUTS, "stern": STERN_INPUTS}.get(kind_of(case), BOX_INPUTS))
+    missing = sorted(set(case["inputs"]) - {"tank": TANK_INPUTS, "stern": STERN_INPUTS, "vent": VENT_INPUTS}.get(kind_of(case), BOX_INPUTS))
     if row is None or row["outcome"] in ("not evaluated", "not applicable") or missing:
         return "model-gap"
     if row.get("finding"):
@@ -155,7 +164,8 @@ def evaluate(cases: list[dict], rule_sets: tuple[str, ...] = (),
     for case in cases:
         # A liquid bulk case selects the liquid Rule Sets, a box case the one the caller names.
         kind = kind_of(case)
-        ran = run_case(case, rule_sets, TANK_SELECT if kind == "tank" else STERN_SELECT if kind == "stern" else select)
+        ran = run_case(case, rule_sets, TANK_SELECT if kind == "tank" else STERN_SELECT if kind == "stern"
+                       else VENT_SELECT if kind == "vent" else select)
         for row in ran["trace"]["rows"]:
             if row["rule"] and row["rule"] not in rules:
                 rules[row["rule"]] = {"set": row["rule_sets"][0], "title": row["title"],
@@ -182,7 +192,8 @@ def evaluate(cases: list[dict], rule_sets: tuple[str, ...] = (),
             if r["expected"] == "fail" and r["engine"] == "pass" and r["blocking"]:
                 p["false_passes"].append(case["id"])
     return {"cases": cases, "per": per, "rules": rules, "disagreements": disagreements,
-            "select": list(select), "select_tank": list(TANK_SELECT), "select_stern": list(STERN_SELECT)}
+            "select": list(select), "select_tank": list(TANK_SELECT), "select_stern": list(STERN_SELECT),
+            "select_vent": list(VENT_SELECT)}
 
 
 def mutate_rules(result: dict) -> list[dict]:
@@ -190,9 +201,11 @@ def mutate_rules(result: dict) -> list[dict]:
     box = [c for c in result["cases"] if kind_of(c) == "box"]
     tank = [c for c in result["cases"] if kind_of(c) == "tank"]
     stern = [c for c in result["cases"] if kind_of(c) == "stern"]
+    vent = [c for c in result["cases"] if kind_of(c) == "vent"]
     return (rule_mutation.run(box, result["select"], trace_of)
             + rule_mutation.run(tank, result["select_tank"], trace_of)
-            + rule_mutation.run(stern, result["select_stern"], trace_of, expected_only=True, near_only=True))
+            + rule_mutation.run(stern, result["select_stern"], trace_of, expected_only=True, near_only=True)
+            + rule_mutation.run(vent, result["select_vent"], trace_of, expected_only=True, near_only=True))
 
 
 def weak(mutation: list[dict]) -> list[dict]:
@@ -240,6 +253,8 @@ def report(result: dict) -> str:
     tank_mutants = [c for c in mutants if kind_of(c) == "tank"]
     stern_base = [c for c in base if kind_of(c) == "stern"]
     stern_mutants = [c for c in mutants if kind_of(c) == "stern"]
+    vent_base = [c for c in base if kind_of(c) == "vent"]
+    vent_mutants = [c for c in mutants if kind_of(c) == "vent"]
     external = [c for c in base if c["provenance"].get("inputs_basis") == "published"]
     skipped = []
     if MUTANTS.exists():
@@ -263,9 +278,11 @@ def report(result: dict) -> str:
         "",
         f"- Rule Sets selected: {', '.join('`' + s + '`' for s in result['select'])} for the box cases, "
         f"{', '.join('`' + s + '`' for s in result['select_tank'])} for the liquid bulk cases, "
-        f"{', '.join('`' + s + '`' for s in result['select_stern'])} for the stern cases.",
-        f"- Cases: {len(base)} base cases ({len(tank_base)} liquid bulk, {len(stern_base)} stern) and {len(mutants)} "
-        f"generated boundary mutants ({len(tank_mutants)} liquid bulk, {len(stern_mutants)} stern; {len(skipped)} "
+        f"{', '.join('`' + s + '`' for s in result['select_stern'])} for the stern cases, "
+        f"{', '.join('`' + s + '`' for s in result['select_vent'])} for the vent cases.",
+        f"- Cases: {len(base)} base cases ({len(tank_base)} liquid bulk, {len(stern_base)} stern, {len(vent_base)} vent) and "
+        f"{len(mutants)} generated boundary mutants ({len(tank_mutants)} liquid bulk, {len(stern_mutants)} stern, "
+        f"{len(vent_mutants)} vent; {len(skipped)} "
         f"possible box mutants skipped because no KG on the hull crosses the limit, {len(tank_skipped)} liquid bulk "
         f"mutants skipped because no layout reaches the limit, {len(stern_skipped)} stern mutants skipped).",
         f"- Base cases with an external published source for the inputs: **{len(external)}** "
@@ -358,9 +375,11 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--mutants", type=Path, default=MUTANTS)
     ap.add_argument("--tank-mutants", type=Path, default=TANK_MUTANTS)
     ap.add_argument("--stern-mutants", type=Path, default=STERN_MUTANTS)
+    ap.add_argument("--vent-mutants", type=Path, default=VENT_MUTANTS)
     ap.add_argument("--results", type=Path, default=RESULTS)
     args = ap.parse_args(argv[1:])
-    result = evaluate(load_cases(args.cases, args.mutants, args.tank_mutants, args.stern_mutants))
+    result = evaluate(load_cases(args.cases, args.mutants, args.tank_mutants, args.stern_mutants,
+                                     args.vent_mutants))
     result["mutation"] = mutate_rules(result)
     t = totals(result)
     text = report(result)

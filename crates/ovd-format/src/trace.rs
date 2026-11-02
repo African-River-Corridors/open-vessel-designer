@@ -1105,7 +1105,9 @@ pub fn box_trace(
 /// reads from the results (the Blind Distance, the speed, the propeller ratios) come from `measured`
 /// instead, so a case sets each to either side of a limit without a hull that happens to give it.
 /// `measured` keys: `blind_distance_light_m`, `blind_distance_laden_m`, `speed_deep_water_kmh`,
-/// `design_speed_kn`, `diameter_over_max`, `immersion_over_limit`, `blade_load_over_limit`.
+/// `design_speed_kn`, `diameter_over_max`, `immersion_over_limit`, `blade_load_over_limit`. A gas
+/// Option's cargo vent mast (issue #849) comes from `vent_exit_above_deck_m`,
+/// `vent_exit_above_working_area_m` and `vent_distance_to_openings_m`, all three or none.
 pub fn stern_trace(
     inputs: &serde_json::Map<String, Value>,
     measured_values: &serde_json::Map<String, Value>,
@@ -1161,6 +1163,27 @@ pub fn stern_trace(
         blade_load_over_limit: number("blade_load_over_limit"),
         ..Measured::default()
     };
+    if let (Some(deck), Some(working), Some(openings)) = (
+        number("vent_exit_above_deck_m"),
+        number("vent_exit_above_working_area_m"),
+        number("vent_distance_to_openings_m"),
+    ) {
+        measured.vent_mast = Some(ovd_core::vent_mast::VentMast {
+            river_only: false,
+            x_m: 0.0,
+            exit_above_keel_m: 0.0,
+            exit_above_deck_m: deck,
+            working_area_top_m: 0.0,
+            working_area_is_shield: false,
+            exit_above_working_area_m: working,
+            governs: ovd_core::vent_mast::Governs::Deck,
+            distance_to_openings_m: openings,
+            distance_to_accommodation_m: 0.0,
+            target_distance_m: 0.0,
+            distance_met: true,
+            lowerable: false,
+        });
+    }
     if let Some(kmh) = number("speed_deep_water_kmh") {
         measured
             .speeds_kn

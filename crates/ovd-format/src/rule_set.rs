@@ -109,6 +109,11 @@ const BUILT_IN: &[(&str, &str)] = &[
         "rules/igc-2g/3.1.0.json",
         include_str!("../rules/igc-2g/3.1.0.json"),
     ),
+    // Issue #849: the IGC 8.2.10 and 8.2.11 vent exit rows.
+    (
+        "rules/igc-2g/3.2.0.json",
+        include_str!("../rules/igc-2g/3.2.0.json"),
+    ),
     (
         "rules/lr-inland-gas/1.0.0.json",
         include_str!("../rules/lr-inland-gas/1.0.0.json"),

@@ -97,3 +97,17 @@ def stern_case_trace(i: dict, *, rule_sets: tuple[str, ...] = (), select: tuple[
         "blade_load_over_limit": float(i["blade_load_kw_m2"]) / BLADE_LOAD[k],
     }
     return stern_trace(inputs, measured, rule_sets=rule_sets, select=select)
+
+
+def vent_case_trace(i: dict, *, rule_sets: tuple[str, ...] = (), select: tuple[str, ...] = ()) -> dict:
+    """The Rule Trace of a `kind: vent` case (issue #849): a gas Option with a beam and a Service Area, and the
+    three numbers a run reads from its cargo vent mast (the exit above the deck, the exit above the working
+    area, the distance to the nearest opening)."""
+    inputs = {
+        "cargo": "LNG", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
+        "length_overall_m": float(i["length_overall_m"]), "beam_m": float(i["beam_m"]),
+        "moulded_depth_m": float(i["depth_m"]), "service_area": i["service_area"],
+    }
+    measured = {k: float(i[k]) for k in ("vent_exit_above_deck_m", "vent_exit_above_working_area_m",
+                                         "vent_distance_to_openings_m")}
+    return stern_trace(inputs, measured, rule_sets=rule_sets, select=select)
