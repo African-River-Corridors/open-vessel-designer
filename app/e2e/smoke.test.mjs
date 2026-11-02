@@ -302,6 +302,25 @@ describe("OVD app smoke tests", () => {
     assert.ok(await browser.$("[data-testid=capital-budget]").isExisting());
   });
 
+  // Issue #889: the principal characteristics strip. Its rows come from catalogue/report/principal_characteristics.json,
+  // which the report summary reads too; a barge has no crew block, so crew and berths say "not evaluated".
+  it("shows the principal characteristics of the Option, and not evaluated for a value the run lacks (no crew)", async () => {
+    const rows = JSON.parse(fs.readFileSync(path.resolve(here, "../../catalogue/report/principal_characteristics.json"), "utf8")).rows;
+    await open(path.join(FIXTURES, "dry_bulk_box_hold.vdesign"), "dry_bulk_box_hold.vdesign");
+    await until("the strip", async () => (await browser.$$("[data-testid=principal-strip] [data-row]")).length === rows.length);
+    const shown = await browser.execute(() => [...document.querySelectorAll("[data-testid=principal-strip] [data-row]")].map((e) => [e.dataset.row, e.querySelector("dd").textContent.replace(/\u00a0/g, " ")]));
+    assert.deepEqual(shown.map(([id]) => id), rows.map((r) => r.id), "the rows of the data file, in order");
+    const by = Object.fromEntries(shown);
+    assert.equal(by["crew-minimum"], "not evaluated");
+    assert.equal(by["crew-berths"], "not evaluated");
+    assert.equal(by["loa"], "76.50 m");
+    assert.equal(by["beam"], "11.40 m");
+    // The strip stays with a view, and the view does not scroll for it.
+    await show("Drawings", "Side elevation");
+    await browser.pause(300);
+    assert.ok((await overflow()) <= 0, "the strip makes the panel scroll");
+  });
+
   for (const [cargo, fixture] of [["gas", "gas_igc_2g_exact.vdesign"], ["dry-bulk", "dry_bulk_box_hold.vdesign"]]) {
     it(`no view scrolls, with the side panels shown or hidden (${cargo})`, async () => {
       await open(path.join(FIXTURES, fixture), fixture);

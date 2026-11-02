@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = "en"
 ENGLISH_ONLY = {"drawing.ftl"}
 DERIVED = ("input-", "choice-", "group-")
-CODE = [("app/src", (".ts", ".svelte")), ("app/index.html", ()), ("crates", (".rs",))]
+CODE = [("app/src", (".ts", ".svelte")), ("app/index.html", ()), ("catalogue/report", (".json",)), ("crates", (".rs",))]
 # In Rust only the id of a `text!` call counts: other quoted kebab strings there are not Message Ids.
 RUST_USED = re.compile(r'\b(?:text!|label!|Text::fixed)\(\s*"([a-z0-9-]+)"')
 

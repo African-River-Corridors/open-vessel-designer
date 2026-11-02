@@ -30,6 +30,7 @@ not call the engine, except `ga_figures`, which runs `ovd draw`.
 """
 import argparse
 import json
+import math
 import pathlib
 import re
 import subprocess
@@ -48,6 +49,25 @@ POWERING_METHOD = (
 
 
 # --- ORD blocks ---
+
+PRINCIPAL_FILE = pathlib.Path(__file__).resolve().parents[1] / "catalogue" / "report" / "principal_characteristics.json"
+
+
+def principal_rows():
+    """The rows of the principal characteristics: the one data file the app strip reads too (issue #889)."""
+    return json.loads(PRINCIPAL_FILE.read_text(encoding="utf-8"))["rows"]
+
+
+def _pick(results, path):
+    cur = results
+    for key in path:
+        if isinstance(cur, list) and key.startswith("name="):
+            cur = next((x for x in cur if isinstance(x, dict) and x.get("name") == key[5:]), None)
+        elif isinstance(cur, dict):
+            cur = cur.get(key)
+        else:
+            return None
+    return cur
 
 NOT_EVALUATED = "not evaluated"
 
@@ -645,11 +665,24 @@ def _part(o, pid, title, chapter_ids, states):
     return section(pid, title, body)
 
 
+def principal_table(o, tid="tbl-principal"):
+    """The summary table of principal characteristics (spec 0015 section 4.1), every row from the data file."""
+    rows = []
+    for r in principal_rows():
+        v = _pick(R(o), r["path"])
+        ok = isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+        rows.append([r["label"], f"{n(v, r['decimals'])} {r['unit']}".strip() if ok else None])
+    return table(tid, f"Principal characteristics, {o['name']}", ["Characteristic", "Value"], rows, aligns=[None, "right"],
+                 notes="Every value is read from the run.")
+
+
 def _summary(o):
     if not _has(R(o), "rule_trace"):
-        return [prose("**Not evaluated.** The run holds no `rule_trace`, so there is no verdict.")]
-    c = rule_counts(o)
-    return [prose(f"Trace verdict: {c['pass']} pass, {c['warn']} warn, {c.get('fail', 0)} fail and {c['not evaluated']} not evaluated.")]
+        verdict = prose("**Not evaluated.** The run holds no `rule_trace`, so there is no verdict.")
+    else:
+        c = rule_counts(o)
+        verdict = prose(f"Trace verdict: {c['pass']} pass, {c['warn']} warn, {c.get('fail', 0)} fail and {c['not evaluated']} not evaluated.")
+    return [verdict, principal_table(o)]
 
 
 def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", title=None, commit=None, assets=None,

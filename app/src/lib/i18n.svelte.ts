@@ -1,6 +1,7 @@
 // The only door to the Text Library (spec 0005, ADR 0015). Every string the app shows comes through
 // here, in the Display Language, with English as the fallback. Language is display state only: it
 // changes no input and no result, and it is never sent to Rust.
+import { formatNumber } from "./numberFormat.ts";
 import { FluentBundle, FluentResource, type FluentVariable } from "@fluent/bundle";
 
 export interface Language {
@@ -252,5 +253,5 @@ export function ticks(values: number[]): string[] {
 
 /** A number for reading, in the Display Language's locale: `digits` decimals, with thousands separators. */
 export function num(value: number, digits: number, maxDigits = digits): string {
-  return value.toLocaleString(state.language.numbers, { minimumFractionDigits: digits, maximumFractionDigits: maxDigits });
+  return formatNumber(value, digits, maxDigits, state.language.numbers);
 }

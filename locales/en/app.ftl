@@ -497,3 +497,22 @@ app-3d-section-at = at x = { $x } m
 app-3d-waterline = Waterline
 app-3d-waterline-none = None
 app-3d-waterline-draughts = draught { $mean } m (aft { $aft } m, forward { $fwd } m), trim { $trim } m
+
+## Principal characteristics strip (catalogue/report/principal_characteristics.json)
+
+app-principal-title = Principal characteristics
+app-principal-not-evaluated = not evaluated
+app-principal-loa = Length overall (LOA)
+app-principal-beam = Beam
+app-principal-depth = Depth, moulded
+app-principal-draught-laden = Draught, laden
+app-principal-draught-light = Draught, light
+app-principal-displacement = Displacement
+app-principal-lightship = Lightship
+app-principal-deadweight = Deadweight
+app-principal-cargo = Cargo
+app-principal-gross-tonnage = Gross tonnage
+app-principal-installed-power = Installed power
+app-principal-service-speed = Service speed, deep water
+app-principal-crew-minimum = Crew, minimum
+app-principal-crew-berths = Berths

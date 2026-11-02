@@ -5,6 +5,8 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "allowJs": true,
     "checkJs": true,
     "isolatedModules": true,
