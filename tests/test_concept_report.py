@@ -448,8 +448,14 @@ def test_the_report_summary_table_is_the_data_file_applied_to_the_run():
         d = o["results"]["dims"]
         assert rows[0][1] == f"{d['loa_m']:,.2f} m" and rows[1][1] == f"{d['beam_m']:,.2f} m"
         assert rows[8][1] == f"{o['results']['results']['cargo_t']:,.0f} t"
-    # The stored gas run has no crew block: those rows say so, the others hold numbers.
+    # The stored gas run has a crew block: its values show.
     rows = dict(_summary_rows(RUN, "A basis"))
+    crew = A["results"]["crew"]
+    assert rows["Crew, minimum"] == f"{crew['minimum']:,.0f}" and rows["Berths"] == f"{crew['berths']:,.0f}"
+    # A copy of the run with the crew block removed says "not evaluated" for both, the others still hold numbers.
+    bare = json.loads(json.dumps(RUN))
+    del next(o for o in bare["options"] if o["name"] == "A basis")["results"]["crew"]
+    rows = dict(_summary_rows(bare, "A basis"))
     assert rows["Crew, minimum"] == "not evaluated" and rows["Berths"] == "not evaluated"
     assert rows["Gross tonnage"].endswith(" GT") and rows["Length overall (LOA)"] == "140.00 m"
 
