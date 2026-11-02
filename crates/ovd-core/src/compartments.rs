@@ -51,6 +51,22 @@ pub enum SpaceKind {
 }
 
 impl SpaceKind {
+    /// Every kind, in declaration order.
+    pub const ALL: [SpaceKind; 12] = [
+        SpaceKind::DoubleBottomBallast,
+        SpaceKind::WingBallast,
+        SpaceKind::PeakBallast,
+        SpaceKind::Consumables,
+        SpaceKind::CargoTank,
+        SpaceKind::Slop,
+        SpaceKind::Cofferdam,
+        SpaceKind::PumpRoom,
+        SpaceKind::CargoHold,
+        SpaceKind::Void,
+        SpaceKind::Machinery,
+        SpaceKind::PeakVoid,
+    ];
+
     pub fn key(self) -> &'static str {
         match self {
             SpaceKind::DoubleBottomBallast => "double_bottom_ballast",

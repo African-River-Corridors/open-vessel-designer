@@ -5,8 +5,8 @@
 
 use ovd_core::compartments::{Side, Space, SpaceKind, SpaceShape};
 use ovd_core::damage_cases::{
-    BoxExtents, Placement, StandardOfDamage, box_damage_cases, igc_damage_cases,
-    marpol_damage_cases,
+    BoxExtents, Permeability, PermeabilityTable, Placement, StandardOfDamage, box_damage_cases,
+    igc_damage_cases, marpol_damage_cases,
 };
 use ovd_core::tanks::{HeadKind, TankHead};
 
@@ -289,4 +289,22 @@ fn an_igc_bottom_damage_floods_the_double_bottom_compartments_as_given() {
         assert!(n.iter().all(|s| s.starts_with("DB") || s == "M1C"), "{n:?}");
         assert!(n.iter().all(|s| !s.contains('/')), "{n:?}");
     }
+}
+
+/// A Permeability Table: a fixed row ignores the filling; a by-filling row is its value times the empty
+/// fraction, so 0 when full and the full value when empty; a kind the table does not name has none.
+#[test]
+fn a_by_filling_permeability_scales_with_the_empty_fraction() {
+    let t = PermeabilityTable {
+        rows: vec![
+            (SpaceKind::Machinery, Permeability::Fixed(0.85)),
+            (SpaceKind::WingBallast, Permeability::ByFilling(0.95)),
+        ],
+    };
+    assert_eq!(t.of(SpaceKind::Machinery, 0.7), Some(0.85));
+    assert_eq!(t.of(SpaceKind::WingBallast, 0.0), Some(0.95));
+    assert_eq!(t.of(SpaceKind::WingBallast, 1.0), Some(0.0));
+    assert_eq!(t.of(SpaceKind::WingBallast, 0.5), Some(0.95 * 0.5));
+    assert_eq!(t.of(SpaceKind::WingBallast, 1.5), Some(0.0));
+    assert_eq!(t.of(SpaceKind::CargoHold, 0.0), None);
 }

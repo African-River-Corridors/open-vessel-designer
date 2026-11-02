@@ -290,6 +290,12 @@ or a bottom damage (how long, how wide, how high), with a forward zone where the
 MARPOL I 28.2 give one.
 _Avoid_: damage size, damage box
 
+**Permeability Table**:
+The permeability of a damaged Space by its kind, from a Rule Set as data (IGC 2.5.2, ADN 9.3.2.15.1 (c),
+ES-TRIN 28.03(4)(d)). A liquid space may take its value from the Loading Condition's filling: the full value
+when empty, none when full.
+_Avoid_: permeability list, flooding factor
+
 **Standard of Damage**:
 Where along the hull a Damage Extent may lie and which bulkheads it may not involve: anywhere in the length, or
 between adjacent transverse bulkheads, and for a type 2G ship of 150 m or less not the bulkheads of a machinery

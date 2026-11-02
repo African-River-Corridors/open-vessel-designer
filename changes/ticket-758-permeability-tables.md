@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Permeability Tables (issue #758, spec 0012 D9): the permeability of a damaged Space by its kind is now Rule Set data: `igc-2g` 3.0.0 (IGC 2.5.2), `adn-tank` 2.0.0 (ADN 9.3.2.15.1 (c), the liquid 0/95 kept) and `es-trin-2025` 2.0.0 (ES-TRIN 28.03(4)(d)). Liquid spaces take their permeability from the condition's filling where the text says so. The ADN liquid damage path reads its table; no result moves.
