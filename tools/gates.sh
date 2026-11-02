@@ -20,6 +20,8 @@
 #       (`ovd rules --provenance`; it prints the unverified blocking Rules of each set)
 #   4b. the stored results hashes of the fixture designs (tools/check_fixture_hashes.py), with the
 #       `ovd` that step 4a built (issue #852: it was step 6a)
+#   4c. the generated files of every worked example match the engine (tools/refresh_examples.py --check,
+#       issue #857), with the same `ovd`
 #   5. the WebAssembly build of ovd-core and ovd-web (ovd-web builds the pinned otd crate too)
 #   6. the design-impact check (before/after on main; fails only if a change is missing from
 #      CHANGELOG.md)
@@ -182,6 +184,14 @@ fixture_hashes() {
   "$PY" tools/check_fixture_hashes.py "$target/debug/ovd"
 }
 
+# The generated files of each worked example (results.json, trace.md, ga/, README tables) are what the
+# engine gives now, not what an earlier run gave (issue #857). A stale one names the refresh command.
+example_freshness() {
+  local target
+  target="$(cargo metadata --format-version 1 --no-deps | "$PY" -c 'import json,sys; print(json.load(sys.stdin)["target_directory"])')" || return 1
+  "$PY" tools/refresh_examples.py --check "$target/debug/ovd"
+}
+
 step lint "cargo fmt --check" cargo fmt --all --check
 step lint "old-name gate" "$PY" tools/old_name_gate.py
 step lint "clippy -D warnings" cargo clippy --all-targets --all-features -- -D warnings
@@ -189,6 +199,7 @@ step lint "clippy ovd-py -D warnings" env PYO3_PYTHON="$PY" cargo clippy -p ovd-
 step rust "cargo test (no Python)" cargo_test_without_python
 step rules "Rule Set gate" cargo run -q -p ovd-cli -- rules --provenance
 step rules "fixture results hashes" fixture_hashes
+step rules "example files match the engine" example_freshness
 step rules "WebAssembly build of ovd-core and ovd-web" cargo build -p ovd-core -p ovd-web --all-features --target "$WASM_TARGET"
 step impact "design impact" "$PY" tools/design_impact.py gate
 step pytest "pytest" "$PY" -m pytest -q -n auto ${PYTEST_SELECT[@]+"${PYTEST_SELECT[@]}"}

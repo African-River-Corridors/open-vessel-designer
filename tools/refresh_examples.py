@@ -1,26 +1,34 @@
 #!/usr/bin/env python3
-"""Regenerate the generated files of examples/gas-140x29-coastal-lng/ from the engine (issue #822).
+"""Regenerate, or check, the generated files of every worked example under examples/ (issues #822, #857).
 
-    python3 tools/refresh_gas_example.py <path to ovd>             # results.json, ga/, trace.md, README table
-    python3 tools/refresh_gas_example.py --from-results FILE ...   # trace.md and the table only, from a results file
+    python3 tools/refresh_examples.py <path to ovd>             # results.json, ga/, trace.md, README tables
+    python3 tools/refresh_examples.py --check <path to ovd>     # fail, naming each stale file, and change nothing
+    python3 tools/refresh_examples.py --from-results FILE ...   # trace.md and the tables only, from a results file
 
 Nothing is typed: `results.json` is `ovd run --json`, `ga/` is `ovd draw`, `trace.md` and the README
 Results table come from `results.json`. The README rows that name a quantity are replaced from the
 results; the prose around them is the author's. It fails when a table row has no source, and checks that
 every Option's `hash_status` is "matches".
+
+`--check` copies each example to a temporary folder, regenerates there, and compares every generated
+file (results.json, trace.md, README.md, ga/*) with the committed one. A worked example is listed in
+EXAMPLES; add the next one there.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DIR = ROOT / "examples" / "gas-140x29-coastal-lng"
-DESIGN = DIR / "gas-140x29-coastal-lng.vdesign"
+# Worked examples: folder name, Design file, optional sensitivities Design (a second run for the README).
+EXAMPLES = [("gas-140x29-coastal-lng", "gas-140x29-coastal-lng.vdesign", "gas-140x29-coastal-lng-sensitivities.vdesign")]
+REFRESH = "python3 tools/refresh_examples.py <path to ovd>"
 
 
 def cell(x) -> str:
@@ -103,7 +111,7 @@ def readme_rows(options: list[dict]) -> dict[str, list[str]]:
     return rows
 
 
-def update_sensitivities(options: list[dict]) -> None:
+def update_sensitivities(DIR: Path, options: list[dict]) -> None:
     """Replace the Tank OD, Cargo and Draught cells of the sensitivities table, by Option name."""
     path = DIR / "README.md"
     by_name = {o["name"]: o["results"] for o in options}
@@ -124,7 +132,7 @@ def update_sensitivities(options: list[dict]) -> None:
     path.write_text("\n".join(out))
 
 
-def update_readme(options: list[dict]) -> list[str]:
+def update_readme(DIR: Path, options: list[dict]) -> list[str]:
     """Replace the cells of the Results table that the results give. Returns the labels with no source."""
     path = DIR / "README.md"
     text = path.read_text()
@@ -144,49 +152,92 @@ def update_readme(options: list[dict]) -> list[str]:
     return missing
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("ovd", nargs="?")
-    ap.add_argument("--from-results")
-    a = ap.parse_args()
-    if a.from_results:
-        data = json.loads(Path(a.from_results).read_text())
+def refresh(ovd: str | None, directory: Path, design: str, sens: str | None, from_results: str | None = None) -> int:
+    """Regenerate the generated files of one example folder in place."""
+    if from_results:
+        data = json.loads(Path(from_results).read_text())
     else:
-        if not a.ovd:
-            ap.error("the path to ovd is needed")
-        run = subprocess.run([a.ovd, "run", "--json", str(DESIGN)], capture_output=True, text=True)
+        run = subprocess.run([ovd, "run", "--json", str(directory / design)], capture_output=True, text=True)
         if run.returncode != 0:
             print(f"ovd run failed with exit code {run.returncode}:\n{run.stderr}", file=sys.stderr)
             return 1
         data = json.loads(run.stdout)
-        (DIR / "results.json").write_text(run.stdout)
-        subprocess.run([a.ovd, "draw", "--out", str(DIR / "ga"), str(DESIGN)], check=True, capture_output=True)
-        for stray in (DIR / "ga").glob("*"):
-            if stray.suffix not in (".pdf", ".svg"):
-                stray.unlink()
+        (directory / "results.json").write_text(run.stdout)
+        subprocess.run([ovd, "draw", "--out", str(directory / "ga"), str(directory / design)], check=True, capture_output=True)
+        for extra in (directory / "ga").glob("*"):      # the drawings kept are the PDF and SVG sheets
+            if extra.suffix not in (".pdf", ".svg"):
+                extra.unlink()
     bad = [o["name"] for o in data["options"] if o.get("hash_status") != "matches"]
     if bad:
         print("hash_status is not 'matches' for:", ", ".join(bad), file=sys.stderr)
         return 1
-    (DIR / "trace.md").write_text(trace_md(data["options"][0]))
-    if a.ovd:
-        sens = subprocess.run(
-            [a.ovd, "run", "--json", str(DIR / "gas-140x29-coastal-lng-sensitivities.vdesign")],
-            capture_output=True,
-            text=True,
-        )
-        if sens.returncode != 0:
-            print(f"ovd run (sensitivities) failed with exit code {sens.returncode}:\n{sens.stderr}", file=sys.stderr)
+    (directory / "trace.md").write_text(trace_md(data["options"][0]))
+    if ovd and sens:
+        run = subprocess.run([ovd, "run", "--json", str(directory / sens)], capture_output=True, text=True)
+        if run.returncode != 0:
+            print(f"ovd run (sensitivities) failed with exit code {run.returncode}:\n{run.stderr}", file=sys.stderr)
             return 1
-        sdata = json.loads(sens.stdout)
+        sdata = json.loads(run.stdout)
         if any(o.get("hash_status") != "matches" for o in sdata["options"]):
             print("sensitivities: hash_status is not 'matches'", file=sys.stderr)
             return 1
-        update_sensitivities(sdata["options"])
-    missing = update_readme(data["options"])
+        update_sensitivities(directory, sdata["options"])
+    missing = update_readme(directory, data["options"])
     for label in missing:
         print("no source for README row:", label, file=sys.stderr)
     return 1 if missing else 0
+
+
+def generated(directory: Path) -> dict[str, bytes]:
+    """The generated files of an example folder, by relative path."""
+    names = ["results.json", "trace.md", "README.md"]
+    names += [f"ga/{p.name}" for p in (directory / "ga").glob("*")] if (directory / "ga").is_dir() else []
+    return {n: (directory / n).read_bytes() for n in sorted(names) if (directory / n).is_file()}
+
+
+def check(ovd: str) -> int:
+    """Regenerate each example in a temporary copy; name every file that differs from the committed one."""
+    stale: list[str] = []
+    for name, design, sens in EXAMPLES:
+        src = ROOT / "examples" / name
+        with tempfile.TemporaryDirectory() as tmp:
+            copy = Path(tmp) / name
+            shutil.copytree(src, copy)
+            if (copy / "ga").is_dir():
+                shutil.rmtree(copy / "ga")      # a file the engine no longer draws must show up as stale
+            if refresh(ovd, copy, design, sens):
+                return 1
+            old, new = generated(src), generated(copy)
+            for rel in sorted(set(old) | set(new)):
+                if old.get(rel) != new.get(rel):
+                    stale.append(f"examples/{name}/{rel}" + ("" if rel in old else " (missing)") + ("" if rel in new else " (no longer generated)"))
+    if stale:
+        print("These generated example files are not what the engine draws now:", file=sys.stderr)
+        for f in stale:
+            print(f"  {f}", file=sys.stderr)
+        print(f"Refresh them and commit the result:\n  {REFRESH}", file=sys.stderr)
+        return 1
+    print(f"examples: {len(EXAMPLES)} worked example(s), every generated file matches the engine")
+    return 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("ovd", nargs="?")
+    ap.add_argument("--from-results")
+    ap.add_argument("--check", action="store_true")
+    a = ap.parse_args()
+    if a.from_results:
+        name, design, sens = EXAMPLES[0]
+        return refresh(None, ROOT / "examples" / name, design, sens, a.from_results)
+    if not a.ovd:
+        ap.error("the path to ovd is needed")
+    if a.check:
+        return check(a.ovd)
+    rc = 0
+    for name, design, sens in EXAMPLES:
+        rc |= refresh(a.ovd, ROOT / "examples" / name, design, sens)
+    return rc
 
 
 if __name__ == "__main__":
