@@ -1,10 +1,11 @@
-//! Seam: the steel list of a gas hull's plate model in the results (`structure`,
+//! Seam: the steel list of a gas hull's plate model in the results (`structure`, `steel_list`,
 //! `structure_geometry`) and as `ovd export --format steel-csv` (issue #742, spec 0013 "Results" and
 //! "Outputs").
 //!
 //! Label: property - the panel table is the steel list rolled up (issue #745), the CSV has one row
 //! per item and says that lightening holes are not deducted, every item has its geometry, and the
-//! steel list's weights and centres are in the results hash while its geometry is not (issue #745).
+//! summary's weights and centres are in the results hash while the per-item list and its geometry
+//! are not (issue #745: `ovd run --json` stores the summary only, so the hash covers what is stored).
 
 use std::path::Path;
 
@@ -37,7 +38,8 @@ fn the_steel_list_re_cuts_the_panel_table() {
     for o in options_of("gas_igc_2g_exact.vdesign") {
         let (r, _) = results(&o);
         let st = &r["structure"];
-        let rows = st["steel_list"].as_array().expect("a steel list");
+        let rows = r["steel_list"].as_array().expect("a steel list");
+        assert!(st.get("steel_list").is_none(), "the list sits beside the summary");
         let net: f64 = rows.iter().map(|i| i["rule_net_t"].as_f64().unwrap()).sum();
         let panel = r["cost_masses"]["hull_panels"]["net_t"].as_f64().unwrap();
         assert!((st["groups"]["rule_net_t"].as_f64().unwrap() - net).abs() <= 1e-9 * net);
@@ -106,7 +108,7 @@ fn the_steel_csv_has_one_row_per_item_and_the_openings_note() {
     assert!(body[0].starts_with("id,kind,member,region,"));
     assert_eq!(
         body.len(),
-        r["structure"]["steel_list"].as_array().unwrap().len() + 1
+        r["steel_list"].as_array().unwrap().len() + 1
     );
     // Commas inside a quoted field do not count.
     let fields = |row: &str| {
@@ -132,15 +134,18 @@ fn a_hull_with_no_plate_model_says_so() {
     let o = &options_of("dry_bulk_box_hold.vdesign")[0];
     let (r, _) = results(o);
     assert!(r["structure"].is_null());
+    assert!(r["steel_list"].is_null());
     assert!(option_export("steel-csv", o, None).is_err());
 }
 
 #[test]
-fn the_steel_list_is_in_the_results_hash_and_its_geometry_is_not() {
+fn the_steel_summary_is_in_the_results_hash_and_the_list_and_its_geometry_are_not() {
     let o = &options_of("gas_igc_2g_exact.vdesign")[0];
     let (mut r, hash) = results(o);
     assert_eq!(results_hash(&r), hash);
     r["structure_geometry"] = Value::Null;
+    assert_eq!(results_hash(&r), hash);
+    r["steel_list"] = Value::Null;
     assert_eq!(results_hash(&r), hash);
     r["structure"]["groups"]["ordered_t"] = Value::from(0.0);
     assert_ne!(results_hash(&r), hash);

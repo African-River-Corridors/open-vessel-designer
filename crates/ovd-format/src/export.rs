@@ -407,7 +407,7 @@ pub fn option_offsets_csv(option: &crate::DesignOption) -> Result<String, String
 pub fn option_steel_csv(option: &crate::DesignOption) -> Result<String, String> {
     match crate::run_option(option) {
         crate::RunOutcome::Results { results, .. } => {
-            crate::steel::steel_csv(&results["structure"])
+            crate::steel::steel_csv(&results)
         }
         _ => Err("the Option has no results".to_string()),
     }

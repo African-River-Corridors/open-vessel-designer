@@ -656,3 +656,45 @@ fn fill_adds_and_removes_rule_sets_and_run_states_the_scope() {
             .starts_with("Service Area river-only;")
     );
 }
+
+/// Issue #745: `ovd run --json` keeps the steel summary (`structure`: groups, scrap, purchase) and
+/// leaves out the per-item steel list and its geometry, so a committed results file stays small;
+/// `--steel-list` adds both. The results hash is the same either way: it covers the summary only.
+#[test]
+fn json_keeps_the_steel_summary_and_steel_list_adds_the_items() {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../ovd-format/tests/fixtures/gas_igc_2g_exact.vdesign");
+    let short = ovd(&["run", "--json", p(&fixture)]);
+    assert!(short.status.success(), "{}", stderr(&short));
+    let short: Value = serde_json::from_str(&stdout(&short)).unwrap();
+    let full = ovd(&["run", "--json", "--steel-list", p(&fixture)]);
+    assert!(full.status.success(), "{}", stderr(&full));
+    let full: Value = serde_json::from_str(&stdout(&full)).unwrap();
+    let (s, f) = (&short["options"][0], &full["options"][0]);
+    assert_eq!(s["results_hash"], f["results_hash"]);
+    assert_eq!(s["hash_status"], "matches");
+    let sr = &s["results"];
+    assert!(sr["structure"]["groups"]["ordered_t"].as_f64().unwrap() > 0.0);
+    assert!(sr["structure"]["groups"]["scrap_t"].as_f64().is_some());
+    assert!(sr["structure"]["purchase"]["plates"].is_array());
+    assert!(sr.get("steel_list").is_none());
+    assert!(sr.get("structure_geometry").is_none());
+    assert!(sr["structure"].get("steel_list").is_none());
+    let fr = &f["results"];
+    assert_eq!(sr["structure"], fr["structure"]);
+    let rows = fr["steel_list"].as_array().expect("the steel list");
+    assert!(!rows.is_empty());
+    assert_eq!(
+        fr["structure_geometry"].as_object().unwrap().len(),
+        rows.len()
+    );
+}
+
+#[test]
+fn steel_list_is_an_option_of_json_only() {
+    let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../ovd-format/tests/fixtures/gas_igc_2g_exact.vdesign");
+    let out = ovd(&["run", "--steel-list", p(&fixture)]);
+    assert!(!out.status.success());
+    assert!(stderr(&out).contains("--steel-list"), "{}", stderr(&out));
+}

@@ -1,10 +1,13 @@
 //! The steel list of a gas hull's plate model (issue #742, spec 0013 "Results" and "Outputs"): the
-//! `structure` results block (`steel_list`, `groups`, `purchase`), the item geometry beside it
-//! (`structure_geometry`), and the CSV of `ovd export --format steel-csv`.
+//! `structure` results block (the summary: `groups`, `purchase`), the per-item list beside it
+//! (`steel_list`), the item geometry (`structure_geometry`), and the CSV of
+//! `ovd export --format steel-csv`.
 //!
 //! The plate model's ordered weight drives the lightship and the cost (issue #745), so the
-//! `structure` block is in the results hash; its geometry is not (`run::UNHASHED_KEYS`). Concept and
-//! preliminary design only (ADR 0011).
+//! `structure` summary is in the results hash. The per-item list and its geometry are not
+//! (`run::UNHASHED_KEYS`): `ovd run --json` leaves them out unless asked (`--steel-list`), so a
+//! committed results file stays small and its hash covers what it stores. Concept and preliminary
+//! design only (ADR 0011).
 
 use ovd_core::hull_plates::{HullPlateModel, OPENINGS_NOTE};
 use serde_json::{Map, Value, json};
@@ -12,8 +15,8 @@ use serde_json::{Map, Value, json};
 /// The scope line every steel output carries (ADR 0011).
 pub const SCOPE: &str = "Concept and preliminary design only (ADR 0011). Class minimum scantlings re-cut into plates; not a structural approval.";
 
-/// The `structure` results block of a plate model.
-pub fn structure_json(m: &HullPlateModel) -> Value {
+/// The per-item steel list of a plate model: one row per plate, stiffener and primary member.
+pub fn steel_list_json(m: &HullPlateModel) -> Value {
     let rows: Vec<Value> = m
         .items
         .iter()
@@ -43,6 +46,12 @@ pub fn structure_json(m: &HullPlateModel) -> Value {
             })
         })
         .collect();
+    Value::Array(rows)
+}
+
+/// The `structure` results block of a plate model: the summary (groups, scrap, purchase), without
+/// the per-item list (`steel_list_json`).
+pub fn structure_json(m: &HullPlateModel) -> Value {
     let groups: Vec<Value> = m
         .groups
         .iter()
@@ -89,7 +98,6 @@ pub fn structure_json(m: &HullPlateModel) -> Value {
             "thickness_step_mm": st.thickness_step_mm,
             "steel_grade": st.steel_grade.key(),
         },
-        "steel_list": rows,
         "groups": {
             "members": groups,
             "rule_net_t": m.rule_net_t,
@@ -135,10 +143,11 @@ fn csv_field(s: &str) -> String {
     }
 }
 
-/// The steel list of a `structure` results block as CSV: `#` lines with the scope, the openings
-/// note and the inputs, then a header and one row per item.
-pub fn steel_csv(structure: &Value) -> Result<String, String> {
-    let rows = structure["steel_list"]
+/// The steel list of an Option's results as CSV: `#` lines with the scope, the openings note and
+/// the inputs (from `structure`), then a header and one row per item (from `steel_list`).
+pub fn steel_csv(results: &Value) -> Result<String, String> {
+    let structure = &results["structure"];
+    let rows = results["steel_list"]
         .as_array()
         .ok_or("the results have no steel list (a gas hull only, so far)")?;
     let inp = &structure["inputs"];

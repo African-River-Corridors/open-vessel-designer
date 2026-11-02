@@ -3074,6 +3074,7 @@ fn simulate_gas(
             }, steel.as_ref().map(|s| &s.0))),
             // Issue #742: the plate model's steel list, groups and purchase, and its geometry.
             "structure": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_json(&s.1)),
+            "steel_list": steel.as_ref().map_or(Value::Null, |s| crate::steel::steel_list_json(&s.1)),
             "structure_geometry": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_geometry_json(&s.1)),
         }),
             (&r.stern_block_items, &r.trim_conditions),

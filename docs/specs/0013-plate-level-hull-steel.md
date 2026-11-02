@@ -128,14 +128,16 @@ seats and superstructure steel are later data tickets.
 **Scrap** is counted, not factored: stock plates bought (by thickness and stock size) less net plate area.
 
 ### Results
-- `structure.steel_list`: one row per plate, stiffener and primary member.
+- `steel_list`: one row per plate, stiffener and primary member, beside the `structure` summary.
+  Outside the results hash with its geometry; `ovd run --json` gives it only with `--steel-list`, so a
+  committed results file stores the summary (issue #745; the maintainer may reverse this there).
 - `structure.groups`: weight and centre per member group; rule-net and ordered totals; allowance; scrap.
 - `structure.purchase`: stock plates by thickness and size; stiffener metres by section.
 - Weights and centres are in the results hash (they drive the lightship). Geometry is outside it, like
   meshes (ADR 0018).
 
 ### Outputs
-- **Steel list:** `ovd export --format steel-csv` and the JSON above.
+- **Steel list:** `ovd export --format steel-csv`, and `ovd run --json --steel-list`.
 - **Midship section drawing** (phase 2): plate thickness per strake, each longitudinal with its section,
   the web frame and floor outline, the hull girder table (SMR, SM to deck and bottom, neutral axis), the
   rule edition and the ADR 0011 scope note. Shell expansion later.

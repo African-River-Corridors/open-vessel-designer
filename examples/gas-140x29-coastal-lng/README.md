@@ -67,6 +67,8 @@ ovd run --json examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign > 
 ovd draw --out ga examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign
 ```
 
+`results.json` holds the steel summary of each Option (`structure`: weight per member group, scrap, plates bought). The per-item steel list is not stored: `ovd run --json --steel-list` adds it, and `ovd export --format steel-csv --option "A basis" -o steel.csv examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign` writes it as CSV.
+
 `trace.md` lists every Rule of Option A with its outcome, value, limit, status and citation (from `rule_trace` in `results.json`). `ga/` holds the three GA views of each Option as PDF and SVG.
 
 ## Findings from this run
