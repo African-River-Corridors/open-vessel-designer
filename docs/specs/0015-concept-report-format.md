@@ -1,7 +1,7 @@
 # Spec 0015: A standard concept design report
 
 Status: **agreed by the maintainer, 2026-11-02** (decisions D1–D15 taken with the maintainer in two
-rounds). 
+rounds).
 Builds on issue #727 (`tools/concept_report.py`, the first standard parts) and issue #728. Related:
 #799 (the ATB option in the report), spec 0012 (damage stability), spec 0013 (plate-level steel),
 spec 0014 (ATB), #730 (freeboard), #731 (seakeeping). Report engine: Open Report Designer (ORD),
