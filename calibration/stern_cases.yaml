@@ -1,0 +1,249 @@
+# Stern-arrangement calibration cases: held-out, measured from published general arrangements (GAs).
+# Issue #782 (Stern 10), spec 0011 D11 and D19. PHASE 1: COLLECT AND RECORD ONLY.
+#
+# Nothing reads this file yet. No rate, factor, tolerance or band changes with it, and no result moves.
+# Phase 2 (a separate, reviewed change) fits the deckhouse and engine-room steel rates from it.
+#
+# Conventions
+#   held_out: true        every case here. None may be used to fit until phase 2 is reviewed and says so.
+#   Each measured value is {value, unit, drawing, scale_ref, unc}:
+#     drawing    where on which source the feature is drawn (document, page or figure)
+#     scale_ref  the dimension that sets the scale (a stated LOA, LBP, beam, or a frame ruler)
+#     unc        the measurement uncertainty, +/- and in the unit of the value. It covers picking the
+#                feature edges on the raster and the scale reference; it does not cover whether the
+#                drawing matches the built ship.
+#   stern_block_m          from the aft end of the hull to the forward end of the last machinery space
+#                          below deck (the definition of `stern_block_case` in propulsion_cases.yaml).
+#   deckhouse_*            the accommodation/wheelhouse block above the main deck. `tiers` counts levels.
+#   A figure the source does not give is null. Nothing is estimated or filled in.
+#   Lightship figures are as the source prints them. Where the source calls them estimates, `weights_basis`
+#   says so; an estimate is not an observation.
+#   Source files are NOT in the repo (licences not confirmed). Each carries the sha256 of the bytes read.
+#   Measuring method: the GA raster was rendered or downloaded, feature edges were read off it in pixels,
+#   and each length is pixels x (stated length / drawn pixels). Pixel edges were read by eye on zoomed crops,
+#   with one automated hull-extent check on the two Robert Allan drawings.
+#
+# Vessels looked at and not recorded ("no GA" = no drawing with enough detail was reachable):
+#   - Engie Zeebrugge (Deltamarin sheet), Severnoe 3,000 m3 bunkering vessel, Xin Ao Pu Tuo Hao, SENER 8,000 m3,
+#     Vard/SeaspanLNG 7,600 m3, Gas Agility, Q-LNG 4000 and its tug: published dimensions only, no GA.
+#   - Damen ASD Tug 2713 FF: methanol/dual-fuel "fuel flexible", not gas-fuelled; product sheet GA not usable.
+#   - KHI/Daihatsu-type 3,500 m3 bunkering ship (SlideShare deck): the GA is an image that could not be fetched.
+#   - UBC capstone 5,000 m3 LNG bunker vessel: the host blocked automated download; not retrieved.
+
+held_out_note: "Phase 1 of #782. Collected and recorded only; used for no fit."
+
+stern_cases:
+  - id: S01-webb-lngbv-4200
+    held_out: true
+    vessel: "4,200 m3 LNG bunkering vessel (SNAME 2020 student ship design entry, 'LNG Bunkering Solutions')"
+    kind: gas_bunker_vessel
+    status: concept design (not built)
+    confidence: medium
+    confidence_note: "GA is dimensioned (stated LOA, LBP, frame ruler at 0.600 m); weights are parametric estimates"
+    principal:
+      loa_m: 92.9          # drawing's Principal Characteristics; the weight sheet gives 92.92 with forecastle, 90 m hull
+      lbp_m: 85.0
+      beam_m: 20.0
+      depth_m: 10.0
+      draught_m: 3.75      # GA; the entry's weight sheet gives 4.0, the summary sheet 4.1 (source disagrees with itself)
+      cargo_m3: 4200       # GA; the weight sheet says 4000, the summary sheet 2 x 2,200 m3
+      crew: {value: 15, basis: "summary sheet 'Complement: 15'; the report text says 18 staterooms (8 on 03 deck, 8 on 02 deck, 2 on 01 deck)"}
+    propulsion: "diesel-electric, 2 x Wartsila 8L34DF 3,490 kWe + 2 x 6L20DF 1,065 kWe, twin screws, 1 bow thruster 614 kW"
+    measured:
+      stern_block_m:
+        value: 19.5
+        drawing: "GA part 1 (PDF p. 90 of the entry): main deck plan, stern end at frame 145.5 to the forward end of ECR/store block at frame 113"
+        scale_ref: "frame ruler on the drawing (0.600 m per frame, 14.2 px per frame at 2x zoom); cross-check: 145.5 frames x 0.6 + 2.62 m bow tip to FP = 89.9 m vs stated 90 m hull"
+        unc: 0.6
+      engine_room_length_m:
+        value: 19.5
+        drawing: "same plan and profile; machinery block including steering gear room and ECR (no aft peak split drawn)"
+        scale_ref: "frame ruler"
+        unc: 0.6
+      deckhouse_length_m:
+        value: 12.0
+        drawing: "GA part 1, weather deck (01 deck) plan: galley block, frames 133 to 113"
+        scale_ref: "frame ruler"
+        unc: 0.5
+        note: "plus an exhaust casing on the centreline reaching aft to frame 141, which makes the full house 17.0 m"
+      deckhouse_breadth_m:
+        value: 13.1
+        drawing: "GA part 1, weather deck plan: house width against 20.0 m beam (235 drawn px for 20 m)"
+        scale_ref: "stated beam 20.0 m"
+        unc: 0.5
+      deckhouse_tiers: {value: 4, drawing: "GA part 1 outboard profile and midship section: 01, 02, 03 and navigation decks", unc: 0}
+      deckhouse_volume_m3:
+        value: 2301
+        basis: "sum of the listed space volumes of the navigation, 03, 02 and 01 decks (Appendix F area and volume report: 745 + 530 + 535 + 491); excludes structure, includes exhaust casings"
+        drawing: "report Appendix F, table 'Area and Volume Report' (page F-1)"
+        scale_ref: "not scaled: printed by the designers"
+        unc: 230
+        cross_check: "plan envelope 12.0 x 13.1 m x 4 tiers x 2.97 m (volume/area of the 01 deck galley) = 1,870 m3 without the casings; the 19 % gap is the casings and the wheelhouse overhang"
+      deckhouse_floor_area_m2: {value: 769, basis: "sum of listed areas, 4 tiers (248 + 177 + 179 + 165)", drawing: "Appendix F", unc: 40}
+    lightship:
+      value_t: 2687.55
+      basis: "basic estimate 2,337.00 t plus 350.55 t of weight margin (design-maturity analysis); the entry's own estimate"
+      weights_basis: "estimate (Watson & Gilfillan parametric methods, SNAME entry Appendix P); not observed"
+      breakdown_t:
+        hull_steel_total: 1167         # deckhouse 79 + poop 51 + forecastle 19 + hull unassigned 371 + longitudinal 647
+        deckhouse_structure: 79
+        poop_deck_structure: 51
+        forecastle_structure: 19
+        machinery_total: 420.0         # DE plant 234.6 + 2 x 76 (8L34DF) + 2 x 16.7 (6L20DF)
+        outfit_command_and_surveillance_and_furnishing_400_600: 187.44
+        auxiliary_systems_500: 562.56  # 281.16 allocated from the outfit coefficient + 281.4 itemised systems
+        outfit_coefficient_total: 468.6  # Watson outfit weight (SWBS 400+500+600 unallocated), split 40 % / 60 %
+        weight_margin: 350.55
+      outfit_note: "outfit 468.6 t on 92.9 x 20 m: 0.25 t/m2 of LOA x B. An estimate by a coefficient, not a weighed value."
+    sources:
+      - id: SRC-S01a
+        title: "Webb Institute / SNAME Student Ship Design Competition 2020 sample entry, 4,200 m3 LNG Bunkering Vessel (LNG Bunkering Solutions)"
+        url: "https://sname.org/sites/default/files/2021-01/2020%20Sample%20for%20Entrants.pdf"
+        retrieved: 2026-11-02
+        sha256: ab0d8e99d312636f6f678af8f545508aee8d971b15802935f7dce98b3df7b53f
+        pages_read: "GA: PDF p. 90; Appendix F (area and volume report) p. F-1; weight estimate and lightship p. P-1; text on accommodation, structure, outfit weight"
+      - id: SRC-S01b
+        title: "Webb Institute 3-page project handout (principal characteristics: 95 m LOA, 20 m beam, 10 m depth, 4.1 m draft, 2,687 MT lightship, complement 15)"
+        url: "https://www.webb.edu/wp-content/uploads/2020/05/Group-Handouts-LNG-Bunkering-Vessel.pdf"
+        retrieved: 2026-11-02
+        note: "its LOA 95 m and draft 4.1 m differ from the GA (92.9 m, 3.75 m); the GA values are used"
+    licence: "student design report; facts and figures cited only; no image is reproduced here"
+
+  - id: S02-khi-lngbv-6000
+    held_out: true
+    vessel: "Kawasaki Heavy Industries 6,000 m3 LNG fuel bunkering ship (concept, 2012)"
+    kind: gas_bunker_vessel
+    status: concept design (not built)
+    confidence: medium
+    confidence_note: "drawing is a slide image at 1,400 px wide with LOA 'about' 120 m; LBP gives an independent scale"
+    principal:
+      loa_m: 120.0         # 'about'
+      lbp_m: 114.0
+      beam_m: 18.8
+      depth_m: 9.5
+      draught_m: 5.6
+      cargo_m3: 6000       # slide 18: LNG tank 3,000 m3 x 2
+      crew: null
+    propulsion: "dual-fuel diesel mechanical (slides 22 to 24; not read in detail)"
+    measured:
+      stern_block_m:
+        value: 30.9
+        drawing: "slide 18, profile and plan: aft end of the plan outline to the forward bulkhead of the engine room"
+        scale_ref: "LBP 114.0 m between AP and FP marks: 1,110 px (130 dpi render), 0.1027 m/px; LOA 'about 120' over the hull outline gives 0.1024"
+        unc: 1.0
+        note: "the D.O. tank and cofferdam between the engine room and No. 2 tank adds 2.9 m (to 33.8 m) if counted as part of the stern block"
+      engine_room_length_m:
+        value: 22.3
+        drawing: "slide 18 profile: engine room from the steering-gear/aft-peak bulkhead (x 181.5) to its forward bulkhead (x 400)"
+        scale_ref: "LBP as above"
+        unc: 0.8
+      deckhouse_length_m:
+        value: 25.4
+        drawing: "slide 18 profile and plan: accommodation block, aft face to the forward face over the D.O. tank (x 181.5 to 428.5)"
+        scale_ref: "LBP as above"
+        unc: 1.0
+        note: "the lower three tiers are 9.8 m long; the block above the engine room is 15.6 m long and lower"
+      deckhouse_breadth_m: {value: 18.8, drawing: "slide 18 plan: the block is full beam", scale_ref: "stated beam", unc: 0.4}
+      deckhouse_tiers: {value: 4, drawing: "slide 18 profile: four levels above the main deck at the aft end", unc: 1, note: "tier heights not dimensioned; deckhouse volume not derived"}
+      deckhouse_volume_m3: null
+    lightship: null
+    sources:
+      - id: SRC-S02
+        title: "Kawasaki Heavy Industries, 'Concept Design of LNG Bunkering Ship', 6th Asian Shipbuilding Experts' Forum, Guangzhou, Nov 2012, slide 18"
+        url: "https://www.asef2015.com/asef2007/PDF/Air%20Pollution%201.%20Concept%20Design%20of%20LNG%20Bunkering%20Ship.pdf"
+        retrieved: 2026-11-02
+        sha256: 709631c7bcf4bd9730a150fadb63fef1e03cf0b4c345d6e46a4215474b5a3b3c
+    licence: "copyright Kawasaki Heavy Industries; facts cited only; no image is reproduced here"
+
+  - id: S03-ral-rastar-3800-df
+    held_out: true
+    vessel: "RAstar 3800-DF dual-fuel (LNG/MDO) ASD escort/ship-assist tug, Yong Gang Xiao Tuo 60 (Ningbo Zhoushan Port)"
+    kind: gas_fuelled_tug
+    status: built (delivered 2020-01)
+    confidence: medium
+    confidence_note: "designer's own GA of the class; no printed scale; the plan and profile differ by 3 % in scale (fender outline)"
+    principal:
+      loa_m: 38.0          # including fenders
+      beam_m: 13.5         # moulded
+      depth_m: 5.8
+      draught_m: 5.53      # maximum
+      lng_tank_m3: 55
+      crew: {value: 10, basis: "RAL delivery notice: accommodation for up to 10; the 2016 announcement said up to 14"}
+      bollard_pull_t: 80.3
+      installed_power_kw: 4778   # 2 x 2,389 kW Niigata 8L28AHX-DF
+    measured:
+      stern_block_m: null
+      stern_block_note: "the GA has profile, second deck and main deck plans only; no below-deck plan, so no engine-room length"
+      deckhouse_length_m:
+        value: 14.8
+        drawing: "RAL GA, outboard profile: house aft base to forward face on the deck (px 308 to 663)"
+        scale_ref: "stated LOA 38.00 m over the drawn hull extent 21 to 917 px (896 px, 0.0424 m/px); plan gives 0.0412"
+        unc: 0.5
+      deckhouse_breadth_m: {value: 9.4, drawing: "RAL GA, main deck plan: house width between side decks (227 px)", scale_ref: "LOA over the plan's drawn length, 0.0412 m/px", unc: 0.4}
+      deckhouse_tiers: {value: 3, drawing: "RAL GA, profile: main-deck level, second deck, wheelhouse", unc: 0}
+      deckhouse_height_m: {value: 7.3, drawing: "RAL GA profile: sheer line to wheelhouse roof (about 4.0 m to the wheelhouse floor, 3.3 m wheelhouse)", scale_ref: "0.0424 m/px", unc: 0.5}
+      deckhouse_volume_m3: null
+      deckhouse_volume_note: "not derived: tier heights are not dimensioned; an envelope of the three tiers is about 700 m3 +/- 25 %"
+    lightship: null
+    sources:
+      - id: SRC-S03a
+        title: "Robert Allan Ltd, 'New RAstar 3800-DF Dual Fuel Tug Delivered to Ningbo Port', 2020-01-15 (particulars, crew; GA image 215-055-30000R7-General-Arrangement.jpg)"
+        url: "https://ral.ca/2020/01/15/new-rastar-3800-df-dual-fuel-tug-delivered-to-ningbo-port/"
+        retrieved: 2026-11-02
+        sha256: 718c84fd0596fcab3a1b432d31dbb0712970837e17946248f2180ded180488a6   # the GA profile image
+      - id: SRC-S03b
+        title: "Robert Allan Ltd, 'Ningbo Port to Build RAstar 3800-DF', 2016-12-20 (GA image 30000R5-General-Arrangement.png)"
+        url: "https://ral.ca/2016/12/20/ningbo-port-build-rastar-3800-df/"
+        retrieved: 2026-11-02
+        sha256: 54ef21794683c78c2732b919a1c5363f1ecc5b39ccdf83dbf11f42f37d1b0b58   # the GA image (profile, second deck, main deck)
+    licence: "copyright Robert Allan Ltd; facts cited only; no image is reproduced here"
+
+  - id: S04-ral-rastar-4000-df-dux
+    held_out: true
+    vessel: "RAstar 4000-DF dual-fuel (LNG/diesel) escort tug 'Dux' (Ostensjo Rederi, built by Astilleros Gondan)"
+    kind: gas_fuelled_tug
+    status: built (delivered 2017-05)
+    confidence: low
+    confidence_note: "the below-deck plan shows only the forward part of the hull and is not marked with frames; its bow is aligned to the main-deck plan by eye"
+    principal:
+      loa_m: 40.2
+      beam_m: 16.0
+      depth_m: 6.1          # least moulded
+      draught_m: 7.0        # maximum
+      lng_tank_m3: 33.0     # gross
+      crew: null            # not stated in the release
+      installed_power_kw: null   # 2 x Wartsila 6L34DF named; the kW is not read here
+    measured:
+      stern_block_m:
+        value: 23.7
+        drawing: "RAL GA: lower accommodation and engine-room mezzanine plan, forward bulkhead of the engine room (switchboard room aft face), carried to the profile; hull stern at the profile's aft end"
+        scale_ref: "stated LOA 40.2 m over the main deck plan's drawn extent, 45 to ~925 px, 0.0455 m/px; cross-check: plan beam 354 px x 0.0455 = 16.1 m vs stated 16.0"
+        unc: 1.5
+        note: "the lower plan has no frames; its bow was aligned to the profile by eye (about +12 px). The engine-room aft end is cut off in the plan."
+      engine_room_length_m: null
+      deckhouse_length_m:
+        value: 21.2
+        drawing: "RAL GA profile: house, aft face to forward face at the deck (px 280 to 745); includes the forward winch room"
+        scale_ref: "0.0455 m/px as above"
+        unc: 0.7
+      deckhouse_breadth_m: {value: 11.4, drawing: "RAL GA main deck plan: house between the side decks (250 px)", scale_ref: "0.0455 m/px", unc: 0.5}
+      deckhouse_tiers: {value: 2, drawing: "RAL GA profile and bridge deck plan: main-deck house and the bridge tier", unc: 0}
+      deckhouse_volume_m3: null
+      deckhouse_volume_note: "not derived: tier heights are not dimensioned"
+    lightship: null
+    sources:
+      - id: SRC-S04
+        title: "Robert Allan Ltd, 'First of Robert Allan Ltd.'s RAstar 4000-DF Class Dual Fuel Extreme Escort Tugs Delivered to Ostensjo Rederi AS', 2017-05-26 (GA image OR30000R5-General-Arrangement.png)"
+        url: "https://ral.ca/2017/05/26/rastar-4000-df-delivered-ostensjo/"
+        retrieved: 2026-11-02
+        sha256: 4d7f47ce1197296aed186b366781abe8a8df27430e7917a003cd46164036daf4   # the GA image
+    licence: "copyright Robert Allan Ltd; facts cited only; no image is reproduced here"
+
+# What phase 2 may fit from these cases, and what it may not (no fit is run here):
+#   - Deckhouse steel per m3 of house: S01 only (79 t on 2,301 m3 listed, an estimate, so a cross-check of the
+#     textbook rate of D19, not a fit). No built vessel here prints a steel breakdown.
+#   - Outfit mass per m2 of floor area: S01 only, an estimate (468.6 t on 769 m2 of house floor, or 0.25 t per m2 of L x B).
+#   - Stern block length: S01, S02 (and S04, low confidence) are independent of the 23 ships already in
+#     propulsion_cases.yaml, so they can test the aft peak and room allowance out of sample.
+#   - Deckhouse length and breadth by tier: S01 to S04.
+# Not available from these cases: a measured outfit or steel mass of a built gas carrier or tug.
