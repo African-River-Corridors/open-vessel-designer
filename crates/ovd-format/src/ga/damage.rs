@@ -262,7 +262,7 @@ pub fn damage_drawings_for(
                 "NO FLOATING POSITION AFTER DAMAGE: NO WATERLINE IS DRAWN."
             )
         });
-        if let Some(sets) = rule_sets_note(&[set.clone()]) {
+        if let Some(sets) = rule_sets_note(core::slice::from_ref(&set)) {
             notes.push(sets);
         }
         notes.push(label!(
