@@ -201,7 +201,7 @@ fn a_new_gas_option_meets_the_opening_rules_and_names_the_ones_the_model_cannot_
         let results = results_of(&new_gas_design(cargo, json!({})));
         let sets = results["rule_trace"]["rule_sets"].to_string();
         assert!(
-            sets.contains("lr-inland-gas@2.0.0") && sets.contains("igc-2g@2.0.0"),
+            sets.contains("lr-inland-gas@2.0.0") && sets.contains("igc-2g@3.0.0"),
             "{sets}"
         );
         for id in [

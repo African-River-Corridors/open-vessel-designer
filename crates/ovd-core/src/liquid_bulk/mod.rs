@@ -22,7 +22,6 @@ use crate::pressure_vessel::PyError;
 pub mod adn_vessel_type;
 pub mod cost;
 pub mod crude_grade;
-pub mod damage;
 mod free_surface;
 mod layout;
 pub mod lightship;
