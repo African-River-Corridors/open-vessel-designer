@@ -101,6 +101,10 @@
           "value": null,
           "source": "default"
         },
+        "gross_tonnage": {
+          "value": null,
+          "source": "default"
+        },
         "pushed_stern_void_m": {
           "value": 3.0,
           "source": "default"
@@ -467,6 +471,10 @@
           "source": "default"
         },
         "bow_rake_max_length_m": {
+          "value": null,
+          "source": "default"
+        },
+        "gross_tonnage": {
           "value": null,
           "source": "default"
         },

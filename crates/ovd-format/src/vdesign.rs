@@ -1005,6 +1005,13 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
         applies_to: AppliesTo::All,
         value: "null",
     },
+    // Issue #777: a file saved before types no gross tonnage, so it is worked out; no result reads
+    // it yet.
+    LegacyFixedJson {
+        name: "gross_tonnage",
+        applies_to: AppliesTo::All,
+        value: "null",
+    },
     // Issue #358: a file saved before checked no lock.
     LegacyFixedJson {
         name: "lock_length_m",
@@ -2207,6 +2214,14 @@ pub const INPUTS: &[InputSpec] = &[
     spec(
         "bow_rake_max_length_m",
         "Longest bow rake from depth",
+        NUM_OR_NONE,
+        false,
+        Group::HullAndContainment,
+    ),
+    // Issue #777 (spec 0011 D15): none, the ITC 1969 gross tonnage; a typed value overrides it.
+    spec(
+        "gross_tonnage",
+        "Gross tonnage",
         NUM_OR_NONE,
         false,
         Group::HullAndContainment,

@@ -64,6 +64,7 @@ pub mod squat;
 pub mod stern_form;
 pub mod tanks;
 pub mod text;
+pub mod tonnage;
 pub mod tug_presets;
 mod unprintable;
 pub mod vessel_classes;

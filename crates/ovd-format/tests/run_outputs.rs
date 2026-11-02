@@ -91,6 +91,11 @@ fn a_sloped_hopper_hold_runs_as_the_sloped_hopper_barge() {
     without_cost.as_object_mut().unwrap().remove("rule_trace");
     // And the calibration label (issue #434), which `simulate` does not give either.
     without_cost.as_object_mut().unwrap().remove("calibration");
+    // And the gross tonnage (issue #777), which `simulate` does not give either.
+    without_cost
+        .as_object_mut()
+        .unwrap()
+        .remove("gross_tonnage");
     // And the pusher of the Formation (issue #359): `simulate` gives the barge alone, and the notes
     // of the pusher are not in its `text_ids`.
     without_cost.as_object_mut().unwrap().remove("formation");

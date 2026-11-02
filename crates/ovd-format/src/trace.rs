@@ -800,6 +800,39 @@ pub fn trace_json(t: &Trace, service_area: &str, warnings: &[String]) -> Value {
     })
 }
 
+/// The computed Measures the trace shows although no Rule reads them yet (issue #777: the gross
+/// tonnage, its V and its K1). One entry each the run has, with its value, unit, method and method
+/// status; none it lacks.
+pub const REPORTED_MEASURES: &[&str] = &[
+    "option.enclosed_volume",
+    "option.gross_tonnage_k1",
+    "option.gross_tonnage",
+];
+
+/// The [`REPORTED_MEASURES`] of a run, as the `measures` list of the trace.
+pub fn reported_measures_json(measured: &Measured) -> Value {
+    Value::Array(
+        REPORTED_MEASURES
+            .iter()
+            .filter_map(|id| {
+                let def = measure_def(id)?;
+                let m = bare(id);
+                if !measured.has(&m) {
+                    return None;
+                }
+                let value = measured.value(&m, 0).ok()?;
+                Some(json!({
+                    "measure": id,
+                    "value": value_json(&value),
+                    "unit": def.unit,
+                    "method": def.method,
+                    "method_status": def.method_status.key(),
+                }))
+            })
+            .collect(),
+    )
+}
+
 /// The arguments a Measure takes, for `ovd rules --measures`.
 pub fn args_text(args: &[ArgDef]) -> String {
     let names: Vec<&str> = args.iter().map(|a| a.name).collect();
