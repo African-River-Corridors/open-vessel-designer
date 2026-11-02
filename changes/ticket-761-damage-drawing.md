@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Damage case drawing (issue #761, spec 0012 D12, D19): `ovd draw` gives an Option with damage cases one sheet per governing case (per Rule Set and loading condition): the plan with the flooded Spaces hatched, and the transverse section at the middle of the damage with the flooded Spaces hatched and the damaged waterline. The `damage` block's governing entries now carry the Flooded Volumes' shapes and the damaged waterplane. Existing drawings do not change.
