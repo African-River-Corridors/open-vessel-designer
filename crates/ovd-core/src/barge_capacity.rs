@@ -537,6 +537,9 @@ pub struct BargeCapacityResult {
     /// Issue #774: the machinery steel behind the stern block's steel items and the Watson
     /// cross-check, when the stern block is in the lightship and has machinery laid out.
     pub machinery_summary: Option<crate::aft_arrangement::MachinerySummary>,
+    /// Issue #775: the gas fuel system allowances behind the stern block's gas items, when the stern
+    /// block is in the lightship and the hull is gas-fuelled.
+    pub gas_fuel_system: Option<crate::gas_fuel::FuelSystem>,
     /// Issue #412: the tank domes as a lightship item (already in `lightship_t`); empty for a hull
     /// without gas tanks or a dome with no wall. The gas stability takes it with the covering.
     pub dome_items: Vec<crate::weights::MassItem>,
@@ -1458,6 +1461,7 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
     };
     // Issue #348: the stern block's mass, in the lightship only when asked for.
     let mut machinery_summary = None;
+    let mut gas_fuel_system = None;
     let stern_block_items = match (&aft, &inp.stern_block_mass) {
         (Some(a), Some(m)) => {
             let db = match class {
@@ -1469,6 +1473,7 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
             };
             let db = if db > 0.0 { db } else { 0.0 };
             machinery_summary = crate::aft_arrangement::machinery_summary(&aft_second, a, db);
+            gas_fuel_system = crate::aft_arrangement::gas_fuel_system(&aft_second, a, m);
             crate::aft_arrangement::stern_block_mass(&aft_second, a, m, db)
         }
         _ => Vec::new(),
@@ -1870,6 +1875,7 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
         liquid: detail.liquid,
         stern_block_items: stern_block_items.clone(),
         machinery_summary,
+        gas_fuel_system,
         dome_items: detail.dome_items,
         trim_conditions,
         sightline,

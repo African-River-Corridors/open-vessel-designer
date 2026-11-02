@@ -492,6 +492,9 @@ pub struct SternMassInputs {
     /// propulsion power; until it is sized (#353) they take this, else the installed genset power,
     /// else none (the piping keeps its 3 t).
     pub installed_power_kw: Option<f64>,
+    /// A gas combustion unit is fitted (issue #775, spec 0011 D8); it adds its mass to a gas-fuelled
+    /// block's gas fuel system.
+    pub gas_combustion_unit: bool,
 }
 
 impl SternMassInputs {
@@ -583,6 +586,24 @@ pub fn stern_block_mass(
             kcg_m: double_bottom_m + res.genset_height_m / 2.0,
         });
     }
+    // Issue #775: the gas fuel system, as items of its own beside the gensets.
+    if let Some(f) = gas_fuel_system(inp, res, m) {
+        let (x0, x1) = (res.gvu_room_x0_m, res.gvu_room_x1_m);
+        let lcg = if x1 > x0 {
+            (x0 + x1) / 2.0
+        } else {
+            res.length_m / 2.0
+        };
+        for i in &f.items {
+            items.push(MassItem {
+                label: i.label,
+                mass_t: i.mass_t,
+                lcg_m: lcg,
+                // Estimate: the GVU room's deck, half a metre up.
+                kcg_m: double_bottom_m + 0.5,
+            });
+        }
+    }
     if let Some(m) = machinery {
         items.extend(m);
         // Issue #774: the engine-room block steel and the engine seats.
@@ -605,6 +626,24 @@ pub fn stern_block_mass(
         kcg_m: double_bottom_m,
     });
     items
+}
+
+/// The gas fuel system of a gas-fuelled stern block (issue #775, spec 0011 D8): the allowances for
+/// the gas valve units, heater and compressor, and a gas combustion unit when the Option asks for
+/// one. `None` for a block with no gas gensets.
+pub fn gas_fuel_system(
+    inp: &AftArrangementInputs,
+    res: &AftArrangementResult,
+    m: &SternMassInputs,
+) -> Option<crate::gas_fuel::FuelSystem> {
+    if !inp.is_gas_fuelled() {
+        return None;
+    }
+    crate::gas_fuel::fuel_system(
+        u32::try_from(res.n_gensets).unwrap_or(0),
+        res.installed_kwe,
+        m.gas_combustion_unit,
+    )
 }
 
 /// The gas gensets' mass (t): the published engine mass plus an alternator each, the genset rate

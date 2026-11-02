@@ -185,6 +185,7 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         "propeller_diameter_m",
         "propeller_diameter_basis",
         "stern_block_mass_included",
+        "gas_combustion_unit",
         "battery_unit_energy_kwh",
         "installed_power_kw",
         "power_source",

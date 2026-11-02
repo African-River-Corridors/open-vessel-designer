@@ -39,6 +39,7 @@ fn a_battery_electric_block_is_the_hand_sum_of_the_rates() {
         &SternMassInputs {
             battery_unit_energy_kwh: 5000.0,
             installed_power_kw: None,
+            gas_combustion_unit: false,
         },
         0.5,
     );
@@ -78,6 +79,7 @@ fn a_gas_fuelled_block_adds_its_gensets_and_scales_the_piping_with_their_power()
         &SternMassInputs {
             battery_unit_energy_kwh: 5000.0,
             installed_power_kw: None,
+            gas_combustion_unit: false,
         },
         0.5,
     );
@@ -96,6 +98,7 @@ fn a_gas_fuelled_block_adds_its_gensets_and_scales_the_piping_with_their_power()
         &SternMassInputs {
             battery_unit_energy_kwh: 5000.0,
             installed_power_kw: Some(800.0),
+            gas_combustion_unit: false,
         },
         0.5,
     );
@@ -110,6 +113,7 @@ fn gas_hull(with_mass: bool) -> BargeCapacityInputs {
         i.stern_block_mass = Some(SternMassInputs {
             battery_unit_energy_kwh: 5000.0,
             installed_power_kw: None,
+            gas_combustion_unit: false,
         });
     }
     i
@@ -164,6 +168,7 @@ fn a_dry_bulk_hull_takes_the_block_too() {
     i.stern_block_mass = Some(SternMassInputs {
         battery_unit_energy_kwh: 5000.0,
         installed_power_kw: None,
+        gas_combustion_unit: false,
     });
     let with = compute(&i).unwrap();
     let block = total_mass(&with.stern_block_items);

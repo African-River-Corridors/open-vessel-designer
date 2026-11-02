@@ -132,6 +132,18 @@ The hold geometry (h_hold, widths, l_cargo) is on page 06.
     beside OVD's machinery items (`watson_cross_check`). It is never added to the lightship.
   - The tug of a Formation keeps its box-rate hull steel, which holds its engine-room structure, so it takes
     neither item.
+- **Gas fuel system** (issue #775, spec 0011 D8). A gas-fuelled stern block, with its mass in the lightship,
+  gains four items beside its gensets, at the gas valve unit room. **Every figure is an estimate**: no mass of
+  a gas valve unit, heater, compressor or gas combustion unit was found in a source read
+  (`docs/research/stern-arrangement.md` sec. 3). The results say so (`stern_block_mass.gas_fuel_system`, each
+  item's `status` and `basis`).
+  - **Gas valve units** = 0.4 t × the number of gas engines, the reserve set included.
+  - **Gas heater** = 0.2 kg per kWe of the installed gas gensets.
+  - **Gas compressor** = 0.6 kg per kWe of the installed gas gensets.
+  - **Gas combustion unit** = 2 t, only when the Option's `gas_combustion_unit` input is true (a file saved
+    before keeps false).
+  - Reliquefaction is not modelled. The centres are an estimate: the GVU room's centre, 0.5 m above the double
+    bottom. The calibration ticket replaces the rates (spec 0011 D11).
 
 ### 4. Displacement and deadweight
 
@@ -231,6 +243,7 @@ writes `calibration/factors.yaml`. Held-out cases are left out of the fit.
 | WC-A30 | Genset engine mass | 9.8 to 21.0 t per set, from a maker table; reported only | Fixed in code | Maker product presentation, cited at `aft_arrangement.rs:132-135` | `aft_arrangement.rs:136-221`, `1025` | Not in lightship (see WC-A29) |
 | WC-A30a | Engine-room steel rate | 0.057 t/m³ of engine-room volume | Estimate (unverified) | Schneekluth and Bertram Table 5.2 p. 164, a deckhouse coefficient taken for the engine room (issue #774) | `machinery.rs` `steel_rates` | Unknown until calibration (spec 0011 D11) |
 | WC-A30b | Engine seats | 27 P_B / ((n + 250)(15 + P_B/1000)) t per engine; n 1,800 rpm for the engine table (estimate) | Method | Schneekluth and Bertram sec. 5.1 p. 158 (issue #774) | `machinery.rs` `engine_seat_t` | Small (about 1 t per engine) |
+| WC-A30c | Gas fuel system allowances | 0.4 t per gas engine (valve units); 0.2 and 0.6 kg per kWe (heater, compressor); 2 t gas combustion unit when asked | Estimate | No source read; placeholders for the size class (issue #775) | `gas_fuel.rs` `fuel_system` | Unknown until calibration (spec 0011 D11) |
 | WC-A31 | Pushed barge | crew, battery, propulsion on the tug, not in lightship | Method | Scope of the Formation | `barge_capacity.rs:810-812` | None for the barge; the tug is not weighed |
 | WC-A32 | Displacement | Cb × LOA × B × T × ρ on a box hull | Method | Box hull, see page 01 | `barge_capacity.rs:905`; `simulate.rs:740-751` | See WC-A33 |
 | WC-A33 | Block coefficient | 0.85 for every Hull | Estimate | Profile; basis cites calibrated box barges 0.883–0.995 | `builtin_profile.json:52`; `simulate.rs:667` | Box barge: displacement about 8 % low (conservative on cargo) |

@@ -1216,6 +1216,12 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
         applies_to: AppliesTo::All,
         value: "false",
     },
+    // Issue #775: a file saved before fits no gas combustion unit.
+    LegacyFixedJson {
+        name: "gas_combustion_unit",
+        applies_to: AppliesTo::All,
+        value: "false",
+    },
     // Issue #357: a file saved before has no tug: the barge alone, as today.
     LegacyFixedJson {
         name: "tug_included",
@@ -2811,6 +2817,12 @@ pub const INPUTS: &[InputSpec] = &[
     self_propelled(
         "stern_block_mass_included",
         "Stern block mass in the lightship",
+        InputKind::Bool,
+        Group::SternAndPropulsion,
+    ),
+    self_propelled(
+        "gas_combustion_unit",
+        "Gas combustion unit",
         InputKind::Bool,
         Group::SternAndPropulsion,
     ),
