@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import math
+import multiprocessing
 import sys
 from pathlib import Path
 
@@ -186,7 +187,8 @@ def generate() -> tuple[list[dict], list[dict]]:
     The base cases are independent, so each is worked out in its own process and the lists are joined
     in the order of BASE_CASES: the output is the same as one after another (issue #852)."""
     docs, skipped = [], []
-    with concurrent.futures.ProcessPoolExecutor() as pool:
+    # Spawn, not fork: a pytest worker that calls this is multi-threaded, and a fork of it can deadlock.
+    with concurrent.futures.ProcessPoolExecutor(mp_context=multiprocessing.get_context("spawn")) as pool:
         for d, s in pool.map(_mutants_of, write_cases.BASE_CASES):
             docs += d
             skipped += s

@@ -99,7 +99,9 @@ jobs:
       # from before main moved, without them (issue #852).
       - name: The base commit of the design-impact check
         id: base
-        run: echo "sha=$(python3 tools/design_impact.py base)" >> "$GITHUB_OUTPUT"
+        run: |
+          sha="$(python3 tools/design_impact.py base)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - name: Restore the saved design-impact answers
         uses: actions/cache/restore@v4
         with:

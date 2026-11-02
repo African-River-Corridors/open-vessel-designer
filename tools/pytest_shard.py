@@ -37,7 +37,7 @@ def _spec():
 # The slowest tests of the `pr` profile (pytest --durations, 2026-10-30), placed for 4 shards. Shard 1
 # also runs the evaluation harness and the Calibration Bands in CI, so it gets the lighter ones.
 # Issue #852: re-placed from the CI JUnit times (the `pytest-junit-*` artifacts) once the edge sweep
-# (shard 3, ~280 s) and the stern oracle (shard 4) ran in parallel: two 50-70 s tests left shard 3 for
+# (shard 3, ~250 s) and the stern oracle (shard 4) ran in parallel: two 50-70 s tests left shard 3 for
 # shard 2, the lightest (138 s of tests in run 41446188546).
 PINNED = {
     4: {
