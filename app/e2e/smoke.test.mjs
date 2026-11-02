@@ -189,7 +189,7 @@ describe("OVD app smoke tests", () => {
   // The views, by top tab. Every view is checked for scrolling and photographed.
   const GROUPS = [
     ["Drawings", ["Side elevation", "Plan", "Cross-section", "3D"]],
-    ["Stability & Propulsion", ["Intact stability", "Ballast tanks", "Power and speed curves", "Rule check calculations"]],
+    ["Stability & Propulsion", ["Intact stability", "Ballast tanks", "Damage stability", "Power and speed curves", "Rule check calculations"]],
     ["BOQ & Finance", ["BOQ", "Capital budget"]],
   ];
   const tab = (label) => browser.$(`//button[@role="tab" and normalize-space()="${label}"]`);
@@ -338,6 +338,100 @@ describe("OVD app smoke tests", () => {
               if (hidden && view === views[0]) await shot(`229-${cargo}-${slug(view)}-panels-hidden`);
             }
           }
+        }
+      } finally {
+        await setPanel("Input", true);
+        await setPanel("Outputs", true);
+      }
+    });
+  }
+
+  /**
+   * A gas Design checked in the IS Code 2008 conditions on the built-in Rule Sets, whose IGC damage cases
+   * the engine computes (the fixtures hold older Rule Sets, which do not). Written to a file and filled by
+   * the native CLI, as a hand-written file lacks inputs.
+   */
+  function gasDamageDesign() {
+    const inputs = {
+      cargo: { value: "LNG", source: "typed" },
+      hull_form: { value: "raked_box", source: "typed" },
+      formation: { value: { kind: "self_propelled" }, source: "typed" },
+      length_overall_m: { value: 110.0, source: "typed" },
+      beam_m: { value: 11.4, source: "typed" },
+      moulded_depth_m: { value: 6.0, source: "typed" },
+      loading_conditions: { value: "is_code_2008", source: "typed" },
+    };
+    const bare = path.join(WORK, "gas-damage-bare.vdesign");
+    const filled = path.join(WORK, "gas-damage.vdesign");
+    fs.writeFileSync(bare, JSON.stringify({ format: "vdesign", format_version: 3, engine_version: "0.2.4", units: "SI", options: [{ name: "Option 1", inputs }] }));
+    fs.rmSync(filled, { force: true });
+    execFileSync(process.env.OVD_CLI, ["fill", "--as-new", bare, filled], { stdio: "ignore" });
+    return filled;
+  }
+
+  it("shows the damage cases, the governing case of each condition and the damage drawing of a gas Design (issue #886)", async () => {
+    await open(gasDamageDesign(), "gas-damage.vdesign");
+    await show("Stability & Propulsion", "Damage stability");
+    await until("the damage drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1);
+    const rows = await browser.$$("[data-testid=damage-case-row]");
+    assert.ok(rows.length >= 10, `${rows.length} damage cases`);
+    // One governing case in the condition shown, and it is the first failing case, as the trace has it.
+    const governing = await browser.$$("[data-testid=damage-case-row][data-governing=true]");
+    assert.equal(governing.length, 1);
+    const conditions = await texts(await browser.$$("[data-testid=damage-condition]"));
+    assert.ok(conditions.length >= 2, conditions.join(" | "));
+    assert.match(await browser.$("[data-testid=damage-drawing-case]").getText(), /^Governing case: /);
+    // The stages of the governing case are shown, with the condition's own cases and no other.
+    assert.ok((await browser.$$("[data-testid=damage-stage-row]")).length >= 3);
+    // The same case is the governing row of the Rule check calculations' damage Rule, with the same verdict.
+    const condition = await (await browser.$('[data-testid=damage-condition][aria-selected=true]')).getText();
+    const name = `${condition}: ${await governing[0].getAttribute("data-case")}`;
+    const ok = await governing[0].getAttribute("data-ok");
+    await show("Stability & Propulsion", "Rule check calculations");
+    const traced = await browser.execute(
+      (n) => [...document.querySelectorAll("[data-testid=rule-check-row]")].filter((r) => r.textContent.includes(n)).map((r) => r.getAttribute("data-ok")),
+      name,
+    );
+    assert.ok(traced.length >= 1, `no trace row for ${name}`);
+    assert.ok(traced.includes(ok), `the trace has ${traced.join(",")} for ${name}, the view ${ok}`);
+    // Another condition shows its own cases and its own drawing.
+    await show("Stability & Propulsion", "Damage stability");
+    await (await browser.$$("[data-testid=damage-condition]"))[1].click();
+    await until("the other drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1);
+    await shot("886-gas-damage");
+  });
+
+  it("shows the damage cases of a liquid hull, and says there is no drawing for it (issue #886)", async () => {
+    const fixture = "crude_integral_tanks_self_propelled.vdesign";
+    await open(path.join(FIXTURES, fixture), fixture);
+    await show("Stability & Propulsion", "Damage stability");
+    await until("the case table", async () => (await browser.$$("[data-testid=damage-case-row]")).length >= 1);
+    assert.equal((await browser.$$("[data-testid=damage-drawing] svg")).length, 0);
+    assert.equal((await browser.$$("[data-testid=damage-no-drawing]")).length, 1);
+    await shot("886-crude-damage");
+  });
+
+  it("gives the reason the trace gives where the Rule Set has no damage cases (issue #886)", async () => {
+    await open(path.resolve(here, "../../examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign"), "gas-140x29-coastal-lng.vdesign");
+    await show("Stability & Propulsion", "Damage stability");
+    await until("the reason", async () => (await browser.$$("[data-testid=damage-reason]")).length >= 1);
+    assert.equal((await browser.$$("[data-testid=damage-case-row]")).length, 0);
+    assert.match(await browser.$("[data-testid=damage-not-evaluated]").getText(), /Survival after the assumed damage/);
+    assert.match(await browser.$("[data-testid=damage-reason]").getText(), /the IGC damage cases were not computed/);
+  });
+
+  for (const [what, file] of [["a gas Design with damage cases", () => gasDamageDesign()], ["a liquid hull with a long case table", () => path.join(FIXTURES, "crude_integral_tanks_coastal.vdesign")]]) {
+    it(`the Damage stability view does not scroll the panel, with the side panels shown or hidden (${what}) (issue #886)`, async () => {
+      const f = file();
+      await open(f, path.basename(f));
+      try {
+        for (const hidden of [false, true]) {
+          await setPanel("Input", !hidden);
+          await setPanel("Outputs", !hidden);
+          await show("Stability & Propulsion", "Damage stability");
+          await until("the case table", async () => (await browser.$$("[data-testid=damage-case-row]")).length >= 1);
+          await browser.pause(300);
+          assert.ok((await overflow()) <= 0, `the Damage stability view scrolls (${what}, panels ${hidden ? "hidden" : "shown"})`);
         }
       } finally {
         await setPanel("Input", true);

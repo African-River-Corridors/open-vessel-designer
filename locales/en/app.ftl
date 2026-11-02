@@ -140,6 +140,7 @@ app-view-midship = Cross-section
 app-group-stability-propulsion = Stability & Propulsion
 app-view-stability = Intact stability
 app-view-ballast = Ballast tanks
+app-view-damage = Damage stability
 app-view-convoy = Convoy totals
 app-view-3d = 3D
 app-view-speed-power = Power and speed curves
@@ -392,6 +393,32 @@ app-ballast-kind-peak = Peak
 app-ballast-side-port = Port
 app-ballast-side-starboard = Starboard
 app-ballast-side-centre = Centre
+
+# The damage stability view (issue #886)
+app-damage-none = No damage cases to show. The engine did not compute the damage of this Option; its reasons are below.
+app-damage-rule-sets = Rule Sets
+app-damage-conditions = Loading conditions
+app-damage-set-adn = ADN assumed damage
+app-damage-set-marpol = MARPOL Annex I assumed damage
+app-damage-col-case = Damage case
+app-damage-col-flooded = Flooded Spaces
+app-damage-col-floats = After damage
+app-damage-col-heel = Heel
+app-damage-col-trim = Trim
+app-damage-col-draught = Mean draught
+app-damage-col-gz = Max GZ
+app-damage-col-range = Range to
+app-damage-col-area = Area
+app-damage-col-result = Result
+app-damage-col-stage = Flooded
+app-damage-floats-yes = Floats
+app-damage-floats-sinks = Sinks
+app-damage-floats-none = No equilibrium
+app-damage-governing-hint = The first case of this loading condition that fails its damage Rule in the Rule Trace. Where every case passes, the case the engine names as governing.
+app-damage-drawing-of = Governing case: { $case }
+app-damage-no-drawing = The engine draws no damage case drawing for this Rule Set.
+app-damage-stages = Intermediate stages of flooding: { $case }
+app-damage-stage-of = { $percent }%
 
 # The convoy totals (issue #551)
 app-convoy-formation = { $abreast } abreast, { $in_line } in line: { $barges } barges
