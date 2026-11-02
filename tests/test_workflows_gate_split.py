@@ -77,6 +77,6 @@ def test_the_design_impact_answers_of_the_base_commit_are_restored_first():
     assert "python3 tools/design_impact.py base" in base["run"]
     restore = next(s for s in steps if s.get("name") == "Restore the saved design-impact answers")
     assert names.index(base["name"]) < names.index(restore["name"])
-    keys = restore["with"]["restore-keys"].split()
+    keys = restore["with"]["restore-keys"].strip().splitlines()
     assert keys == ["design-impact-${{ steps.base.outputs.sha }}", "design-impact-"]
     assert restore["with"]["key"] == "design-impact-${{ github.sha }}"
