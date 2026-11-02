@@ -241,3 +241,37 @@ def test_the_whole_gate_still_counts_every_step(tmp_path):
     assert r.returncode == 0, r.stderr
     assert r.stdout.count("gates: ok:") == 10
     assert "all 10 steps passed" in r.stdout
+
+
+def test_a_partition_past_the_last_fails(tmp_path):
+    """Label: property"""
+    r = _stub_gates(tmp_path, GATES_PARTITION="13/12")
+    assert r.returncode != 0
+    assert "GATES_PARTITION must look like 2/4" in r.stderr
+
+
+@pytest.mark.parametrize("failing", ["--profile pr-placed", "--partition"])
+def test_a_failing_placed_run_or_rest_run_fails_the_rust_step(tmp_path, failing):
+    """A partition runs its placed slow tests in the background beside the rest (issue #819): a
+    failure in either must fail the step.
+
+    Label: property"""
+    libdir = tmp_path / "wasm-libdir"
+    libdir.mkdir()
+    path = _path_with_only(tmp_path, GATES_TOOLS)
+    bin_dir = Path(path)
+    (bin_dir / "cargo").write_text(
+        f'#!/bin/sh\ncase "$*" in *"{failing}"*) echo "test result: FAILED" >&2; exit 100 ;; esac\nexit 0\n'
+    )
+    (bin_dir / "rustc").write_text(f'#!/bin/sh\necho "{libdir}"\n')
+    (bin_dir / "py-stub").write_text("#!/bin/sh\nexit 0\n")
+    for stub in ("cargo", "rustc", "py-stub"):
+        (bin_dir / stub).chmod(0o755)
+    part = next(
+        l.split()[0] for l in (ROOT / ".config" / "rust-partitions.txt").read_text().splitlines()
+        if l.strip() and not l.startswith("#")
+    )
+    r = _gates(path, OVD_PYTHON=str(bin_dir / "py-stub"), GATES_STEPS="rust", GATES_PARTITION=f"{part}/12")
+    assert r.returncode != 0
+    assert "gates: FAIL: cargo test (no Python)" in r.stderr
+    assert "gates: ok: cargo test (no Python)" not in r.stdout
