@@ -83,6 +83,15 @@ Only `test` and `release-guard` are required. Keep the others from making a pull
 | `website.yml` | only when `website/**`, `docs/**` or `*.md` change | push to main |
 | `nightly.yml` | when the slow-test list or the gate script changes | every day |
 
+**A runner trial for the Rust tests** (issue #847). Two repository variables (Settings, Secrets and variables,
+Actions, Variables) change `gate-rust` only. `CI_RUST_RUNNER` is its runner label, for example `arc-linux-16`.
+`CI_RUST_PARTS` is its list of partitions as JSON, `[1]` to `[1, 2, ..., 12]`. A list that is not 1 to N fails
+`gate-rust`, and so `test`: the first step checks it, and a value that is not a JSON list fails when the job
+starts. No partition goes unrun. Unset, they give `ubuntu-latest` and twelve partitions, as before. The slow tests
+of `.config/rust-partitions.txt` still run once each with any count. Make the runner before setting its label: a
+label no runner has leaves `gate-rust` queued, and `test` waits, for up to a day. Pull requests from forks run on
+the same runner while the variable is set. To end the trial, delete both variables.
+
 A failed daily run of `app-checks.yml` opens an issue (or comments on the open one).
 WebAssembly parity is a release gate: `release.yml` calls `web-parity.yml`, so a release cannot ship with a
 mismatch. It left the pull request path because it never failed on a mismatch and it cost a web build on most
