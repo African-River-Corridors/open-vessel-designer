@@ -860,7 +860,10 @@ def build(tree: Path, target: Path, fresh: bool = False) -> Path:
     started = time.time()
     env = {**os.environ, "CARGO_TARGET_DIR": str(target)}
     package, binary = cli_names(tree)
-    r = subprocess.run(["cargo", "build", "-q", "-p", package, "--message-format=json-render-diagnostics"],
+    # DESIGN_IMPACT_PROFILE=release builds an optimised `ovd` (issue #852): the cases run faster, and
+    # the answers are the same bits, as Rust does not reorder floating point at any opt level.
+    profile = ["--release"] if os.environ.get("DESIGN_IMPACT_PROFILE") == "release" else []
+    r = subprocess.run(["cargo", "build", "-q", *profile, "-p", package, "--message-format=json-render-diagnostics"],
                        cwd=tree, env=env, stdout=subprocess.PIPE, text=True)
     if r.returncode != 0:
         raise SystemExit(f"design_impact: cargo build failed in {tree}")

@@ -14,8 +14,11 @@ Option with 0 errors to `simulate` (the Rust-backed package). None may raise, re
 Risk stopped: an input combination the core refuses with an exception, or turns into a confident
 wrong number (a 1 m beam gave negative cargo and draught), gets past validation.
 """
+import concurrent.futures
 import json
 import math
+import multiprocessing
+import os
 import random
 import re
 import subprocess
@@ -218,6 +221,19 @@ def impossible(result: dict) -> list:
     return found
 
 
+def check_option(o: dict) -> tuple[str, str]:
+    """One valid Option through `simulate`: ("ok", ""), ("raised", why) or ("wrong", why)."""
+    inputs = {k: v["value"] for k, v in o["inputs"].items()}
+    try:
+        result = simulate(to_simulate(inputs))
+    except Exception as exc:  # noqa: BLE001 - any exception breaks the rule
+        return "raised", f"{o['name']}: {type(exc).__name__}: {exc}\n  {json.dumps(inputs)}"
+    found = impossible(result)
+    if found:
+        return "wrong", f"{o['name']}: {', '.join(found)}\n  {json.dumps(inputs)}"
+    return "ok", ""
+
+
 def test_the_impossible_result_check_catches_an_error_value_and_a_negative():
     """The sweep's own check can fail: an error value and the 1 m beam's negatives are caught."""
     assert impossible({"error": "Bauxite cannot be carried in a gas barge."})
@@ -253,16 +269,14 @@ def test_every_option_validate_passes_runs_in_simulate(ovd, tmp_path):
     assert len(refused) >= 200, f"only {len(refused)} Options were refused"
 
     raised, wrong = [], []
-    for o in passed:
-        inputs = {k: v["value"] for k, v in o["inputs"].items()}
-        try:
-            result = simulate(to_simulate(inputs))
-        except Exception as exc:  # noqa: BLE001 - any exception breaks the rule
-            raised.append(f"{o['name']}: {type(exc).__name__}: {exc}\n  {json.dumps(inputs)}")
-            continue
-        found = impossible(result)
-        if found:
-            wrong.append(f"{o['name']}: {', '.join(found)}\n  {json.dumps(inputs)}")
+    # Each Option is its own `simulate` call, so they run in parallel processes, in order (issue #852).
+    with concurrent.futures.ProcessPoolExecutor(
+            max_workers=os.cpu_count() or 2, mp_context=multiprocessing.get_context("spawn")) as pool:
+        for kind, message in pool.map(check_option, passed, chunksize=4):
+            if kind == "raised":
+                raised.append(message)
+            elif kind == "wrong":
+                wrong.append(message)
     assert not raised, f"{len(raised)} valid Option(s) made simulate raise:\n" + "\n".join(
         raised[:10])
     assert not wrong, (f"{len(wrong)} valid Option(s) gave an error value or an impossible "

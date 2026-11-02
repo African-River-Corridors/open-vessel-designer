@@ -18,10 +18,11 @@
 #      .config/nextest.toml), then the doctests, which nextest does not run (issue #481)
 #   4a. the Rule Set gate: released versions unchanged, version classes, rule ids, provenance
 #       (`ovd rules --provenance`; it prints the unverified blocking Rules of each set)
+#   4b. the stored results hashes of the fixture designs (tools/check_fixture_hashes.py), with the
+#       `ovd` that step 4a built (issue #852: it was step 6a)
 #   5. the WebAssembly build of ovd-core and ovd-web (ovd-web builds the pinned otd crate too)
 #   6. the design-impact check (before/after on main; fails only if a change is missing from
 #      CHANGELOG.md)
-#   6a. the stored results hashes of the fixture designs (tools/check_fixture_hashes.py)
 #   7. pytest against the shipped package, on every core (pytest-xdist). The `pr` profile leaves out
 #      the tests marked `slow`; `nightly` runs them too. docs/agents/slow-tests.md lists every test
 #      the `pr` profile leaves out.
@@ -30,7 +31,7 @@
 # GATES_NEXTEST_PROFILE picks `pr` (default) or `nightly`.
 #
 # CI runs the steps in parallel jobs (issue #561). GATES_STEPS is a comma list of step groups: `lint`
-# (steps 1 to 3), `rust` (step 4), `rules` (steps 4a and 5), `impact` (step 6) and `pytest` (step 7).
+# (steps 1 to 3), `rust` (step 4), `rules` (steps 4a, 4b and 5), `impact` (step 6) and `pytest` (step 7).
 # It is unset for the whole gate. A group that is named runs in full; a name that is not a group fails.
 # GATES_PARTITION=k/N runs partition k of N of the Rust tests: the slow tests that
 # .config/rust-partitions.txt places in job k (by measured time, tools/rust_partitions.py, issue #819),
@@ -184,8 +185,8 @@ step lint "clippy -D warnings" cargo clippy --all-targets --all-features -- -D w
 step lint "clippy ovd-py -D warnings" env PYO3_PYTHON="$PY" cargo clippy -p ovd-py --all-targets --all-features -- -D warnings
 step rust "cargo test (no Python)" cargo_test_without_python
 step rules "Rule Set gate" cargo run -q -p ovd-cli -- rules --provenance
+step rules "fixture results hashes" fixture_hashes
 step rules "WebAssembly build of ovd-core and ovd-web" cargo build -p ovd-core -p ovd-web --all-features --target "$WASM_TARGET"
-step impact "fixture results hashes" fixture_hashes
 step impact "design impact" "$PY" tools/design_impact.py gate
 step pytest "pytest" "$PY" -m pytest -q -n auto ${PYTEST_SELECT[@]+"${PYTEST_SELECT[@]}"}
 
