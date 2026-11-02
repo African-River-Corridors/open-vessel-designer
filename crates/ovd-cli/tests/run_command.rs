@@ -413,9 +413,11 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
         .unwrap()
         .remove("results_hash");
     write_json(&file, &saved);
+    // `--steel-list`: the whole results, as `simulate` answers them (issue #745).
     let out = ovd(&[
         "run",
         "--json",
+        "--steel-list",
         "--rule-set",
         &is_code,
         "--rule-set",
