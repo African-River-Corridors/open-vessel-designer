@@ -5,9 +5,12 @@
 
 use ovd_core::compartments::{Side, Space, SpaceKind, SpaceShape};
 use ovd_core::damage_cases::{
-    BoxExtents, Permeability, PermeabilityTable, Placement, StandardOfDamage, box_damage_cases,
-    igc_damage_cases, marpol_damage_cases,
+    BoxExtents, DamageCase, Permeability, PermeabilityTable, Placement, StandardOfDamage,
+    box_damage_cases, deck_edge_immersed, gas_flooding, igc_damage_cases, marpol_damage_cases,
+    without_breached_cargo,
 };
+use ovd_core::damage_stability::FloodedVolume;
+use ovd_core::sections::{Gravity, Waterplane};
 use ovd_core::tanks::{HeadKind, TankHead};
 
 fn space(name: &str, kind: SpaceKind, x: (f64, f64), y: (f64, f64), z: (f64, f64)) -> Space {
@@ -307,4 +310,82 @@ fn a_by_filling_permeability_scales_with_the_empty_fraction() {
     assert_eq!(t.of(SpaceKind::WingBallast, 0.5), Some(0.95 * 0.5));
     assert_eq!(t.of(SpaceKind::WingBallast, 1.5), Some(0.0));
     assert_eq!(t.of(SpaceKind::CargoHold, 0.0), None);
+}
+
+fn igc_table() -> PermeabilityTable {
+    PermeabilityTable {
+        rows: vec![
+            (SpaceKind::CargoHold, Permeability::Fixed(0.95)),
+            (SpaceKind::WingBallast, Permeability::ByFilling(0.95)),
+            (SpaceKind::CargoTank, Permeability::ByFilling(0.95)),
+        ],
+    }
+}
+
+fn case_of(names: &[&str]) -> DamageCase {
+    DamageCase {
+        name: "test".to_string(),
+        flooded: names
+            .iter()
+            .map(|n| FloodedVolume::from_box(n, (0.0, 1.0), (0.0, 1.0), (0.0, 1.0), 0.95))
+            .collect(),
+    }
+}
+
+/// Spec 0012 D7 to D9: a flooded hold keeps its tank as an Intact Inclusion; a flooded tank is breached and
+/// floods as an empty space; a wing floods by its filling.
+#[test]
+fn a_gas_case_floods_holds_around_intact_tanks_and_breaches_tanks_it_reaches() {
+    let spaces = gas_layout();
+    let t = igc_table();
+    let half_full = |n: &str| if n == "WB1S" { 0.5 } else { 0.0 };
+    let f = gas_flooding(&case_of(&["H1C", "WB1S"]), &spaces, &t, &half_full);
+    assert!(f.breached.is_empty());
+    let hold = f.flooded.iter().find(|v| v.name == "H1C").unwrap();
+    assert_eq!(
+        hold.inclusions
+            .iter()
+            .map(|i| i.name.as_str())
+            .collect::<Vec<_>>(),
+        vec!["CT1C"]
+    );
+    let wing = f.flooded.iter().find(|v| v.name == "WB1S").unwrap();
+    assert_eq!(wing.permeability, 0.95 * 0.5);
+    let g = gas_flooding(&case_of(&["H1C", "CT1C"]), &spaces, &t, &|_| 1.0);
+    assert_eq!(g.breached, vec!["CT1C".to_string()]);
+    let tank = g.flooded.iter().find(|v| v.name == "CT1C").unwrap();
+    assert_eq!(tank.permeability, 0.95);
+}
+
+/// IGC 2.5.3, D8: the breached tank's share of the cargo (by interior volume) leaves from the middle of its
+/// axis. Two equal tanks, 100 t of cargo at KG 3.5 m: one breached tank at x = 21, y = 0 takes away 50 t.
+#[test]
+fn a_breached_tank_takes_its_share_of_the_cargo_away() {
+    let spaces = gas_layout();
+    let g = Gravity {
+        lcg_m: 30.0,
+        tcg_m: 0.0,
+        kg_m: 3.0,
+    };
+    let (m, gd) = without_breached_cargo(1000.0, g, (100.0, 3.5), &spaces, &["CT1C".to_string()]);
+    assert_eq!(m, 950.0);
+    assert!((gd.lcg_m - (1000.0 * 30.0 - 50.0 * 21.0) / 950.0).abs() < 1e-9);
+    assert!((gd.kg_m - (1000.0 * 3.0 - 50.0 * 3.5) / 950.0).abs() < 1e-9);
+    assert_eq!(gd.tcg_m, 0.0);
+    let (same, _) = without_breached_cargo(1000.0, g, (100.0, 3.5), &spaces, &[]);
+    assert_eq!(same, 1000.0);
+}
+
+/// The deck-edge test: upright at a draught below the depth the deck is dry; heeled 30 degrees with the plane
+/// at the centre line at 4 m, the deck edge of a 12 m wide, 6 m deep hull (6 tan 30 = 3.46 m lower) is wet.
+#[test]
+fn the_deck_edge_test_finds_an_immersed_deck_edge() {
+    let up = Waterplane::upright(4.0);
+    assert!(!deck_edge_immersed(&up, (0.0, 60.0), 6.0, 6.0));
+    let heeled = Waterplane {
+        heel_deg: 30.0,
+        trim_deg: 0.0,
+        c: 4.0,
+    };
+    assert!(deck_edge_immersed(&heeled, (0.0, 60.0), 6.0, 6.0));
 }
