@@ -7,7 +7,7 @@
 <!-- design-impact -->
 ### ticket/822-cargo-vent-mast (2026-11-02)
 
-Between `main fa05bd2` and `this branch d1549ccc`.
+Between `main 4921d3b` and `this branch f9f8a5b0`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|
