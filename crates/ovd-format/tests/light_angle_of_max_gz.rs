@@ -184,8 +184,20 @@ fn a_light_condition_that_fails_only_the_angle_is_a_warning_with_the_ballast_and
         .find(|x| x["object"] == "Lightship, no ballast")
         .unwrap();
     assert_eq!(alt_light["outcome"], "not evaluated");
-    // The trace verdict does not fail on the warning.
-    assert_eq!(r["rule_trace"]["verdict"]["passes"], true);
+    // The trace verdict does not fail on the warning: no failing row is the light condition's. (Since issues
+    // #759 and #760 the IGC damage cases and their stages are evaluated, and they may fail on their own.)
+    let failing: Vec<&Value> = r["rule_trace"]["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|x| x["outcome"] == "fail")
+        .collect();
+    assert!(
+        failing
+            .iter()
+            .all(|x| x["rule"].as_str().is_some_and(|r| r.starts_with("igc/2.7"))),
+        "{failing:?}"
+    );
 }
 
 #[test]

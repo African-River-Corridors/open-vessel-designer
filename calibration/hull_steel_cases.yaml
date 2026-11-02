@@ -42,6 +42,17 @@ reference_vessels:
       lightship_before_t: 2677     # OVD 0.3.0, the top-down rate
       residual_lightship_pct: -15.2
       residual_lightship_before_pct: -0.4
+    after_745:
+      note: "Re-printed on 2026-11-02 (branch ticket/745-lightship-plate-steel) by `cargo test -p ovd-core --test
+        hull_panels_calibration the_bunker_concept -- --nocapture`. The hull steel is the plate model's ordered weight
+        plus its allowance; `before` is the panel model on the same base (after #740), not the 2026-10-30 figures above.
+        Not tuned."
+      steel_t: 1295
+      steel_panel_before_t: 1335
+      lightship_t: 2515
+      lightship_before_t: 2558
+      residual_lightship_pct: -6.4
+      residual_lightship_before_pct: -4.8
     watson_gilfillan_benchmark:
       formula: "Ws = K E^1.36, E = L(B+T) + 0.85 L (D-T); K 0.029 to 0.035 (tanker values, secondary, unverified)"
       steel_t: [1391, 1679]
@@ -52,7 +63,16 @@ benchmarks:
     ovd:
       steel_top_down_t: 4872     # reported only
       steel_bottom_up_before_t: 2285  # OVD 0.3.0: plating x 2.0 + wing plate + shield
-      steel_panel_t: 3591        # drives the lightship and the cost
+      steel_panel_t: 3591        # drove the lightship and the cost until issue #745
+    after_745:
+      note: "Re-printed on 2026-11-02 (branch ticket/745-lightship-plate-steel) from `ovd run --json` on the worked
+        example: `structure.groups`. The panel figure is main before the branch (after #740). Not tuned."
+      steel_plate_t: 3274        # ordered 3118 t plus the allowance; drives the lightship and the cost
+      steel_ordered_t: 3118
+      scrap_t: 460
+      steel_panel_before_t: 3522
+      lightship_t: 4903
+      lightship_before_t: 5169
     watson_gilfillan_benchmark:
       steel_t: [3605, 4351]
       note: "T = 3.96 m (laden). Benchmark only: no barge K is published."
@@ -70,6 +90,13 @@ library:
       0.96 x LOA (no case publishes its rakes). Not tuned."
     median_residual_pct: 22.8
     range_pct: [4, 193]
+  after_745:
+    note: "Re-printed on 2026-11-02 (branch ticket/745-lightship-plate-steel) by `cargo test -p ovd-core --test
+      hull_panels_calibration the_library_table -- --nocapture`: the plate model's ordered weight plus its allowance,
+      its shell on each case's box Sections Table (end plating included), the steel the lightship takes since issue
+      #745. Every case moves up 2 to 4 points beside the panel steel of the same run. Not tuned."
+    median_residual_pct: 25.9
+    range_pct: [6, 197]
   outliers:
     meb-rob20-belmax: "+209 %: B/D = 5.7, outside the B/D of about 4 that ABS 3-2-1/1 accepts; the hull girder rule thickens the deck and bottom"
     kirby-32300b-297x54: "+111 %: its implied k (0.080) is the lowest of the Kirby group of the same size (0.114 to 0.142)"

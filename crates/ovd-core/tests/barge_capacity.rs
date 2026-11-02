@@ -25,8 +25,10 @@ fn the_quickstart_propane_barge_matches_python() {
     // Re-pinned again (issue #722, the hull steel from the panel model); was 2.4187877904714594.
     // Re-pinned again (issue #740, the scantlings take the rule length of ABS 3-1-1/3.1, not the
     // length overall); was 2.337301693393503.
-    // Re-pinned again (spec 0011 D17); was 2.318501845777376.
-    assert_eq!(r.full_load_draft_m, 2.3810863870362797);
+    // Re-pinned again (issue #745, the lightship takes the plate model's ordered weight, the shell
+    // on the hull's Sections Table and the rule length on it); was 2.318501845777376.
+    // Re-pinned again (spec 0011 D17, no hull length for the opening setback); was 2.298067547204077.
+    assert_eq!(r.full_load_draft_m, 2.3607660904430867);
     assert_eq!(r.n_tanks_wide, Some(2));
     assert!(r.ok());
 }

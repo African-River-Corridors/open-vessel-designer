@@ -101,6 +101,10 @@
           "value": null,
           "source": "default"
         },
+        "gross_tonnage": {
+          "value": null,
+          "source": "default"
+        },
         "pushed_stern_void_m": {
           "value": 3.0,
           "source": "default"
@@ -523,7 +527,7 @@
           "source": "default"
         }
       },
-      "results_hash": "c44dcf65505ffa5a027ddf67d1e2ae1b6d883e2e2b98e4d765be4c555d73551c"
+      "results_hash": "cbdba8ad16069d14b8b7d592ac3bd0d8d7e5889a9a87a59f9604e555120cad79"
     }
   ],
   "defaults_profile": "built-in"

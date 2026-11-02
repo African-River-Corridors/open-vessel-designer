@@ -79,6 +79,9 @@ pub struct Measured {
     /// The mean oil outflow of MARPOL Annex I regulation 23 (issue #341), for a liquid bulk hull under that
     /// Rule Set; `None` for every other design.
     pub oil_outflow: Option<crate::liquid_bulk::oil_outflow::OilOutflow>,
+    /// The gross tonnage of ITC 1969, its V and its K1 (issue #777). `None` where the run worked it
+    /// out for no hull (a search candidate, or a run with no capacity result).
+    pub gross_tonnage: Option<crate::tonnage::GrossTonnage>,
 }
 
 /// One assumed damage and the outcome: the Measure `stability.damage` is `ok`.
@@ -88,6 +91,9 @@ pub struct DamageVerdict {
     /// The compartments the damage floods.
     pub flooded: Vec<String>,
     pub outcome: crate::damage_stability::DamageOutcome,
+    /// The intermediate stages of flooding at 25, 50 and 75 % (spec 0012 D15), in that order; empty where
+    /// they are not worked out (liquid bulk).
+    pub stages: Vec<crate::damage_stability::DamageOutcome>,
 }
 
 /// The kinds of loading condition an Applicability can name (the object input
@@ -310,8 +316,15 @@ impl Measured {
             | "option.cargo_capacity_m3"
             | "option.slop_capacity_share" => self.liquid.is_some(),
             "option.deadweight" => self.deadweight_t.is_some(),
+            "option.enclosed_volume" | "option.gross_tonnage_k1" | "option.gross_tonnage" => {
+                self.gross_tonnage.is_some()
+            }
             // The Rule on a hull with no damage computed is `not evaluated` with the reason (`missing`).
             "stability.damage" | "stability.damage_marpol" | "oil_outflow.ratio" => true,
+            // Issue #760: the stages of a damage case; a case with none (liquid bulk) has no value.
+            "stability.damage_stage_heel" | "stability.damage_intermediate" => {
+                self.damage.iter().any(|d| !d.stages.is_empty())
+            }
             "wheelhouse.blind_distance" => match m.args.iter().find(|(k, _)| k == "condition") {
                 Some((_, ArgValue::Text(c))) if c == "light" => {
                     self.blind_distance_light_m.is_some()
@@ -371,6 +384,34 @@ impl Measured {
                 .map(|d| MeasureValue::Bool(d.outcome.ok))
                 .ok_or_else(|| format!("no damage case {index}"));
         }
+        if m.id == "stability.damage_stage_heel" || m.id == "stability.damage_intermediate" {
+            let d = self
+                .damage
+                .get(index)
+                .ok_or_else(|| format!("no damage case {index}"))?;
+            if m.id == "stability.damage_intermediate" {
+                return Ok(MeasureValue::Bool(
+                    !d.stages.is_empty() && d.stages.iter().all(|s| s.ok),
+                ));
+            }
+            let mut heel = 0.0_f64;
+            for (k, s) in d
+                .stages
+                .iter()
+                .chain(core::iter::once(&d.outcome))
+                .enumerate()
+            {
+                if s.floats != crate::damage_stability::Floats::Yes {
+                    return Err(if k < d.stages.len() {
+                        format!("intermediate stage {} has no floating position", k + 1)
+                    } else {
+                        "the final stage has no floating position".to_string()
+                    });
+                }
+                heel = heel.max(libm::fabs(s.heel_deg));
+            }
+            return Ok(MeasureValue::Number(heel));
+        }
         if m.id == "oil_outflow.ratio" {
             return self
                 .oil_outflow
@@ -380,6 +421,22 @@ impl Measured {
                     "the oil outflow was not computed: the layout has no cargo volume or no deadweight"
                         .to_string()
                 });
+        }
+        if let Some(which) = match m.id.as_str() {
+            "option.enclosed_volume" => Some(0),
+            "option.gross_tonnage_k1" => Some(1),
+            "option.gross_tonnage" => Some(2),
+            _ => None,
+        } {
+            let g = self
+                .gross_tonnage
+                .as_ref()
+                .ok_or_else(|| "the run worked out no gross tonnage".to_string())?;
+            return Ok(MeasureValue::Number(match which {
+                0 => g.volume.total_m3(),
+                1 => g.k1,
+                _ => g.value(),
+            }));
         }
         if m.id == "option.deadweight" {
             return self

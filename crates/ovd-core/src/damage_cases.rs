@@ -558,3 +558,127 @@ pub fn box_damage_cases(
     }
     cases
 }
+
+/// The Flooded Volumes of one IGC damage case on a gas hull, and the Type C tanks it breaches (spec 0012, D7 to
+/// D9).
+#[derive(Debug, Clone, PartialEq)]
+pub struct GasFlooding {
+    pub flooded: Vec<FloodedVolume>,
+    /// The names of the breached Type C tanks: their cargo leaves the condition (IGC 2.5.3, D8).
+    pub breached: Vec<String>,
+}
+
+/// The Flooded Volumes of `case` on the Spaces of a gas hull.
+///
+/// Each flooded Space floods at its own shape. A hold keeps every Type C tank inside it as an Intact Inclusion
+/// (D7): the hold's water does not fill the tank. A breached tank also floods on its own: its contents are lost
+/// and sea water takes their place (IGC 2.5.3), so it takes the table's value for an empty space. Any other space
+/// takes the table's value at its filling (`filling` by Space name, 0 empty to 1 full; IGC 2.5.2 note 2). A
+/// kind the table does not name floods at 0.95, the IGC value for a void.
+pub fn gas_flooding(
+    case: &DamageCase,
+    spaces: &[Space],
+    table: &PermeabilityTable,
+    filling: &dyn Fn(&str) -> f64,
+) -> GasFlooding {
+    const UNNAMED: f64 = 0.95;
+    let tanks: Vec<&Space> = spaces
+        .iter()
+        .filter(|s| s.kind == SpaceKind::CargoTank && matches!(s.shape, SpaceShape::Tank { .. }))
+        .collect();
+    let mut flooded = Vec::new();
+    let mut breached = Vec::new();
+    for f in &case.flooded {
+        let Some(space) = spaces.iter().find(|s| s.name == f.name) else {
+            continue;
+        };
+        if space.kind == SpaceKind::CargoTank {
+            breached.push(space.name.clone());
+            let p = table.of(space.kind, 0.0).unwrap_or(UNNAMED);
+            flooded.push(FloodedVolume::of_space(space, p));
+            continue;
+        }
+        let p = table
+            .of(space.kind, filling(&space.name))
+            .unwrap_or(UNNAMED);
+        let mut v = FloodedVolume::of_space(space, p);
+        if space.kind == SpaceKind::CargoHold {
+            v.inclusions = tanks
+                .iter()
+                .filter(|t| t.x_aft >= space.x_aft - 1e-9 && t.x_fwd <= space.x_fwd + 1e-9)
+                .map(|t| crate::damage_stability::IntactInclusion::of_space(t))
+                .collect();
+        }
+        flooded.push(v);
+    }
+    GasFlooding { flooded, breached }
+}
+
+/// The mass and centre of gravity of a condition after the cargo of the breached tanks leaves it (IGC 2.5.3,
+/// D8). The cargo of `cargo_t` at height `cargo_kg_m` is shared between the Type C tanks by their interior
+/// volume; each breached tank's share leaves from the middle of its axis.
+pub fn without_breached_cargo(
+    mass_t: f64,
+    g: crate::sections::Gravity,
+    (cargo_t, cargo_kg_m): (f64, f64),
+    spaces: &[Space],
+    breached: &[String],
+) -> (f64, crate::sections::Gravity) {
+    let volume = |s: &Space| match s.shape {
+        SpaceShape::Tank {
+            inner_volume_m3, ..
+        } => inner_volume_m3,
+        SpaceShape::Prism { .. } => 0.0,
+    };
+    let total: f64 = spaces
+        .iter()
+        .filter(|s| s.kind == SpaceKind::CargoTank)
+        .map(volume)
+        .sum();
+    if total <= 0.0 || cargo_t <= 0.0 {
+        return (mass_t, g);
+    }
+    let (mut m, mut mx, mut my, mut mz) =
+        (mass_t, mass_t * g.lcg_m, mass_t * g.tcg_m, mass_t * g.kg_m);
+    for s in spaces
+        .iter()
+        .filter(|s| s.kind == SpaceKind::CargoTank && breached.contains(&s.name))
+    {
+        let share = cargo_t * volume(s) / total;
+        let y = match s.shape {
+            SpaceShape::Tank { y, .. } => y,
+            SpaceShape::Prism { .. } => 0.0,
+        };
+        m -= share;
+        mx -= share * 0.5 * (s.x_aft + s.x_fwd);
+        my -= share * y;
+        mz -= share * cargo_kg_m;
+    }
+    if m <= 0.0 {
+        return (mass_t, g);
+    }
+    (
+        m,
+        crate::sections::Gravity {
+            lcg_m: mx / m,
+            tcg_m: my / m,
+            kg_m: mz / m,
+        },
+    )
+}
+
+/// Whether the deck edge is under the waterplane anywhere along `x` (m): the deck at `depth_m`, at the side
+/// `half_beam_m` from the centre line, at both ends and both sides (the deck-edge test of spec 0012 D11).
+pub fn deck_edge_immersed(
+    wp: &crate::sections::Waterplane,
+    x: (f64, f64),
+    half_beam_m: f64,
+    depth_m: f64,
+) -> bool {
+    let (kx, ky, kz) = wp.normal();
+    [x.0, x.1].iter().any(|&xx| {
+        [-half_beam_m, half_beam_m]
+            .iter()
+            .any(|&y| kx * xx + ky * y + kz * depth_m < wp.c)
+    })
+}

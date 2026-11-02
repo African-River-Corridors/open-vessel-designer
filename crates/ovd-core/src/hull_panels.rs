@@ -1373,11 +1373,9 @@ pub fn structure_spec_of(
     };
     Some(HullStructureSpec {
         loa_m: loa,
-        // The rule length as the lightship takes it today (issue #740): the raked box of the gas
-        // arrangement, whose `BargeInputs` carry no rake, so 0.96 x the length overall. An Estimate,
-        // kept so this spec and the lightship's agree; [`sections_rule_length`] gives the rule's own
-        // from the table, and the lightship switch (spec 0013, T7) moves to it.
-        rule_length_m: rule_length_m(depth, |_| loa),
+        // The rule length of ABS 3-1-1/3.1 on the hull's Sections Table, with its raked bow and
+        // Stern Form (issue #745; before it, 0.96 x the length overall).
+        rule_length_m: sections_rule_length(&model.hull, depth),
         beam_m: 2.0 * half_b,
         depth_m: depth,
         block_coefficient,
@@ -1399,13 +1397,16 @@ impl HullStructureSpec {
     /// The same `HullStructureSpec` from a gas hull's converged arrangement (the `BargeInputs` and
     /// `TankResult` of `GasBasis`), for the lightship, which the capacity calculation weighs before
     /// the Vessel Model exists. It reads what the Vessel Model is assembled from (the double bottom,
-    /// the wing tanks, the tanks and the hull's raked box), and a test holds it equal to
-    /// [`structure_spec_of`] on the converged design.
+    /// the wing tanks, the tanks and the hull), and a test holds it equal to [`structure_spec_of`] on
+    /// the converged design. The rule length is ABS 3-1-1/3.1 on `hull`, the hull's Sections Table
+    /// (issue #745); without one, the arrangement's raked box, which carries no rake (0.96 x the length
+    /// overall, as before issue #745).
     pub fn of_gas_arrangement(
         inputs: &crate::models::BargeInputs,
         tanks: &crate::models::TankResult,
         block_coefficient: f64,
         structure: StructureBlock,
+        hull: Option<&crate::sections::SectionsTable>,
     ) -> HullStructureSpec {
         let db = inputs.double_bottom_height.unwrap_or(0.0);
         let od = tanks.outer_diameter;
@@ -1415,19 +1416,22 @@ impl HullStructureSpec {
         let stern = inputs.stern_non_tank_length.unwrap_or(0.0);
         let bow = inputs.bow_non_tank_length.unwrap_or(0.0);
         let n_wide = tanks.n_tanks_wide.max(1) as f64;
-        // The rule length of 3-1-1/3.1 from the raked box the gas hull floats on (`hull::RakedBox`,
-        // the hull of the lightship's hydrostatics): its waterline length at 85 % of the depth.
         let depth = inputs.depth;
-        let raked = crate::hull::hull_form::RakedBox::new(
-            inputs.loa,
-            inputs.beam,
-            depth,
-            inputs.bow_rake_length,
-            inputs.bow_rake_rise.unwrap_or(depth),
-            inputs.stern_rake_length,
-            inputs.stern_rake_rise.unwrap_or(depth),
-        );
-        let rule_length = rule_length_m(depth, |z| raked.waterplane_area(z) / inputs.beam);
+        let rule_length = match hull {
+            Some(table) => sections_rule_length(table, depth),
+            None => {
+                let raked = crate::hull::hull_form::RakedBox::new(
+                    inputs.loa,
+                    inputs.beam,
+                    depth,
+                    inputs.bow_rake_length,
+                    inputs.bow_rake_rise.unwrap_or(depth),
+                    inputs.stern_rake_length,
+                    inputs.stern_rake_rise.unwrap_or(depth),
+                );
+                rule_length_m(depth, |z| raked.waterplane_area(z) / inputs.beam)
+            }
+        };
         HullStructureSpec {
             loa_m: inputs.loa,
             rule_length_m: rule_length,

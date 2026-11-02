@@ -1713,7 +1713,11 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
                     &measured.marpol_damage,
                     measured.oil_outflow.as_ref(),
                 ),
-                (&r.stern_block_items, &r.trim_conditions),
+                (
+                    &r.stern_block_items,
+                    &r.trim_conditions,
+                    r.machinery_summary.as_ref(),
+                ),
             ),
             is_code_stability,
             loading_conditions,
@@ -2486,9 +2490,10 @@ fn stern_mass_of(p: &Map<String, Value>) -> R<Option<ovd_core::aft_arrangement::
 /// a file without the stern mass gets no new field, so its results hash is unchanged.
 fn with_stern_mass(
     mut result: Value,
-    (items, trims): (
+    (items, trims, machinery): (
         &[ovd_core::weights::MassItem],
         &[(&str, ovd_core::models::TrimResult)],
+        Option<&ovd_core::aft_arrangement::MachinerySummary>,
     ),
 ) -> Value {
     // Issue #349: a dry-bulk hull's trim, laden and light, beside the block.
@@ -2515,8 +2520,39 @@ fn with_stern_mass(
                 "kcg_m": num(i.kcg_m),
             })).collect::<Vec<_>>(),
         });
+        if let Some(m) = machinery {
+            result["stern_block_mass"]["machinery_steel"] = machinery_steel_json(m);
+        }
     }
     result
+}
+
+/// Issue #774: what the engine-room steel and the engine seats were worked from, with the status of
+/// the rate, and Watson's machinery total beside OVD's (a cross-check, never in the lightship).
+fn machinery_steel_json(m: &ovd_core::aft_arrangement::MachinerySummary) -> Value {
+    let s = &m.steel;
+    json!({
+        "engine_room_volume_m3": num(s.engine_room_volume_m3),
+        "engine_room_rate_t_per_m3": num(s.engine_room_rate_t_per_m3),
+        "engine_room_steel_t": num(s.engine_room_steel_t),
+        "engine_room_rate_status": "unverified estimate",
+        "engine_room_rate_basis": "Schneekluth and Bertram, Ship Design for Efficiency and Economy, sec. 5, Table 5.2, p. 164: deckhouse coefficient C_DH, layer I, Fo/Fu = 1.0, taken for the engine room (edition not shown on the pages read)",
+        "seats_t": num(s.seats_t),
+        "seats_basis": "Schneekluth and Bertram, sec. 5.1, p. 158: W = 27 P_B / ((n + 250) (15 + P_B / 1000)) t per engine",
+        "prime_movers": s.prime_movers.map_or(Value::Null, |p| json!({
+            "count": p.count,
+            "kw_each": num(p.kw_each),
+            "rpm": num(p.rpm),
+            "rpm_status": if p.rpm_sourced { "maker table" } else { "estimate" },
+        })),
+        "watson_cross_check": m.watson.map_or(Value::Null, |w| json!({
+            "method": "Watson diesel-electric machinery total, 0.72 MCR^0.78 t (secondary: lecture notes citing Watson 1998)",
+            "mcr_kw": num(w.mcr_kw),
+            "watson_total_t": num(w.watson_total_t),
+            "ovd_machinery_t": num(w.ovd_machinery_t),
+            "in_lightship": false,
+        })),
+    })
 }
 
 /// Issue #354: the sightline as a Blind Distance, in the results only with that method (other
@@ -2898,6 +2934,8 @@ fn simulate_gas(
     let mut conditions = Vec::new();
     let mut is_code_stability = Value::Null;
     let mut loading_conditions = Value::Null;
+    // Issue #759: the IS Code conditions with their weights, for the IGC damage cases.
+    let mut damaged_conditions: Vec<ovd_core::loading_conditions::LoadedCondition> = Vec::new();
     if let Some(ic) = options.is_code.as_ref().filter(|_| r.gas_basis.is_some()) {
         // The same conditions the search checked the arrangement in.
         let tanks = clipped_ballast_tanks(&f.engine_inputs, r, &fit_hull);
@@ -2908,6 +2946,7 @@ fn simulate_gas(
         is_code_stability = is_code_stability_json(&conds, false, &mut ids);
         loading_conditions = loading_conditions_json(&conds, &tanks, consumables_t, rho, false);
         conditions = conds.iter().map(|c| c.condition.clone()).collect();
+        damaged_conditions = conds;
     } else if f.payload_t > 0.0 && r.gas_basis.is_some() {
         let basis = GasCapacityResult::try_from(r)
             .map_err(|m| Stop::Eval(EvalError::BadInput(m.into())))?;
@@ -3009,6 +3048,30 @@ fn simulate_gas(
         hull: fit_hull.table.clone(),
         structure,
     };
+    // Issue #759 (spec 0012): the IGC damage cases on every IS Code condition, when the stack's `igc-2g`
+    // evaluates IGC 2.7 and holds the damage tables. Unhashed (D21).
+    let (gas_damage, gas_damage_block) = match rules.sets.iter().find(|s| {
+        s.id == "igc-2g"
+            && s.rule("igc/2.7/damage-survival")
+                .is_some_and(|r| r.evaluated)
+    }) {
+        Some(set) if !damaged_conditions.is_empty() => {
+            let model = ovd_core::vessel_model::assemble(&vessel_inputs);
+            let spaces: Vec<ovd_core::compartments::Space> =
+                model.spaces.iter().map(|c| c.space.clone()).collect();
+            match crate::damage::gas_damage_verdicts(
+                set,
+                &spaces,
+                &fit_hull,
+                &damaged_conditions,
+                rho,
+            ) {
+                Ok((v, block)) => (v, block),
+                Err(_) => (Vec::new(), Value::Null),
+            }
+        }
+        _ => (Vec::new(), Value::Null),
+    };
     // Issue #742: the panel model and its plate model (the steel list).
     let steel = r
         .gas_basis
@@ -3076,20 +3139,27 @@ fn simulate_gas(
             }, steel.as_ref().map(|s| &s.0))),
             // Issue #742: the plate model's steel list, groups and purchase, and its geometry.
             "structure": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_json(&s.1)),
+            "steel_list": steel.as_ref().map_or(Value::Null, |s| crate::steel::steel_list_json(&s.1)),
             "structure_geometry": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_geometry_json(&s.1)),
         }),
-            (&r.stern_block_items, &r.trim_conditions),
+            (&r.stern_block_items, &r.trim_conditions, r.machinery_summary.as_ref()),
         ),
             is_code_stability,
             loading_conditions,
         ),
         ids,
     )
-    .map(|v| {
+    .map(|mut v| {
+        if !gas_damage_block.is_null()
+            && let Some(o) = v.as_object_mut()
+        {
+            o.insert("damage".to_string(), gas_damage_block);
+        }
         (
             v,
             Measured {
                 conditions,
+                damage: gas_damage,
                 deadweight_t: Some(deadweight),
                 tank: r.tank_rules.clone(),
                 separation: r.separation.clone().map(|s| {
@@ -3579,7 +3649,6 @@ fn gas_steel(
         i.block_coefficient,
         i.hull_steel_density,
     )?;
-    let panels = ovd_core::hull_panels::hull_panels(&spec);
     // Issue #743: the shell and the end structure on the hull's Sections Table, the hold bulkheads
     // where the Vessel Model puts them (the ends of the cargo zone and the bulkheads between holds).
     let holds: Vec<f64> = model
@@ -3593,6 +3662,9 @@ fn gas_steel(
         })
         .map(|b| b.x_m)
         .collect();
-    let plates = ovd_core::hull_plates::hull_plates_on(&panels, &spec, &model.hull, &holds);
-    Some((panels, plates))
+    // Issue #745: the panel table rolled up from the plate model, the same steel the lightship takes.
+    Some(ovd_core::hull_plates::gas_hull_steel(
+        &spec,
+        Some((&model.hull, &holds)),
+    ))
 }

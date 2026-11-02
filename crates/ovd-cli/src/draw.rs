@@ -197,11 +197,11 @@ fn draw_design(args: &[&str]) -> Result<(), String> {
         };
         // Issue #360: a Formation also gets its arrangement plan; a convoy gets only that.
         let arrangement = ovd_format::arrangement_plan_named(&run.outcome, Some(&run.name)).ok();
-        let mut documents_of: Vec<(&str, serde_json::Value)> = match views {
+        let mut documents_of: Vec<(String, serde_json::Value)> = match views {
             Ok(v) => v
                 .all()
                 .into_iter()
-                .map(|(view, d)| (view, d.clone()))
+                .map(|(view, d)| (view.to_string(), d.clone()))
                 .collect(),
             Err(_) if arrangement.is_some() => Vec::new(),
             Err(m) => {
@@ -210,12 +210,16 @@ fn draw_design(args: &[&str]) -> Result<(), String> {
                 continue;
             }
         };
-        documents_of.extend(arrangement.map(|d| ("arrangement-plan", d)));
+        documents_of.extend(arrangement.map(|d| ("arrangement-plan".to_string(), d)));
         // The tug of a Formation that includes it gets its own GA.
         documents_of.extend(
             ovd_format::tug_ga_named(&run.outcome, Some(&run.name))
                 .ok()
-                .map(|d| ("tug-ga", d)),
+                .map(|d| ("tug-ga".to_string(), d)),
+        );
+        // Issue #761: an Option with damage cases gets one damage case sheet per governing case.
+        documents_of.extend(
+            ovd_format::damage_drawings_named(&run.outcome, Some(&run.name)).unwrap_or_default(),
         );
         let mut stem = slug(&run.name);
         let mut n = 2;
@@ -241,7 +245,7 @@ fn draw_design(args: &[&str]) -> Result<(), String> {
                     }
                 }
             }
-            set.insert(view.to_string(), document);
+            set.insert(view.clone(), document);
         }
         documents.insert(run.name.clone(), serde_json::Value::Object(set));
     }

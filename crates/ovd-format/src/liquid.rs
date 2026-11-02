@@ -221,6 +221,7 @@ pub(crate) fn damage_verdicts(
                     criteria,
                 ),
                 name: case.name,
+                stages: Vec::new(),
             })
             .collect::<Vec<_>>()
     };

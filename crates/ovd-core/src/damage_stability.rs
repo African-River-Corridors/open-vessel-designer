@@ -573,6 +573,18 @@ impl DamageCriteria {
         limit_deg: 0.0,
         range_beyond_deg: Some(20.0),
     };
+
+    /// IGC Code 2.7.1.2 and 2.7.2.1 (MSC.370(93), annex p. 31): a heel of at most 30 degrees, and at final
+    /// equilibrium a range of 20 degrees with a righting lever of at least 0.1 m and an area of at least
+    /// 0.0175 m.rad within it. The range is measured from the equilibrium, the most conservative start 2.7.2.1
+    /// allows (spec 0012 D11).
+    pub const IGC_2_7: DamageCriteria = DamageCriteria {
+        max_heel_deg: 30.0,
+        min_gz_m: 0.1,
+        min_area_m_rad: 0.0175,
+        limit_deg: 0.0,
+        range_beyond_deg: Some(20.0),
+    };
 }
 
 /// How the damaged hull floats.
@@ -772,4 +784,183 @@ pub fn righting_lever_at(
         2,
     )?;
     Some(residuals(&p, &s.wp())[2])
+}
+
+/// The fractions of the final flood at which the intermediate stages are checked (spec 0012 D15: ES-TRIN
+/// 2025/1 28.03(3), 25, 50 and 75 %, for every Rule Set).
+pub const INTERMEDIATE_FRACTIONS: [f64; 3] = [0.25, 0.50, 0.75];
+
+/// The intermediate stages of flooding by added mass (spec 0012 D5, D15 to D18).
+///
+/// At each fraction `f` every Flooded Volume holds `f` times the water it holds at the final stage (D16: all
+/// fill together), or `f` times its whole permeable volume when the final stage has no equilibrium. The water
+/// lies level in the space, upright, and is added to the intact hull as a mass at its centroid; its free
+/// surface is the space's gross surface at that level (D17, ES-TRIN 28.03(4)(e): no permeability; the chord
+/// of an intact tank is not water surface), as a rise of the centre of gravity of `density × i / mass`. The mass and centre of
+/// gravity of the condition are those before the damage: a breached tank's cargo stays aboard (D18). Each
+/// stage is then assessed as the final stage is, with `criteria`.
+pub fn intermediate_stages(
+    table: &SectionsTable,
+    flooded: &[FloodedVolume],
+    final_outcome: &DamageOutcome,
+    (mass_t, g): (f64, Gravity),
+    density: f64,
+    start: (f64, f64),
+    criteria: &DamageCriteria,
+) -> Vec<DamageOutcome> {
+    let final_wp = if final_outcome.floats == Floats::Yes {
+        Waterplane {
+            heel_deg: final_outcome.heel_deg,
+            trim_deg: final_outcome.trim_deg,
+            c: final_outcome.waterplane_c_m,
+        }
+    } else {
+        Waterplane {
+            heel_deg: 0.0,
+            trim_deg: 0.0,
+            c: f64::MAX / 4.0,
+        }
+    };
+    INTERMEDIATE_FRACTIONS
+        .iter()
+        .map(|&f| {
+            let (mut m, mut mx, mut my, mut mz) =
+                (mass_t, mass_t * g.lcg_m, mass_t * g.tcg_m, mass_t * g.kg_m);
+            let mut free_surface_tm = 0.0;
+            for v in flooded {
+                let water = f * v.water_m3(&final_wp);
+                if water.is_nan() || water <= 0.0 {
+                    continue;
+                }
+                let (z0, z1) = vertical_extent(&v.shape);
+                // the level at which the space holds `water` (bisection on the upright plane)
+                let (mut lo, mut hi) = (z0, z1);
+                for _ in 0..60 {
+                    let mid = 0.5 * (lo + hi);
+                    if v.water_m3(&Waterplane::upright(mid)) < water {
+                        lo = mid;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                let level = 0.5 * (lo + hi);
+                let part = v.below(&Waterplane::upright(level));
+                if part.v <= 0.0 {
+                    continue;
+                }
+                let w = density * water;
+                m += w;
+                mx += w * part.mx / part.v;
+                my += w * part.my / part.v;
+                mz += w * part.mz / part.v;
+                free_surface_tm += density * gross_inertia(v, level);
+            }
+            let gd = Gravity {
+                lcg_m: mx / m,
+                tcg_m: my / m,
+                kg_m: mz / m + free_surface_tm / m,
+            };
+            assess(table, &[], m, gd, density, start, criteria)
+        })
+        .collect()
+}
+
+/// The lowest and highest point of a Space shape, m.
+fn vertical_extent(shape: &SpaceShape) -> (f64, f64) {
+    match shape {
+        SpaceShape::Prism { section } => section
+            .iter()
+            .fold((f64::INFINITY, f64::NEG_INFINITY), |(a, b), &(_, z)| {
+                (a.min(z), b.max(z))
+            }),
+        SpaceShape::Tank {
+            z, outer_diameter, ..
+        } => (z - 0.5 * outer_diameter, z + 0.5 * outer_diameter),
+    }
+}
+
+/// The transverse second moment of the gross free surface of a space at an upright `level`, m⁴, about its own
+/// centroid: the strips of water surface across the section at that level, times the space's length. Gross: no
+/// permeability (ES-TRIN 2025/1 28.03(4)(e)). The surface is where the water is, so the chord of an Intact
+/// Inclusion (a Type C tank in a hold) at that level is not water surface and is taken out.
+fn gross_inertia(v: &FloodedVolume, level: f64) -> f64 {
+    let length = v.x_fwd_m - v.x_aft_m;
+    let mut strips: Vec<(f64, f64)> = match surface_span(&v.shape, level) {
+        Some(span) => vec![span],
+        None => return 0.0,
+    };
+    for i in &v.inclusions {
+        if let Some((a, b)) = surface_span(&i.shape, level) {
+            strips = strips
+                .into_iter()
+                .flat_map(|(lo, hi)| {
+                    let mut out = Vec::new();
+                    if a > lo {
+                        out.push((lo, a.min(hi)));
+                    }
+                    if b < hi {
+                        out.push((b.max(lo), hi));
+                    }
+                    out
+                })
+                .filter(|(lo, hi)| hi > lo)
+                .collect();
+        }
+    }
+    let area: f64 = strips.iter().map(|(lo, hi)| hi - lo).sum();
+    if area <= 0.0 {
+        return 0.0;
+    }
+    let centre = strips
+        .iter()
+        .map(|(lo, hi)| (hi - lo) * 0.5 * (lo + hi))
+        .sum::<f64>()
+        / area;
+    length
+        * strips
+            .iter()
+            .map(|(lo, hi)| {
+                let b = hi - lo;
+                let d = 0.5 * (lo + hi) - centre;
+                b * b * b / 12.0 + b * d * d
+            })
+            .sum::<f64>()
+}
+
+/// Where a Space shape crosses an upright `level`: the lowest and highest y, or `None` when it does not.
+fn surface_span(shape: &SpaceShape, level: f64) -> Option<(f64, f64)> {
+    match shape {
+        SpaceShape::Prism { section } => {
+            let mut ys: Vec<f64> = Vec::new();
+            let n = section.len();
+            for i in 0..n {
+                let (a, b) = (section[i], section[(i + 1) % n]);
+                if (a.1 - level) * (b.1 - level) < 0.0 {
+                    let t = (level - a.1) / (b.1 - a.1);
+                    ys.push(a.0 + t * (b.0 - a.0));
+                }
+            }
+            if ys.len() < 2 {
+                return None;
+            }
+            let lo = ys.iter().copied().fold(f64::INFINITY, f64::min);
+            let hi = ys.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+            Some((lo, hi))
+        }
+        SpaceShape::Tank {
+            y,
+            z,
+            outer_diameter,
+            ..
+        } => {
+            let r = 0.5 * outer_diameter;
+            let d = level - z;
+            if fabs(d) >= r {
+                None
+            } else {
+                let c = sqrt(r * r - d * d);
+                Some((y - c, y + c))
+            }
+        }
+    }
 }

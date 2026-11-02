@@ -101,6 +101,10 @@
           "value": null,
           "source": "default"
         },
+        "gross_tonnage": {
+          "value": null,
+          "source": "default"
+        },
         "lpg_carriage_condition": {
           "value": "fully_pressurised",
           "source": "default"
@@ -587,7 +591,7 @@
           "source": "default"
         }
       },
-      "results_hash": "cb6b295c7ad936b5730c308e90c5e3fd335e902a10a8678197317b69486617c5"
+      "results_hash": "cd2da995b21656b42f453f3d492ed0757c538c61c4c5f07701350d6746fcf9d4"
     }
   ],
   "defaults_profile": "built-in"

@@ -551,11 +551,11 @@ impl MeasureSource for OptionMeasures<'_> {
                     .to_string(),
             );
         }
-        // Issue #663: the damage cases are those of ADN 9.3.x.15.1 and MARPOL Annex I 28.2 only, so a gas
-        // Cargo never has any, whether or not its laden condition floats.
+        // Issue #759: a gas Cargo has the IGC damage cases only on the IS Code loading conditions (the legacy
+        // conditions hold no weights) and only with an `igc-2g` version that holds the damage tables.
         if object == ObjectType::DamageCase && gas && self.measured.damage.is_empty() {
             return Some(
-                "the damage cases were not computed: the assumed damage of IGC 2.3 is not modelled yet, so survival to IGC 2.7 is not checked"
+                "the IGC damage cases were not computed: they need the IS Code 2008 loading conditions, whose weights the damaged condition is worked from, and a loading condition that floats"
                     .to_string(),
             );
         }
@@ -798,6 +798,39 @@ pub fn trace_json(t: &Trace, service_area: &str, warnings: &[String]) -> Value {
             "summary": summary,
         },
     })
+}
+
+/// The computed Measures the trace shows although no Rule reads them yet (issue #777: the gross
+/// tonnage, its V and its K1). One entry each the run has, with its value, unit, method and method
+/// status; none it lacks.
+pub const REPORTED_MEASURES: &[&str] = &[
+    "option.enclosed_volume",
+    "option.gross_tonnage_k1",
+    "option.gross_tonnage",
+];
+
+/// The [`REPORTED_MEASURES`] of a run, as the `measures` list of the trace.
+pub fn reported_measures_json(measured: &Measured) -> Value {
+    Value::Array(
+        REPORTED_MEASURES
+            .iter()
+            .filter_map(|id| {
+                let def = measure_def(id)?;
+                let m = bare(id);
+                if !measured.has(&m) {
+                    return None;
+                }
+                let value = measured.value(&m, 0).ok()?;
+                Some(json!({
+                    "measure": id,
+                    "value": value_json(&value),
+                    "unit": def.unit,
+                    "method": def.method,
+                    "method_status": def.method_status.key(),
+                }))
+            })
+            .collect(),
+    )
 }
 
 /// The arguments a Measure takes, for `ovd rules --measures`.

@@ -15,7 +15,8 @@
 
 use libm::{acos, cos, sin, sqrt, tan};
 use ovd_core::damage_stability::{
-    DamageCriteria, Floats, FloodedVolume, IntactInclusion, assess, righting_lever_at,
+    DamageCriteria, Floats, FloodedVolume, INTERMEDIATE_FRACTIONS, IntactInclusion, assess,
+    intermediate_stages, righting_lever_at,
 };
 use ovd_core::hull::hull_form::{HullFormInputs, HullFormKind, HullShape, generate};
 use ovd_core::sections::{Gravity, SectionsTable, equilibrium};
@@ -791,4 +792,68 @@ fn the_damaged_hull_floats_on_the_intact_tank_in_its_flooded_hold() {
     );
     let without = assess(&t, &[hold(1.0, vec![])], mass, g, 1.0, s, &crit);
     assert!((without.draught_mid_m - (mass - 160.0) / 440.0).abs() < 1e-6);
+}
+
+// ---- intermediate stages by added mass (spec 0012 D15 to D18, issue #760) --------------------------------
+
+/// The added mass method at a fraction f of the final flood: the double bottom (below the waterline at the final
+/// stage, so its final water is 0.95 x 5 x 10 x 1 = 47.5 m3) holds f x 47.5 m3, a mass of f x 47.5 t at density
+/// 1.0, so the wall-sided box floats at T = (1200 + f x 47.5) / (60 x 10) with no heel and no trim. The free
+/// surface (gross, 5 x 10^3 / 12 = 416.7 m4) raises G but does not change the draught.
+#[test]
+fn an_intermediate_stage_floats_the_box_with_its_share_of_the_flood_as_added_mass() {
+    let t = hull();
+    let s = start(&t);
+    let boxes = [centred_double_bottom(0.95)];
+    let fin = assess(
+        &t,
+        &boxes,
+        MASS,
+        gravity(),
+        1.0,
+        s,
+        &DamageCriteria::IGC_2_7,
+    );
+    let stages = intermediate_stages(
+        &t,
+        &boxes,
+        &fin,
+        (MASS, gravity()),
+        1.0,
+        s,
+        &DamageCriteria::IGC_2_7,
+    );
+    assert_eq!(stages.len(), 3);
+    for (st, f) in stages.iter().zip(INTERMEDIATE_FRACTIONS) {
+        assert_eq!(st.floats, Floats::Yes);
+        assert!(st.heel_deg.abs() < 1e-6 && st.trim_deg.abs() < 1e-6);
+        let want = (MASS + f * 47.5) / (L * B);
+        assert!(
+            (st.draught_mid_m - want).abs() < 1e-6,
+            "{f}: {} against {want}",
+            st.draught_mid_m
+        );
+    }
+}
+
+/// A one-sided flood heels the hull at every stage, more as the stage grows; the gross free surface makes the
+/// intermediate residual lever no larger than with no free surface (property).
+#[test]
+fn a_one_sided_flood_heels_more_at_each_stage() {
+    let t = hull();
+    let s = start(&t);
+    let wing = [flooded((25.0, 35.0), (3.0, 5.0), (0.0, 4.0), 0.95, "WB")];
+    let fin = assess(&t, &wing, MASS, gravity(), 1.0, s, &DamageCriteria::IGC_2_7);
+    let stages = intermediate_stages(
+        &t,
+        &wing,
+        &fin,
+        (MASS, gravity()),
+        1.0,
+        s,
+        &DamageCriteria::IGC_2_7,
+    );
+    let heels: Vec<f64> = stages.iter().map(|st| st.heel_deg).collect();
+    assert!(heels[0] > 0.0, "{heels:?}");
+    assert!(heels[0] < heels[1] && heels[1] < heels[2], "{heels:?}");
 }

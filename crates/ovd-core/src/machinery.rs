@@ -553,6 +553,146 @@ pub fn mass_items(
     items
 }
 
+// --- Spec 0011 D7, D19 (issue #774): the machinery steel allowances. -------------------------------
+//
+// The hull steel of OVD holds the shell, decks, bottom and bulkheads of the stern, but not the
+// machinery seats, the engine room's own structure or the casing (docs/basis/02, step 1.2, "Not in
+// it"). These two items add them. The Watson machinery total is reported beside OVD's machinery
+// mass as a cross-check only; it is never added to the lightship.
+
+/// The rates of the machinery steel allowances.
+pub mod steel_rates {
+    /// The engine-room block steel rate (t per m3 of engine-room volume below the main deck and above
+    /// the double bottom). **Unverified estimate** (spec 0011 D19): no engine-room or casing steel rate
+    /// per m3 was found in a source read. OVD takes the volumetric deckhouse weight coefficient C_DH of
+    /// the lowest deckhouse layer (layer I) at Fo/Fu = 1.0, 0.057 t/m3, as a stand-in for the
+    /// engine room's flats, casing and local structure: Schneekluth, H. and Bertram, V., "Ship Design
+    /// for Efficiency and Economy", sec. 5, Table 5.2, p. 164 (edition not shown on the pages read).
+    /// It is a deckhouse rate, not an engine-room rate; the calibration ticket replaces it (D11).
+    pub const ENGINE_ROOM_T_PER_M3: f64 = 0.057;
+    /// The engine foundation weight W = 27 P_B / ((n + 250) (15 + P_B / 1000)) t, P_B (kW) and n
+    /// (rpm) of one engine: Schneekluth and Bertram, sec. 5.1, p. 158 (edition not shown on the
+    /// pages read).
+    pub const SEAT_COEFF: f64 = 27.0;
+    pub const SEAT_RPM_ADD: f64 = 250.0;
+    pub const SEAT_BASE: f64 = 15.0;
+    pub const SEAT_KW_DIV: f64 = 1000.0;
+    /// The speed of a high-speed engine of the engine table (rpm), estimate: the maker sheets the
+    /// table cites are not held with their speeds.
+    pub const HIGH_SPEED_RPM: f64 = 1800.0;
+    /// Watson's diesel-electric machinery total Wm = 0.72 MCR^0.78 t, MCR the kW of all gensets:
+    /// secondary (Aalto and USP lecture notes citing Watson 1998; docs/research/stern-arrangement.md
+    /// sec. 3). A cross-check only.
+    pub const WATSON_DE_COEFF: f64 = 0.72;
+    pub const WATSON_DE_EXP: f64 = 0.78;
+}
+
+/// The engine foundation mass of one engine (t): Schneekluth and Bertram, sec. 5.1.
+pub fn engine_seat_t(kw: f64, rpm: f64) -> f64 {
+    use steel_rates::*;
+    if kw <= 0.0 {
+        return 0.0;
+    }
+    SEAT_COEFF * kw / ((rpm + SEAT_RPM_ADD) * (SEAT_BASE + kw / SEAT_KW_DIV))
+}
+
+/// Watson's diesel-electric machinery total (t) for all gensets' kW (cross-check only).
+pub fn watson_diesel_electric_t(mcr_kw: f64) -> f64 {
+    use steel_rates::*;
+    if mcr_kw <= 0.0 {
+        return 0.0;
+    }
+    WATSON_DE_COEFF * libm::pow(mcr_kw, WATSON_DE_EXP)
+}
+
+/// The prime movers that stand on seats: count, kW of one, its speed (rpm), and whether the speed is
+/// from a maker table (`true`) or an estimate.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct PrimeMovers {
+    pub count: u32,
+    pub kw_each: f64,
+    pub rpm: f64,
+    pub rpm_sourced: bool,
+}
+
+/// The engines of a laid-out machinery (diesel-mechanical, hybrid, diesel-electric): one per
+/// propulsor, or N + 1 gensets, each of P / N at the high-speed estimate. `None` when no engine is
+/// placed (battery-electric, power not sized; a gas block's gensets come from its own table).
+pub fn engine_prime_movers(inp: &MachineryInputs, m: &Machinery) -> Option<PrimeMovers> {
+    m.engine.as_ref()?;
+    let p = inp.installed_power_kw.filter(|p| *p > 0.0)?;
+    let n = f64::from(inp.propulsor_count.max(1));
+    Some(PrimeMovers {
+        count: m.n_engines,
+        kw_each: p / n,
+        rpm: steel_rates::HIGH_SPEED_RPM,
+        rpm_sourced: false,
+    })
+}
+
+/// The machinery steel of a stern block (issue #774): the engine-room block and the seats, with the
+/// numbers behind them.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct MachinerySteel {
+    /// Engine-room length x beam x (depth - double bottom) (m3).
+    pub engine_room_volume_m3: f64,
+    pub engine_room_rate_t_per_m3: f64,
+    pub engine_room_steel_t: f64,
+    pub prime_movers: Option<PrimeMovers>,
+    pub seats_t: f64,
+    #[cfg_attr(feature = "serde", serde(skip))]
+    pub items: Vec<MassItem>,
+}
+
+/// The engine-room block steel and the engine seats (issue #774). The engine room is the zone the
+/// layout gives (`engine_room_x0_m` to `engine_room_x1_m`), full beam, from the double bottom to the
+/// deck (an estimate: the stern's narrowing is ignored). The block steel stands at the room's centre;
+/// the seats at the room's centre on the double bottom.
+pub fn steel_items(
+    m: &Machinery,
+    movers: Option<PrimeMovers>,
+    beam: f64,
+    depth: f64,
+    double_bottom_m: f64,
+) -> MachinerySteel {
+    let rate = steel_rates::ENGINE_ROOM_T_PER_M3;
+    let length = (m.engine_room_x1_m - m.engine_room_x0_m).max(0.0);
+    let height = (depth - double_bottom_m).max(0.0);
+    let volume = length * beam.max(0.0) * height;
+    let er_lcg = (m.engine_room_x0_m + m.engine_room_x1_m) / 2.0;
+    let block_t = rate * volume;
+    let seats_t = movers.map_or(0.0, |p| {
+        f64::from(p.count) * engine_seat_t(p.kw_each, p.rpm)
+    });
+    let mut items = Vec::new();
+    if block_t > 0.0 {
+        items.push(MassItem {
+            label: "engine-room steel",
+            mass_t: block_t,
+            lcg_m: er_lcg,
+            kcg_m: double_bottom_m + height / 2.0,
+        });
+    }
+    if seats_t > 0.0 && length > 0.0 {
+        items.push(MassItem {
+            label: "engine seats",
+            mass_t: seats_t,
+            lcg_m: er_lcg,
+            kcg_m: double_bottom_m,
+        });
+    }
+    MachinerySteel {
+        engine_room_volume_m3: volume,
+        engine_room_rate_t_per_m3: rate,
+        engine_room_steel_t: block_t,
+        prime_movers: movers,
+        seats_t: if length > 0.0 { seats_t } else { 0.0 },
+        items,
+    }
+}
+
 // --- Spec 0009 "Propulsors" (issue #691): the Propulsor Layout. ------------------------------------
 //
 // One set of position functions places every propulsor, shaft line, rudder and the bow thruster.

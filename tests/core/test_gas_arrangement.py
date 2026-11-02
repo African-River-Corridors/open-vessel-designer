@@ -102,8 +102,9 @@ def test_payload_never_exceeds_the_draught_cap():
 # values 1670.580303723772, 1694.82927479986, 1893.3032219800957 and 2960.8309821262383.
 # Re-pinned (spec 0011 D17, no hull length for the opening setback): all four to the printed values
 # 1728.3293387579888, 1767.608293785855, 1965.9927836300049 and 3032.327446305541; they were 1671,
-# 1695, 1893 and 2961.
-SNAPSHOT = [((90, 12.9), 1728), ((90, 14.8), 1768), ((90, 18.0), 1966), ((120, 18.0), 3032)]
+# 1695, 1893 and 2961. After merging the plate-model lightship (issue #745) the 90 x 12.9 m case
+# prints 1738.5844521828874 (was 1728); the other three stay within 1 t.
+SNAPSHOT = [((90, 12.9), 1739), ((90, 14.8), 1768), ((90, 18.0), 1966), ((120, 18.0), 3032)]
 
 
 @pytest.mark.parametrize("dims,expected", SNAPSHOT)

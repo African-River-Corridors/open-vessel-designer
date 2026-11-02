@@ -569,23 +569,19 @@ pub fn stern_block_mass(
     if res.n_gensets > 0 {
         // The published engine mass plus an alternator: the genset rate (9 kg/kVA) less the
         // engine share of it (4.9 kg/kW).
-        let n = res.n_gensets as f64;
-        let alternator_t =
-            GENSET_T_PER_KVA * res.genset_kwe / POWER_FACTOR - ENGINE_T_PER_KW * res.genset_kwe;
-        let alternator_t = if alternator_t > 0.0 {
-            alternator_t
-        } else {
-            0.0
-        };
         items.push(MassItem {
             label: "gensets",
-            mass_t: res.genset_engine_mass_t + n * alternator_t,
+            mass_t: gas_gensets_t(res),
             lcg_m: res.genset_x0_m + res.genset_length_m / 2.0,
             kcg_m: double_bottom_m + res.genset_height_m / 2.0,
         });
     }
     if let Some(m) = machinery {
         items.extend(m);
+        // Issue #774: the engine-room block steel and the engine seats.
+        if let Some(s) = machinery_summary(inp, res, double_bottom_m) {
+            items.extend(s.steel.items);
+        }
         return items;
     }
     let block_lcg = res.length_m / 2.0;
@@ -603,6 +599,100 @@ pub fn stern_block_mass(
     });
     items
 }
+
+/// The gas gensets' mass (t): the published engine mass plus an alternator each, the genset rate
+/// (9 kg/kVA) less the engine share of it (4.9 kg/kW).
+fn gas_gensets_t(res: &AftArrangementResult) -> f64 {
+    use stern_mass::*;
+    let n = res.n_gensets as f64;
+    let alternator_t =
+        GENSET_T_PER_KVA * res.genset_kwe / POWER_FACTOR - ENGINE_T_PER_KW * res.genset_kwe;
+    let alternator_t = if alternator_t > 0.0 {
+        alternator_t
+    } else {
+        0.0
+    };
+    res.genset_engine_mass_t + n * alternator_t
+}
+
+/// Watson's diesel-electric machinery total beside OVD's machinery mass (issue #774): a cross-check
+/// only, never in the lightship.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct WatsonCrossCheck {
+    /// The kW of all gensets, the reserve set included.
+    pub mcr_kw: f64,
+    pub watson_total_t: f64,
+    /// OVD's machinery items: the propulsors, plant, gensets, electrical, piping and the seats (the
+    /// engine-room block steel and the deck items left out).
+    pub ovd_machinery_t: f64,
+}
+
+/// The machinery steel of a specified Propulsor's stern block and, on a genset plant, the Watson
+/// cross-check (issue #774). `None` when the block has no machinery laid out.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct MachinerySummary {
+    pub steel: crate::machinery::MachinerySteel,
+    pub watson: Option<WatsonCrossCheck>,
+}
+
+/// The machinery steel and the Watson cross-check of a stern block (issue #774). A gas-fuelled block's
+/// seats take its gensets (the speed from the maker table, else 1,000 rpm, an estimate); other blocks
+/// take the engines the layout placed.
+pub fn machinery_summary(
+    inp: &AftArrangementInputs,
+    res: &AftArrangementResult,
+    double_bottom_m: f64,
+) -> Option<MachinerySummary> {
+    use crate::machinery::{PowerSource, PrimeMovers};
+    let (mi, mr) = (inp.machinery.as_ref()?, res.machinery.as_ref()?);
+    let gas = mi.power_source == PowerSource::GasFuelled;
+    let movers = if gas {
+        (res.n_gensets > 0 && res.genset_kwe > 0.0).then(|| {
+            let row = GAS_GENSETS
+                .iter()
+                .find(|g| g.genset_model == res.genset_model);
+            PrimeMovers {
+                count: u32::try_from(res.n_gensets).unwrap_or(0),
+                kw_each: res.genset_kwe,
+                rpm: row.map_or(GAS_GENSET_RPM_ESTIMATE, |g| g.rpm),
+                rpm_sourced: row.is_some(),
+            }
+        })
+    } else {
+        crate::machinery::engine_prime_movers(mi, mr)
+    };
+    let steel = crate::machinery::steel_items(mr, movers, inp.beam, inp.depth, double_bottom_m);
+    let mcr_kw = match mi.power_source {
+        PowerSource::GasFuelled => res.installed_kwe,
+        PowerSource::DieselElectric => movers.map_or(0.0, |p| f64::from(p.count) * p.kw_each),
+        _ => 0.0,
+    };
+    let watson = (mcr_kw > 0.0).then(|| {
+        let plant = crate::weights::total_mass(&crate::machinery::mass_items(
+            mi,
+            mr,
+            inp.depth,
+            double_bottom_m,
+            res.installed_kwe,
+        ));
+        let gensets = if gas && res.n_gensets > 0 {
+            gas_gensets_t(res)
+        } else {
+            0.0
+        };
+        WatsonCrossCheck {
+            mcr_kw,
+            watson_total_t: crate::machinery::watson_diesel_electric_t(mcr_kw),
+            ovd_machinery_t: plant + gensets + steel.seats_t,
+        }
+    });
+    Some(MachinerySummary { steel, watson })
+}
+
+/// The speed of a gas genset not in the maker table (rpm), estimate: the table's usual speed.
+pub const GAS_GENSET_RPM_ESTIMATE: f64 = 1000.0;
 
 impl AftArrangementResult {
     /// The Python `ok` property.
