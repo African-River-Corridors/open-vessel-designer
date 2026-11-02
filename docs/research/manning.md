@@ -352,3 +352,153 @@ sets, and are tug and ATB sets simpler?
 - **Simpler?** Partly. Inland pushers have a direct table. Seagoing tugs use the same flag tables
   as the barge hull, just at small GT and kW. Not yet verified: US towing-vessel rules, and whether
   Liberia treats an ATB pair as one unit. Not yet researched on the web.
+
+## Rule Set comparison and US 46 CFR (2026-11-02, issue #784)
+
+**Research line.** *Searched:* US 46 CFR Parts 15, 31, 136 and 140 (eCFR), 46 U.S.C. 8104 and 8904,
+the ATB manning note (Pub. L. 117-263 §11508), USCG NVIC 2-81 Change 1, USCG work instruction
+CVC-WI-037(1) and Marine Safety Manual (MSM) Vol. III (both refused the fetch, HTTP 403), Liberia
+MAN-001 and UK MSN 1868 (re-read for tugs and reuse terms), CCNR RPN 01.01.2026 Arts. 19.03, 19.06,
+19.07, and the reuse terms of each publisher. *Exists:* three tabled sets (Liberia, UK officers only,
+RPN) and one discretionary set with statutory floors (US). *Reusing:* the same three worked hulls
+for every set. *Building because:* spec 0011 D13 asks for the difference between the sets before
+wave 3. Design impact: none.
+
+Status key as at the top of this note. Every US paragraph below was read in the eCFR point-in-time
+text for 2026-10-01 (versioner API, Title 46). Statute text was read on the Cornell LII copy of the
+US Code on 2026-11-02.
+
+### 7.1 The three worked hulls
+
+| Hull | Particulars | Basis |
+|---|---|---|
+| A — coastal LNG hull | 140 × 29 m, 2.4 MW propulsion, 24 h navigation, UMS, near-coastal, GT ≈ 7,000–13,500 | spec 0011 R2; GT from §6.2 (Derived) |
+| B — inland Type G tanker | 85 m, river-only, mode B (24 h), equipment standard S1 or S2 | §6.4 |
+| C — seagoing ATB tug | about 39 m, **3,800 kW**, **GT 1,100 (ITC)**, near-coastal, 24 h, voyages < 600 nm, UMS-capable; pushes an **unmanned** LNG tank barge | Chosen for this note (Inference: a plausible size for a 4,000–8,000 m³ ATB, cf. §4 reference ATB 5,100 hp) |
+
+US rules use regulatory tonnage (GRT), not ITC GT, for most thresholds. For hull C the US result
+is therefore given for both bands that a 1,100 GT tug could fall in (Inference).
+
+### 7.2 US 46 CFR — what the text says
+
+**Structure (Sourced).**
+- The Certificate of Inspection (COI) sets the minimum complement. The OCMI decides it, using
+  laws, Part 15, and listed factors: size and type, equipment, route and port calls, cargo,
+  service, automation, labour-saving devices, organisation (46 CFR 15.501(a)–(b)). There is **no
+  crew table** in Part 15.
+- Towing vessels: the COI states "minimum manning requirements" (46 CFR 136.205); the vessel must be
+  manned per the COI, and the manning rules are in Part 15 (46 CFR 140.205(c)).
+- Tank vessels: the OCMI enters the complement on the COI (46 CFR 31.15-1). Tank barges need not be
+  manned unless the OCMI judges it necessary (46 CFR 31.15-5).
+
+**Numeric floors that do exist (Sourced).**
+
+| Item | Rule | Citation |
+|---|---|---|
+| Master | Required on every self-propelled inspected vessel and every seagoing documented vessel ≥200 GRT; a towing vessel ≥8 m needs a Master of Towing Vessels (or a >200 GRT master with a TOAR) | 15.805(a)(1),(2),(5) |
+| Mates, inspected seagoing | ≥1,000 GRT: **3** (2 if voyage < 400 miles); 100–<1,000 GRT: **2** (1 if 100–<200 GRT and voyage ≤24 h); <100 GRT: 1. OCMI may raise; Commandant may reduce | 15.810(b)(1),(3),(4), (e), (f) |
+| Mates, towing | The person navigating a towing vessel ≥8 m holds Mate (Pilot) of Towing Vessels or equivalent; no number | 15.810(d) |
+| Chief engineer | Inspected mechanically propelled seagoing vessels ≥200 GRT; inland ≥300 GRT only if the OCMI says so | 15.820(a)(1),(3) |
+| Other engineers | Number set by the OCMI | 15.825(d) |
+| Watches | Seagoing >100 GRT: crew in **at least three watches** at sea | 15.705(b); 46 U.S.C. 8104(d) |
+| Two-watch exception | Towing vessels, OSVs and barges on voyages **< 600 miles** may use two watches | 15.705(c)(1); 46 U.S.C. 8104(g) |
+| Towing operator hours | Master or mate (pilot) of a towing vessel ≥8 m: not more than 12 h in 24 h; read to permit two watches regardless of voyage length (where the 1936 convention does not apply) | 15.705(d); 46 U.S.C. 8104(h) |
+| Able seafarers | Vessels ≥100 GRT: ≥65 % of the deck crew (officers excluded) are able seafarers; 50 % where two watches are allowed | 15.840(a) |
+| Automation | Automation replaces people only once proven; until then the COI specifies continuously attended manning | 15.715(a)–(b) |
+| Tank vessel endorsements | Tankship beyond the Boundary Line: >5,000 GRT 2 PIC + 3 assistants + 2 engineers; ≤5,000 GRT 2 PIC + 2 engineers (1 if only one engineer is required). Tankship inside the line: 2 PIC. Tank barge: 2 PIC or barge-PIC. One PIC if the whole complement is one or two persons | 15.860(a) Table 1 and notes 1–3 |
+| STCW scope | Barges are exempt from STCW; vessels < 200 GRT on domestic near-coastal voyages comply without more | 15.105(f)(3), (g)(2) |
+
+**ATB-specific text (Sourced).**
+- 46 CFR 10.107 defines an ATB as a tug–barge pair with a hinged connection allowing independent
+  pitch; ITBs split into dual-mode and push-mode. No Part 15 section gives ATB numbers.
+- Pub. L. 117-263 §11508 (note to 46 U.S.C. 8104): the Coast Guard must allow an amended COI
+  **without engine room watch setting** for inspected towing vessels certificated before
+  19 July 2022 that form part of an ATB and carry accepted control and monitoring systems. It changes
+  engineers, not deck crew. Its work instruction CVC-WI-037(1) refused the fetch (Not found).
+- NVIC 2-81 Change 1 (25 Feb 1981), encl. (1) §6: sample ITB scales "for general informational
+  purposes only". Push-mode (≥1,000 GT combined): master + 3 mates + 3 engineers + 4–6 AB + 0–2 OS
+  (+ radio officer per FCC), plus room for 3 oilers during proving. Dual-mode tug 300–<1,000 GT:
+  master + 2 mates + chief engineer + assistants as required + 2–4 AB + 1–2 OS. Dual-mode < 200 GT:
+  2 operators. It cites statutes since recodified, so treat it as history (Inference).
+- MSM Vol. III Part B Ch. 2 Section W "sample manning scales" for Subchapter M towing vessels exists
+  (seen in search only) but refused the fetch (Not found).
+
+**Reading (Inference).** The US set is a list of floors plus an inspector's decision. A tool can
+compute the floors (master, mate count, chief engineer, watch count, able-seafarer share, tank PICs)
+but not the complement. It needs **GRT** (regulatory tonnage), not ITC GT, plus route, voyage miles,
+inspected or not, towing or not, and hours per day.
+
+### 7.3 What each Rule Set needs
+
+| Input | Liberia MAN-001 | UK MSN 1868 | CCNR RPN Ch. 19 | US 46 CFR 15 |
+|---|---|---|---|---|
+| Tonnage | GT (ITC), 5 bands | GT (ITC), 3 bands | — | GRT, bands 100 / 200 / 1,000 / 5,000 |
+| Power | kW, 2 bands | kW, 4 bands | — | horsepower only in engineer endorsements (15.915) |
+| Length / assembly | — | — | L (3 groups); convoys L × B and barge count (19.03) | ≥8 m towing threshold |
+| Route | all / coastwise | unlimited / near-coastal | Rhine | ocean, near-coastal, inland, Great Lakes; Boundary Line |
+| Voyage length | — | — | — | miles: 400 (mates), 600 (two watches) |
+| Hours per day | — (watch rules §3.3) | — | mode A1 / A2 / B | 12 h towing limit; >12 h → two watches (UPV only) |
+| Automation | UMS yes/no | UMS assumed | equipment S1 / S2 | OCMI acceptance, after proving |
+| Vessel type | one table, all types except MOUs | one table | motor vessel, convoy, passenger, other | towing, tank, OSV, passenger, MODU |
+| Output | full crew by grade | officers only; ratings "by factors" | full crew by grade | floors; complement by OCMI |
+
+### 7.4 Comparison table — crew on the three hulls
+
+Counts are minimum persons. Cook is shown separately. "n/a" = the set does not govern that hull.
+
+| Rule Set | Hull A — 140 m coastal LNG, 2.4 MW, 24 h, UMS | Hull B — 85 m inland Type G, mode B | Hull C — seagoing ATB tug, GT 1,100, 3,800 kW, 24 h, UMS |
+|---|---|---|---|
+| **Liberia MAN-001 Rev. 11/22** (§12.2 table) | **12** + cook = **13**. Col. 7 (5,000–8,000 GT; no 750–3,000 kW column exists in that band, §2.2). Master, CM, 2 OOW, 3 AB, 1 II/4, C/E, 2/E, 1 III/5, 1 III/4 | n/a (seagoing scale) | **10** + cook = **11**. Col. 10 (500–3,000 GT, >3,000 kW, UMS): master, CM, 1 OOW, 2 AB, 1 II/4, C/E, 2/E, 1 III/5, 1 III/4. Non-UMS col. 4: 12 + cook |
+| **UK MSN 1868 (M) Am. 1** (Annexes A, B) | Officers **5**: master, CM, 1 OOW (near-coastal ≥3,000 GT); C/E, 2/E (NC 750–<3,000 kW). Ratings not tabled (§4.4). Total: Inference 9–12 | n/a | Officers **4–5**: master, CM, OOW (OOW optional if master keeps watch, note b); C/E, 2/E (NC 3,000–<9,000 kW). Ratings not tabled. Total: Inference 7–9 |
+| **CCNR RPN 01.01.2026** | Only on the Rhine: crew ≥ mode B minimum (19.02 group 3: **4–5**) plus a sector boatmaster, relieved after 14 h (19.07) | **4** (19.02 group 2, mode B, S1 or S2); **6** below S1 (19.05). No engineer, no cook | Inland only: a pusher uses 19.03; another tug is set by the inspection body (19.06). n/a at sea |
+| **US 46 CFR 15** (if US-flag) | Floors: master 1, mates **3** (≥1,000 GRT; 2 if voyage <400 miles), C/E 1, others by OCMI; three watches; ≥65 % able seafarers; 2 Tank Vessel-PIC (liquefied gas) and 2 Tank Vessel-engineers if ≤5,000 GRT (more above). Inference: **10–13** | Floors: master 1; mates by OCMI (15.810(b) covers seagoing and Great Lakes only); C/E only if ≥300 GRT and OCMI requires; 2 Tank Vessel-PIC (inside Boundary Line; may overlap with officers). Inference: **3–5**, set by OCMI | Floors: Master of Towing Vessels 1; mates **2** (100–<1,000 GRT) or **3** (≥1,000 GRT; 2 if <400 miles); C/E 1 (≥200 GRT seagoing inspected); two watches allowed (<600 miles); ≥50 % able seafarers; barge: 2 PIC from the tug crew. Inference: **6–9**; NVIC 2-81 dual-mode 300–<1,000 GT gives 6–9 + assistants |
+
+Totals marked Inference are my sums of the floors plus the fewest ratings that keep the stated
+watches. They are not rule outputs. The US hull-A figure assumes the hull is a self-propelled
+inspected tankship; under a US flag it would need US measurement, so the GRT band is Inference.
+
+### 7.5 Are tug and ATB rules simpler?
+
+**Short answer: no — not for a seagoing ATB tug, and only partly inland.**
+
+1. **Liberia.** No tug or ATB table. The §12.2 table is headed "All except Offshore MOUs"; a
+   tug enters by its own GT and kW (MAN-001 §12.2). The tug gets the same grid
+   at a lower band: 10 + cook against 12 + cook for hull A. Not simpler — the same rule.
+2. **UK.** No tug table. MSN 1868 §8.2 names only *harbour* tugs and inshore craft, and leaves them
+   to working pattern, rota and call-out duties. A seagoing tug uses Annexes A and B by GT and kW.
+3. **CCNR inland.** Pushers have a table (19.03) — but it needs more inputs than 19.02 (assembly
+   length and breadth, number of pushed barges) and adds an engineer in groups 4–5. Other tugs have
+   no table: the inspection body decides (19.06). Partly simpler: one table for pushers, none for
+   tugs.
+4. **US.** Fewer and blunter floors for towing: one Master of Towing Vessels, a Mate (Pilot), two
+   watches on voyages under 600 miles (8104(g)), a 12-hour operator limit (8104(h)). But the crew
+   number is the OCMI's decision on the COI (15.501, 136.205), and the sample scales (MSM Vol. III)
+   could not be read. An ATB adds two rules, not fewer: tank-barge PICs (15.860) and the §11508
+   engine-room-watch relief for older ATB tugs. Simpler to state, not simpler to compute.
+
+**Inference for D13.** The spec's choice holds: run a seagoing ATB tug on `liberia-man-001` by the
+tug's own GT and kW. Inland pushers on `ccnr-rpn-19` Art. 19.03. A US set could be a **check-only**
+Rule Set of floors (master, mates, C/E, watches, AB share, tank PICs), never a crew generator,
+because Part 15 holds no complement table. No ATB rule found treats tug and barge as one unit for
+crew; the US combined-tonnage scale is a 1981 ITB example only (NVIC 2-81 §6.a(1)).
+
+### 7.6 Reuse terms
+
+| Source | Licence / copyright found | May a Rule Set quote it? |
+|---|---|---|
+| Liberia MAN-001 Rev. 11/22 | No licence statement in the notice; LISCR site search found none for Marine Notices (portal terms cover software only) | Cite clause and hold the numbers as data; short quotes only. All rights reserved assumed (Inference) |
+| UK MSN 1868 (M) Am. 1 | "© Crown Copyright 2022" (last page). gov.uk content is normally under the Open Government Licence v3.0 (Known, not confirmed on the notice) | Yes with attribution if OGL v3.0 applies; confirm on the gov.uk page before quoting more than a line |
+| CCNR RPN 01.01.2026 (EN) | EN text is an "unofficial translation"; authentic texts DE/FR/NL. Site disclaimer has no copyright or reuse terms | Cite and hold numbers as data; short quotes; check the authentic text for disputes |
+| US 46 CFR, 46 U.S.C., Pub. L. 117-263, NVIC 2-81 | US Government works, no US copyright (17 U.S.C. 105 — Known, not re-read). eCFR is an editorial compilation, not the official legal edition (Known, not re-read) | Yes, quote freely; cite the CFR paragraph and the eCFR date |
+
+### 7.7 Still open
+
+1. MSM Vol. III Part B Ch. 2 Section W (towing sample scales) and CVC-WI-037(1): both refused
+   automated fetch (HTTP 403). Read from a browser before any US Rule Set.
+2. 46 U.S.C. 8104(d) exception list: read only as a summary; check which vessel types it excludes.
+3. A third seagoing flag table (India, Australia, Netherlands) is still not read (§6.5 item 1).
+4. US GRT for hulls A and C needs US regulatory measurement; this note gives both bands.
+
+Files read this round: eCFR Title 46 Parts 15, 31, 136, 140 (2026-10-01) and §10.107; 46 U.S.C.
+8104, 8904 with the §11508 note (Cornell LII); NVIC 2-81 Ch. 1; MAN-001 Rev. 11/22; MSN 1868 (M)
+Am. 1; RPN 01.01.2026 (EN) Arts. 19.03–19.07; CCNR site disclaimer.
