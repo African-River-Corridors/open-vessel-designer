@@ -7,7 +7,7 @@
 <!-- design-impact -->
 ### ticket/822-cargo-vent-mast (2026-11-02)
 
-Between `main 4921d3b` and `this branch f9f8a5b0`.
+Between `main 8e3675c` and `this branch 31ddf416`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|
@@ -51,4 +51,4 @@ Between `main 4921d3b` and `this branch f9f8a5b0`.
 | sweep CN-derived liquid 3 (130x17.2) | `results.vent_working_area` | absent | weather_shield | changed |
 | sweep CN-derived liquid 3 (130x17.2) | `results.vent_working_area_top_m` | absent | 9.89881805024 | changed |
 | sweep default depth gas 90x14 | `results.vent_distance_to_accommodation_m` | absent | 61.208 | changed |
-| ... | 2788 more changed quantities | | | |
+| ... | 3064 more changed quantities | | | |
