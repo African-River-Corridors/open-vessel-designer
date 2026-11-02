@@ -79,7 +79,8 @@ What OVD does **not** compute today:
      diesel-electric plant's N + 1 sets of P / N each, as their mass takes them. A plant with no gensets
      (battery-electric, diesel-mechanical, hybrid) has 0.
    - **Machinery steel** = engine-room steel + engine seats (t) of the stern block mass
-     (`stern_block_mass.machinery_steel`) × `machinery_steel_rate`. 0 when the results hold none.
+     (`stern_block_mass.machinery_steel`, issue #774) × `machinery_steel_rate`. 0 when the results hold none
+     (a hull with no specified Propulsor, or the stern block mass not in the lightship).
    - **Deckhouse** = deckhouse deck area (m²) × `deckhouse_rate_per_m2`. 0: no deckhouse model yet
      (issue #779 gives the area). The wheelhouse and accommodation lump stays for today's stern block.
    - **Gas fuel system** = the power it serves (kW) × `gas_fuel_system_rate_per_kw`. 0 until the gas fuel
@@ -154,7 +155,7 @@ Id prefix `CB` (cost and budget).
 | CB-A46 | Note `fabrication_rates_are_estimates` | Always fails as a warning, so it always shows | Fixed in code | — | `barge_cost.rs` lines 392-398 | — |
 | CB-A47 | Basis line | "Example rates — replace with yours." shown always, also after the user edits rates | Fixed in code | `COST_RATES_BASIS` | `crates/ovd-format/src/vdesign.rs` line 241; `CapitalBudget.svelte` line 66 | — |
 | CB-A48a | Genset line | installed genset kWe (every set, the reserve included) × `genset_rate_per_kwe` 500 | Estimate | Example rate, no source (issue #773) | `barge_cost.rs` `item_lines`; `aft_arrangement.rs` `installed_genset_kwe`; `builtin_profile.json` | Unknown |
-| CB-A48b | Machinery steel line | engine-room steel + engine seats (t) × `machinery_steel_rate` 2,500 (the hull steel example rate, taken again) | Estimate | Example rate, no source (issue #773); 0 until the results hold the machinery steel | `cost.rs` `item_quantities_of` | Unknown |
+| CB-A48b | Machinery steel line | engine-room steel + engine seats (t) × `machinery_steel_rate` 2,500 (the hull steel example rate, taken again) | Estimate | Example rate, no source (issue #773); 0 where the results hold no machinery steel | `cost.rs` `item_quantities_of` | Unknown |
 | CB-A48c | Deckhouse line | deckhouse area (m²) × `deckhouse_rate_per_m2` 3,000; the area is 0 until a deckhouse model exists | Estimate | Example rate, no source (issue #773) | `cost.rs` `with_stern_items` | Unknown |
 | CB-A48d | Gas fuel system line | gas fuel system kW × `gas_fuel_system_rate_per_kw` 200; the kW is 0 until the gas fuel system allowances exist | Estimate | Example rate, no source (issue #773) | `cost.rs` `with_stern_items` | Unknown |
 | CB-A48e | Propulsion rate basis | per kW of installed propulsion power: propulsors, drives, motors, switchboard; gensets are their own line | Estimate | Spec 0011 sec. 7 (the basis is split); the value 1,000 is unchanged | `builtin_profile.json` | Unknown |
