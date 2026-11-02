@@ -189,5 +189,20 @@ def test_the_weight_per_m3_is_the_published_weight_over_the_published_volume():
     assert calibration._tank_weight_per_m3(by_id["lng-bunker-barge-tank-1350"]) == pytest.approx(0.11481, abs=5e-6)
     assert calibration._tank_weight_per_m3(by_id["lng-bunker-vessel-bilobe-2500"]) == pytest.approx(0.0960, abs=5e-6)
     lo, hi = calibration._tank_weight_range()
-    assert (round(lo, 3), round(hi, 3)) == (0.096, 0.115)
+    assert (lo, hi) == (pytest.approx(0.0875, abs=5e-6), pytest.approx(0.11481, abs=5e-6))   # single shell only
     assert "Tank weight per m³" in report()
+
+
+def test_vacuum_insulated_weight_records_are_tagged_and_kept_out_of_the_single_shell_range():
+    """Issue #317 (deep search): a vacuum-insulated record or a land reference row carries the tag, the
+    forecast carries its flag, and none enters the single-shell range.
+
+    Label: property
+    """
+    by_id = {c["id"]: c for c in _load_tank_cases()["tank_weight_records"]}
+    vac = [c for c in by_id.values() if c.get("vacuum_insulated")]
+    assert len(vac) == 7
+    assert all(0.2 < calibration._tank_weight_per_m3(c) < 0.65 for c in vac)
+    assert by_id["lng-icebreaker-vacuum-400"]["forecast_not_as_built"] is True
+    assert all(c["not_imo"] for c in vac if c["id"].startswith("ref-land-"))
+    assert all(c["confidence"] == "low" and c["held_out"] for c in by_id.values())

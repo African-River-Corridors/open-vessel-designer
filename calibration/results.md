@@ -281,8 +281,16 @@ Published empty weights of marine LNG Type C tanks over their gross volume. They
 |---|---|---|---|---|---|---|
 | lng-bunker-barge-tank-1350 | low | 1,350 | 155 | 0.115 | empty tank: 300 mm insulation, internal piping, instruments, equipment and access structures (P6); 'empty' (P7) | no diameter or length with a stated basis: 25.2 x 9 x 12.2 m is a transport envelope |
 | lng-bunker-vessel-bilobe-2500 | low | 2,500 | 240 | 0.096 | 'light weight' of the tank, as printed; what it covers is not stated | bilobe tanks are not modelled, and no diameter is printed |
+| lng-bilobe-coral-16000 | low | 16,000 | 1,400 | 0.087 | not stated ('single tank weight about 1400 t') | bilobe tanks are not modelled, and no diameter or length is printed |
+| lng-ferry-vacuum-147 | low | 147 | 88 | 0.599 | not stated whether fittings or saddles are in ('an 88-tonne LNG tank was delivered') | no diameter or length with a stated basis (20.4 m by 4 m, datum not stated); a double-shell vacuum tank is not modelled |
+| lng-supply-vessel-vacuum-220 | low | 220 | 115 | 0.523 | not stated ('weighs 115 metric tons') | no length with a stated basis; the diameter basis is not stated; a double-shell vacuum tank is not modelled |
+| lng-icebreaker-vacuum-400 | low | 400 | 175 | 0.438 | not stated ('will weigh 175 tonnes') | no diameter or length printed; a double-shell vacuum tank is not modelled |
+| lng-containership-vacuum-900 | low | 900 | 380 | 0.422 | not stated ('weigh 380 tons each'); the unit (metric or short tons) is not stated | 26 m by 8.3 m is a transport envelope with no stated datum; a double-shell vacuum tank is not modelled |
+| ref-land-vacuum-chart-hs-500 | low | 500 | 110 | 0.220 | 'Weight (Empty)' as printed; scope not printed | land tank; not an IMO tank; reference row only |
+| ref-land-vacuum-chart-hs-267 | low | 267 | 80 | 0.300 | 'Weight (Empty)' as printed; scope not printed | land tank; not an IMO tank; reference row only |
+| ref-land-vacuum-ferox-vt108 | low | 108 | 38 | 0.349 | 'Weight empty' at 11 bar as printed; scope not printed | land tank; not an IMO tank; reference row only |
 
-Published range: 0.096 to 0.115 t per m³ of tank.
+Published range, single-shell records: 0.087 to 0.115 t per m³ of tank. Records marked `vacuum_insulated` (double shell) and land tank reference rows (`not_imo`) are listed but are not in this range.
 
 ## 5a. Tank barges (issue #335)
 
