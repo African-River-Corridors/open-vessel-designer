@@ -66,7 +66,8 @@ def test_gas_golden_example():
     # Re-pinned (spec 0011 D17; printed draught 2.5037902397935037 and air draft 7.262876426873162);
     # were draught 2.45 m and air draft 7.31 m.
     assert abs(r.full_load_draft_m - 2.50) < 0.02
-    assert abs(r.air_draft_m - 7.26) < 0.05
+    # Re-pinned (#822, the cargo vent mast exit is the top, set by the working area: weather shield top 9.27 m + 6 m, IGC 8.2.10.4; printed 12.77689731127759); was 7.26.
+    assert abs(r.air_draft_m - 12.78) < 0.05
     # was 68.01 (#280), 68.308 (#381), 68.108 (spec 0011 D17: the 2.00 m setback is cargo zone now)
     assert abs(r.cargo_zone_length_m - 70.108) < 0.05
     assert r.ok and not r.overloaded

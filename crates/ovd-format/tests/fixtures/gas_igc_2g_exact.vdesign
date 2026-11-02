@@ -550,6 +550,14 @@
           "value": 2.0,
           "source": "default"
         },
+        "vent_stub_m": {
+          "value": 1.0,
+          "source": "default"
+        },
+        "vent_mast_lowerable": {
+          "value": false,
+          "source": "default"
+        },
         "service_area": {
           "value": "river-only",
           "source": "default"
@@ -584,7 +592,7 @@
           "source": "default"
         }
       },
-      "results_hash": "cbdba8ad16069d14b8b7d592ac3bd0d8d7e5889a9a87a59f9604e555120cad79"
+      "results_hash": "288443a800bea72463a3e5c1daed67658d15ecd7227ea6be89447bd57eeeb15d"
     }
   ],
   "defaults_profile": "built-in"

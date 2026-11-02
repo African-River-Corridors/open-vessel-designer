@@ -532,7 +532,7 @@ fn the_legacy_other_table_covers_every_text_or_none_default() {
         .iter()
         .filter(|l| l.applies_to.containments() == ["type_c_tanks"])
         // The typed openings (issue #417) are in their own group.
-        .filter(|l| l.name != "deckhouse_front_opening")
+        .filter(|l| l.name != "deckhouse_front_opening" && l.name != "vent_mast_lowerable")
         .map(|l| l.name)
         .collect();
     for name in [

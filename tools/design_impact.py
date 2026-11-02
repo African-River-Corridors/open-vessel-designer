@@ -223,6 +223,12 @@ OPTIONAL_INPUT_CASES = (
      {"navigation_hours_per_day": 12.0}),
     ("unmanned_machinery_space", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"unmanned_machinery_space": False}),
+    # Issue #822: the cargo vent mast's two inputs. A stub only matters on a river-only hull, and a
+    # lowerable mast moves the river air drafts; a base from before refuses both inputs.
+    ("vent_stub_m", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"vent_stub_m": 2.0, "service_area": "river-only"}),
+    ("vent_mast_lowerable", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"vent_mast_lowerable": True}),
     # The aft block inputs (issue #4, slice 4), set to their defaults in the same way. A self-propelled
     # hull carries the block; the unit counts default by Cargo phase (gas 1 battery and 2
     # accommodation units, dry bulk 2 and 1), so each has a gas and a dry case.

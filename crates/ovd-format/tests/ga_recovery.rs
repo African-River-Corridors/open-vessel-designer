@@ -517,9 +517,20 @@ fn the_tank_stands_on_the_double_bottom_plus_support_in_both_views() {
             if !self_propelled {
                 // With no aft block the obstruction height is the tank top: the tank top above the
                 // keel, less the dome, is the drawn top of the tank.
+                // Issue #822: the top is the tank and dome top or the vent mast's exit, whichever is
+                // higher.
                 let top = f(&r["results"]["air_draft_loaded_m"]) + f(&r["results"]["draught_m"]);
+                let tank_and_dome = want + od / 2.0 + f(&d["dome_height_m"]);
+                let exit = f(&r["results"]["vent_exit_above_keel_m"]);
                 assert!(
-                    close(top - f(&d["dome_height_m"]), want + od / 2.0),
+                    close(
+                        top,
+                        if exit > tank_and_dome {
+                            exit
+                        } else {
+                            tank_and_dome
+                        }
+                    ),
                     "{file}"
                 );
             }

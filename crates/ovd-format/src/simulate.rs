@@ -2946,6 +2946,13 @@ fn simulate_gas(
         water_density_t_per_m3: rho,
         required_freeboard_m: fb,
         air_draft_limit_m: truthy_float(p, "air_draft_limit_m")?,
+        // Issue #822: the cargo vent mast. A Service Area left out reads the IGC clauses.
+        river_only: p.get("service_area").and_then(Value::as_str) == Some("river-only"),
+        vent_stub_m: get_or(p, "vent_stub_m", ovd_core::vent_mast::DEFAULT_VENT_STUB_M)?,
+        vent_mast_lowerable: p.get("vent_mast_lowerable").is_some_and(truthy),
+        entrance_distance_m: get_or(p, "entrance_distance_m", 5.0)?,
+        engine_room_vent_inlet_distance_m: get_or(p, "engine_room_vent_inlet_distance_m", 5.0)?,
+        funnel_outlet_distance_m: get_or(p, "funnel_outlet_distance_m", 2.0)?,
         aft_design: gas_aft_design,
         stern_block_mass: stern_mass_of(p)?,
         stern_geometry: stern.cloned(),
@@ -3344,9 +3351,16 @@ fn simulate_gas(
                 serde_json::Value::Object(by_rule),
             );
         }
+        // Issue #822: the cargo vent mast, in the results (hashed).
+        if let Some(vm) = &r.vent_mast
+            && let Some(results) = v.get_mut("results").and_then(Value::as_object_mut)
+        {
+            insert_vent_mast(results, vm);
+        }
         (
             v,
             Measured {
+                vent_mast: r.vent_mast.clone(),
                 conditions,
                 damage: gas_damage,
                 adn_gas_damage,
@@ -3367,6 +3381,53 @@ fn simulate_gas(
             },
         )
     })
+}
+
+/// Issue #822: the cargo vent mast's keys of the results, each above the keel unless it says
+/// otherwise. The notes say what the numbers leave out.
+fn insert_vent_mast(results: &mut Map<String, Value>, vm: &ovd_core::vent_mast::VentMast) {
+    let mut put = |k: &str, v: Value| {
+        results.insert(k.to_string(), v);
+    };
+    put("vent_mast_x_m", num(vm.x_m));
+    put("vent_exit_above_keel_m", num(vm.exit_above_keel_m));
+    put("vent_exit_above_deck_m", num(vm.exit_above_deck_m));
+    put(
+        "vent_exit_above_working_area_m",
+        num(vm.exit_above_working_area_m),
+    );
+    put("vent_working_area_top_m", num(vm.working_area_top_m));
+    put(
+        "vent_working_area",
+        json!(if vm.working_area_is_shield {
+            "weather_shield"
+        } else {
+            "tank_top"
+        }),
+    );
+    put("vent_exit_governed_by", json!(vm.governs.key()));
+    put(
+        "vent_distance_to_openings_m",
+        num(vm.distance_to_openings_m),
+    );
+    put(
+        "vent_distance_to_accommodation_m",
+        num(vm.distance_to_accommodation_m),
+    );
+    put("vent_mast_distance_target_m", num(vm.target_distance_m));
+    put("vent_mast_distance_met", json!(vm.distance_met));
+    put("vent_mast_lowerable", json!(vm.lowerable));
+    let notes: Vec<&str> = if vm.river_only {
+        vec![
+            "ADN 9.3.1.22.3: the height of the outlet above the deck may be reduced where nothing stands, no work is done and signs mark a radius of 1.00 m round it; this is not modelled.",
+        ]
+    } else {
+        vec![
+            "IGC 8.2.10.4: the working area is the top of the weather shield, or the tank top where the hull has no shield; the top of the tank domes is not counted as a working area.",
+            "IGC 8.2.11.1: the smaller distances it allows for ships under 90 m in length are not used.",
+        ]
+    };
+    put("vent_mast_notes", json!(notes));
 }
 
 /// One stability condition as the simulator lists it: the fields it keeps, `fill` for the fill

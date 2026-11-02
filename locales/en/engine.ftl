@@ -57,6 +57,8 @@ check-trim-in-range = the hull floats within { $limit } degrees of trim (every c
 check-trim-no-balance = no trim balances the load: { $conditions }
 check-name-trim-in-range = trim in range
 warn-barge-pushed = PUSHED barge: crew, battery and propulsion are on the tug and are NOT in this hull's lightship, capacity or air draft. The tug is a separate vessel and must be costed and air-draft-gated separately.
+warn-vent-mast-lowerable = A lowerable cargo vent mast is not backed by a practice source: none was found for lowering cargo vent masts. Class or flag acceptance is needed. The river air drafts leave the mast out; the sea air draft keeps it.
+warn-vent-mast-distance = The cargo vent mast stands { $achieved } m from the nearest openings and { $target } m is asked; no position in the cargo area is further. Lengthen the cargo area or move the openings aft.
 check-name-gm-positive = gm positive
 check-gm-positive = hopper intact GM { $gm } m >= 0.15 m (first-order; KG_light @0.5D)
 warn-steel-mass-disagreement = The lightship uses { $top_down } t of hull steel (top-down); the cost prices { $bottom_up } t (bottom-up). They differ by { $delta } t ({ $pct } %), more than the { $limit } % limit (an Estimate). The cost keeps the bottom-up mass.
@@ -381,6 +383,7 @@ msg-input-required = missing required input `{ $input }`
 msg-input-filled = `{ $input }` was not stored in the file; wrote in the Defaults Profile value { $value }, marked default
 msg-legacy-dome = this file has no `{ $input }`; it now holds { $value } m (marked default). The dome now counts in Vc for d(Vc) (IGC 2.4.1.1), so the results may change
 msg-legacy-carriage = this file has no `{ $input }` for the LPG Cargo { $cargo }; it is read as { $condition } (marked default). The tank values the file lacks keep what the engine used before (design pressure, material, insulation, structure factor), so the results are unchanged; set the carriage condition and reset those inputs to take the defaults of that condition
+msg-legacy-vent-mast = this file has no cargo vent mast inputs (`vent_stub_m`, `vent_mast_lowerable`); they now hold 1.0 m and false (marked default). The engine now models the cargo vent mast, so a gas hull's air drafts and results hash move
 msg-legacy-structure = this file was saved before the structure block of the Hull (format version 4); it now holds the defaults (marked default): frame spacing 3.66 m, longitudinal spacing 700 mm, stock plate 3.0 x 12.0 m, thickness step 0.5 mm, ordinary-strength steel, no structural wing deck. A gas hull's steel, and so its lightship, reads them
 msg-legacy-fixed-one = this file has no `{ $input }`; it now holds the fixed value the engine used before it was an input (marked default), so the results are unchanged
 msg-legacy-fixed-many = this file has no { $inputs }; each now holds the fixed value the engine used before it was an input (marked default), so the results are unchanged

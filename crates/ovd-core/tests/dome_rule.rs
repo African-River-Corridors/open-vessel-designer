@@ -45,6 +45,9 @@ fn hull(by_rule: bool) -> BargeCapacityInputs {
     i.cargo_type = "LPG_propane".into();
     i.dome_diameter_by_rule = by_rule;
     i.dome_height_by_rule = by_rule;
+    // The mast's exit stands above the domes; it is left out of the river top here, so the top is
+    // the dome's.
+    i.vent_mast_lowerable = true;
     i
 }
 

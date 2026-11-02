@@ -483,8 +483,9 @@ mod tests {
         // lacks (issue #4): it gets the fixed value the engine used. One more for the LPG carriage
         // condition the file lacks (issue #292): it is read as fully pressurised. One more for the
         // block coefficient the file stores (issue #448): it is no longer an input. One more for the
-        // structure block of the Hull the file lacks (issue #739).
-        assert_eq!(notes.len(), 8, "{notes:?}");
+        // structure block of the Hull the file lacks (issue #739). One more for the cargo vent mast
+        // inputs the file lacks (issue #822).
+        assert_eq!(notes.len(), 9, "{notes:?}");
         assert!(
             notes[0]
                 .as_str()
@@ -571,9 +572,9 @@ mod tests {
                 .clone()
         };
         let before = notes(&state);
-        // Six as above, one for the stored block coefficient (issue #448) and one for the structure
-        // block (issue #739).
-        assert_eq!(before.len(), 8);
+        // Six as above, one for the stored block coefficient (issue #448), one for the structure
+        // block (issue #739) and one for the vent mast inputs (issue #822).
+        assert_eq!(before.len(), 9);
         state.duplicate_option("Option 1").unwrap();
         assert_eq!(notes(&state), before, "a copy brings no notes of its own");
 
