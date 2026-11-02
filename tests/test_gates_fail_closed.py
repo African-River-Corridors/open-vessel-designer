@@ -17,7 +17,7 @@ GATES = ROOT / "tools" / "gates.sh"
 # Every external tool the script calls. Each must be in the tool check, or a missing one can make a
 # step run inert (a missing `mktemp` or `chmod` leaves the no-Python shims unmade, and cargo test
 # then runs with the real Python on PATH and still reports ok).
-GATES_TOOLS = ["dirname", "git", "mktemp", "chmod", "cat", "env"]
+GATES_TOOLS = ["dirname", "git", "mktemp", "chmod", "cat", "env", "mv"]
 
 
 def _path_with_only(tmp_path: Path, tools: list[str], stubs: tuple[str, ...] = ()) -> str:

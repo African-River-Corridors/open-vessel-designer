@@ -29,12 +29,3 @@ serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precisio
 # at any opt level, so the results are the same bits.
 [profile.dev.package.ovd-core]
 opt-level = 3
-
-# Issue #819: the tests spend their time in the format crate's run (results JSON, the drawings) and
-# in the dependencies it calls. Optimised, the Rust gate's tests run in less time than the extra
-# compile costs. Same bits, as above.
-[profile.dev.package.ovd-format]
-opt-level = 3
-
-[profile.dev.package."*"]
-opt-level = 3

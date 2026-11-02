@@ -32,7 +32,9 @@
 # CI runs the steps in parallel jobs (issue #561). GATES_STEPS is a comma list of step groups: `lint`
 # (steps 1 to 3), `rust` (step 4), `rules` (steps 4a and 5), `impact` (step 6) and `pytest` (step 7).
 # It is unset for the whole gate. A group that is named runs in full; a name that is not a group fails.
-# GATES_PARTITION=k/N runs partition k of N of the Rust tests (cargo nextest --partition hash:k/N);
+# GATES_PARTITION=k/N runs partition k of N of the Rust tests: the slow tests that
+# .config/rust-partitions.txt places in job k (by measured time, tools/rust_partitions.py, issue #819),
+# then partition k of N of every test the file does not place (cargo nextest --partition hash:k/N);
 # the doctests run with partition 1. The required CI check `test` passes only when every group ran
 # in a job that passed.
 set -euo pipefail
@@ -64,6 +66,7 @@ need mktemp
 need chmod
 need cat
 need env
+need mv
 need cargo
 need rustc
 need "$PY"
@@ -84,6 +87,21 @@ case "$PARTITION" in
   "" | [1-9]/[1-9]) ;;
   *) fail "GATES_PARTITION must look like 2/4, not '$PARTITION'" ;;
 esac
+# The placed slow tests (issue #819): one line each, `job binary test seconds`. A filterset of the
+# lines of job $1, or of every line with `all`. A job number outside 1..N fails here, before any step.
+PLACED=.config/rust-partitions.txt
+placed() {
+  local expr="" k bin name _
+  while read -r k bin name _; do
+    case "$k" in "" | \#*) continue ;; esac
+    case "$PARTITION" in "") ;; *) [ "$k" -ge 1 ] && [ "$k" -le "${PARTITION#*/}" ] \
+      || fail "$PLACED places $name in job $k, not one of 1 to ${PARTITION#*/}" ;; esac
+    [ "$1" = all ] || [ "$k" = "$1" ] || continue
+    expr="${expr:+$expr | }(binary_id($bin) & test(=$name))"
+  done < "$PLACED"
+  echo "$expr"
+}
+[ -z "$PARTITION" ] || { [ -f "$PLACED" ] || fail "$PLACED is missing"; placed all >/dev/null; }
 selected() { [ "$SELECTED" = all ] || case ",$SELECTED," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 [ -d "$(rustc --print target-libdir --target "$WASM_TARGET" 2>/dev/null)" ] \
   || fail "the $WASM_TARGET target is not installed (rustup target add $WASM_TARGET)"
@@ -119,8 +137,19 @@ cargo_test_without_python() {
   done
   # Explicit `|| return 1`: `step` calls this function inside `||`, where bash ignores `set -e`,
   # so without it a failing cargo test would fall through and the step would report ok.
-  local part=()
-  [ -z "$PARTITION" ] || part=(--partition "hash:$PARTITION")
+  local part=() mine all junit="${CARGO_TARGET_DIR:-target}/nextest/$PROFILE"
+  if [ -n "$PARTITION" ]; then
+    # This job's placed slow tests first; their JUnit is kept beside the one of the rest.
+    mine="$(placed "${PARTITION%/*}")" || return 1
+    if [ -n "$mine" ]; then
+      PATH="$shims:$PATH" OVD_PYTHON="$shims/python3" \
+        cargo nextest run --profile "$PROFILE" --all-features --no-tests=fail -E "$mine" || return 1
+      mv "$junit/junit.xml" "$junit/junit-placed.xml" || return 1
+    fi
+    all="$(placed all)" || return 1
+    part=(--partition "hash:$PARTITION")
+    [ -z "$all" ] || part+=(-E "not ($all)")
+  fi
   PATH="$shims:$PATH" OVD_PYTHON="$shims/python3" \
     cargo nextest run --profile "$PROFILE" --all-features --no-tests=fail ${part[@]+"${part[@]}"} || return 1
   # The doctests are not partitioned: they run once, with the first partition.

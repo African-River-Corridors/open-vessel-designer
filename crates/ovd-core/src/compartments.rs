@@ -252,10 +252,16 @@ impl ClippedSpace {
             let (mut lo, mut hi) = (z_lo, z_hi);
             for _ in 0..100 {
                 let mid = 0.5 * (lo + hi);
+                let before = (lo.to_bits(), hi.to_bits());
                 if self.below(mid, false).volume < target {
                     lo = mid;
                 } else {
                     hi = mid;
+                }
+                // A step that leaves both bounds as they were is a fixed point: `below` is pure, so
+                // every later step repeats it. Stopping gives the same bits (issue #819).
+                if (lo.to_bits(), hi.to_bits()) == before {
+                    break;
                 }
             }
             0.5 * (lo + hi)

@@ -1,2 +1,2 @@
 <!-- unreleased -->
-- CI (issue #819): the clip of a Space by the hull no longer allocates a new vector per edge, so the gas arrangement search runs about 1.7 times faster with the same results to the bit; the pinned propulsor mesh tests run only their own design file.
+- CI (issue #819): the clip of a Space by the hull allocates once, not once per edge, and its fill level stops bisecting once a step changes nothing; the gas arrangement search runs about twice as fast with the same results to the bit. The Rust tests run in eight jobs, with the slow tests placed by measured time (`.config/rust-partitions.txt`), and the propulsor mesh tests run their Options in parallel.
