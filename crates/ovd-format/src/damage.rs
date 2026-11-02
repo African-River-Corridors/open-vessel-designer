@@ -271,10 +271,38 @@ pub fn gas_damage_verdicts(
             } else {
                 Vec::new()
             };
+            // What the damage drawing shows (issue #761): each Flooded Volume's shape, and the damaged
+            // waterplane.
+            let geometry: Vec<serde_json::Value> = flooded
+                .iter()
+                .map(|v| match &v.shape {
+                    ovd_core::compartments::SpaceShape::Prism { section } => json!({
+                        "name": v.name,
+                        "x_m": [num(v.x_aft_m), num(v.x_fwd_m)],
+                        "section_m": section.iter().map(|&(y, z)| json!([num(y), num(z)])).collect::<Vec<_>>(),
+                    }),
+                    ovd_core::compartments::SpaceShape::Tank {
+                        y,
+                        z,
+                        outer_diameter,
+                        ..
+                    } => json!({
+                        "name": v.name,
+                        "x_m": [num(v.x_aft_m), num(v.x_fwd_m)],
+                        "tank": { "y_m": num(*y), "z_m": num(*z), "diameter_m": num(*outer_diameter) },
+                    }),
+                })
+                .collect();
             governing.push(json!({
                 "condition": c.condition.name,
                 "case": rows[i]["name"],
                 "ok": o.ok,
+                "floats": rows[i]["floats"],
+                "heel_deg": num(o.heel_deg),
+                "trim_deg": num(o.trim_deg),
+                "draught_mid_m": num(o.draught_mid_m),
+                "waterplane": { "heel_deg": num(o.heel_deg), "trim_deg": num(o.trim_deg), "c_m": num(o.waterplane_c_m) },
+                "flooded": geometry,
                 "gz_after_damage": gz,
             }));
         }
