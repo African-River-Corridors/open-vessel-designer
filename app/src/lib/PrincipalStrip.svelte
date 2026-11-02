@@ -18,8 +18,9 @@
 </dl>
 
 <style>
-  .strip { flex: none; display: flex; flex-wrap: wrap; gap: 2px var(--sp-4); margin: 0; padding: var(--sp-1) var(--sp-4); background: var(--surface); border-bottom: var(--lw-thin) solid var(--rule); font-size: var(--fs-13); }
-  .item { display: flex; gap: var(--sp-1); align-items: baseline; }
+  /* One row of fixed height: it scrolls sideways inside itself, so it never takes more room from a view. */
+  .strip { flex: none; box-sizing: border-box; height: 28px; display: flex; flex-wrap: nowrap; align-items: center; gap: var(--sp-4); margin: 0; padding: 0 var(--sp-4); overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; background: var(--surface); border-bottom: var(--lw-thin) solid var(--rule); font-size: var(--fs-13); }
+  .item { flex: none; white-space: nowrap; display: flex; gap: var(--sp-1); align-items: baseline; }
   dt { color: var(--ink-3); }
   dt::after { content: ":"; }
   dd { margin: 0; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
