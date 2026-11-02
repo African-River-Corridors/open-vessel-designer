@@ -87,8 +87,9 @@ const ITEM_BASES: [(&str, &str, &str, &str); 4] = [
         "deckhouse",
         "deckhouse_rate_per_m2",
         "m2",
-        "Deckhouse deck area. 0: OVD has no deckhouse model yet (issue #779 gives the area); the \
-         wheelhouse and accommodation lump stands for today's stern block.",
+        "Deckhouse deck area: the floor of every tier (issue #779). 0 for the container block, whose \
+         wheelhouse and accommodation lump stands for it; a deckhouse takes this line in place of that \
+         lump.",
     ),
     (
         "gas_fuel_system",
@@ -121,7 +122,8 @@ fn item_rates_of(option: &DesignOption) -> Option<ItemRates> {
 }
 
 /// The `stern_items` of `cost_masses` (issue #773): what the item rates price that the stern block
-/// gives. The deckhouse area is 0 until its model exists; the gas fuel system power is the gas gensets' rating. `v` is
+/// gives. The deckhouse area is 0 for the container block, and the gas fuel system power is the gas
+/// gensets' rating. `v` is
 /// returned as it is when it is null or the hull has no stern block (a barge of a tug Formation).
 pub fn with_stern_items(
     mut v: Value,
@@ -135,7 +137,7 @@ pub fn with_stern_items(
     }
     v["stern_items"] = json!({
         "genset_kwe": ovd_core::aft_arrangement::installed_genset_kwe(a),
-        "deckhouse_area_m2": 0.0,
+        "deckhouse_area_m2": a.deckhouse.as_ref().map_or(0.0, |d| d.area_m2),
         "gas_fuel_system_kw": if a.propulsion == "gas_fuelled" {
             a.installed_kwe
         } else {
@@ -514,6 +516,13 @@ fn result_json(
     })
 }
 
+/// Whether the stern of these `cost_masses` is a deckhouse (issue #779): it has deck area to price.
+fn has_deckhouse(cost_masses: &Value) -> bool {
+    cost_masses["stern_items"]["deckhouse_area_m2"]
+        .as_f64()
+        .is_some_and(|a| a > 0.0)
+}
+
 /// The `cost` of an Option: the budget, or `null` when the results have no masses (a Cargo that is not
 /// gas or liquid bulk, or a gas hull that holds no arrangement) or the figures cannot be rounded. One
 /// function for both containments: a tank barge's cargo tank items, a gas barge's Type C items (issue #334).
@@ -522,9 +531,14 @@ pub fn cost_of(option: &DesignOption, results: &Value) -> Value {
     if masses.get("liquid").is_some() {
         return liquid_cost_of(option, results);
     }
-    let (Some(mut inputs), Some(rates)) = (masses_of(masses), rates_of(option)) else {
+    let (Some(mut inputs), Some(mut rates)) = (masses_of(masses), rates_of(option)) else {
         return Value::Null;
     };
+    // Issue #779: a deckhouse is priced by its floor area; the lump for the wheelhouse and
+    // accommodation of the container block would price the same rooms twice.
+    if has_deckhouse(masses) {
+        rates.wheelhouse_accom_lump = 0.0;
+    }
     // Issue #402: part of the tank structure surplus is stiffeners and ring frames in tank steel, priced
     // at the tank shell rate; the rest (saddles) stays at the supports rate.
     let fraction = option
@@ -570,13 +584,16 @@ pub fn cost_of(option: &DesignOption, results: &Value) -> Value {
 /// for a gas barge; a self-propelled hull has its own battery energy and Installed Power.
 fn liquid_cost_of(option: &DesignOption, results: &Value) -> Value {
     let masses = &results["cost_masses"];
-    let (Some(q), Some(liquid_rates), Some(rates)) = (
+    let (Some(q), Some(liquid_rates), Some(mut rates)) = (
         liquid_quantities_of(masses),
         liquid_rates_of(option),
         rates_of(option),
     ) else {
         return Value::Null;
     };
+    if has_deckhouse(masses) {
+        rates.wheelhouse_accom_lump = 0.0;
+    }
     let tug = has_tug(option);
     let mut inputs = BargeCostInputs::default();
     let mut from_design: Vec<&str> = Vec::new();

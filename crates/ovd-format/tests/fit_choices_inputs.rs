@@ -23,6 +23,9 @@ fn design(extra: Value) -> Value {
         "beam_m": { "value": 29.0, "source": "typed" },
         "moulded_depth_m": { "value": 9.0, "source": "typed" },
         "service_area": { "value": "coastal-and-river", "source": "typed" },
+        // Issue #779: the tests of this file are about the lifting wheelhouse and the search over
+        // the container block; a coastal Option would otherwise take the deckhouse.
+        "arrangement_style": { "value": "container_block", "source": "typed" },
         "min_freeboard_m": { "value": 4.0, "source": "typed" }
     });
     for (k, v) in extra.as_object().unwrap() {

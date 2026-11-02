@@ -477,7 +477,7 @@ fn aft_inputs(args: &Value) -> Result<AftArrangementInputs, EvalError> {
 }
 
 pub(crate) fn aft_json(r: &AftArrangementResult) -> Value {
-    wide_object!({
+    let mut v = wide_object!({
         "length_m": num(r.length_m),
         "zones": r.zones.iter().map(|(l, a, f)| json!([l, num(*a), num(*f)])).collect::<Vec<_>>(),
         "thruster_offsets_m": nums(&r.thruster_offsets_m),
@@ -526,6 +526,33 @@ pub(crate) fn aft_json(r: &AftArrangementResult) -> Value {
         "genset_engine_mass_t": num(r.genset_engine_mass_t),
         "below_deck_length_m": num(r.below_deck_length_m),
         "deck_length_m": num(r.deck_length_m),
+    });
+    // Issue #779: the deckhouse is there only for that Arrangement Style, so the block of the
+    // container block keeps its keys.
+    if let Some(d) = &r.deckhouse {
+        v["deckhouse"] = deckhouse_json(d);
+    }
+    v
+}
+
+/// The deckhouse of a stern block (issue #779, spec 0011 D3, D4, D6). The sizes are estimates, and
+/// the accommodation floor it holds is an interim stand-in until the rooms are sized (issue #780).
+fn deckhouse_json(d: &ovd_core::aft_arrangement::Deckhouse) -> Value {
+    json!({
+        "x_aft_m": num(d.x_aft_m),
+        "x_fwd_m": num(d.x_fwd_m),
+        "width_m": num(d.width_m),
+        "base_m": num(d.base_m),
+        "tiers": d.tiers,
+        "tier_height_m": num(d.tier_height_m),
+        "top_m": num(d.top_m),
+        "tier_area_m2": num(d.tier_area_m2),
+        "area_m2": num(d.area_m2),
+        "volume_m3": num(d.volume_m3),
+        "required_area_m2": num(d.required_area_m2),
+        "required_area_basis": d.required_area_basis,
+        "wheelhouse": if d.wheelhouse_elevating { "elevating" } else { "fixed" },
+        "size_status": "estimate",
     })
 }
 

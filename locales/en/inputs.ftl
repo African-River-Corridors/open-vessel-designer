@@ -599,6 +599,11 @@ input-service-area = Service Area
 choice-service-area-river-only = River only
 choice-service-area-coastal-and-river = Coastal and river
 
+input-arrangement-style = Arrangement Style
+input-arrangement-style-default-by = service_area
+choice-arrangement-style-container-block = Container block
+choice-arrangement-style-deckhouse = Deckhouse
+
 input-slop-share = Slop tank share
 input-slop-share-default-by = service_area
 

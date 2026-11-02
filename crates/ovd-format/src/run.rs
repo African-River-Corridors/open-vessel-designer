@@ -199,6 +199,7 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         "bollard_pull_factor",
         "sightline_method",
         "wheelhouse_type",
+        "arrangement_style",
         "tank_head_type",
         "tank_liquid_pressure",
         "tank_allowable_stress_basis",

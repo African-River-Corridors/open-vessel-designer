@@ -27,7 +27,7 @@ use crate::sections::{SectionsTable, Waterplane, immersed};
 pub const BASIS: &str = "ITC 1969, Annex I, Regulation 3 (UN Treaty Series vol. 1291, No. I-21264, p. 15): GT = K1 V, K1 = 0.2 + 0.02 log10 V; V the total volume of all enclosed spaces (Regulation 2(4)), measured to the inner side of the shell (Regulation 6(1))";
 
 /// What OVD puts in V, and what it leaves out.
-pub const VOLUME_BASIS: &str = "V = the moulded hull volume to the deck at the centre line (sheer and camber included) plus the enclosed volume above the main deck that the stern block has today (the 40 ft units and the wheelhouse). No deckhouse volume yet (issue #779), no hatch coamings, no appendages, and no excluded spaces (Regulation 2(5)) are taken off";
+pub const VOLUME_BASIS: &str = "V = the moulded hull volume to the deck at the centre line (sheer and camber included) plus the enclosed volume above the main deck that the stern block has today (the 40 ft units and the wheelhouse). The tiers of the deckhouse (spec 0011) join V when the Arrangement Style is deckhouse, and are nothing for the container block. No hatch coamings, no appendages, and no excluded spaces (Regulation 2(5)) are taken off";
 
 /// K1 of Regulation 3: 0.2 + 0.02 log10 V. V in m³; for V <= 0 it is not defined, so 0.
 pub fn k1(volume_m3: f64) -> f64 {
@@ -55,7 +55,7 @@ pub struct EnclosedVolume {
     /// The enclosed spaces above the main deck that the stern block has: 40 ft units and the
     /// wheelhouse. Zero for a hull with no stern block of its own.
     pub stern_block_m3: f64,
-    /// The deckhouse of spec 0011 (issue #779). Zero until that model exists: the seam it fills.
+    /// The tiers of the deckhouse of spec 0011 (issue #779): zero for the container block.
     pub deckhouse_m3: f64,
 }
 
@@ -94,8 +94,8 @@ pub fn stern_block_above_deck_m3(res: &AftArrangementResult, unit_height_m: f64)
 }
 
 /// V of a computed design (m³): its hull from the Sections Table, its stern block from the
-/// capacity run. The deckhouse part stays zero until issue #779 gives a deckhouse model; that
-/// ticket fills [`EnclosedVolume::deckhouse_m3`] here.
+/// capacity run, and the tiers of its deckhouse when the Arrangement Style is `deckhouse` (issue
+/// #779; zero for the container block).
 pub fn enclosed_volume(
     capacity: &BargeCapacityInputs,
     result: &BargeCapacityResult,
@@ -113,7 +113,11 @@ pub fn enclosed_volume(
             .aft_arrangement
             .as_ref()
             .map_or(0.0, |a| stern_block_above_deck_m3(a, unit_height_m)),
-        deckhouse_m3: 0.0,
+        deckhouse_m3: result
+            .aft_arrangement
+            .as_ref()
+            .and_then(|a| a.deckhouse.as_ref())
+            .map_or(0.0, |d| d.volume_m3),
     }
 }
 

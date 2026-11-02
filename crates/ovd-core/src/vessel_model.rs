@@ -757,9 +757,11 @@ pub fn tank_spaces_of(c: &BargeCapacityInputs, r: &BargeCapacityResult) -> Vec<C
 /// The wheelhouse's lift of a result with a stern block; `None` without one.
 fn wheelhouse_lift(c: &BargeCapacityInputs, r: &BargeCapacityResult) -> Option<WheelhouseLift> {
     let a = r.aft_arrangement.as_ref()?;
-    let allowed_m = match &c.aft {
-        Some(aft) => aft.wheelhouse_max_lift_m,
-        None => c.aft_design.wheelhouse_max_lift_m,
+    let allowed_m = match (&c.aft, &a.deckhouse) {
+        (Some(aft), _) => aft.wheelhouse_max_lift_m,
+        // Issue #779: a deckhouse's wheelhouse is fixed unless an air-draft limit is set (D4).
+        (None, Some(d)) if !d.wheelhouse_elevating => 0.0,
+        (None, _) => c.aft_design.wheelhouse_max_lift_m,
     };
     Some(WheelhouseLift {
         needed_m: r.sightline.as_ref().map(|s| s.lift_needed_m),

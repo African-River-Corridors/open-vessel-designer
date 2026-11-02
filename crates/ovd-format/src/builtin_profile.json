@@ -1289,7 +1289,12 @@
     "wheelhouse_type": {
       "default": "elevating",
       "status": "estimate",
-      "basis": "An elevating wheelhouse (as today) or a fixed one, which does not lift (issue #354). A file saved before keeps elevating"
+      "basis": "An elevating wheelhouse (as today) or a fixed one, which does not lift (issue #354). A file saved before keeps elevating. Only the container block reads it: on a deckhouse the wheelhouse is fixed, and elevating when an air-draft limit is set (spec 0011 D4, issue #779)"
+    },
+    "arrangement_style": {
+      "default_by_service_area": { "river-only": "container_block", "coastal-and-river": "deckhouse" },
+      "status": "estimate",
+      "basis": "How the stern is laid out (spec 0011 D3, issue #779). container_block: today's stern block, exactly (40 ft units for accommodation and batteries, a lifting wheelhouse), the legacy value and the river-pusher option. deckhouse: a deckhouse of tiers over the machinery space, with a fixed wheelhouse on top (elevating when an air-draft limit is set) and the accommodation aft only. A new coastal Option takes the deckhouse; a river-only Option and a file saved before keep the container block. The deckhouse tier height, side deck and tier limit are estimates, and the accommodation floor it holds is an interim stand-in until the rooms are sized from MLC A3.1 and ES-TRIN 15 (issue #780)"
     },
     "sightline_method": {
       "default": "blind_distance",

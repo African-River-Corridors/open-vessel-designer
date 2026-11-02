@@ -1271,6 +1271,14 @@ fn arrangement(inp: &BargeCapacityInputs, class: CargoClass) -> Result<Arrangeme
             a.wheelhouse_eye_above_floor_m = d.wheelhouse_eye_above_floor_m;
             a.sightline_margin_m = d.sightline_margin_m;
             a.wheelhouse_max_lift_m = d.wheelhouse_max_lift_m;
+            // Issue #779 (spec 0011 D3, D4): the deckhouse style takes a fixed wheelhouse, which
+            // lifts only when an air-draft limit is set.
+            a.arrangement_style = d.arrangement_style;
+            if d.arrangement_style == crate::aft_arrangement::ArrangementStyle::Deckhouse
+                && inp.air_draft_limit_m.is_none()
+            {
+                a.wheelhouse_max_lift_m = 0.0;
+            }
             a.propulsion = inp.propulsion.clone();
             if a.is_gas_fuelled() {
                 a.n_battery_units = 0;
@@ -1448,6 +1456,30 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
     let cargo_top_above_keel = h_top;
     let mut aft_second = arr.aft_inputs.clone();
     aft_second.sightline_obstruction_m = Some(cargo_top_above_keel);
+    // Issue #779: a fixed deckhouse wheelhouse cannot lift for the Blind Distance, so the house is
+    // given the tiers that put the eye high enough. The light draught is not known yet, so the
+    // eye is sized for a waterline at the keel, which is never too low.
+    if inp.self_propelled
+        && aft_second.arrangement_style == crate::aft_arrangement::ArrangementStyle::Deckhouse
+        && aft_second.wheelhouse_max_lift_m <= 0.0
+        && let Some(limit) = inp.sightline_limit_m
+    {
+        let probe = compute_aft_arrangement(&aft_second)?;
+        let units = (!probe.container_units.is_empty())
+            .then_some((probe.container_x1_m, probe.container_top_above_keel_m));
+        let obstructions = crate::wheelhouse::obstructions(
+            units,
+            (inp.loa - arr.bow_void_m, cargo_top_above_keel),
+            (inp.loa, inp.depth),
+        );
+        aft_second.wheelhouse_eye_min_m = crate::wheelhouse::eye_needed(
+            probe.wheelhouse_x1_m,
+            &obstructions,
+            inp.loa,
+            &crate::wheelhouse::Waterline::even(0.0, inp.loa),
+            limit,
+        );
+    }
     let aft = compute_aft_arrangement(&aft_second)?;
 
     // The tallest fixed point of the vessel with the wheelhouse lowered for transit. A pushed

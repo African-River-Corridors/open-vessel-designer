@@ -521,6 +521,10 @@
           "value": "coastal-and-river",
           "source": "typed"
         },
+        "arrangement_style": {
+          "value": "container_block",
+          "source": "default"
+        },
         "rule_sets": {
           "value": [
             {
@@ -1094,6 +1098,10 @@
           "value": "coastal-and-river",
           "source": "typed"
         },
+        "arrangement_style": {
+          "value": "container_block",
+          "source": "default"
+        },
         "rule_sets": {
           "value": [
             {
@@ -1666,6 +1674,10 @@
         "service_area": {
           "value": "coastal-and-river",
           "source": "typed"
+        },
+        "arrangement_style": {
+          "value": "container_block",
+          "source": "default"
         },
         "rule_sets": {
           "value": [

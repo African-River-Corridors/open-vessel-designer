@@ -697,7 +697,22 @@ fn aft_design_of(p: &Map<String, Value>) -> R<ovd_core::aft_arrangement::AftDesi
             Some(_) => Ok(Some(whole(key, 0)?)),
         }
     };
+    // Issue #779 (spec 0011 D3): a key left out is today's block.
+    let arrangement_style = match p.get("arrangement_style") {
+        None | Some(Value::Null) => a::ArrangementStyle::ContainerBlock,
+        Some(v) => match v.as_str().and_then(a::ArrangementStyle::from_key) {
+            Some(style) => style,
+            None => {
+                return bad(format!(
+                    "`params.arrangement_style` must be one of {}, not {}",
+                    a::ARRANGEMENT_STYLES.join(", "),
+                    py_repr(v)
+                ));
+            }
+        },
+    };
     Ok(a::AftDesign {
+        arrangement_style,
         n_thrusters: whole("thruster_count", d.n_thrusters)?,
         thruster_envelope_m: get_or(p, "thruster_envelope_m", d.thruster_envelope_m)?,
         thruster_clear_m: get_or(p, "thruster_clearance_m", d.thruster_clear_m)?,
@@ -718,8 +733,11 @@ fn aft_design_of(p: &Map<String, Value>) -> R<ovd_core::aft_arrangement::AftDesi
             d.wheelhouse_eye_above_floor_m,
         )?,
         sightline_margin_m: get_or(p, "sightline_margin_m", d.sightline_margin_m)?,
-        // Issue #354: a fixed wheelhouse does not lift.
+        // Issue #354: a fixed wheelhouse does not lift. Issue #779: a deckhouse reads no wheelhouse
+        // type; its wheelhouse is fixed unless an air-draft limit is set, which the capacity run
+        // decides (D4).
         wheelhouse_max_lift_m: if p.get("wheelhouse_type").and_then(Value::as_str) == Some("fixed")
+            && arrangement_style == a::ArrangementStyle::ContainerBlock
         {
             0.0
         } else {
@@ -2538,6 +2556,15 @@ fn with_stern_mass(
         }
         if let Some(f) = gas_fuel {
             result["stern_block_mass"]["gas_fuel_system"] = gas_fuel_system_json(f);
+        }
+        // Issue #779: the deckhouse steel rate is a textbook value, unverified until calibration.
+        if items.iter().any(|i| i.label == "deckhouse steel") {
+            result["stern_block_mass"]["deckhouse_steel"] = json!({
+                "rate_t_per_m3": num(ovd_core::machinery::steel_rates::DECKHOUSE_T_PER_M3),
+                "rate_status": "unverified estimate",
+                "rate_basis": ovd_core::machinery::steel_rates::DECKHOUSE_RATE_BASIS,
+                "outfit": "not in the mass: no outfit rate was found in a source read (spec 0011 D7); the calibration set (D11) gives one",
+            });
         }
     }
     result
