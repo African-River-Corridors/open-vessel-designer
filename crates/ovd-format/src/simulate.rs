@@ -1444,6 +1444,8 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
     measured.deadweight_t = Some(deadweight);
     // Issue #337: the liquid bulk layout, for the liquid Measures.
     measured.liquid = r.liquid.clone();
+    // Issue #763: the damage blocks of the Rule Sets that bring their own (ES-TRIN 28.03, NORMAM 5.23.8).
+    let mut liquid_damage_by_rule = Value::Null;
     // Issue #454: what the Vessel Model is assembled from.
     measured.vessel = Some(ovd_core::vessel_model::VesselModelInputs {
         capacity: inp.clone(),
@@ -1577,6 +1579,61 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
                 let marpol = rules.sets.iter().any(|s| s.id == "marpol-i");
                 (measured.damage, measured.marpol_damage) =
                     crate::liquid::damage_verdicts(&hull, liquid, cargo_key, rho, &conds, marpol);
+                // Issue #763: the damage of ES-TRIN 28.03 (a craft over 110 m) and of NORMAM 5.23.8, when the
+                // stack holds a Rule set that evaluates it. Unhashed, in `damage_by_rule`.
+                let mut by_rule = serde_json::Map::new();
+                let es_trin_set = rules.sets.iter().find(|s| {
+                    s.id == "es-trin-2025"
+                        && s.rule("es-trin/28.03(4)/damage-stability")
+                            .is_some_and(|r| r.evaluated)
+                });
+                if let Some(set) = es_trin_set.filter(|_| hull.spec.loa > 110.0)
+                    && let Ok(table) =
+                        crate::damage::permeability_table(set, "es-trin-permeability")
+                {
+                    measured.es_trin_damage = crate::liquid::liquid_rule_damage(
+                        crate::liquid::LiquidRule::EsTrin,
+                        &hull,
+                        liquid,
+                        rho,
+                        &conds,
+                        &table,
+                    );
+                    by_rule.insert(
+                        set.id.clone(),
+                        crate::liquid::rule_damage_json(
+                            &set.key(),
+                            crate::damage::ES_TRIN_METHOD,
+                            &measured.es_trin_damage,
+                        ),
+                    );
+                }
+                let normam_set = rules.sets.iter().find(|s| {
+                    s.id == "normam-202"
+                        && s.rule("normam/5.23.8/standard-damage-cases")
+                            .is_some_and(|r| r.evaluated)
+                });
+                if let Some(set) = normam_set
+                    && let Ok(table) = crate::damage::permeability_table(set, "normam-permeability")
+                {
+                    measured.normam_damage = crate::liquid::liquid_rule_damage(
+                        crate::liquid::LiquidRule::Normam,
+                        &hull,
+                        liquid,
+                        rho,
+                        &conds,
+                        &table,
+                    );
+                    by_rule.insert(
+                        set.id.clone(),
+                        crate::liquid::rule_damage_json(
+                            &set.key(),
+                            crate::damage::NORMAM_METHOD,
+                            &measured.normam_damage,
+                        ),
+                    );
+                }
+                liquid_damage_by_rule = Value::Object(by_rule);
             }
             // Issue #341: the mean oil outflow of MARPOL Annex I regulation 23, at the draught of the full load.
             if let Some(liquid) = r.liquid.as_ref()
@@ -1712,6 +1769,7 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
                     &measured.damage,
                     &measured.marpol_damage,
                     measured.oil_outflow.as_ref(),
+                    &liquid_damage_by_rule,
                 ),
                 (
                     &r.stern_block_items,
@@ -1734,6 +1792,7 @@ fn with_liquid(
     damage: &[ovd_core::measured::DamageVerdict],
     marpol_damage: &[ovd_core::measured::DamageVerdict],
     oil_outflow: Option<&ovd_core::liquid_bulk::oil_outflow::OilOutflow>,
+    damage_by_rule: &Value,
 ) -> Value {
     if let (Some(l), Some(o)) = (r.liquid.as_ref(), v.as_object_mut()) {
         o.insert(
@@ -1764,6 +1823,10 @@ fn with_liquid(
                 "marpol_damage".to_string(),
                 crate::liquid::damage_json(marpol_damage),
             );
+        }
+        // Issue #763: the damage of the Rule Sets that bring their own cases (unhashed).
+        if damage_by_rule.as_object().is_some_and(|m| !m.is_empty()) {
+            o.insert("damage_by_rule".to_string(), damage_by_rule.clone());
         }
     }
     v
@@ -3078,6 +3141,56 @@ fn simulate_gas(
         }
         _ => (Vec::new(), Value::Null),
     };
+    // Issue #763 (spec 0012 D2, D3): the damage of ADN 9.3.1.15 (`adn-gas`) and of ES-TRIN 28.03 (a craft over
+    // 110 m) on every IS Code condition, when the stack holds a Rule set that evaluates it. Unhashed.
+    let mut by_rule = serde_json::Map::new();
+    let (mut adn_gas_damage, mut es_trin_damage) = (Vec::new(), Vec::new());
+    if !damaged_conditions.is_empty() {
+        let adn_set = rules.sets.iter().find(|s| {
+            s.id == "adn-gas"
+                && s.rule("adn/9.3.1.15.1/damage-stability")
+                    .is_some_and(|r| r.evaluated)
+        });
+        let es_trin_set = rules
+            .sets
+            .iter()
+            .find(|s| {
+                s.id == "es-trin-2025"
+                    && s.rule("es-trin/28.03(4)/damage-stability")
+                        .is_some_and(|r| r.evaluated)
+            })
+            .filter(|_| l > 110.0);
+        if adn_set.is_some() || es_trin_set.is_some() {
+            let model = ovd_core::vessel_model::assemble(&vessel_inputs);
+            let spaces: Vec<ovd_core::compartments::Space> =
+                model.spaces.iter().map(|c| c.space.clone()).collect();
+            for (rule, set, out) in [
+                (
+                    crate::damage::GasBoxRule::AdnGas,
+                    adn_set,
+                    &mut adn_gas_damage,
+                ),
+                (
+                    crate::damage::GasBoxRule::EsTrin,
+                    es_trin_set,
+                    &mut es_trin_damage,
+                ),
+            ] {
+                let Some(set) = set else { continue };
+                if let Ok((v, block)) = crate::damage::gas_box_damage_verdicts(
+                    rule,
+                    set,
+                    &spaces,
+                    &fit_hull,
+                    &damaged_conditions,
+                    rho,
+                ) {
+                    *out = v;
+                    by_rule.insert(set.id.clone(), block);
+                }
+            }
+        }
+    }
     // Issue #742: the panel model and its plate model (the steel list).
     let steel = r
         .gas_basis
@@ -3161,11 +3274,21 @@ fn simulate_gas(
         {
             o.insert("damage".to_string(), gas_damage_block);
         }
+        if !by_rule.is_empty()
+            && let Some(o) = v.as_object_mut()
+        {
+            o.insert(
+                "damage_by_rule".to_string(),
+                serde_json::Value::Object(by_rule),
+            );
+        }
         (
             v,
             Measured {
                 conditions,
                 damage: gas_damage,
+                adn_gas_damage,
+                es_trin_damage,
                 deadweight_t: Some(deadweight),
                 tank: r.tank_rules.clone(),
                 separation: r.separation.clone().map(|s| {

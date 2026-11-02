@@ -147,6 +147,67 @@ pub(crate) fn drawing_values(r: &BargeCapacityResult) -> Vec<(&'static str, Valu
     )]
 }
 
+/// The laden departure condition of a liquid bulk hull, as the damage runs take it: its mass and centre of
+/// gravity (the damage changes neither), the intact floating position and the cargo.
+pub(crate) struct Laden {
+    pub mass: f64,
+    pub g: ovd_core::sections::Gravity,
+    /// The intact (height of the waterplane, trim in degrees) the solves start from.
+    pub start: (f64, f64),
+    /// The cargo's mass (t) and height of its centre of gravity (m).
+    pub cargo: (f64, f64),
+}
+
+/// The laden departure condition of `conditions`; `None` without one, without weights, or when it has no
+/// floating position.
+pub(crate) fn laden_departure(
+    hull: &ovd_core::hydrostatics::Hull,
+    conditions: &[ovd_core::loading_conditions::LoadedCondition],
+    density: f64,
+) -> Option<Laden> {
+    use ovd_core::loading_conditions::Role;
+    use ovd_core::sections::Gravity;
+    let laden = conditions
+        .iter()
+        .find(|c| c.role == Role::FullLoadDeparture)?;
+    // The mass and its centre of gravity: the weights of the condition. The damage does not change either.
+    let mass: f64 = laden.weights.iter().map(|(_, i)| i.mass_t).sum();
+    if mass.is_nan() || mass <= 0.0 {
+        return None;
+    }
+    let g = Gravity {
+        lcg_m: laden
+            .weights
+            .iter()
+            .map(|(_, i)| i.mass_t * i.lcg_m)
+            .sum::<f64>()
+            / mass,
+        tcg_m: 0.0,
+        kg_m: laden
+            .weights
+            .iter()
+            .map(|(_, i)| i.mass_t * i.kcg_m)
+            .sum::<f64>()
+            / mass,
+    };
+    let float = hull.float(mass, g, density).ok()?;
+    let start = (
+        float.equilibrium.waterplane.c,
+        float.equilibrium.waterplane.trim_deg,
+    );
+    let cargo = laden
+        .weights
+        .iter()
+        .find(|(n, _)| n == "Cargo")
+        .map_or((0.0, 0.0), |(_, i)| (i.mass_t, i.kcg_m));
+    Some(Laden {
+        mass,
+        g,
+        start,
+        cargo,
+    })
+}
+
 /// Issue #341: the assumed damages of the hull and what each does to the laden departure condition.
 ///
 /// The first list is by the ADN extents of the vessel type of the Cargo (9.3.2.15.1 for type C, 9.3.3.15.1 for
@@ -166,55 +227,24 @@ pub(crate) fn damage_verdicts(
 ) {
     use ovd_core::damage_cases::{AdnExtents, DamageCase, adn_damage_cases, marpol_damage_cases};
     use ovd_core::damage_stability::{DamageCriteria, assess};
-    use ovd_core::loading_conditions::Role;
-    use ovd_core::sections::Gravity;
     let adn = crate::trace::adn_vessel_type_of(cargo_key);
     if adn.is_none() && !marpol {
         return (Vec::new(), Vec::new());
     }
     let none = || (Vec::new(), Vec::new());
-    let Some(laden) = conditions
-        .iter()
-        .find(|c| c.role == Role::FullLoadDeparture)
+    let Some(Laden {
+        mass,
+        g,
+        start,
+        cargo,
+    }) = laden_departure(hull, conditions, density)
     else {
         return none();
     };
-    // The mass and its centre of gravity: the weights of the condition. The damage does not change either.
-    let mass: f64 = laden.weights.iter().map(|(_, i)| i.mass_t).sum();
-    if mass.is_nan() || mass <= 0.0 {
-        return none();
-    }
-    let g = Gravity {
-        lcg_m: laden
-            .weights
-            .iter()
-            .map(|(_, i)| i.mass_t * i.lcg_m)
-            .sum::<f64>()
-            / mass,
-        tcg_m: 0.0,
-        kg_m: laden
-            .weights
-            .iter()
-            .map(|(_, i)| i.mass_t * i.kcg_m)
-            .sum::<f64>()
-            / mass,
-    };
-    let Ok(float) = hull.float(mass, g, density) else {
-        return none();
-    };
-    let start = (
-        float.equilibrium.waterplane.c,
-        float.equilibrium.waterplane.trim_deg,
-    );
     // MARPOL Annex I 28.4.1 (spec 0012 D20, issue #764): "any outflow of liquids from damaged compartments"
     // is accounted for, so a breached cargo tank's oil leaves the condition. The cargo tanks are filled alike;
     // the slop tanks are empty in the loading conditions, so they lose nothing. ADN keeps the mass (its cargo
     // tanks are not breached: their permeability is 0).
-    let cargo = laden
-        .weights
-        .iter()
-        .find(|(n, _)| n == "Cargo")
-        .map_or((0.0, 0.0), |(_, i)| (i.mass_t, i.kcg_m));
     let verdicts = |cases: Vec<DamageCase>, criteria: &DamageCriteria, outflow: bool| {
         cases
             .into_iter()
@@ -285,6 +315,116 @@ pub(crate) fn damage_verdicts(
     (by_adn, by_marpol)
 }
 
+/// Which rule's damage a liquid bulk hull is run through (issue #763).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LiquidRule {
+    /// ES-TRIN 2025/1 28.03(4) to (6), a craft over 110 m: final and intermediate stages.
+    EsTrin,
+    /// NORMAM-202/DPC 5.23.8 and 5.23.9: the final stage.
+    Normam,
+}
+
+/// Issue #763: the assumed damages of ES-TRIN 28.03(4) or NORMAM 5.23.8 on the laden departure condition of a
+/// liquid bulk hull, and what each does. `table` is the rule's Permeability Table; the cargo and slop tanks are
+/// full at the laden departure (0 or 95 % "according to their function", ES-TRIN 28.03(4)(d), NORMAM 5.23.8 (f)),
+/// so they flood nothing and keep their oil; every other space is empty (its table value). Empty when the
+/// departure condition has no floating position.
+pub(crate) fn liquid_rule_damage(
+    rule: LiquidRule,
+    hull: &ovd_core::hydrostatics::Hull,
+    liquid: &LiquidBulkResult,
+    density: f64,
+    conditions: &[ovd_core::loading_conditions::LoadedCondition],
+    table: &ovd_core::damage_cases::PermeabilityTable,
+) -> Vec<ovd_core::measured::DamageVerdict> {
+    use ovd_core::damage_cases::{
+        AdnExtents, CaseOptions, adn_damage_cases_with, deck_edge_immersed,
+        es_trin_longitudinal_extent_m, machinery_bulkheads_intact, normam_damage_cases,
+    };
+    use ovd_core::damage_stability::{DamageCriteria, assess, intermediate_stages};
+    use ovd_core::sections::Waterplane;
+    let Some(Laden { mass, g, start, .. }) = laden_departure(hull, conditions, density) else {
+        return Vec::new();
+    };
+    let (loa, beam) = (hull.spec.loa, hull.spec.beam);
+    let by_function = |kind: SpaceKind| {
+        let full = matches!(kind, SpaceKind::CargoTank | SpaceKind::Slop);
+        table.of(kind, if full { 1.0 } else { 0.0 }).unwrap_or(0.0)
+    };
+    let cases = match rule {
+        LiquidRule::EsTrin => adn_damage_cases_with(
+            &liquid.spaces,
+            loa,
+            beam,
+            &AdnExtents::ES_TRIN_28_03,
+            &CaseOptions {
+                long_m: es_trin_longitudinal_extent_m(loa),
+                cut: true,
+                intact_bulkheads_m: &machinery_bulkheads_intact(&liquid.spaces, loa),
+            },
+            &by_function,
+        ),
+        LiquidRule::Normam => normam_damage_cases(&liquid.spaces, loa, beam, &by_function),
+    };
+    let (criteria, stage_criteria) = match rule {
+        LiquidRule::EsTrin => (
+            DamageCriteria::ES_TRIN_28_03_FINAL,
+            DamageCriteria::ES_TRIN_28_03_INTERMEDIATE,
+        ),
+        LiquidRule::Normam => (DamageCriteria::NORMAM_5_23_9, DamageCriteria::NORMAM_5_23_9),
+    };
+    cases
+        .into_iter()
+        .map(|case| {
+            let mut outcome = assess(
+                &hull.table,
+                &case.flooded,
+                mass,
+                g,
+                density,
+                start,
+                &criteria,
+            );
+            // NORMAM 5.23.9 (c): a heel above 25 degrees is accepted up to 30 only when the deck is not immersed.
+            if rule == LiquidRule::Normam
+                && outcome.ok
+                && outcome.heel_deg.abs() > 25.0
+                && deck_edge_immersed(
+                    &Waterplane {
+                        heel_deg: outcome.heel_deg,
+                        trim_deg: outcome.trim_deg,
+                        c: outcome.waterplane_c_m,
+                    },
+                    (0.0, loa),
+                    0.5 * beam,
+                    hull.spec.depth,
+                )
+            {
+                outcome.ok = false;
+            }
+            let stages = if rule == LiquidRule::EsTrin {
+                intermediate_stages(
+                    &hull.table,
+                    &case.flooded,
+                    &outcome,
+                    (mass, g),
+                    density,
+                    start,
+                    &stage_criteria,
+                )
+            } else {
+                Vec::new()
+            };
+            ovd_core::measured::DamageVerdict {
+                flooded: case.flooded.iter().map(|f| f.name.clone()).collect(),
+                outcome,
+                name: case.name,
+                stages,
+            }
+        })
+        .collect()
+}
+
 /// The `damage` block of the results: what each assumed damage does (unhashed, with the rest of the
 /// Rule Trace inputs).
 pub(crate) fn damage_json(verdicts: &[ovd_core::measured::DamageVerdict]) -> Value {
@@ -312,6 +452,44 @@ pub(crate) fn damage_json(verdicts: &[ovd_core::measured::DamageVerdict]) -> Val
             })
             .collect(),
     )
+}
+
+/// Issue #763: the block of one rule's damage cases on a liquid bulk hull (unhashed): the Rule Set, the method and
+/// each case as [`damage_json`] gives it, with its intermediate stages where it has them.
+pub(crate) fn rule_damage_json(
+    set_key: &str,
+    method: &str,
+    verdicts: &[ovd_core::measured::DamageVerdict],
+) -> Value {
+    let Value::Array(mut cases) = damage_json(verdicts) else {
+        return Value::Null;
+    };
+    for (case, d) in cases.iter_mut().zip(verdicts) {
+        if d.stages.is_empty() {
+            continue;
+        }
+        case["stages"] = Value::Array(
+            d.stages
+                .iter()
+                .zip(ovd_core::damage_stability::INTERMEDIATE_FRACTIONS)
+                .map(|(st, fraction)| {
+                    json!({
+                        "fraction": num(fraction),
+                        "floats": match st.floats {
+                            ovd_core::damage_stability::Floats::Yes => "yes",
+                            ovd_core::damage_stability::Floats::Sinks => "sinks",
+                            ovd_core::damage_stability::Floats::NoEquilibrium => "no equilibrium",
+                        },
+                        "heel_deg": num(st.heel_deg),
+                        "max_gz_m": num(st.max_gz_m),
+                        "area_m_rad": num(st.area_m_rad),
+                        "ok": st.ok,
+                    })
+                })
+                .collect(),
+        );
+    }
+    json!({ "rule_set": set_key, "method": method, "cases": cases })
 }
 
 /// The `oil_outflow` block of the results: OM of MARPOL Annex I regulation 23 and what it is made of (unhashed,

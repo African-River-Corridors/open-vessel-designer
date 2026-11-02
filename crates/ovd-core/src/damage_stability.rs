@@ -585,6 +585,53 @@ impl DamageCriteria {
         limit_deg: 0.0,
         range_beyond_deg: Some(20.0),
     };
+
+    /// ADN 2025 9.3.1.15.2, the final stage of a gas hull (issue #763): the same numbers as 9.3.2.15.2 and
+    /// 9.3.3.15.2.
+    pub const ADN_9_3_1_FINAL: DamageCriteria = DamageCriteria::ADN_2025;
+
+    /// ADN 2025 9.3.1.15.2, an intermediate stage: a righting lever of at least 0.03 m over a positive range of
+    /// 5 degrees. The text gives no heel limit for the stage, so none is applied (90 degrees is past capsize);
+    /// with a range, the curve is read to the stage's equilibrium plus 5 degrees and no area is asked.
+    pub const ADN_9_3_1_INTERMEDIATE: DamageCriteria = DamageCriteria {
+        max_heel_deg: 90.0,
+        min_gz_m: 0.03,
+        min_area_m_rad: 0.0,
+        limit_deg: 0.0,
+        range_beyond_deg: Some(5.0),
+    };
+
+    /// ES-TRIN 2025/1 28.03(6)(b) and (6)(c), the final stage: a heel of at most 12 degrees and, beyond it, a
+    /// righting lever of 0.05 m with an area of 0.0065 m.rad before 27 degrees (the figures for containers that
+    /// are not secured are not used).
+    pub const ES_TRIN_28_03_FINAL: DamageCriteria = DamageCriteria {
+        max_heel_deg: 12.0,
+        min_gz_m: 0.05,
+        min_area_m_rad: 0.0065,
+        limit_deg: 27.0,
+        range_beyond_deg: None,
+    };
+
+    /// ES-TRIN 2025/1 28.03(5)(a) and (5)(b), an intermediate stage: a heel of at most 15 degrees and, beyond it,
+    /// a righting lever of at least 0.02 m before 27 degrees.
+    pub const ES_TRIN_28_03_INTERMEDIATE: DamageCriteria = DamageCriteria {
+        max_heel_deg: 15.0,
+        min_gz_m: 0.02,
+        min_area_m_rad: 0.0,
+        limit_deg: 27.0,
+        range_beyond_deg: None,
+    };
+
+    /// NORMAM-202/DPC 5.23.9 (a), (b), (c): a range of 20 degrees beyond the equilibrium with 0.1 m and
+    /// 0.0175 m.rad, and a final heel of at most 25 degrees, or 30 degrees when the deck is not immersed. The
+    /// heel limit here is the wider 30; the caller holds the heel above 25 degrees to the deck-edge test.
+    pub const NORMAM_5_23_9: DamageCriteria = DamageCriteria {
+        max_heel_deg: 30.0,
+        min_gz_m: 0.1,
+        min_area_m_rad: 0.0175,
+        limit_deg: 0.0,
+        range_beyond_deg: Some(20.0),
+    };
 }
 
 /// How the damaged hull floats.

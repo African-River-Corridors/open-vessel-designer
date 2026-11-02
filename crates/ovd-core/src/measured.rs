@@ -76,6 +76,15 @@ pub struct Measured {
     /// The assumed damages of MARPOL Annex I regulation 28 (issue #341), for a liquid bulk hull under that
     /// Rule Set; empty for every other design.
     pub marpol_damage: Vec<DamageVerdict>,
+    /// The assumed damages of ADN 2025 9.3.1.15 on a gas hull (spec 0012 D3, issue #763), for a design whose
+    /// stack holds `adn-gas`; empty for every other design.
+    pub adn_gas_damage: Vec<DamageVerdict>,
+    /// The assumed damages of ES-TRIN 2025/1 28.03(4) on a craft over 110 m (issue #763), for a design whose
+    /// stack holds the Rule; empty for every other design.
+    pub es_trin_damage: Vec<DamageVerdict>,
+    /// The assumed damages of NORMAM-202/DPC 5.23.8 on a liquid bulk hull (issue #763), for a design whose
+    /// stack holds the Rule; empty for every other design.
+    pub normam_damage: Vec<DamageVerdict>,
     /// The mean oil outflow of MARPOL Annex I regulation 23 (issue #341), for a liquid bulk hull under that
     /// Rule Set; `None` for every other design.
     pub oil_outflow: Option<crate::liquid_bulk::oil_outflow::OilOutflow>,
@@ -271,6 +280,15 @@ impl Measured {
             ObjectType::MarpolDamageCase => {
                 self.marpol_damage.iter().map(|d| d.name.clone()).collect()
             }
+            ObjectType::AdnGasDamageCase => {
+                self.adn_gas_damage.iter().map(|d| d.name.clone()).collect()
+            }
+            ObjectType::EsTrinDamageCase => {
+                self.es_trin_damage.iter().map(|d| d.name.clone()).collect()
+            }
+            ObjectType::NormamDamageCase => {
+                self.normam_damage.iter().map(|d| d.name.clone()).collect()
+            }
         }
     }
 
@@ -320,7 +338,19 @@ impl Measured {
                 self.gross_tonnage.is_some()
             }
             // The Rule on a hull with no damage computed is `not evaluated` with the reason (`missing`).
-            "stability.damage" | "stability.damage_marpol" | "oil_outflow.ratio" => true,
+            "stability.damage"
+            | "stability.damage_marpol"
+            | "stability.damage_adn_gas"
+            | "stability.damage_es_trin"
+            | "stability.damage_normam"
+            | "oil_outflow.ratio" => true,
+            // Issue #763: the stages of an ADN or ES-TRIN case; a case with none has no value.
+            "stability.damage_adn_gas_intermediate" => {
+                self.adn_gas_damage.iter().any(|d| !d.stages.is_empty())
+            }
+            "stability.damage_es_trin_intermediate" => {
+                self.es_trin_damage.iter().any(|d| !d.stages.is_empty())
+            }
             // Issue #760: the stages of a damage case; a case with none (liquid bulk) has no value.
             "stability.damage_stage_heel" | "stability.damage_intermediate" => {
                 self.damage.iter().any(|d| !d.stages.is_empty())
@@ -373,12 +403,28 @@ impl Measured {
         if let Some(v) = self.liquid_value(m, index) {
             return v;
         }
-        if m.id == "stability.damage" || m.id == "stability.damage_marpol" {
-            let set = if m.id == "stability.damage" {
-                &self.damage
-            } else {
-                &self.marpol_damage
-            };
+        // Issue #763: the verdicts of the rule-set lists; the intermediate stages are the stages' own verdict.
+        let listed = match m.id.as_str() {
+            "stability.damage" => Some(&self.damage),
+            "stability.damage_marpol" => Some(&self.marpol_damage),
+            "stability.damage_adn_gas" | "stability.damage_adn_gas_intermediate" => {
+                Some(&self.adn_gas_damage)
+            }
+            "stability.damage_es_trin" | "stability.damage_es_trin_intermediate" => {
+                Some(&self.es_trin_damage)
+            }
+            "stability.damage_normam" => Some(&self.normam_damage),
+            _ => None,
+        };
+        if let Some(set) = listed {
+            if m.id.ends_with("_intermediate") {
+                let d = set
+                    .get(index)
+                    .ok_or_else(|| format!("no damage case {index}"))?;
+                return Ok(MeasureValue::Bool(
+                    !d.stages.is_empty() && d.stages.iter().all(|s| s.ok),
+                ));
+            }
             return set
                 .get(index)
                 .map(|d| MeasureValue::Bool(d.outcome.ok))
