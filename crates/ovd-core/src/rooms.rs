@@ -5,12 +5,13 @@
 //! the rule sources). **MLC 2006 Standard A3.1 is not in the rule sources, so it is not applied**:
 //! a hull whose Service Area reaches sea is sized to the ES-TRIN rooms and the result says so; the
 //! deckhouse keeps the interim floor as its lower bound there (see `aft_arrangement`). RPN 18.02(4)
-//! (one cabin each when rest is taken underway in operating mode B) is cited from
-//! `docs/research/manning.md`; its text is not in the rule sources either.
+//! (rest underway in a room assigned to one crew member only) is cited from the CCNR RPN, state
+//! 1 January 2026, English unofficial translation (`rpn/` in the rule sources).
 //!
 //! Each row says how its area came: `sourced` (a figure in the paragraph), `derived` (worked from
-//! figures in the paragraph, the working named in the note) or `gap` (the paragraph requires the
-//! room or fixture but gives no area: counted, area 0, never invented). Concept and preliminary
+//! figures in the paragraph, the working named in the note) or `estimate` (the paragraph
+//! requires the room or fixture but gives no area: a stated ESTIMATE, its working in the note, like the
+//! tier height). Concept and preliminary
 //! design only (ADR 0011).
 
 use alloc::string::{String, ToString};
@@ -35,6 +36,22 @@ pub const PERSONS_PER_WASHBASIN: u32 = 4;
 pub const PERSONS_PER_SHOWER: u32 = 6;
 /// Floor space of a toilet compartment, at least (m2): ES-TRIN 15.03(3).
 pub const TOILET_M2: f64 = 1.0;
+/// ESTIMATES for what ES-TRIN requires but gives no area for. Each is worked from a plain footprint,
+/// not read from a source, and is marked `estimate` in the rooms table.
+/// Washbasin: 0.60 x 0.80 m of basin and standing room (m2).
+pub const WASHBASIN_M2: f64 = 0.5;
+/// Shower: a 0.90 x 0.90 m cubicle (m2).
+pub const SHOWER_M2: f64 = 0.81;
+/// Galley: a 2.4 m run of cooker, sink, refrigerator and worktop 0.60 m deep with a 1.0 m working
+/// aisle (3.84 m2), and 1.2 m2 of stores, rounded (m2).
+pub const GALLEY_M2: f64 = 5.0;
+/// Work-clothes room: 2.0 m2 for hanging and drying, and 0.25 m2 a berth for a lockable locker per
+/// crew member (15.07(1)) (m2).
+pub const WORK_CLOTHES_BASE_M2: f64 = 2.0;
+pub const WORK_CLOTHES_PER_BERTH_M2: f64 = 0.25;
+/// One stairway: 0.60 m wide (15.02(12)(a)), 13 risers of 0.20 m for a 2.6 m tier at a 0.15 m
+/// tread (15.02(12)(b)) is a 1.95 m run, and a 0.60 m landing: 0.60 x 2.55 = 1.53, rounded (m2).
+pub const STAIRWAY_M2: f64 = 1.6;
 /// Clear width of a door, at least (m): ES-TRIN 15.02(11)(a). Taken as the least corridor width: a
 /// corridor narrower than its doors would not pass a person through them.
 pub const CORRIDOR_WIDTH_M: f64 = 0.60;
@@ -63,7 +80,7 @@ pub struct Room {
     pub area_m2: f64,
     /// The clause: document, edition and paragraph.
     pub clause: String,
-    /// `sourced`, `derived` or `gap`.
+    /// `sourced`, `derived` or `estimate`.
     pub basis: &'static str,
     pub note: String,
 }
@@ -129,7 +146,7 @@ pub fn size_rooms(b: &RoomsBasis) -> Rooms {
         );
         if b.mode_b {
             cabin_row.clause.push_str(
-                "; RPN 18.02(4) via docs/research/manning.md (one cabin each in mode B with rest underway; the RPN text is not in the rule sources)",
+                "; CCNR RPN, state 1 January 2026 (English unofficial translation; French, German and Dutch are authoritative), 18.02(4): rest underway in a room assigned to one crew member only. 18.02(4) derogates from (1) and (2), the modes A1 and A2, and names no mode B; the ticket and the manning note apply it to mode B",
             );
         }
         rows.push(cabin_row);
@@ -157,19 +174,19 @@ pub fn size_rooms(b: &RoomsBasis) -> Rooms {
             "washbasin",
             "Washbasin",
             ceil_div(n, PERSONS_PER_WASHBASIN),
-            0.0,
+            WASHBASIN_M2,
             "15.03(1)(b)",
-            "gap",
-            "One per four crew; the text gives no floor area.",
+            "estimate",
+            "One per four crew. ESTIMATE: the text gives no floor area; 0.60 x 0.80 m of basin and standing room, rounded to 0.5 m2.",
         ));
         rows.push(row(
             "shower",
             "Shower or bath",
             ceil_div(n, PERSONS_PER_SHOWER),
-            0.0,
+            SHOWER_M2,
             "15.03(1)(c)",
-            "gap",
-            "One per six crew; the text gives no floor area.",
+            "estimate",
+            "One per six crew. ESTIMATE: the text gives no floor area; a 0.90 x 0.90 m cubicle.",
         ));
         let front = cabin / BERTH_LENGTH_M;
         let bays = ceil_div(n, 2);
@@ -187,28 +204,28 @@ pub fn size_rooms(b: &RoomsBasis) -> Rooms {
             "galley",
             "Galley",
             1,
-            0.0,
+            GALLEY_M2,
             "15.04(2)",
-            "gap",
-            "A cooker, sink, water, refrigerator, storage and working space; the text gives no floor area.",
+            "estimate",
+            "A cooker, sink, water, refrigerator, storage and working space. ESTIMATE: the text gives no floor area; a 2.4 m run of units 0.60 m deep with a 1.0 m aisle (3.84 m2) and 1.2 m2 of stores, rounded to 5.0 m2.",
         ));
         rows.push(row(
             "work_clothes",
             "Work-clothes store and drying room",
             1,
-            0.0,
+            WORK_CLOTHES_BASE_M2 + WORK_CLOTHES_PER_BERTH_M2 * n as f64,
             "15.07(2)",
-            "gap",
-            "Required, not in the sleeping quarters; the text gives no floor area.",
+            "estimate",
+            "Required, not in the sleeping quarters. ESTIMATE: the text gives no floor area; 2.0 m2 for hanging and drying and 0.25 m2 a berth for the lockers of 15.07(1).",
         ));
         rows.push(row(
             "stairs",
             "Stairways between tiers",
-            0,
-            0.0,
+            1,
+            STAIRWAY_M2,
             "15.02(12)",
-            "gap",
-            "At least 0.60 m wide, tread 0.15 m; the number depends on the tier count, and no floor area is given.",
+            "estimate",
+            "At least 0.60 m wide, tread 0.15 m. ESTIMATE: no floor area is given; 13 risers of 0.20 m at a 0.15 m tread is a 1.95 m run plus a 0.60 m landing, 0.60 x 2.55 m, rounded to 1.6 m2. One stairway (to the wheelhouse); a further one for each tier above the first is not counted, as the rooms do not know the tier count.",
         ));
     }
     let total_m2 = rows.iter().map(|r| r.area_m2).sum();

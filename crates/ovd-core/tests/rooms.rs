@@ -35,38 +35,40 @@ fn six_berths_by_hand() {
     // toilets: 6 / 6 = 1 compartment x 1.00 m2 (15.03(1)(a), (3))
     // corridor: 0.60 m wide (15.02(11)(a) clear door width) x (6 cabins / 2 per bay = 3 bays x
     // 1.75 m cabin front (3.50 m2 / 2.00 m berth length)) = 0.60 x 5.25 = 3.15
-    // total 21.00 + 12.00 + 1.00 + 3.15 = 37.15
+    // sourced/derived total 21.00 + 12.00 + 1.00 + 3.15 = 37.15
+    // estimates: washbasins ceil(6/4) = 2 x 0.5 = 1.00; shower ceil(6/6) = 1 x 0.81 = 0.81;
+    // galley 5.00; work clothes 2.0 + 0.25 x 6 = 3.50; stairway 1.60 -> 11.91
+    // total 37.15 + 11.91 = 49.06
     let r = size_rooms(&basis(6));
     assert!((row(&r, "cabin").area_m2 - 21.0).abs() < 1e-9);
     assert!((row(&r, "communal").area_m2 - 12.0).abs() < 1e-9);
     assert_eq!(row(&r, "toilet").count, 1);
     assert!((row(&r, "toilet").area_m2 - 1.0).abs() < 1e-9);
     assert!((row(&r, "corridor").area_m2 - 3.15).abs() < 1e-9);
-    assert!((r.total_m2 - 37.15).abs() < 1e-9);
+    assert!((r.total_m2 - 49.06).abs() < 1e-9);
 }
 
 #[test]
 fn a_small_crew_takes_the_8_m2_communal_floor() {
     // 1 berth: 2 m2 is under the 8 m2 total of 15.02(8): 8.00. Cabin 3.50, toilet 1.00,
-    // corridor 0.60 x (1 bay x 1.75) = 1.05. Total 13.55.
+    // corridor 0.60 x (1 bay x 1.75) = 1.05: 13.55. Estimates: basin 0.5, shower 0.81, galley 5.0,
+    // work clothes 2.25, stairway 1.6 = 10.16. Total 23.71.
     let r = size_rooms(&basis(1));
     assert!((row(&r, "communal").area_m2 - 8.0).abs() < 1e-9);
     assert!((row(&r, "corridor").area_m2 - 1.05).abs() < 1e-9);
-    assert!((r.total_m2 - 13.55).abs() < 1e-9);
+    assert!((r.total_m2 - 23.71).abs() < 1e-9);
 }
 
 #[test]
 fn thirteen_berths_and_the_fixture_counts() {
     // cabins 13 x 3.5 = 45.5; communal 26.0; toilets ceil(13/6) = 3 -> 3.00;
-    // corridor 0.6 x (7 bays x 1.75) = 7.35; total 81.85.
-    // Basins ceil(13/4) = 4 and showers ceil(13/6) = 3 (15.03(1)(b), (c)); the text gives no floor
-    // area for them, so they are counted and their area is a named gap (0).
+    // corridor 0.6 x (7 bays x 1.75) = 7.35; 81.85 so far.
+    // Basins ceil(13/4) = 4 x 0.5 = 2.00 and showers ceil(13/6) = 3 x 0.81 = 2.43 (15.03(1)(b), (c));
+    // galley 5.0; work clothes 2.0 + 0.25 x 13 = 5.25; stairway 1.6. Total 81.85 + 16.28 = 98.13.
     let r = size_rooms(&basis(13));
-    assert!((r.total_m2 - 81.85).abs() < 1e-9);
+    assert!((r.total_m2 - 98.13).abs() < 1e-9);
     assert_eq!(row(&r, "washbasin").count, 4);
     assert_eq!(row(&r, "shower").count, 3);
-    assert_eq!(row(&r, "washbasin").basis, "gap");
-    assert_eq!(row(&r, "shower").area_m2, 0.0);
 }
 
 #[test]
@@ -75,7 +77,7 @@ fn every_row_has_a_clause_and_a_basis() {
         for row in &size_rooms(&basis(n)).rows {
             assert!(row.clause.starts_with("ES-TRIN 2025/1 "), "{}", row.id);
             assert!(
-                ["sourced", "derived", "gap"].contains(&row.basis),
+                ["sourced", "derived", "estimate"].contains(&row.basis),
                 "{}",
                 row.id
             );
@@ -84,15 +86,41 @@ fn every_row_has_a_clause_and_a_basis() {
     }
 }
 
+fn estimate(n: u32, id: &str, area_each: f64, count: u32) {
+    let r = size_rooms(&basis(n));
+    let x = row(&r, id);
+    assert_eq!(x.basis, "estimate", "{id}");
+    assert_eq!(x.count, count, "{id}");
+    assert!((x.area_each_m2 - area_each).abs() < 1e-9, "{id}");
+    assert!(x.note.contains("ESTIMATE"), "{id}");
+}
+
 #[test]
-fn the_gaps_are_named_rows_with_no_area() {
-    // The galley (15.04(2)), the work-clothes room (15.07(2)) and the stairs (15.02(12)) have
-    // contents or widths in the text but no floor area.
-    let r = size_rooms(&basis(6));
-    for id in ["galley", "work_clothes", "stairs"] {
-        let g = row(&r, id);
-        assert_eq!((g.basis, g.area_m2), ("gap", 0.0), "{id}");
-    }
+fn the_washbasin_estimate_is_half_a_square_metre_each() {
+    estimate(6, "washbasin", 0.5, 2);
+}
+
+#[test]
+fn the_shower_estimate_is_a_90_cm_cubicle() {
+    estimate(6, "shower", 0.9 * 0.9, 1);
+}
+
+#[test]
+fn the_galley_estimate_is_5_m2() {
+    // 2.4 x (0.6 + 1.0) = 3.84 + 1.2 stores = 5.04, rounded to 5.0.
+    estimate(6, "galley", 5.0, 1);
+}
+
+#[test]
+fn the_work_clothes_estimate_grows_a_quarter_metre_a_berth() {
+    estimate(6, "work_clothes", 3.5, 1);
+    estimate(13, "work_clothes", 5.25, 1);
+}
+
+#[test]
+fn the_stairway_estimate_is_one_stairway_of_1_6_m2() {
+    // 0.60 x (13 x 0.15 + 0.60) = 0.60 x 2.55 = 1.53, rounded to 1.6.
+    estimate(6, "stairs", 1.6, 1);
 }
 
 #[test]
@@ -104,7 +132,7 @@ fn mode_b_rest_underway_cites_the_one_cabin_each_rule() {
     };
     let r = size_rooms(&b);
     assert_eq!(row(&r, "cabin").count, 4);
-    assert!(row(&r, "cabin").clause.contains("RPN 18.02(4)"));
+    assert!(row(&r, "cabin").clause.contains("18.02(4)"));
     assert!(!row(&size_rooms(&basis(4)), "cabin").clause.contains("RPN"));
 }
 
@@ -116,7 +144,7 @@ fn a_sea_going_hull_is_sized_to_es_trin_and_says_mlc_was_not_applied() {
         mode_b: false,
     };
     let r = size_rooms(&b);
-    assert!((r.total_m2 - 37.15).abs() < 1e-9);
+    assert!((r.total_m2 - 49.06).abs() < 1e-9);
     assert!(!r.mlc_applied);
     assert!(r.rule_note.contains("MLC"));
 }

@@ -935,7 +935,7 @@ fn rooms_block_of(measured: &crate::simulate::Measured, crew: Option<&Value>) ->
         "rule_note": r.rule_note,
         "settled": crew_berths == Some(i64::from(r.berths)),
         "status": "estimate",
-        "basis": "Spec 0011 D5, section 2: rooms sized from the crew model's berths to ES-TRIN 2025/1 Chapter 15. Areas marked gap are required by the text but have no floor area in it. Concept and preliminary design only (ADR 0011).",
+        "basis": "Spec 0011 D5, section 2: rooms sized from the crew model's berths to ES-TRIN 2025/1 Chapter 15. Areas marked estimate are required by the text but have no floor area in it: each is a stated estimate with its working. Concept and preliminary design only (ADR 0011).",
     }))
 }
 

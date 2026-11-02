@@ -3691,7 +3691,7 @@
             "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
           ],
           "status": "estimate",
-          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. No result reads the crew yet (the deckhouse rooms come with issue #780)."
+          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. The deckhouse rooms read the berths (issue #780)."
         },
         "stern_block_mass": {
           "total_t": 513.7969035703804,
@@ -14747,7 +14747,7 @@
             "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
           ],
           "status": "estimate",
-          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. No result reads the crew yet (the deckhouse rooms come with issue #780)."
+          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. The deckhouse rooms read the berths (issue #780)."
         },
         "stern_block_mass": {
           "total_t": 513.7969035703804,
@@ -25825,7 +25825,7 @@
             "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
           ],
           "status": "estimate",
-          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. No result reads the crew yet (the deckhouse rooms come with issue #780)."
+          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. The deckhouse rooms read the berths (issue #780)."
         },
         "stern_block_mass": {
           "total_t": 582.4165430995258,

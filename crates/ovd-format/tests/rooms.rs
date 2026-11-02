@@ -54,7 +54,7 @@ fn a_river_only_mode_b_hull_gets_one_cabin_each() {
         row(&r, "cabin")["clause"]
             .as_str()
             .unwrap()
-            .contains("RPN 18.02(4)")
+            .contains("18.02(4)")
     );
     assert_eq!(r["rooms"]["rule"], json!("es-trin-2025-ch15"));
     assert_eq!(r["rooms"]["settled"], json!(true));
@@ -89,7 +89,13 @@ fn the_cabins_of_a_sea_going_hull_are_es_trin_and_say_mlc_is_not_applied() {
     // corridor 0.6 x ceil(b / 2) x 1.75; the sea floor is the larger of that and the interim floor of
     // 2 gas accommodation units of 12.192 x 2.438 m (= 59.4 m2).
     let b = r["crew"]["berths"].as_f64().unwrap();
-    let rooms = 3.5 * b + (2.0 * b).max(8.0) + (b / 6.0).ceil() + 0.6 * (b / 2.0).ceil() * 1.75;
+    let rooms = 3.5 * b + (2.0 * b).max(8.0) + (b / 6.0).ceil() + 0.6 * (b / 2.0).ceil() * 1.75
+        // estimates: basins, showers, galley, work clothes, one stairway
+        + 0.5 * (b / 4.0).ceil()
+        + 0.81 * (b / 6.0).ceil()
+        + 5.0
+        + (2.0 + 0.25 * b)
+        + 1.6;
     let interim = 2.0 * 12.192 * 2.438;
     assert!((r["rooms"]["total_m2"].as_f64().unwrap() - rooms).abs() < 1e-9);
     let req = r["rooms"]["required_area_m2"].as_f64().unwrap();
@@ -124,7 +130,7 @@ fn mode_a_and_mode_b_differ_in_the_crew_and_the_citation_not_in_the_cabin_rule()
         row(&b, "cabin")["clause"]
             .as_str()
             .unwrap()
-            .contains("via docs/research/manning.md")
+            .contains("CCNR RPN, state 1 January 2026")
     );
     assert!(b["crew"]["berths"].as_i64() >= a["crew"]["berths"].as_i64());
 }

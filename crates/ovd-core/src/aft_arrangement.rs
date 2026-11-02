@@ -1550,11 +1550,11 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
             )),
             Some(r) => {
                 warnings.push(Text::fixed(
-                    "warn-aft-deckhouse-rooms-gaps",
+                    "warn-aft-deckhouse-rooms-estimates",
                     "Deckhouse rooms (ES-TRIN 2025/1 Chapter 15): the galley, the work-clothes room, the \
-                     washbasins, the showers and the stairways are required but the text gives no floor \
-                     area, so they are counted in the rooms table with no area. The floor is under-stated \
-                     by them. The cabin, communal room, toilet and corridor areas are worked from the \
+                     washbasins, the showers and the stairway are required but the text gives no floor \
+                     area, so each has a stated ESTIMATE area, marked estimate in the rooms table with its \
+                     working. The cabin, communal room, toilet and corridor areas are worked from the \
                      paragraphs the table cites.",
                 ));
                 if r.reaches_sea {
