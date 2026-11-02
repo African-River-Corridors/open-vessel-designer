@@ -254,6 +254,8 @@ fn rpn_sourced_19_03_totals_of_the_pusher_groups() {
     ] {
         assert_eq!(total(k), t, "{k}");
     }
+    // Groups 1 to 3 (21 cells as in 19.02) and the printed cells of groups 4 (8) and 5 (9).
+    assert_eq!(cells.len(), 21 + 8 + 9);
     // The engineer rows of group 5 mode B S1: 1 and 1 (both alternatives).
     let c = cells.iter().find(|c| c.key == "g5-B-S1-alt1").unwrap();
     assert_eq!(c.counts[5], 1);
@@ -307,11 +309,11 @@ fn the_rule_sets_are_drafts_with_unverified_rules_that_cite_a_paragraph() {
 // --- the worked cases of 4.1 --------------------------------------------------------------------
 
 #[test]
-fn worked_case_140_by_29_coastal_lng_hull_is_13() {
-    // Sourced: spec 0011 4.1 (140 x 29 m coastal LNG hull, 2.4 MW, 24 h, UMS) -> minimum 13: 4 deck
-    // officers, 2 engineers, 6 ratings, cook. GT 6,000 is the column 7 of the research; 2.4 MW of
-    // gensets, the propulsion power below it.
-    for gt in [6000.0, 7000.0, 12843.0, 20000.0] {
+fn worked_case_140_by_29_coastal_lng_hull_is_13_up_to_8000_gt() {
+    // Spec 0011 4.1 (140 x 29 m coastal LNG hull, 2.4 MW, 24 h, UMS) -> minimum 13: 4 deck officers,
+    // 2 engineers, 6 ratings, cook. It holds only up to 8,000 GT (research manning.md 6.2): above it
+    // the grid has no column for 750 to 3,000 kW and the higher neighbour, column 6, is taken.
+    for gt in [6000.0, 7000.0] {
         let b = crew(
             "coastal-and-river",
             json!({}),
@@ -328,15 +330,35 @@ fn worked_case_140_by_29_coastal_lng_hull_is_13() {
             (&json!(4), &json!(2), &json!(6), &json!(1)),
             "GT {gt}"
         );
-        // The planning figure of the spec: 14 to 16.
-        assert_eq!(
-            (&b["planning_low"], &b["planning_high"]),
-            (&json!(14), &json!(16))
-        );
-        // Berths: crew + margin + 2 spare.
-        assert_eq!((&b["crew"], &b["berths"]), (&json!(16), &json!(18)));
         assert_eq!(b["rule_set"]["id"], "liberia-man-001");
     }
+    // Over 8,000 GT: column 6 (13 persons: 7 ratings) and the cook make 14.
+    for gt in [12843.0, 20000.0] {
+        let b = crew(
+            "coastal-and-river",
+            json!({}),
+            &facts(gt, 1717.0, 2400.0, 140.0),
+        );
+        assert_eq!(b["manning_scale"]["column"], "c6", "GT {gt}");
+        assert_eq!(b["minimum"], 14, "GT {gt}");
+        assert_eq!(b["ratings"], 7, "GT {gt}");
+        assert_eq!(b["manning_scale"]["other_neighbour_column"], "c9");
+    }
+}
+
+#[test]
+fn berths_are_the_crew_plus_the_margin_plus_two_spare() {
+    // Method, not a source: the owner margin (cargo engineer, steward, electro-technical officer) is an
+    // estimate, so crew = 13 + 3 and berths = crew + 2 (D16).
+    let b = crew(
+        "coastal-and-river",
+        json!({}),
+        &facts(7000.0, 1717.0, 2400.0, 140.0),
+    );
+    assert_eq!(
+        (&b["crew"], &b["berths"], &b["spare_berths"]),
+        (&json!(16), &json!(18), &json!(2))
+    );
 }
 
 #[test]
@@ -553,10 +575,10 @@ fn example_results() -> Value {
 }
 
 #[test]
-fn the_worked_example_hull_has_a_crew_of_13_outside_the_results_hash() {
+fn the_worked_example_hull_has_a_crew_of_14_outside_the_results_hash() {
     let results = example_results();
     let crew = &results["crew"];
-    assert_eq!(crew["minimum"], 13, "{crew}");
+    assert_eq!(crew["minimum"], 14, "{crew}");
     assert_eq!(crew["regime"], "seagoing");
     assert_eq!(crew["source"], "computed");
     // The hull is over 8,000 GT, and 2,400 kWe of gensets: the grid has no column for that, and the
@@ -573,4 +595,36 @@ fn the_worked_example_hull_has_a_crew_of_13_outside_the_results_hash() {
     let mut without = results.clone();
     without.as_object_mut().unwrap().remove("crew");
     assert_eq!(results_hash(&results), results_hash(&without));
+}
+
+#[test]
+fn a_gap_over_one_officer_between_the_uk_and_liberia_is_flagged() {
+    // The real tables never differ by more than one officer, so the flag is driven with a UK set
+    // (a test copy, version 1.0.1) whose Annex B row for 750 to 3,000 kW gives 5 engineers.
+    use ovd_format::rule_set::Library;
+    let text = include_str!("../rules/uk-msn-1868/1.0.0.json")
+        .replace("\"version\": \"1.0.0\"", "\"version\": \"1.0.1\"");
+    let mut v: Value = serde_json::from_str(&text).unwrap();
+    let rows = v["tables"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|t| t["id"] == "uk-annex-b-unlimited")
+        .unwrap()["rows"]
+        .as_array_mut()
+        .unwrap();
+    rows[1]["a"] = json!(5.0);
+    let mut lib = Library::built_in();
+    lib.add_text(&v.to_string()).unwrap();
+    let b = crew_json(
+        &option("coastal-and-river", json!({})),
+        &lib,
+        &facts(7000.0, 1717.0, 2400.0, 140.0),
+    )
+    .unwrap();
+    // UK 4 + 5 = 9 officers against Liberia 4 + 2 = 6.
+    assert_eq!(b["cross_check"]["uk_officers"], 9);
+    assert_eq!(b["cross_check"]["difference"], 3);
+    assert_eq!(b["cross_check"]["flagged"], true);
+    assert!(b["notes"].to_string().contains("over one person"));
 }

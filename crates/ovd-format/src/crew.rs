@@ -143,7 +143,7 @@ pub fn rpn_cells(set: &RuleSet, art: &str) -> Result<Vec<RpnCell>, String> {
         .collect())
 }
 
-/// The minimum crew of a rigid convoy or other rigid assembly of RPN 19.03, group 1 to 5, for the
+/// The minimum crew of a rigid convoy or other rigid assembly of RPN 19.03, group 1 to 5 (issue #785 wires it to the tug Formation), for the
 /// daily navigation hours. A pusher with its pushed barges is one of these groups; the group comes
 /// from the assembly's length and breadth and the number of pushed barges, which the model does not
 /// hold yet, so a run does not call this (the tug Formation, wave 3 of spec 0011).
@@ -328,7 +328,7 @@ pub fn crew_json(
         let ColumnChoice {
             index,
             exact,
-            same_gt_band,
+            other_neighbour,
         } = cr::select_liberia_column(&columns, gt_band, kw_band, ums)
             .ok_or("MAN-001 table has no column for this hull")?;
         let column = &columns[index];
@@ -342,21 +342,21 @@ pub fn crew_json(
             "table_total": column.total(),
         });
         if !exact {
-            let alt = same_gt_band.map(|i| &columns[i]);
+            let alt = other_neighbour.map(|i| &columns[i]);
             let text = format!(
-                "MAN-001 12.2 has no column for GT band {gt_band}, kW band {kw_band}, {} machinery: column {} (the nearest GT band with the same kW band) is used{}",
+                "MAN-001 12.2 has no column for GT band {gt_band}, kW band {kw_band}, {} machinery: column {} (the higher neighbour, spec 0011 4.1 step 6) is used{}",
                 if ums { "unattended" } else { "attended" },
                 column.id,
                 alt.map_or(String::new(), |a| format!(
-                    "; the column {} that keeps the GT band and takes more power would give {} persons before the cook",
+                    "; the other neighbour, column {}, has {} persons before the cook",
                     a.id,
                     a.total()
                 ))
             );
             column_json["hole"] = json!(text);
             if let Some(a) = alt {
-                column_json["same_gt_band_column"] = json!(a.id);
-                column_json["same_gt_band_total"] = json!(a.total());
+                column_json["other_neighbour_column"] = json!(a.id);
+                column_json["other_neighbour_total"] = json!(a.total());
             }
             notes.push(text);
         }

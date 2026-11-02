@@ -33,20 +33,20 @@ fn an_exact_column_is_taken_as_it_is() {
     let g = grid();
     let c = select_liberia_column(&g, 2, 0, true).unwrap();
     assert_eq!(
-        (g[c.index].id.as_str(), c.exact, c.same_gt_band),
+        (g[c.index].id.as_str(), c.exact, c.other_neighbour),
         ("b", true, None)
     );
 }
 
 #[test]
-fn a_hole_keeps_the_kw_band_and_moves_the_gt_band_the_least() {
+fn a_hole_with_one_neighbour_takes_it() {
     let g = grid();
     // GT band 4, kW band 0, UMS: the same kW band has b (2) and c (1): b is nearest.
     let c = select_liberia_column(&g, 4, 0, true).unwrap();
     assert_eq!(g[c.index].id, "b");
     assert!(!c.exact);
     // The column that keeps the GT band does not exist at band 4: none to show.
-    assert_eq!(c.same_gt_band, None);
+    assert_eq!(c.other_neighbour, None);
     // GT band 3: b (distance 1) beats c (distance 2).
     assert_eq!(
         g[select_liberia_column(&g, 3, 0, true).unwrap().index].id,
@@ -68,7 +68,7 @@ fn a_hole_on_a_tie_takes_the_higher_gt_band() {
 }
 
 #[test]
-fn a_hole_shows_the_column_that_keeps_the_gt_band() {
+fn a_hole_takes_the_higher_neighbour() {
     let g = grid();
     // GT band 2, kW band 0 exists; ask for a kW band no column has: only the GT band is kept.
     let c = select_liberia_column(&g, 2, 5, true).unwrap();
@@ -192,5 +192,27 @@ fn the_rule_set_ids_are_the_three_the_spec_names() {
     assert_eq!(
         MANNING_RULE_SETS,
         ["liberia-man-001", "uk-msn-1868", "ccnr-rpn-19"]
+    );
+}
+
+#[test]
+fn a_hole_takes_the_neighbour_with_more_persons_and_shows_the_other() {
+    // GT band 3, kW band 0: the column that keeps the kW band has 12 persons, the one that keeps the
+    // GT band 13. The higher is taken; the other is shown.
+    let g = vec![
+        col("kw", 2, 0, true, false, [1, 1, 2, 2, 2, 1, 1, 0, 1, 1]),
+        col("gt", 3, 1, true, false, [1, 1, 2, 3, 2, 1, 1, 0, 1, 1]),
+    ];
+    let c = select_liberia_column(&g, 3, 0, true).unwrap();
+    assert_eq!((g[c.index].id.as_str(), c.exact), ("gt", false));
+    assert_eq!(c.other_neighbour.map(|i| g[i].id.as_str()), Some("kw"));
+    // On equal totals the column that keeps the kW band is taken.
+    let g = vec![
+        col("kw", 2, 0, true, false, [1, 1, 2, 2, 2, 1, 1, 0, 1, 1]),
+        col("gt", 3, 1, true, false, [1, 1, 2, 2, 2, 1, 1, 0, 1, 1]),
+    ];
+    assert_eq!(
+        g[select_liberia_column(&g, 3, 0, true).unwrap().index].id,
+        "kw"
     );
 }

@@ -95,9 +95,9 @@ pub struct ColumnChoice {
     pub index: usize,
     /// The grid has a column for the GT band, the kW band and the UMS state.
     pub exact: bool,
-    /// For a hole: the column that keeps the GT band and takes the next kW band up, if there is one.
-    /// The choice does not take it; it is the sensitivity the results show.
-    pub same_gt_band: Option<usize>,
+    /// For a hole: the other neighbour (the one with fewer persons), if there is one. The choice
+    /// does not take it; the results show it.
+    pub other_neighbour: Option<usize>,
 }
 
 /// The Liberia column for a GT band, a kW band and a UMS state. The route is not an input of the
@@ -105,12 +105,11 @@ pub struct ColumnChoice {
 /// need at least as many persons, the cautious reading.
 ///
 /// The grid has holes: no column for GT over 8,000 or from 5,000 to 8,000 with 750 to 3,000 kW, none
-/// for GT under 500 on every route, none without UMS at 750 to 3,000 kW. A hole takes the
-/// neighbour that keeps the **kW band** (the power is what the engine room is manned for) and moves
-/// the GT band to the nearest one that has a column (the higher band on a tie); with none that keeps
-/// the kW band (a non-UMS ship of 750 to 3,000 kW), the column of the same GT band at the next kW
-/// band up, then the nearest of the rest, the higher total on a tie. The same-GT-band column is kept
-/// as `same_gt_band` for the results to show.
+/// for GT under 500 on every route, none without UMS at 750 to 3,000 kW. A hole takes the **higher
+/// neighbour** (spec 0011 4.1 step 6): of the column that keeps the GT band (any kW band) and the
+/// column that keeps the kW band and has the nearest GT band (the higher band on a tie), the one with
+/// more persons; on equal totals the one that keeps the kW band. With neither, the nearest column,
+/// the higher total on a tie. The lower neighbour is kept as `other_neighbour` for the results.
 pub fn select_liberia_column(
     columns: &[LiberiaColumn],
     gt_band: u32,
@@ -127,7 +126,7 @@ pub fn select_liberia_column(
         return Some(ColumnChoice {
             index: i,
             exact: true,
-            same_gt_band: None,
+            other_neighbour: None,
         });
     }
     let same_gt_band = eligible
@@ -135,7 +134,6 @@ pub fn select_liberia_column(
         .copied()
         .filter(|&i| columns[i].gt_band == gt_band)
         .max_by_key(|&i| columns[i].total());
-    // The hole keeps the kW band and moves the GT band the least; on a tie the higher GT band.
     let by_kw = eligible
         .iter()
         .copied()
@@ -144,19 +142,26 @@ pub fn select_liberia_column(
             let d = columns[i].gt_band.abs_diff(gt_band);
             (d, u32::MAX - columns[i].gt_band)
         });
-    let index = by_kw.or(same_gt_band).or_else(|| {
-        eligible.iter().copied().min_by_key(|&i| {
-            let c = &columns[i];
-            (
-                c.gt_band.abs_diff(gt_band) + c.kw_band.abs_diff(kw_band),
-                u32::MAX - c.total(),
-            )
-        })
-    })?;
+    let (index, other) = match (by_kw, same_gt_band) {
+        (Some(k), Some(g)) if columns[g].total() > columns[k].total() => (g, Some(k)),
+        (Some(k), Some(g)) => (k, Some(g)),
+        (Some(k), None) => (k, None),
+        (None, Some(g)) => (g, None),
+        (None, None) => (
+            eligible.iter().copied().min_by_key(|&i| {
+                let c = &columns[i];
+                (
+                    c.gt_band.abs_diff(gt_band) + c.kw_band.abs_diff(kw_band),
+                    u32::MAX - c.total(),
+                )
+            })?,
+            None,
+        ),
+    };
     Some(ColumnChoice {
         index,
         exact: false,
-        same_gt_band: same_gt_band.filter(|&i| i != index),
+        other_neighbour: other.filter(|&i| i != index),
     })
 }
 
