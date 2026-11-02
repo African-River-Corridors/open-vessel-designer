@@ -428,21 +428,9 @@ def test_the_cli_writes_a_document_that_ord_accepts(tmp_path):
 PRINCIPAL = json.loads((ROOT / "catalogue" / "report" / "principal_characteristics.json").read_text(encoding="utf-8"))["rows"]
 
 
-def _expected_principal(results):
-    def pick(cur, path):
-        for k in path:
-            if isinstance(cur, list) and k.startswith("name="):
-                cur = next((x for x in cur if x.get("name") == k[5:]), None)
-            elif isinstance(cur, dict):
-                cur = cur.get(k)
-            else:
-                return None
-        return cur
-    out = []
-    for r in PRINCIPAL:
-        v = pick(results, r["path"])
-        out.append([r["label"], "not evaluated" if not isinstance(v, (int, float)) else (f"{v:,.{r['decimals']}f} " + r["unit"]).strip()])
-    return out
+def _summary_rows(run, option):
+    """The rows of the principal characteristics table that `cr.build` puts in the summary."""
+    return next(b for b in _section(cr.build(run, option), "summary")["body"] if b["type"] == "table")["rows"]
 
 
 def test_the_data_file_has_the_rows_of_the_ticket_in_order_and_english_labels_in_the_text_library():
@@ -458,13 +446,25 @@ def test_the_data_file_has_the_rows_of_the_ticket_in_order_and_english_labels_in
 def test_the_report_summary_table_is_the_data_file_applied_to_the_run():
     """Label: property"""
     for o in (A, C):
-        t = next(b for b in _section(cr.build(RUN, o["name"]), "summary")["body"] if b["type"] == "table")
-        assert t["rows"] == _expected_principal(o["results"])
-        assert [r[0] for r in t["rows"]] == [r["label"] for r in PRINCIPAL]
+        rows = _summary_rows(RUN, o["name"])
+        assert [r[0] for r in rows] == [r["label"] for r in PRINCIPAL]
+        d = o["results"]["dims"]
+        assert rows[0][1] == f"{d['loa_m']:,.2f} m" and rows[1][1] == f"{d['beam_m']:,.2f} m"
+        assert rows[8][1] == f"{o['results']['results']['cargo_t']:,.0f} t"
     # The stored gas run has no crew block: those rows say so, the others hold numbers.
-    rows = dict(next(b for b in _section(cr.build(RUN, "A basis"), "summary")["body"] if b["type"] == "table")["rows"])
+    rows = dict(_summary_rows(RUN, "A basis"))
     assert rows["Crew, minimum"] == "not evaluated" and rows["Berths"] == "not evaluated"
     assert rows["Gross tonnage"].endswith(" GT") and rows["Length overall (LOA)"] == "140.00 m"
+
+
+def test_a_number_that_is_not_finite_is_not_evaluated_in_the_report():
+    """Label: property"""
+    run = json.loads(json.dumps(RUN))
+    res = next(o for o in run["options"] if o["name"] == "A basis")["results"]
+    res["dims"]["loa_m"] = float("nan")
+    res["dims"]["beam_m"] = float("inf")
+    rows = dict(_summary_rows(run, "A basis"))
+    assert rows["Length overall (LOA)"] == "not evaluated" and rows["Beam"] == "not evaluated"
 
 
 def test_a_run_with_crew_and_one_without_both_follow_the_file():
@@ -472,7 +472,7 @@ def test_a_run_with_crew_and_one_without_both_follow_the_file():
     run = json.loads(json.dumps(RUN))
     res = next(o for o in run["options"] if o["name"] == "A basis")["results"]
     res["crew"] = {"minimum": 7, "berths": 11}
-    rows = dict(next(b for b in _section(cr.build(run, "A basis"), "summary")["body"] if b["type"] == "table")["rows"])
+    rows = dict(_summary_rows(run, "A basis"))
     assert rows["Crew, minimum"] == "7" and rows["Berths"] == "11"
 
 
@@ -481,15 +481,16 @@ def test_the_app_strip_shows_what_the_report_summary_shows():
     node = shutil.which("node")
     if node is None:
         pytest.skip("node is not installed")
+    nan_run = json.loads(json.dumps(RUN))
+    nan_run["options"][0]["results"]["dims"]["loa_m"] = float("nan")
     script = (
         "import {principalItems} from './app/src/lib/principal.ts';"
         "import fs from 'node:fs';"
-        "const run = JSON.parse(fs.readFileSync('examples/gas-140x29-coastal-lng/results.json','utf8'));"
-        "const f=(v,d)=>v.toLocaleString('en-GB',{minimumFractionDigits:d,maximumFractionDigits:d});"
-        "console.log(JSON.stringify(run.options.map(o=>principalItems(o.results,f,'not evaluated').map(i=>i.text))));"
+        "const run = JSON.parse(fs.readFileSync(0,'utf8').replace(/\\bNaN\\b/g,'\"__nan__\"'),(k,v)=>v==='__nan__'?NaN:v);"
+        "console.log(JSON.stringify(run.options.map(o=>principalItems(o.results,'en-GB','not evaluated').map(i=>i.text))));"
     )
-    out = subprocess.run([node, "--input-type=module", "-e", script], cwd=ROOT, capture_output=True, text=True, check=True).stdout
-    for texts, o in zip(json.loads(out), RUN["options"]):
-        report = [(r[1].rsplit(" ", 1)[0] if r[1] != "not evaluated" and PRINCIPAL[i]["unit"] else r[1])
-                  for i, r in enumerate(_expected_principal(o["results"]))]
-        assert texts == report
+    for run in (RUN, nan_run):
+        out = subprocess.run([node, "--input-type=module", "-e", script], cwd=ROOT, input=json.dumps(run), capture_output=True,
+                             text=True, check=True).stdout
+        for texts, o in zip(json.loads(out), run["options"]):
+            assert [t.replace("\u00a0", " ") for t in texts] == [r[1] for r in _summary_rows(run, o["name"])]

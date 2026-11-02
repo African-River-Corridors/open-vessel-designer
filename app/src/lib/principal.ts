@@ -1,6 +1,7 @@
 // The principal characteristics strip (issue #889). The rows, their order, units and decimals come from one data
 // file, `catalogue/report/principal_characteristics.json`, which the report summary (tools/concept_report.py,
 // spec 0015 section 4.1) reads too. This module only reads values from the run's results; it computes nothing.
+import { formatNumber } from "./numberFormat.ts";
 import file from "../../../catalogue/report/principal_characteristics.json" with { type: "json" };
 
 export interface PrincipalRow {
@@ -20,7 +21,7 @@ export interface PrincipalItem {
   id: string;
   labelId: string;
   unit: string;
-  /** The value as text, or `notEvaluated` when the run does not hold a number there. */
+  /** The text the strip prints: the number with its unit (a no-break space between), or `notEvaluated` when the run holds no finite number there. */
   text: string;
   evaluated: boolean;
 }
@@ -41,12 +42,12 @@ function pick(results: unknown, path: string[]): unknown {
 /** The strip of one Option: every row of the data file, in its order. `results` null (no run) leaves every value not evaluated. */
 export function principalItems(
   results: unknown,
-  format: (value: number, decimals: number) => string,
+  locale: string,
   notEvaluated: string,
 ): PrincipalItem[] {
   return PRINCIPAL_ROWS.map((r) => {
     const v = pick(results, r.path);
     const ok = typeof v === "number" && Number.isFinite(v);
-    return { id: r.id, labelId: r.label_id, unit: r.unit, text: ok ? format(v, r.decimals) : notEvaluated, evaluated: ok };
+    return { id: r.id, labelId: r.label_id, unit: r.unit, text: ok ? formatNumber(v, r.decimals, r.decimals, locale) + (r.unit ? `\u00a0${r.unit}` : "") : notEvaluated, evaluated: ok };
   });
 }

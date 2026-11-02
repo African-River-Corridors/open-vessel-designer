@@ -30,6 +30,7 @@ not call the engine, except `ga_figures`, which runs `ovd draw`.
 """
 import argparse
 import json
+import math
 import pathlib
 import re
 import subprocess
@@ -669,7 +670,7 @@ def principal_table(o, tid="tbl-principal"):
     rows = []
     for r in principal_rows():
         v = _pick(R(o), r["path"])
-        ok = isinstance(v, (int, float)) and not isinstance(v, bool)
+        ok = isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
         rows.append([r["label"], f"{n(v, r['decimals'])} {r['unit']}".strip() if ok else None])
     return table(tid, f"Principal characteristics, {o['name']}", ["Characteristic", "Value"], rows, aligns=[None, "right"],
                  notes="Every value is read from the run.")
