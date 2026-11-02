@@ -1,6 +1,6 @@
 # 140 x 29 m coastal LNG gas barge: review run
 
-**Concept and preliminary design only. Not verified. Never for approval.** This folder is a worked example for an expert review of the tool, first run on 2026-10-29 and re-run with `ovd` on 2026-10-30 (the rename to OVD, spec 0010). The re-run takes in the propulsor layout changes since the first run (#694, #702, #708): the thruster and propulsor positions in the drawings and the results hashes moved; no figure in the tables below did. Re-run again after #722: the gas-hull lightship and cost now take the hull steel from the panel model (structural members with ABS barge minimum scantlings), so the lightship, draught, stability and cost figures moved. Re-run again after #740: the hull steel scantlings take the rule length of ABS 3-1-1/3.1 (96 % of the length on a waterline at 85 % of the depth) in place of the length overall, so the lightship, draught, stability and cost figures moved again (the tank, cargo, installed power, boil-off and gas use rows did not; the power curve moved by under 0.2 %). Re-run again after #745: the lightship and cost take the plate model's ordered steel (the plates laid out on the hull's Sections Table, the raked bow included, and the rule length on it), so the lightship fell by 266 to 385 t and the draught, stability, cost and power figures moved (the tank and cargo rows did not). Re-run again after #773, #774 and #776 (the genset cost line, the machinery steel allowances and the IGC opening setback on the deckhouse): the stern void, cargo zone, cargo, lightship, draught, stability, power and boil-off rows moved. The results, `trace.md`, the drawings and this README were regenerated together from the engine at that point (#857). The numbers are what the tool prints; nothing here is a design.
+**Concept and preliminary design only. Not verified. Never for approval.** This folder is a worked example for an expert review of the tool, first run on 2026-10-29 and re-run with `ovd` on 2026-10-30 (the rename to OVD, spec 0010). The re-run takes in the propulsor layout changes since the first run (#694, #702, #708): the thruster and propulsor positions in the drawings and the results hashes moved; no figure in the tables below did. Re-run again after #722: the gas-hull lightship and cost now take the hull steel from the panel model (structural members with ABS barge minimum scantlings), so the lightship, draught, stability and cost figures moved. Re-run again after #740: the hull steel scantlings take the rule length of ABS 3-1-1/3.1 (96 % of the length on a waterline at 85 % of the depth) in place of the length overall, so the lightship, draught, stability and cost figures moved again (the tank, cargo, installed power, boil-off and gas use rows did not; the power curve moved by under 0.2 %). Re-run again after #745: the lightship and cost take the plate model's ordered steel (the plates laid out on the hull's Sections Table, the raked bow included, and the rule length on it), so the lightship fell by 266 to 385 t and the draught, stability, cost and power figures moved (the tank and cargo rows did not). Re-run again after #773, #774, #775/#851 and #776 (the genset cost line, the machinery steel allowances, the gas fuel system mass and cost allowances, and the IGC opening setback on the deckhouse): most rows moved, among them the stern void, cargo zone, cargo volume and mass, lightship, displacement, draught, freeboard, air draft, stability, power, boil-off and gas use. The results, `trace.md`, the drawings and this README were regenerated together from the engine at that point (#857). The numbers are what the tool prints; nothing here is a design.
 
 ## The design
 
@@ -25,25 +25,25 @@ Self-propelled gas barge, IGC Type C tanks, LNG, 140.0 m x 29.0 m, raked box hul
 | Stern void (m) | 20.5 | 20.1 | 20.5 |
 | Cargo volume at 0.98 fill (m3) | 14,682 | 14,797 | 16,284 |
 | Cargo (t) | 6,607 | 6,659 | 7,328 |
-| Lightship (t) | 5,081 | 5,089 | 5,685 |
-| Displacement, laden (t) | 11,723 | 11,783 | 13,052 |
+| Lightship (t) | 5,084 | 5,092 | 5,688 |
+| Displacement, laden (t) | 11,726 | 11,786 | 13,054 |
 | Draught, laden (m) | 3.55 | 3.57 | 4.31 |
 | Draught cap (depth less freeboard) (m) | 10.19 | 10.19 | 14.14 |
 | Freeboard, laden (m) | 8.45 | 8.43 | 11.64 |
 | Air draft, laden (m) | 11.85 | 11.83 | 15.04 |
 | Air draft, light (m) | 13.82 | 13.82 | 17.41 |
-| GM fluid, full load departure (m) | 16.13 | 16.04 | 12.32 |
+| GM fluid, full load departure (m) | 16.12 | 16.04 | 12.32 |
 | Max GZ, full load departure (m) | 6.18 | 6.17 | 5.58 |
-| GM fluid, ballast departure (m) | 25.35 | 25.27 | 20.92 |
+| GM fluid, ballast departure (m) | 25.35 | 25.26 | 20.91 |
 | Installed power (design speed 9.7 kn, margin 1.2) (kW) | 1,717 | 1,717 | 2,022 |
 | Service speed, deep water (kn) | 11.4 | 11.4 | 12.0 |
 | Power at the service speed (kW) | 1,431 | 1,431 | 1,626 |
 | Boil-off (IGC 7.2 ambient) (kg/h) | 747 | 752 | 764 |
 | Gas use at the service speed (kg/h) | 261 | 261 | 291 |
 | Checks | boil-off within gas use | boil-off within gas use | boil-off within gas use |
-| Results hash | 5dab84f19aa1 | 4d9fd553d4f0 | 910f03aaed68 |
+| Results hash | 95f3c3575190 | 6d27514f217f | c41cb9437a5f |
 
-Power curve, deep water (kW at kn): 8 kn 641; 9 kn 907; 10 kn 1,240; 11 kn 1,651; 12 kn 2,148 (A basis).
+Power curve, deep water (kW at kn): 8 kn 642; 9 kn 907; 10 kn 1,240; 11 kn 1,651; 12 kn 2,148 (A basis).
 
 Every Option meets every evaluated blocking Rule. Four blocking Rules are not evaluated by the tool: IGC 2.7 damage survival, the IS Code weather criterion, the inland tank-capacity table and the hull-design clause. One warning check is not met in every Option: the boil-off exceeds the gas use at the service speed, so the excess needs reliquefaction, pressure accumulation or a gas combustion unit (IGC 7.1).
 
