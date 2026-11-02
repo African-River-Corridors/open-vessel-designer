@@ -251,3 +251,33 @@ fn a_coastal_file_saved_before_keeps_the_container_block_and_its_hashes() {
         assert_eq!(status, &ovd_format::HashStatus::Matches, "{option}");
     }
 }
+
+// Issue #887: the `stern_arrangement` summary for the Stern & crew view. It is outside the hash, and
+// each figure is what the drawing block holds.
+#[test]
+fn the_stern_arrangement_block_matches_the_drawing_and_is_outside_the_hash() {
+    assert!(ovd_format::UNHASHED_KEYS.contains(&"stern_arrangement"));
+    let deckhouse = results_of(&hand(
+        Some("coastal-and-river"),
+        json!({ "length_overall_m": 140.0, "beam_m": 29.0, "moulded_depth_m": 9.0 }),
+    ));
+    let s = &deckhouse["stern_arrangement"];
+    let d = &deckhouse["drawing"]["aft_arrangement"]["deckhouse"];
+    assert_eq!(s["style"], "deckhouse");
+    assert_eq!(s["tiers"], d["tiers"]);
+    assert_eq!(s["wheelhouse"], d["wheelhouse"]);
+    assert_eq!(s["wheelhouse"], "fixed");
+    assert_eq!(s["wheelhouse_basis"], "no_air_draft_limit");
+
+    let container = results_of(&hand(Some("river-only"), json!({})));
+    let s = &container["stern_arrangement"];
+    assert_eq!(s["style"], "container_block");
+    assert!(s["tiers"].is_null());
+    assert!(container["drawing"]["aft_arrangement"]["deckhouse"].is_null());
+    assert_eq!(s["wheelhouse_basis"], "input");
+
+    // Removing the block moves no hash.
+    let mut without = deckhouse.clone();
+    without.as_object_mut().unwrap().remove("stern_arrangement");
+    assert_eq!(results_hash(&without), results_hash(&deckhouse));
+}

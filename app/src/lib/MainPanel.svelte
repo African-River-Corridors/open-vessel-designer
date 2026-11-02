@@ -7,6 +7,7 @@
   import Ballast from "./views/Ballast.svelte";
   import Convoy from "./views/Convoy.svelte";
   import Model3D from "./views/Model3D.svelte";
+  import SternCrew from "./views/SternCrew.svelte";
   import Stability from "./views/Stability.svelte";
   import Damage from "./views/Damage.svelte";
   import RuleChecks, { type RuleTrace } from "./views/RuleChecks.svelte";
@@ -37,6 +38,7 @@
         { id: "midship", label: "app-view-midship" },
         { id: "convoy", label: "app-view-convoy" },
         { id: "model3d", label: "app-view-3d" },
+        { id: "stern", label: "app-view-stern" },
       ],
     },
     {
@@ -61,7 +63,7 @@
   ];
   const HULL = ["side", "plan", "midship"];
   /** Views that show results of the Option, and so can be out of date. */
-  const FROM_RESULTS = [...HULL, "convoy", "model3d", "stability", "ballast", "damage", "speed-power", "rules", "capital"];
+  const FROM_RESULTS = [...HULL, "convoy", "model3d", "stern", "stability", "ballast", "damage", "speed-power", "rules", "capital"];
   type HullKey = "side" | "plan" | "midship";
 
   let groupId = $state(GROUPS[0].id);
@@ -168,6 +170,14 @@
         {#key JSON.stringify([active, (outcome?.status === "results" ? outcome.results_hash : null)])}
           <Model3D option={active} />
         {/key}
+      {/if}
+    {:else if current === "stern"}
+      {#if message}
+        <p class="note">{message}</p>
+      {:else if !results}
+        <p class="note">{t("app-no-results-show")}</p>
+      {:else}
+        <SternCrew results={results as Record<string, unknown>} {ids} />
       {/if}
     {:else if current === "speed-power"}
       <div class="charts">
