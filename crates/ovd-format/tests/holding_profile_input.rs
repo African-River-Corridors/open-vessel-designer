@@ -5,7 +5,9 @@
 //! default, an old file loads with it and keeps its hash, a bad profile is refused with a message,
 //! the inputs apply to Type C tanks only, and a changed profile moves no result.
 
-use ovd_format::vdesign::{HOLDING_PROFILE_DEFAULT_JSON, INPUTS, LEGACY_FIXED_OTHER};
+use ovd_format::vdesign::{
+    GAS_POWER_SOURCES, HOLDING_PROFILE_DEFAULT_JSON, INPUTS, LEGACY_FIXED_OTHER, POWER_SOURCES,
+};
 use ovd_format::{DesignSession, HashStatus, Profile, RunOutcome, Source, check};
 use serde_json::{Value, json};
 
@@ -244,6 +246,14 @@ fn a_bad_profile_is_refused_with_a_message() {
             "`passage_speed_kn` must be a number above zero",
         ),
         (
+            json!([{ "state": "laden_passage", "days": 1.0, "passage_speed_kn": 0.0 }]),
+            "`passage_speed_kn` must be a number above zero",
+        ),
+        (
+            json!([{ "state": "laden_passage", "days": 1.0, "passage_speed_kn": "fast" }]),
+            "`passage_speed_kn` must be a number above zero",
+        ),
+        (
             json!([{ "state": "idle", "days": 1.0, "passage_speed_kn": 8.0 }]),
             "an idle leg has none",
         ),
@@ -274,7 +284,11 @@ fn a_negative_use_or_duration_or_an_unknown_preset_is_refused_in_the_other_input
         ("holding_adn_min_use_kg_h", json!(-1.0)),
         ("holding_igf_domestic_use_kg_h", json!(-1.0)),
         ("holding_adn_journey_days", json!(-3.0)),
+        ("holding_adn_journey_days", json!(0.0)),
+        ("holding_adn_journey_days", json!(366.0)),
         ("holding_start_pressure_mpa", json!(-0.1)),
+        ("holding_fuel_service_pressure_mpa", json!(-0.1)),
+        ("holding_fill_ratio", json!(0.0)),
         ("holding_fill_ratio", json!(1.2)),
         ("holding_preset", json!("bv_nr999")),
     ] {
@@ -286,4 +300,33 @@ fn a_negative_use_or_duration_or_an_unknown_preset_is_refused_in_the_other_input
             "{n} {v}: {errors:?}"
         );
     }
+}
+
+#[test]
+fn the_bounds_of_the_other_inputs_are_tight() {
+    // The values on the edge that are allowed pass, so a bound that moved would fail a test.
+    for (n, v) in [
+        ("holding_adn_journey_days", json!(365.0)),
+        ("holding_fill_ratio", json!(1.0)),
+        ("holding_start_pressure_mpa", json!(0.0)),
+        ("holding_fuel_service_pressure_mpa", json!(0.0)),
+        ("holding_adn_min_use_kg_h", json!(0.0)),
+    ] {
+        let mut s = gas_session();
+        s.set_input("Option 1", n, v.clone()).unwrap();
+        let (errors, _) = report_of(&s);
+        assert!(errors.is_empty(), "{n} {v}: {errors:?}");
+    }
+}
+
+#[test]
+fn the_gas_consumer_is_the_gas_power_sources_of_the_format() {
+    for p in POWER_SOURCES {
+        assert_eq!(
+            ovd_core::holding_profile::has_gas_consumer(p),
+            GAS_POWER_SOURCES.contains(p),
+            "{p}"
+        );
+    }
+    assert!(!ovd_core::holding_profile::has_gas_consumer(""));
 }

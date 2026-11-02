@@ -38,17 +38,8 @@ fn with_no_gas_consumer_the_passage_credit_is_zero() {
         gas_use_kg_h: 0.0,
     };
     assert_eq!(leg_credit_kg_h(&leg, false, Some(100.0)), 0.0);
-    // Only a gas-fuelled Power Source is a consumer; a barge with none, and the others, are not.
+    // Which Power Sources are consumers is checked against the format's list in ovd-format.
     assert!(has_gas_consumer("gas_fuelled"));
-    for p in [
-        "battery_electric",
-        "diesel_mechanical",
-        "diesel_electric",
-        "battery_hybrid",
-        "",
-    ] {
-        assert!(!has_gas_consumer(p), "{p}");
-    }
 }
 
 #[test]

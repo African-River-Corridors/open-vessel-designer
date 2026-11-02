@@ -185,12 +185,12 @@ pub const WHEELHOUSE_TYPES: &[&str] = &["elevating", "fixed"];
 pub const ARRANGEMENT_STYLES: &[&str] = &["container_block", "deckhouse"];
 pub const SIGHTLINE_METHODS: &[&str] = &["margin", "blind_distance"];
 
-/// The tank insulation types. `unspecified` is the generic insulation the engine used before the
-/// type was an input; the density is the one value (60 kg/m3) for every type.
 /// The named holding-time presets (spec 0016 D8, issue #869). `none` is the default: a preset is
 /// never applied by default. The presets name the rule; their figures are not read yet.
 pub const HOLDING_PRESETS: &[&str] = &["none", "bv_nr467", "bv_nr217"];
 
+/// The tank insulation types. `unspecified` is the generic insulation the engine used before the
+/// type was an input; the density is the one value (60 kg/m3) for every type.
 pub const INSULATION_TYPES: &[&str] = &["unspecified", "none", "pu_foam", "panel"];
 
 /// The inputs whose default comes from a table of the whole Defaults Profile keyed by the
