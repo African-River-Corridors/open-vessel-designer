@@ -18,6 +18,16 @@ draw-note-barges = { $abreast } ABREAST BY { $in_line } IN LINE.
 draw-note-blind-distance = BLIND DISTANCE AHEAD OF THE BOW: LIGHT { $light } M, LADEN { $laden } M, LIMIT { $limit } M.
 draw-note-scope = FOR CONCEPT AND PRELIMINARY DESIGN ONLY, NOT FOR APPROVAL.
 
+## crates/ovd-format/src/ga/damage.rs
+
+draw-damaged-waterline = DAMAGED WATERLINE
+draw-view-damage-case = DAMAGE CASE
+draw-note-damage-case = { $view }: THE GOVERNING CASE OF THE CONDITION. FLOODED SPACES HATCHED. DIMENSIONS IN METRES.
+draw-note-damage-position = HEEL { $heel } DEG, TRIM { $trim } DEG. { $verdict }
+draw-damage-meets = MEETS THE DAMAGE CRITERIA.
+draw-damage-fails = DOES NOT MEET THE DAMAGE CRITERIA.
+draw-note-damage-no-float = NO FLOATING POSITION AFTER DAMAGE: NO WATERLINE IS DRAWN.
+
 ## crates/ovd-format/src/ga/tug.rs
 
 draw-tug-atb = ATB TUG
