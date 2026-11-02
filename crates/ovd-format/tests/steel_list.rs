@@ -39,7 +39,10 @@ fn the_steel_list_re_cuts_the_panel_table() {
         let (r, _) = results(&o);
         let st = &r["structure"];
         let rows = r["steel_list"].as_array().expect("a steel list");
-        assert!(st.get("steel_list").is_none(), "the list sits beside the summary");
+        assert!(
+            st.get("steel_list").is_none(),
+            "the list sits beside the summary"
+        );
         let net: f64 = rows.iter().map(|i| i["rule_net_t"].as_f64().unwrap()).sum();
         let panel = r["cost_masses"]["hull_panels"]["net_t"].as_f64().unwrap();
         assert!((st["groups"]["rule_net_t"].as_f64().unwrap() - net).abs() <= 1e-9 * net);
@@ -106,10 +109,7 @@ fn the_steel_csv_has_one_row_per_item_and_the_openings_note() {
     );
     let body: Vec<&str> = csv.lines().filter(|l| !l.starts_with('#')).collect();
     assert!(body[0].starts_with("id,kind,member,region,"));
-    assert_eq!(
-        body.len(),
-        r["steel_list"].as_array().unwrap().len() + 1
-    );
+    assert_eq!(body.len(), r["steel_list"].as_array().unwrap().len() + 1);
     // Commas inside a quoted field do not count.
     let fields = |row: &str| {
         let mut quoted = false;
