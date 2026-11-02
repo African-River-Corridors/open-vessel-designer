@@ -299,6 +299,23 @@ OPTIONAL_INPUT_CASES = (
      {"tank_insulation_thickness_mm": 200.0}),
     ("tank_structure_factor", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"tank_structure_factor": 1.2}),
+    # The holding-time profile inputs (issue #869): input only, so no result moves.
+    ("holding_profile", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"holding_profile": [{"state": "laden_passage", "days": 20.0}, {"state": "idle", "days": 10.0}]}),
+    ("holding_preset", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"holding_preset": "none"}),
+    ("holding_adn_min_use_kg_h", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"holding_adn_min_use_kg_h": 0.0}),
+    ("holding_igf_domestic_use_kg_h", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"holding_igf_domestic_use_kg_h": 0.0}),
+    ("holding_adn_journey_days", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"holding_adn_journey_days": 3.0}),
+    ("holding_start_pressure_mpa", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"holding_start_pressure_mpa": 0.0}),
+    ("holding_fuel_service_pressure_mpa", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"holding_fuel_service_pressure_mpa": 0.5}),
+    ("holding_fill_ratio", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"holding_fill_ratio": 0.9}),
     # The environment inputs (issue #4, slice 6), set to their defaults in the same way. The squat
     # margin matters only in a channel, so that case has one.
     ("water_density_t_per_m3", "bauxite", "box_hold", "pushed_barge", 90.0, 14.0, 4.5,

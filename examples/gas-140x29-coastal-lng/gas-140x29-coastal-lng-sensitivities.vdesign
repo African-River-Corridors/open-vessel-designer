@@ -113,6 +113,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -688,6 +729,47 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
           "source": "default"
         },
         "tank_structure_factor": {
@@ -1267,6 +1349,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -1842,6 +1965,47 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
           "source": "default"
         },
         "tank_structure_factor": {
@@ -2421,6 +2585,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -2982,6 +3187,47 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
           "source": "default"
         },
         "tank_structure_factor": {
@@ -3581,6 +3827,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -4176,6 +4463,47 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
           "source": "default"
         },
         "tank_structure_factor": {
@@ -4775,6 +5103,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -5370,6 +5739,47 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
           "source": "default"
         },
         "tank_structure_factor": {
@@ -5969,6 +6379,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -6564,6 +7015,47 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
           "source": "default"
         },
         "tank_structure_factor": {
@@ -7163,6 +7655,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -7758,6 +8291,47 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
           "source": "default"
         },
         "tank_structure_factor": {
@@ -8357,6 +8931,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -8952,6 +9567,47 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
           "source": "default"
         },
         "tank_structure_factor": {
@@ -9551,6 +10207,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -10146,6 +10843,47 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
           "source": "default"
         },
         "tank_structure_factor": {
@@ -10745,6 +11483,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -11340,6 +12119,47 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
           "source": "default"
         },
         "tank_structure_factor": {
@@ -11939,6 +12759,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -12536,6 +13397,47 @@
           "value": 330.0,
           "source": "default"
         },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
         "tank_structure_factor": {
           "value": 1.3,
           "source": "default"
@@ -13131,6 +14033,47 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
           "source": "default"
         },
         "tank_structure_factor": {

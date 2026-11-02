@@ -254,6 +254,18 @@ check-name-boil-off-within-gas-use = boil-off within gas use
 check-boil-off-within-gas-use = boil-off { $boil } kg/h <= gas use { $used } kg/h at the service speed
 check-boil-off-exceeds-gas-use = boil-off { $boil } kg/h > gas use { $used } kg/h at the service speed: the excess needs reliquefaction, pressure accumulation or thermal oxidation, as venting is not acceptable (IGC Code 7.1.1, 7.1.3)
 
+## crates/ovd-format/src/holding_profile.rs
+
+msg-profile-empty = the holding-time profile must be a list of at least one leg
+msg-profile-row-shape = leg { $row } must be an object with `state` and `days`
+msg-profile-key = leg { $row } has `{ $key }`, which a leg does not take (state, days, passage_speed_kn, gas_use_kg_h)
+msg-profile-state = leg { $row }: the state `{ $state }` is not known; the states are laden_passage and idle (loading, discharge and ballast are not modelled)
+msg-profile-days = leg { $row }: `days` must be a number above zero
+msg-profile-speed = leg { $row }: `passage_speed_kn` must be a number above zero, or left out
+msg-profile-use = leg { $row }: `gas_use_kg_h` must be a number of zero or more, or left out
+msg-profile-speed-idle = leg { $row } is idle and has a passage speed; an idle leg has none
+msg-profile-use-passage = leg { $row } is a laden passage and has a typed gas use; its credit is the powering model's gas use at the passage speed
+
 ## crates/ovd-format/src/offsets.rs
 
 msg-offsets-no-table = an offsets Hull Form needs its offsets table (`{ $input }`)

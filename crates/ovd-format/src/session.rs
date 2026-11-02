@@ -226,6 +226,17 @@ fn input_entry(spec: &crate::vdesign::InputSpec, profile: &Profile) -> Value {
                 json!({ "type": "rows", "columns": crate::openings::COLUMNS, "unit": "m" }),
             );
         }
+        InputKind::OperationProfile => {
+            e.insert("kind".into(), json!("operation_profile"));
+            e.insert("nullable".into(), json!(false));
+            e.insert(
+                "shape".into(),
+                json!({
+                    "type": "rows", "columns": crate::holding_profile::KEYS,
+                    "states": ovd_core::holding_profile::LEG_STATES,
+                }),
+            );
+        }
         InputKind::OffsetsTable => {
             e.insert("kind".into(), json!("offsets_table"));
             e.insert("nullable".into(), json!(true));

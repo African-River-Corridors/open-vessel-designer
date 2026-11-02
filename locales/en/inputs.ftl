@@ -179,6 +179,25 @@ choice-tank-insulation-type-panel = Insulation panel
 input-tank-insulation-thickness-mm = Tank insulation thickness
 input-tank-insulation-thickness-mm-default-by = Cargo, LPG carriage condition
 
+input-holding-profile = Holding-time profile
+
+input-holding-preset = Holding-time preset
+choice-holding-preset-none = None
+choice-holding-preset-bv-nr467 = BV NR467
+choice-holding-preset-bv-nr217 = BV NR217
+
+input-holding-adn-min-use-kg-h = Minimum guaranteed gas use (ADN)
+
+input-holding-igf-domestic-use-kg-h = Domestic gas load (IGF)
+
+input-holding-adn-journey-days = Journey duration (ADN)
+
+input-holding-start-pressure-mpa = Holding-time start pressure (cargo tanks)
+
+input-holding-fuel-service-pressure-mpa = Normal service pressure (fuel tanks)
+
+input-holding-fill-ratio = Holding-time fill (override)
+
 input-tank-structure-factor = Tank structure factor
 input-tank-structure-factor-default-by = Cargo, LPG carriage condition
 
