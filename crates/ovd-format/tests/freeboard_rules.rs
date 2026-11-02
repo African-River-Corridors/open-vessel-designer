@@ -273,7 +273,7 @@ fn a_coastal_option_is_checked_against_the_icll_table_and_shows_the_value() {
     assert_eq!(outcomes(&sp(1.0), blocked), ["pass"]);
     let sets = low["rule_trace"]["rule_sets"].to_string();
     assert!(
-        sets.contains("icll-freeboard@2.0.0") && sets.contains("es-trin-2025@1.0.0"),
+        sets.contains("icll-freeboard@2.0.0") && sets.contains("es-trin-2025@2.0.0"),
         "{sets}"
     );
     // A pushed barge: the same value, as a warning.
