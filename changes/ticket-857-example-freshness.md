@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- CI: the generated files of every worked example (`results.json`, `trace.md`, the `ga/` drawings and the README tables) are checked against the engine on every pull request and merge group (issue #857). `python3 tools/refresh_examples.py --check <ovd>` regenerates each example in a temporary copy and names each stale file; `python3 tools/refresh_examples.py <ovd>` refreshes them. It replaces `tools/refresh_gas_example.py`. No result moves.
