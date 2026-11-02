@@ -73,26 +73,12 @@ pub const UPPER_AMBIENT_AIR_C: f64 = 45.0;
 pub const INSULATION_CONDUCTIVITY_W_PER_MK: f64 = 0.026;
 
 /// The latent heat of methane (kJ/kg) at a saturation temperature (C), from the NIST saturation
-/// table: enthalpy of the vapour less that of the liquid, interpolated between its 1 K rows.
-pub fn methane_latent_heat_kj_per_kg(t_c: f64) -> f64 {
-    // (T in C, kJ/kg): -165, -163, -162, -161, -160 of the table.
-    const T: [(f64, f64); 5] = [
-        (-165.0, 517.09),
-        (-163.0, 513.57),
-        (-162.0, 511.77),
-        (-161.0, 509.94),
-        (-160.0, 508.09),
-    ];
-    if t_c <= T[0].0 {
-        return T[0].1;
-    }
-    for w in T.windows(2) {
-        if t_c <= w[1].0 {
-            let f = (t_c - w[0].0) / (w[1].0 - w[0].0);
-            return w[0].1 + f * (w[1].1 - w[0].1);
-        }
-    }
-    T[T.len() - 1].1
+/// table of [`crate::methane_saturation`]: enthalpy of the vapour less that of the liquid, to 0.01
+/// kJ/kg at each row, interpolated between its 1 K rows. A temperature outside the table is an error.
+pub fn methane_latent_heat_kj_per_kg(
+    t_c: f64,
+) -> Result<f64, crate::methane_saturation::OutOfTable> {
+    crate::methane_saturation::latent_heat_kj_per_kg(t_c)
 }
 
 /// The heat that leaks into one tank (kW): conduction through a cylinder shell of the insulation

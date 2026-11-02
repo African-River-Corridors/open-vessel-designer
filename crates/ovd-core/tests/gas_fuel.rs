@@ -49,10 +49,12 @@ fn the_heat_leak_of_a_tank_is_the_conduction_of_a_cylinder_and_a_sphere() {
 
 #[test]
 fn the_latent_heat_of_methane_is_the_nist_value_and_the_boil_off_follows() {
-    assert_eq!(methane_latent_heat_kj_per_kg(-162.0), 511.77);
-    assert_eq!(methane_latent_heat_kj_per_kg(-161.0), 509.94);
+    assert_eq!(methane_latent_heat_kj_per_kg(-162.0).unwrap(), 511.77);
+    assert_eq!(methane_latent_heat_kj_per_kg(-161.0).unwrap(), 509.94);
     // Between two rows: linear.
-    assert!((methane_latent_heat_kj_per_kg(-161.5) - (511.77 + 509.94) / 2.0).abs() < 1e-9);
+    assert!(
+        (methane_latent_heat_kj_per_kg(-161.5).unwrap() - (511.77 + 509.94) / 2.0).abs() < 1e-9
+    );
     // 1 kW over 511.77 kJ/kg is 3,600 / 511.77 kg/h.
     assert!((boil_off_kg_per_h(1.0, 511.77) - 3600.0 / 511.77).abs() < 1e-12);
     assert_eq!(UPPER_AMBIENT_AIR_C, 45.0);

@@ -108,9 +108,11 @@ pub(crate) fn add_gas_fuel(option: &DesignOption, v: &mut Value) {
                 delta,
                 INSULATION_CONDUCTIVITY_W_PER_MK,
             );
-            let latent = methane_latent_heat_kj_per_kg(cargo_c);
-            let kw = n * per_tank_kw;
-            Some((kw, boil_off_kg_per_h(kw, latent), latent, cargo_c))
+            // A storage temperature outside the saturation table gives no boil-off figure.
+            methane_latent_heat_kj_per_kg(cargo_c).ok().map(|latent| {
+                let kw = n * per_tank_kw;
+                (kw, boil_off_kg_per_h(kw, latent), latent, cargo_c)
+            })
         }
         _ => None,
     };
