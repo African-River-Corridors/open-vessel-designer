@@ -24,8 +24,9 @@
 //!
 //! MARPOL Annex I regulation 28 has its own extents ([`BoxExtents::marpol`]): they reach the cargo tanks. A
 //! damaged cargo or slop tank is flooded at 95 % (the oil is lost and sea water takes its place, regulation
-//! 28.4.2 "other liquids 0 to 0.95"); the loading condition keeps the mass of the oil, as the lost buoyancy
-//! method keeps the mass of the damaged hull.
+//! 28.4.2 "other liquids 0 to 0.95"). Its oil leaves the loading condition (28.4.1, "any outflow of liquids
+//! from damaged compartments"; spec 0012 D20, issue #764): `ovd-format` takes it out with
+//! [`without_breached_cargo`].
 //!
 //! IGC. The extents of IGC 2.3.1 have the shape of MARPOL's (side: (1/3) L^(2/3) or 14.5 m long, B/5 or
 //! 11.5 m inboard, without vertical limit; bottom: B/6 or 10 m wide in the forward 0.3 L and B/6 or 5 m
@@ -615,8 +616,10 @@ pub fn gas_flooding(
 }
 
 /// The mass and centre of gravity of a condition after the cargo of the breached tanks leaves it (IGC 2.5.3,
-/// D8). The cargo of `cargo_t` at height `cargo_kg_m` is shared between the Type C tanks by their interior
-/// volume; each breached tank's share leaves from the middle of its axis.
+/// spec 0012 D8; MARPOL Annex I 28.4.1, D20). The cargo of `cargo_t` at height `cargo_kg_m` is shared between
+/// the cargo tanks by their volume (a Type C tank's interior volume, a prism tank's volume: the tanks are
+/// filled alike); each breached tank's share leaves from the middle of its length, at the centre of its
+/// section across the hull.
 pub fn without_breached_cargo(
     mass_t: f64,
     g: crate::sections::Gravity,
@@ -628,7 +631,7 @@ pub fn without_breached_cargo(
         SpaceShape::Tank {
             inner_volume_m3, ..
         } => inner_volume_m3,
-        SpaceShape::Prism { .. } => 0.0,
+        SpaceShape::Prism { .. } => s.volume_m3(),
     };
     let total: f64 = spaces
         .iter()
@@ -645,9 +648,9 @@ pub fn without_breached_cargo(
         .filter(|s| s.kind == SpaceKind::CargoTank && breached.contains(&s.name))
     {
         let share = cargo_t * volume(s) / total;
-        let y = match s.shape {
-            SpaceShape::Tank { y, .. } => y,
-            SpaceShape::Prism { .. } => 0.0,
+        let y = match &s.shape {
+            SpaceShape::Tank { y, .. } => *y,
+            SpaceShape::Prism { section } => crate::box_stability::area_centroid(section).1,
         };
         m -= share;
         mx -= share * 0.5 * (s.x_aft + s.x_fwd);
