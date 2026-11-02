@@ -128,8 +128,9 @@ pub fn built_in_permeability(set_id: &str, table_id: &str) -> Result<Permeabilit
 ///
 /// The second value is the `damage` block of the results (unhashed, D21): every case with its condition, its
 /// floating position, its residual stability and the deck-edge test (D11), and for each condition the governing
-/// case with its righting lever curve over the 20 degree range (D12). The governing case is the first that does
-/// not meet the criteria, or else the one with the least maximum righting lever.
+/// case with its righting lever curve over the 20 degree range (D12). The governing case is the worst: a case that
+/// fails beats one that passes, and among cases that fail (or among those that pass) the one with the
+/// least maximum righting lever wins; a tie keeps the earlier case.
 pub fn gas_damage_verdicts(
     set: &RuleSet,
     spaces: &[ovd_core::compartments::Space],

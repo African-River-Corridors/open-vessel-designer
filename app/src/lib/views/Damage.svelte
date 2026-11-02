@@ -85,12 +85,12 @@
               <th>{t("app-damage-col-case")}</th>
               <th>{t("app-damage-col-result")}</th>
               <th>{t("app-damage-col-floats")}</th>
-              <th class="num">{t("app-damage-col-heel")}<span class="unit">&nbsp;(°)</span></th>
-              <th class="num">{t("app-damage-col-trim")}<span class="unit">&nbsp;(°)</span></th>
-              <th class="num">{t("app-damage-col-draught")}<span class="unit">&nbsp;(m)</span></th>
-              <th class="num">{t("app-damage-col-gz")}<span class="unit">&nbsp;(m)</span></th>
-              <th class="num">{t("app-damage-col-range")}<span class="unit">&nbsp;(°)</span></th>
-              <th class="num">{t("app-damage-col-area")}<span class="unit">&nbsp;(m·rad)</span></th>
+              <th class="num">{t("app-damage-col-heel")}<span class="unit">&nbsp;{t("app-damage-unit-deg")}</span></th>
+              <th class="num">{t("app-damage-col-trim")}<span class="unit">&nbsp;{t("app-damage-unit-deg")}</span></th>
+              <th class="num">{t("app-damage-col-draught")}<span class="unit">&nbsp;{t("app-damage-unit-m")}</span></th>
+              <th class="num">{t("app-damage-col-gz")}<span class="unit">&nbsp;{t("app-damage-unit-m")}</span></th>
+              <th class="num">{t("app-damage-col-range")}<span class="unit">&nbsp;{t("app-damage-unit-deg")}</span></th>
+              <th class="num">{t("app-damage-col-area")}<span class="unit">&nbsp;{t("app-damage-unit-m-rad")}</span></th>
               <th>{t("app-damage-col-flooded")}</th>
             </tr>
           </thead>
@@ -140,9 +140,9 @@
                   <th>{t("app-damage-col-stage")}</th>
                   <th>{t("app-damage-col-result")}</th>
                   <th>{t("app-damage-col-floats")}</th>
-                  <th class="num">{t("app-damage-col-heel")}<span class="unit">&nbsp;(°)</span></th>
-                  <th class="num">{t("app-damage-col-gz")}<span class="unit">&nbsp;(m)</span></th>
-                  <th class="num">{t("app-damage-col-area")}<span class="unit">&nbsp;(m·rad)</span></th>
+                  <th class="num">{t("app-damage-col-heel")}<span class="unit">&nbsp;{t("app-damage-unit-deg")}</span></th>
+                  <th class="num">{t("app-damage-col-gz")}<span class="unit">&nbsp;{t("app-damage-unit-m")}</span></th>
+                  <th class="num">{t("app-damage-col-area")}<span class="unit">&nbsp;{t("app-damage-unit-m-rad")}</span></th>
                 </tr>
               </thead>
               <tbody>

@@ -62,7 +62,7 @@ export interface DamageSet {
 }
 
 /** Whether a trace Rule id is a damage survival or damage stability Rule. */
-export const isDamageRule = (rule: string | null) => !!rule && /\/damage-(survival|stability)$/.test(rule);
+export const isDamageRule = (rule: string | null) => !!rule && /\/(damage-(survival|stability)|standard-damage-cases)$/.test(rule);
 
 const RULE_PREFIX: Record<string, string> = { "igc-2g": "igc/", "es-trin-2025": "es-trin/", "normam-202": "normam/", "adn-gas": "adn/" };
 const setId = (key: string) => key.split("@")[0];
@@ -134,13 +134,18 @@ export function conditionsOf(set: DamageSet): string[] {
   return seen;
 }
 
-/** The governing case of a loading condition, or null where every case passes and the engine names none. */
+/**
+ * The governing case of a loading condition, as the engine names it (the worst case: a failing one beats a
+ * passing one, then the least maximum righting lever). A list with no engine governing case (the liquid
+ * path) falls back to its first case that fails in the trace, and null where none fails.
+ */
 export function governingCase(set: DamageSet, condition: string, trace: TraceLike | null | undefined): DamageCase | null {
   const mine = set.cases.filter((c) => (c.condition ?? "") === condition);
-  const failing = mine.find((c) => !passes(set, c, trace));
-  if (failing) return failing;
-  const named = set.engineGoverning.find((g) => g.condition === condition);
-  return (named && mine.find((c) => c.name === named.case)) || null;
+  if (set.engineGoverning.length > 0) {
+    const named = set.engineGoverning.find((g) => g.condition === condition);
+    return (named && mine.find((c) => c.name === named.case)) || null;
+  }
+  return mine.find((c) => !passes(set, c, trace)) ?? null;
 }
 
 /** The damage Rules the run did not evaluate, or that do not apply, with the reason in the engine's words. */

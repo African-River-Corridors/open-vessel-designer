@@ -1,7 +1,7 @@
 // Unit tests for src/lib/damage.ts (issue #886). Run: npm run test:unit
 import test from "node:test";
 import assert from "node:assert/strict";
-import { conditionsOf, damageNotes, damageSets, governingCase, objectOf, passes } from "../src/lib/damage.ts";
+import { isDamageRule, conditionsOf, damageNotes, damageSets, governingCase, objectOf, passes } from "../src/lib/damage.ts";
 
 const c = (condition, name, ok, extra = {}) => ({
   condition, name, flooded: ["M2C"], floats: ok ? "yes" : "no equilibrium", heel_deg: 0, trim_deg: 0, draught_mid_m: 2.5,
@@ -45,10 +45,27 @@ test("damageSets is empty where the results hold no damage cases", () => {
   assert.deepEqual(damageSets({ damage: [] }), []);
 });
 
-test("the governing case is the first failing case in the trace, else the engine's", () => {
+test("the governing case is the engine's, not the first failing case", () => {
   const [s] = damageSets(gas);
   assert.equal(governingCase(s, "Full load", gas.rule_trace).name, "side 2");
-  assert.equal(governingCase(s, "Ballast", gas.rule_trace).name, "side 2", "every case passes: the engine's governing case");
+  assert.equal(governingCase(s, "Ballast", gas.rule_trace).name, "side 2");
+  // Two failing cases, the second with the lower maximum GZ: the engine names the second.
+  const two = [c("X", "a", false, { max_gz_m: 0.5 }), c("X", "b", false, { max_gz_m: 0.1 })];
+  const trace = { rows: two.map((k) => row(objectOf(k), "fail")) };
+  const [t2] = damageSets({ damage: { rule_set: "igc-2g@3.1.0", cases: two, governing: [{ condition: "X", case: "b" }] } });
+  assert.equal(governingCase(t2, "X", trace).name, "b");
+});
+
+test("a list with no engine governing case falls back to its first failing case", () => {
+  const list = [{ name: "a", flooded: [], floats: "yes", ok: true }, { name: "b", flooded: [], floats: "yes", ok: false }];
+  const [s] = damageSets({ damage: list });
+  assert.equal(governingCase(s, "", { rows: [] }).name, "b");
+});
+
+test("NORMAM's damage Rule is a damage Rule", () => {
+  assert.ok(isDamageRule("normam/5.23.8/standard-damage-cases"));
+  assert.ok(isDamageRule("igc/2.7/damage-survival"));
+  assert.ok(!isDamageRule("igc/2.7.1.2/heel-any-stage"));
 });
 
 test("the governing case the view shows is the one the engine names and the trace holds a row for", () => {

@@ -414,10 +414,13 @@ app-damage-col-stage = Flooded
 app-damage-floats-yes = Floats
 app-damage-floats-sinks = Sinks
 app-damage-floats-none = No equilibrium
-app-damage-governing-hint = The first case of this loading condition that fails its damage Rule in the Rule Trace. Where every case passes, the case the engine names as governing.
+app-damage-governing-hint = The worst case of this loading condition, as the engine names it: a failing case beats a passing one, then the least maximum righting lever. For a list with no engine governing case, the first case that fails in the Rule Trace.
 app-damage-drawing-of = Governing case: { $case }
 app-damage-no-drawing = The engine draws no damage case drawing for this Rule Set.
 app-damage-stages = Intermediate stages of flooding: { $case }
+app-damage-unit-deg = (°)
+app-damage-unit-m = (m)
+app-damage-unit-m-rad = (m·rad)
 app-damage-stage-of = { $percent }%
 
 # The convoy totals (issue #551)

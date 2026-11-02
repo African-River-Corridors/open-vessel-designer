@@ -274,8 +274,8 @@ pub(crate) mod tests {
 
     #[test]
     fn the_governing_case_of_each_condition_is_the_trace_row_the_view_reads() {
-        // The view marks, in each condition, the first case whose damage Rule fails (else the
-        // engine's governing case). Both must be rows of the trace, with the verdict the results hold.
+        // The view marks the engine's governing case of each condition. It must be a row of the trace,
+        // with the verdict the results hold, and the worst case of its condition.
         let o = damage_outcome();
         let RunOutcome::Results { results, .. } = &o else {
             panic!("no results")
@@ -298,25 +298,20 @@ pub(crate) mod tests {
                 .find(|r| r["object"] == object.as_str())
                 .unwrap_or_else(|| panic!("no trace row for {object}"));
             assert_eq!(row["outcome"] == "pass", g["ok"] == true, "{object}");
-            // the first failing row of the condition is the governing case
-            let first_fail = cases
-                .iter()
-                .filter(|c| c["condition"] == g["condition"] && c["ok"] == false)
-                .map(|c| c["name"].clone())
-                .next();
-            if let Some(name) = first_fail {
-                assert_eq!(name, g["case"], "{object}");
-                let first_row = damage_rows
-                    .iter()
-                    .find(|r| {
-                        r["outcome"] == "fail"
-                            && r["object"]
-                                .as_str()
-                                .is_some_and(|o| o.starts_with(g["condition"].as_str().unwrap()))
-                    })
-                    .unwrap();
-                assert_eq!(first_row["object"], object.as_str());
+            // The governing case is the worst of its condition: a failing case beats a passing one and,
+            // among those, the least maximum righting lever wins (a tie keeps the earlier case).
+            let mut worst: Option<&Value> = None;
+            for c in cases.iter().filter(|c| c["condition"] == g["condition"]) {
+                let worse = worst.is_none_or(|w| {
+                    (w["ok"] == true && c["ok"] == false)
+                        || (w["ok"] == c["ok"]
+                            && c["max_gz_m"].as_f64().unwrap() < w["max_gz_m"].as_f64().unwrap())
+                });
+                if worse {
+                    worst = Some(c);
+                }
             }
+            assert_eq!(worst.unwrap()["name"], g["case"], "{object}");
         }
     }
 
