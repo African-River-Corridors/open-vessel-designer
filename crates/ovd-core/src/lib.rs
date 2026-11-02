@@ -21,6 +21,7 @@ pub mod checks;
 pub mod compartments;
 pub mod confined_water;
 pub mod constants;
+pub mod crew;
 pub mod damage_cases;
 pub mod damage_stability;
 pub mod design_grid;

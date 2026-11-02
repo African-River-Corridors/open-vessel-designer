@@ -74,6 +74,9 @@ pub const KEYED_DEFAULTS: &[(&str, &str, &[&str])] = &[
     // Issue #779 (spec 0011 D3): a new coastal Option takes the deckhouse, a river-only one the
     // container block.
     ("arrangement_style", "service_area", SERVICE_AREAS),
+    // Issue #778 (spec 0011 4.2): the crew model's hours and manning Rule Set by Service Area.
+    ("navigation_hours_per_day", "service_area", SERVICE_AREAS),
+    ("manning_rule_set", "service_area", SERVICE_AREAS),
     ("battery_unit_count", "cargo_phase", CARGO_PHASES),
     ("accommodation_unit_count", "cargo_phase", CARGO_PHASES),
     // Issue #347 (spec 0007, maintainer decision 7): a new Option's stern by Cargo phase.
@@ -183,6 +186,10 @@ pub const WHEELHOUSE_TYPES: &[&str] = &["elevating", "fixed"];
 /// tiers over the machinery space. Held in step with `ovd_core::aft_arrangement::ARRANGEMENT_STYLES`
 /// by a test.
 pub const ARRANGEMENT_STYLES: &[&str] = &["container_block", "deckhouse"];
+/// The manning Rule Sets the crew model runs on (spec 0011 D13, issue #778): `liberia-man-001`
+/// (the coastal default), `uk-msn-1868` (officers from the UK guidance) and `ccnr-rpn-19` (the
+/// river-only default). Held in step with `ovd_core::crew::MANNING_RULE_SETS` by a test.
+pub const MANNING_RULE_SETS: &[&str] = &["liberia-man-001", "uk-msn-1868", "ccnr-rpn-19"];
 pub const SIGHTLINE_METHODS: &[&str] = &["margin", "blind_distance"];
 
 /// The tank insulation types. `unspecified` is the generic insulation the engine used before the
@@ -1231,6 +1238,28 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
         applies_to: AppliesTo::All,
         value: "false",
     },
+    // Issue #778: a file saved before types no crew, so the crew model works it out; the crew model
+    // reads nothing of the hull's results (new output only).
+    LegacyFixedJson {
+        name: "crew",
+        applies_to: AppliesTo::All,
+        value: "null",
+    },
+    LegacyFixedJson {
+        name: "manning_rule_set",
+        applies_to: AppliesTo::All,
+        value: "\"ccnr-rpn-19\"",
+    },
+    LegacyFixedJson {
+        name: "navigation_hours_per_day",
+        applies_to: AppliesTo::All,
+        value: "14.0",
+    },
+    LegacyFixedJson {
+        name: "unmanned_machinery_space",
+        applies_to: AppliesTo::All,
+        value: "true",
+    },
     // Issue #775: a file saved before fits no gas combustion unit.
     LegacyFixedJson {
         name: "gas_combustion_unit",
@@ -1794,6 +1823,9 @@ pub const CHOICE_LABELS: &[(&str, &str)] = &[
     ("battery_hybrid", "Battery hybrid"),
     ("channel_jet", "Channel jet"),
     ("elevating", "Elevating"),
+    ("liberia-man-001", "Liberia MAN-001"),
+    ("uk-msn-1868", "UK MSN 1868"),
+    ("ccnr-rpn-19", "CCNR RPN chapter 19"),
     ("container_block", "Container block"),
     ("deckhouse", "Deckhouse"),
     ("fixed", "Fixed"),
@@ -3492,6 +3524,27 @@ pub const INPUTS: &[InputSpec] = &[
         "arrangement_style",
         "Arrangement Style",
         InputKind::Choice(ARRANGEMENT_STYLES),
+        Group::AftBlock,
+    ),
+    // Issue #778 (spec 0011 D5a, D13, 4.1): the crew model. A typed crew overrides the manning
+    // Rule Set; the hours and the Rule Set default by Service Area.
+    self_propelled("crew", "Crew", NUM_OR_NONE, Group::AftBlock),
+    self_propelled(
+        "manning_rule_set",
+        "Manning Rule Set",
+        InputKind::Choice(MANNING_RULE_SETS),
+        Group::AftBlock,
+    ),
+    self_propelled(
+        "navigation_hours_per_day",
+        "Navigation hours per day",
+        NUM,
+        Group::AftBlock,
+    ),
+    self_propelled(
+        "unmanned_machinery_space",
+        "Unmanned machinery space",
+        InputKind::Bool,
         Group::AftBlock,
     ),
     // Issue #331: after the Service Area, which sets its default.

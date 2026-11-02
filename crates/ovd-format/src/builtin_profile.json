@@ -1296,6 +1296,32 @@
       "status": "estimate",
       "basis": "How the stern is laid out (spec 0011 D3, issue #779). container_block: today's stern block, exactly (40 ft units for accommodation and batteries, a lifting wheelhouse), the legacy value and the river-pusher option. deckhouse: a deckhouse of tiers over the machinery space, with a fixed wheelhouse on top (elevating when an air-draft limit is set) and the accommodation aft only. A new coastal Option takes the deckhouse; a river-only Option and a file saved before keep the container block. The deckhouse tier height, side deck and tier limit are estimates, and the accommodation floor it holds is an interim stand-in until the rooms are sized from MLC A3.1 and ES-TRIN 15 (issue #780)"
     },
+    "crew": {
+      "default": null,
+      "unit": "persons",
+      "hard": { "gt": 0, "le": 200 },
+      "soft": { "min": 2.0, "max": 40.0 },
+      "status": "estimate",
+      "basis": "The number of persons on board a self-propelled hull (spec 0011 D5, D13, issue #778). none: the crew model works the minimum from the manning Rule Set, adds the owner margin and 2 spare berths (D16). A typed crew overrides it: the berths are the typed crew plus 2 spare, and a typed crew under the manning minimum is reported. The crew is a new output only: no result reads it until the deckhouse rooms are sized (issue #780). A file saved before keeps none"
+    },
+    "manning_rule_set": {
+      "default_by_service_area": { "river-only": "ccnr-rpn-19", "coastal-and-river": "liberia-man-001" },
+      "status": "estimate",
+      "basis": "The manning Rule Set the crew model runs on (spec 0011 D13, issue #778). liberia-man-001: Liberia Marine Notice MAN-001 Rev. 11/22, the coastal default. uk-msn-1868: UK MSN 1868 (M) Amendment 1; it gives officers only, so the ratings come from MAN-001. ccnr-rpn-19: CCNR RPN chapters 18 and 19 (edition of 1 January 2026), the river-only default. The UK set always runs beside a Liberia run as a cross-check, and a difference of more than one person is flagged. All three are drafts until a second reader verifies them"
+    },
+    "navigation_hours_per_day": {
+      "default_by_service_area": { "river-only": 14.0, "coastal-and-river": 24.0 },
+      "unit": "h",
+      "hard": { "gt": 0, "le": 24 },
+      "soft": { "min": 6.0, "max": 24.0 },
+      "status": "estimate",
+      "basis": "Hours of navigation in 24 hours (spec 0011 4.1, 4.2, issue #778). Coastal: 24, a vessel that sails day and night. River: 14, the CCNR RPN 18.01(1) operating mode A1 limit. More than 12 hours puts three watchkeepers on the bridge (STCW A-VIII/1 rest, the spec's step 3); a river Option takes its operating mode from the hours (A1 up to 14 h, A2 up to 18 h, B up to 24 h). A working value with no source for the vessel's real trading pattern"
+    },
+    "unmanned_machinery_space": {
+      "default": true,
+      "status": "estimate",
+      "basis": "Whether the machinery space is classed for periodically unattended operation, with a satisfactory record of the automation survey (spec 0011 4.2, issue #778). true: the Liberia MAN-001 columns for unattended machinery, which need no engineering watch officers on the table; false: the columns with them. The crew model reads it only on the Liberia and UK sets. A file saved before keeps true"
+    },
     "sightline_method": {
       "default": "blind_distance",
       "status": "sourced",

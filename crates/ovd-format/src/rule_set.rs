@@ -121,6 +121,19 @@ const BUILT_IN: &[(&str, &str)] = &[
         "rules/lr-inland-gas/2.0.0.json",
         include_str!("../rules/lr-inland-gas/2.0.0.json"),
     ),
+    // Spec 0011 D13 (issue #778): the manning Rule Sets the crew model runs on.
+    (
+        "rules/liberia-man-001/1.0.0.json",
+        include_str!("../rules/liberia-man-001/1.0.0.json"),
+    ),
+    (
+        "rules/uk-msn-1868/1.0.0.json",
+        include_str!("../rules/uk-msn-1868/1.0.0.json"),
+    ),
+    (
+        "rules/ccnr-rpn-19/1.0.0.json",
+        include_str!("../rules/ccnr-rpn-19/1.0.0.json"),
+    ),
     (
         "rules/ovd/3.0.0.json",
         include_str!("../rules/ovd/3.0.0.json"),

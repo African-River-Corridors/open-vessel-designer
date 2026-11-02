@@ -1,0 +1,2094 @@
+{
+  "$schema": "../rule-set.schema.json",
+  "id": "liberia-man-001",
+  "family": "liberia-man",
+  "title": "Liberia Marine Notice MAN-001 Rev. 11/22: the standards for general guidance on the basic manning of a ship, by gross tonnage, propulsion power and unattended machinery",
+  "version": "1.0.0",
+  "edition": {
+    "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+    "edition": "Rev. 11/22 (supersedes the notice of 02/21)",
+    "amendments": "none: Rev. 11/22 is the text read; it supersedes the notice of 02/21",
+    "in_force": "1 December 2022 for new minimum safe manning certificates (the notice, 12.1.9)"
+  },
+  "sources": [
+    {
+      "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+      "edition": "Rev. 11/22 (supersedes the notice of 02/21)",
+      "url": "https://www.liscr.com/sites/default/files/online_library/MAN-001.pdf",
+      "access": "free",
+      "sha256": "6d9508b1dd78593db3c42442f192764a616dad32ee951fccc93942ce6b7e11d0"
+    }
+  ],
+  "status": "draft",
+  "applies_when": {
+    "service_area": [
+      "coastal-and-river"
+    ]
+  },
+  "includes": [],
+  "known_conflicts": [],
+  "tables": [
+    {
+      "id": "liberia-gt-band",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (header row GT)"
+      },
+      "input": {
+        "name": "gross tonnage",
+        "unit": "GT"
+      },
+      "unit": "band index",
+      "rows": [
+        {
+          "when": {
+            "gt": 8000
+          },
+          "shape": "const",
+          "a": 4.0
+        },
+        {
+          "when": {
+            "ge": 5000
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "ge": 3000
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "ge": 500
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "lt": 500
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-kw-band",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (header row KW)"
+      },
+      "input": {
+        "name": "propulsion power",
+        "unit": "kW"
+      },
+      "unit": "band index",
+      "rows": [
+        {
+          "when": {
+            "gt": 3000
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "ge": 750
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "lt": 750
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-col-gt-band",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (header rows GT, KW, Routes/Operations, Class Notation for Unattended Machinery Space)"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "-",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 4.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 4.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-col-kw-band",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (header rows GT, KW, Routes/Operations, Class Notation for Unattended Machinery Space)"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "-",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-col-ums",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (header rows GT, KW, Routes/Operations, Class Notation for Unattended Machinery Space)"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "-",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-col-coastwise",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (header rows GT, KW, Routes/Operations, Class Notation for Unattended Machinery Space)"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "-",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-master",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (Master (STCW II/2))"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-chief-mate",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (Chief mate (STCW II/2))"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-oow",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (Officer in charge of a navigation watch (STCW II/1))"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-ab-deck",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (Able seafarer deck (STCW II/5))"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-rating-nav",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (Rating forming part of a navigational watch (STCW II/4))"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-chief-engineer",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (Chief engineer (STCW III/2))"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-second-engineer",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (Second engineer (STCW III/2))"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-eoow",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (Officer in charge of an engineering watch (STCW III/1))"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-ab-engine",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (Able seafarer engine (STCW III/5))"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "liberia-rating-engine",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9 (Rating forming part of an engineering watch (STCW III/4))"
+      },
+      "input": {
+        "name": "table column"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "c1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c3"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c4"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c5"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c6"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c7"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c8"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c9"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c10"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c11"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c12"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "c13"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "liberia-man/12.2/basic-manning-table",
+      "title": "The 13-column table of basic manning by gross tonnage, propulsion power, route and unattended-machinery class notation: standards for general guidance, each ship assessed on its own",
+      "origin": "guideline",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "edition": "Rev. 11/22 (supersedes the notice of 02/21)",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 9",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#778"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "input.crew"
+      },
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "finding": null,
+      "since": "1.0.0",
+      "gap": "A table or clause the crew model (spec 0011 4.1) reads from this set and shows in the results `crew` block; the Rule engine does not test a Design against it"
+    },
+    {
+      "id": "liberia-man/12.2/note-4-automation-survey",
+      "title": "Unattended-machinery columns need a record of a satisfactory periodic automation survey; without one add two engineering watch officers and one able seafarer engine",
+      "origin": "guideline",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "edition": "Rev. 11/22 (supersedes the notice of 02/21)",
+        "locator": "12.2",
+        "page": "MAN-001.pdf (12 pages), PDF p. 10 (note 4)",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#778"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "input.crew"
+      },
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "finding": null,
+      "since": "1.0.0",
+      "gap": "A table or clause the crew model (spec 0011 4.1) reads from this set and shows in the results `crew` block; the Rule engine does not test a Design against it"
+    },
+    {
+      "id": "liberia-man/12.1.9/cook",
+      "title": "A ship with a manning of 10 or more shall have a ship's cook certified to MLC 2006 Regulation A3.2 and STCW Regulation VI/1",
+      "origin": "guideline",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "edition": "Rev. 11/22 (supersedes the notice of 02/21)",
+        "locator": "12.1.9",
+        "page": "MAN-001.pdf (12 pages), PDF pp. 7-8",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#778"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "input.crew"
+      },
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "finding": null,
+      "since": "1.0.0",
+      "gap": "A table or clause the crew model (spec 0011 4.1) reads from this set and shows in the results `crew` block; the Rule engine does not test a Design against it"
+    },
+    {
+      "id": "liberia-man/3.2.1/master-watch",
+      "title": "Except for ships of 3,000 GT or less, the master should not keep a regular navigation or engineering watch (printed 3.2.1 under the heading 3.3 Watches)",
+      "origin": "guideline",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "edition": "Rev. 11/22 (supersedes the notice of 02/21)",
+        "locator": "3.2.1",
+        "page": "MAN-001.pdf (12 pages), PDF p. 3",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#778"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "input.crew"
+      },
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "finding": null,
+      "since": "1.0.0",
+      "gap": "A table or clause the crew model (spec 0011 4.1) reads from this set and shows in the results `crew` block; the Rule engine does not test a Design against it"
+    },
+    {
+      "id": "liberia-man/3.2.3/three-watch",
+      "title": "A three-watch system should be adopted for the bridge and the engine room, except ships of 3,000 GT or less or 3,000 kW or less, limited voyages, special occupations, or unattended machinery (printed 3.2.3 under the heading 3.3 Watches)",
+      "origin": "guideline",
+      "source": {
+        "document": "Liberia Maritime Authority, Marine Notice MAN-001, Manning of Vessels and Principles of Watchkeeping",
+        "edition": "Rev. 11/22 (supersedes the notice of 02/21)",
+        "locator": "3.2.3",
+        "page": "MAN-001.pdf (12 pages), PDF p. 3",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#778"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "input.crew"
+      },
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "finding": null,
+      "since": "1.0.0",
+      "gap": "A table or clause the crew model (spec 0011 4.1) reads from this set and shows in the results `crew` block; the Rule engine does not test a Design against it"
+    }
+  ]
+}
