@@ -72,7 +72,30 @@ What OVD does **not** compute today:
 6. **Rounding.** Each line, subtotal, the margin and the total round to whole currency units, half to even
    (`barge_cost.rs`, lines 401-412). The total is rounded from the unrounded sum, so the shown lines can differ
    from the total by up to one unit per line. Delivery is passed through unrounded. Label: **Method**.
-7. **Output.** `cost::cost_of` (`cost.rs`, lines 151-160) puts the result in `cost`. `cost` and
+7. **Item lines of a self-propelled hull** (issue #773, spec 0011 D9 and sec. 7). A Formation with no tug
+   prices its own stern with four item rates, after the propulsion line (`barge_cost::item_lines`):
+   - **Gensets** = installed genset rating (kWe) × `genset_rate_per_kwe`. The rating counts every set and
+     the reserve: a gas-fuelled stern block's sets (`aft_arrangement::installed_genset_kwe`), or a
+     diesel-electric plant's N + 1 sets of P / N each, as their mass takes them. A plant with no gensets
+     (battery-electric, diesel-mechanical, hybrid) has 0.
+   - **Machinery steel** = engine-room steel + engine seats (t) of the stern block mass
+     (`stern_block_mass.machinery_steel`) × `machinery_steel_rate`. 0 when the results hold none.
+   - **Deckhouse** = deckhouse deck area (m²) × `deckhouse_rate_per_m2`. 0: no deckhouse model yet
+     (issue #779 gives the area). The wheelhouse and accommodation lump stays for today's stern block.
+   - **Gas fuel system** = the power it serves (kW) × `gas_fuel_system_rate_per_kw`. 0 until the gas fuel
+     system allowances give the figure (issue #775).
+
+   **The split of the propulsion rate's basis.** The propulsion line stays installed propulsion power ×
+   `propulsion_rate_per_kw` (1,000 per kW), and its basis now reads propulsors, drives, motors and
+   switchboard. Its value does not change. The example basis never held the gensets (it was written for a
+   battery-electric tug: "thrusters, drives, switchboard"), so nothing moves out of the propulsion line:
+   for an unchanged design the total rises by the new lines and the yard margin on them, and by nothing
+   else. `cost.items` lists each line's quantity, unit, rate and whether the rate is an example rate.
+   Each default rate is an **example rate**: a round placeholder, not from a source. A file saved before
+   the item rates reads each as 0, marked `default` ("not priced"), so its budget does not move. A Formation
+   with a tug has no item lines: its tug is the battery-electric pusher of the ATB budget.
+   Label: **Method** (lines), **Estimate** (each example rate).
+8. **Output.** `cost::cost_of` (`cost.rs`, lines 151-160) puts the result in `cost`. `cost` and
    `cost_masses` are out of the results hash (`crates/ovd-format/src/run.rs`, line 244), and the rates never
    reach `simulate` (lines 269-274). A rate change moves only the budget.
 
@@ -130,12 +153,19 @@ Id prefix `CB` (cost and budget).
 | CB-A45 | Note `no_reliquefaction_in_scope` | Always passes; says the cargo system has no reliquefaction or nitrogen plant | Fixed in code | Pressure-accumulation operating concept | `barge_cost.rs` lines 385-391 | Non-conservative if the Option needs that plant |
 | CB-A46 | Note `fabrication_rates_are_estimates` | Always fails as a warning, so it always shows | Fixed in code | — | `barge_cost.rs` lines 392-398 | — |
 | CB-A47 | Basis line | "Example rates — replace with yours." shown always, also after the user edits rates | Fixed in code | `COST_RATES_BASIS` | `crates/ovd-format/src/vdesign.rs` line 241; `CapitalBudget.svelte` line 66 | — |
+| CB-A48a | Genset line | installed genset kWe (every set, the reserve included) × `genset_rate_per_kwe` 500 | Estimate | Example rate, no source (issue #773) | `barge_cost.rs` `item_lines`; `aft_arrangement.rs` `installed_genset_kwe`; `builtin_profile.json` | Unknown |
+| CB-A48b | Machinery steel line | engine-room steel + engine seats (t) × `machinery_steel_rate` 2,500 (the hull steel example rate, taken again) | Estimate | Example rate, no source (issue #773); 0 until the results hold the machinery steel | `cost.rs` `item_quantities_of` | Unknown |
+| CB-A48c | Deckhouse line | deckhouse area (m²) × `deckhouse_rate_per_m2` 3,000; the area is 0 until a deckhouse model exists | Estimate | Example rate, no source (issue #773) | `cost.rs` `with_stern_items` | Unknown |
+| CB-A48d | Gas fuel system line | gas fuel system kW × `gas_fuel_system_rate_per_kw` 200; the kW is 0 until the gas fuel system allowances exist | Estimate | Example rate, no source (issue #773) | `cost.rs` `with_stern_items` | Unknown |
+| CB-A48e | Propulsion rate basis | per kW of installed propulsion power: propulsors, drives, motors, switchboard; gensets are their own line | Estimate | Spec 0011 sec. 7 (the basis is split); the value 1,000 is unchanged | `builtin_profile.json` | Unknown |
 | CB-A48 | Scope of the budget | Gas Options only; one barge plus one electric pusher tug as one unit | Fixed in code | Core models a gas ATB unit | `cost.rs` lines 1-6; `simulate.rs` lines 809, 1095 | Unknown for other Formations |
 
 ## Inputs the user can change
 
 All 14 inputs are in the "Cost rates" input group (`crates/ovd-format/src/vdesign.rs`, lines 1426-1516). Each
 default equals the example rates file (a test keeps them equal: `crates/ovd-format/tests/cost_rates.rs`).
+The four item rates of a self-propelled hull (issue #773) are Option inputs only: the rates file of the ATB
+budget keeps its 14 keys.
 A file saved before these inputs existed opens with the example values, marked `default`, with a warning
 (`CHANGELOG.md`).
 
@@ -151,6 +181,10 @@ A file saved before these inputs existed opens with the example values, marked `
 | `paint_anodes_misc` | Paint, anodes and miscellaneous | 100,000 | per unit |
 | `battery_rate_per_kwh` | Battery rate | 250 | per kWh |
 | `propulsion_rate_per_kw` | Propulsion rate | 1,000 | per kW |
+| `genset_rate_per_kwe` | Genset rate | 500 (example rate) | per kWe |
+| `machinery_steel_rate` | Machinery steel rate | 2,500 (example rate) | per t |
+| `deckhouse_rate_per_m2` | Deckhouse rate | 3,000 (example rate) | per m² |
+| `gas_fuel_system_rate_per_kw` | Gas fuel system rate | 200 (example rate) | per kW |
 | `wheelhouse_accom_lump` | Wheelhouse and accommodation | 450,000 | per unit |
 | `tug_outfitting_lump` | Tug outfitting | 200,000 | per unit |
 | `yard_margin_fraction` | Yard margin | 0.10 | fraction |

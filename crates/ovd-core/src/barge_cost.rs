@@ -377,6 +377,67 @@ pub fn compute_for(
     rt: &BargeCostRates,
     tug: bool,
 ) -> Result<BargeCostResult, ComputeError> {
+    compute_with_items(inp, rt, tug, &[])
+}
+
+/// The item rates of a self-propelled hull's own stern (spec 0011 D9, issue #773). Like every rate,
+/// they are data, not code: the caller supplies them (the Defaults Profile holds example rates). They
+/// are not part of [`BargeCostRates`], whose fixed key list is the rates file of the ATB budget: that
+/// tug is a battery-electric pusher with none of these items.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct ItemRates {
+    /// Per kWe of installed genset rating (the reserve set included).
+    pub genset_rate_per_kwe: f64,
+    /// Per t of machinery steel: the engine-room steel and the engine seats of the stern block.
+    pub machinery_steel_rate: f64,
+    /// Per m2 of deckhouse deck area.
+    pub deckhouse_rate_per_m2: f64,
+    /// Per kW of the gas fuel system.
+    pub gas_fuel_system_rate_per_kw: f64,
+}
+
+/// What the item rates price. Each is zero where the design has none of it.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct ItemQuantities {
+    /// Installed genset rating (kWe): every set, the reserve included.
+    pub genset_kwe: f64,
+    /// Machinery steel (t).
+    pub machinery_steel_t: f64,
+    /// Deckhouse deck area (m2).
+    pub deckhouse_area_m2: f64,
+    /// The power the gas fuel system serves (kW).
+    pub gas_fuel_system_kw: f64,
+}
+
+/// The item lines, in the order the breakdown lists them: quantity times rate. The propulsion line
+/// stays per kW of installed propulsion power; the gensets that make the power are a line of their
+/// own (spec 0011 sec. 7: the propulsion rate's basis is split).
+pub fn item_lines(q: &ItemQuantities, r: &ItemRates) -> [(&'static str, f64); 4] {
+    [
+        ("gensets", q.genset_kwe * r.genset_rate_per_kwe),
+        (
+            "machinery_steel",
+            q.machinery_steel_t * r.machinery_steel_rate,
+        ),
+        ("deckhouse", q.deckhouse_area_m2 * r.deckhouse_rate_per_m2),
+        (
+            "gas_fuel_system",
+            q.gas_fuel_system_kw * r.gas_fuel_system_rate_per_kw,
+        ),
+    ]
+}
+
+/// [`compute_for`] with the item lines of the vessel's own stern ([`item_lines`]). They follow the
+/// propulsion line when there is no tug; with a tug the Formation's hull has no stern block, so a
+/// caller passes none.
+pub fn compute_with_items(
+    inp: &BargeCostInputs,
+    rt: &BargeCostRates,
+    tug: bool,
+    items: &[(&'static str, f64)],
+) -> Result<BargeCostResult, ComputeError> {
     let barge: Vec<(&'static str, f64)> = alloc::vec![
         (
             "hull_steel",
@@ -417,7 +478,7 @@ pub fn compute_for(
             "warning",
         ),
     ];
-    assemble(barge, inp, rt, tug, checks)
+    assemble_with_items(barge, inp, rt, tug, items, checks)
 }
 
 /// The budget from the barge items of one containment: the part every containment shares. The
@@ -425,24 +486,39 @@ pub fn compute_for(
 /// tug and the vessel's own when there is not; the yard margin and the delivery follow. The caller
 /// gives the barge items and the checks of its containment (issue #334).
 pub fn assemble(
-    mut barge: Vec<(&'static str, f64)>,
+    barge: Vec<(&'static str, f64)>,
     inp: &BargeCostInputs,
     rt: &BargeCostRates,
     tug: bool,
     checks: Vec<Check>,
 ) -> Result<BargeCostResult, ComputeError> {
-    let powering = [
-        ("battery", inp.battery_kwh * rt.battery_rate_per_kwh),
-        ("propulsion", inp.propulsion_kw * rt.propulsion_rate_per_kw),
-        ("wheelhouse_accommodation", rt.wheelhouse_accom_lump),
-    ];
+    assemble_with_items(barge, inp, rt, tug, &[], checks)
+}
+
+/// [`assemble`] with the item lines of the vessel's own stern (issue #773): with no tug they follow
+/// the propulsion line; with a tug they are the barge's (a caller passes none: the barge of a tug
+/// Formation has no stern block).
+pub fn assemble_with_items(
+    mut barge: Vec<(&'static str, f64)>,
+    inp: &BargeCostInputs,
+    rt: &BargeCostRates,
+    tug: bool,
+    items: &[(&'static str, f64)],
+    checks: Vec<Check>,
+) -> Result<BargeCostResult, ComputeError> {
+    let battery = ("battery", inp.battery_kwh * rt.battery_rate_per_kwh);
+    let propulsion = ("propulsion", inp.propulsion_kw * rt.propulsion_rate_per_kw);
+    let wheelhouse = ("wheelhouse_accommodation", rt.wheelhouse_accom_lump);
     let tug: Vec<(&'static str, f64)> = if tug {
+        barge.extend_from_slice(items);
         let mut rows = alloc::vec![("hull_steel", inp.tug_hull_steel_t * rt.hull_steel_rate)];
-        rows.extend(powering);
+        rows.extend([battery, propulsion, wheelhouse]);
         rows.push(("outfitting", rt.tug_outfitting_lump));
         rows
     } else {
-        barge.extend(powering);
+        barge.extend([battery, propulsion]);
+        barge.extend_from_slice(items);
+        barge.push(wheelhouse);
         Vec::new()
     };
     let barge_values: Vec<f64> = barge.iter().map(|(_, v)| *v).collect();

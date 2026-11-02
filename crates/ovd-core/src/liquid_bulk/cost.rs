@@ -91,6 +91,19 @@ pub fn compute(
     rt: &BargeCostRates,
     tug: bool,
 ) -> Result<BargeCostResult, ComputeError> {
+    compute_with_items(q, lr, inp, rt, tug, &[])
+}
+
+/// [`compute`] with the item lines of a self-propelled hull's own stern
+/// ([`barge_cost::item_lines`], issue #773).
+pub fn compute_with_items(
+    q: &CostQuantities,
+    lr: &LiquidCostRates,
+    inp: &BargeCostInputs,
+    rt: &BargeCostRates,
+    tug: bool,
+    items: &[(&'static str, f64)],
+) -> Result<BargeCostResult, ComputeError> {
     let tanks = f64::from(q.cargo_tank_count);
     let barge: Vec<(&'static str, f64)> = alloc::vec![
         ("hull_steel", q.hull_steel_t * rt.hull_steel_rate),
@@ -137,5 +150,5 @@ pub fn compute(
             "warning",
         ),
     ];
-    barge_cost::assemble(barge, inp, rt, tug, checks)
+    barge_cost::assemble_with_items(barge, inp, rt, tug, items, checks)
 }

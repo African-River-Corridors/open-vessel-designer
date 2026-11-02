@@ -49,6 +49,10 @@
     "paint_anodes_misc",
     "battery",
     "propulsion",
+    "gensets",
+    "machinery_steel",
+    "deckhouse",
+    "gas_fuel_system",
     "wheelhouse_accommodation",
   ];
   const item = (id: string) => (ITEMS.includes(id) ? t(`app-cost-item-${id.replaceAll("_", "-")}`) : id);

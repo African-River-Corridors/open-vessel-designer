@@ -551,6 +551,14 @@ input-battery-rate-per-kwh = Battery rate
 
 input-propulsion-rate-per-kw = Propulsion rate
 
+input-genset-rate-per-kwe = Genset rate
+
+input-machinery-steel-rate = Machinery steel rate
+
+input-deckhouse-rate-per-m2 = Deckhouse rate
+
+input-gas-fuel-system-rate-per-kw = Gas fuel system rate
+
 input-wheelhouse-accom-lump = Wheelhouse and accommodation
 
 input-tug-outfitting-lump = Tug outfitting
