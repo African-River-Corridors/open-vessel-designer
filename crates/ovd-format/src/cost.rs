@@ -96,7 +96,7 @@ const ITEM_BASES: [(&str, &str, &str, &str); 4] = [
         "kW",
         "The installed rating of the gas gensets the gas fuel system serves, the reserve set included \
          (`cost_masses.stern_items.gas_fuel_system_kw`). 0 for a hull that is not gas-fuelled. The \
-         rate prices the whole system, the gas combustion unit included; its mass is a separate item.",
+         cost does not respond to the gas combustion unit; that input adds mass only.",
     ),
 ];
 
@@ -136,7 +136,11 @@ pub fn with_stern_items(
     v["stern_items"] = json!({
         "genset_kwe": ovd_core::aft_arrangement::installed_genset_kwe(a),
         "deckhouse_area_m2": 0.0,
-        "gas_fuel_system_kw": a.installed_kwe,
+        "gas_fuel_system_kw": if a.propulsion == "gas_fuelled" {
+            a.installed_kwe
+        } else {
+            0.0
+        },
     });
     v
 }

@@ -126,8 +126,9 @@ pub fn boil_off_kg_per_h(kw: f64, latent_kj_per_kg: f64) -> f64 {
 // A gas-fuelled stern block carries a gas fuel supply system beyond its gensets: a gas valve unit
 // (GVU) for each gas engine, a fuel-gas heater, a boil-off compressor and, as an input, a gas
 // combustion unit (GCU). The mass of none of them was found in a source read (docs/research/
-// stern-arrangement.md sec. 3: "GVU, GCU, reliquefaction mass or cost ... not found"; DNV for
-// SEA\LNG 2019 names the fuel-gas process system's cost as not given in the literature). Every
+// stern-arrangement.md sec. 3: "GVU, GCU, reliquefaction mass or cost ... not found"; the same
+// section, citing DNV for SEA\LNG 2019, gives the fuel-gas process system's cost as not given in
+// the literature; the mass of the heater and compressor was not looked for). Every
 // allowance below is therefore an ESTIMATE: a round placeholder for the size class, not a quote and
 // not from a source. The calibration ticket (spec 0011 D11) replaces them. Reliquefaction is not
 // modelled (spec 0011 D8: later).

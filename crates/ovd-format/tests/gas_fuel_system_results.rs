@@ -82,7 +82,12 @@ fn the_gas_combustion_unit_input_adds_its_item() {
 #[test]
 fn the_cost_has_a_gas_fuel_system_line_of_its_own() {
     let r = results(json!({ "stern_block_mass_included": true }));
-    let kwe = r["stern_block_mass"]["gas_fuel_system"]["served_kwe"].clone();
+    // Hand sum for the 110 x 11.4 m hull: two gas sets of 1,200 kWe each (the engine room the layout
+    // gives holds two), so 2 x 1,200 = 2,400 kWe.
+    let aft = &r["drawing"]["aft_arrangement"];
+    assert_eq!(aft["n_gensets"].as_f64(), Some(2.0));
+    assert_eq!(aft["genset_kwe"].as_f64(), Some(1200.0));
+    let kwe = json!(2400.0);
     assert_eq!(r["cost_masses"]["stern_items"]["gas_fuel_system_kw"], kwe);
     let line = r["cost"]["items"]
         .as_array()

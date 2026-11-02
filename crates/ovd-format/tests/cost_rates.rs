@@ -706,7 +706,7 @@ fn each_item_rate_says_it_is_an_example_rate_and_what_it_prices() {
         assert!(!r["quantity_basis"].as_str().unwrap().is_empty());
     }
     // No deckhouse model yet: its line is 0 and says why. The gas fuel system line prices the
-    // installed gas genset rating (issue #775), here a gas-fuelled hull's.
+    // installed gas genset rating (issue #775); this fixture is not gas-fuelled, so it is 0.
     assert_eq!(item(&cost, "deckhouse")["quantity"], json!(0.0));
     assert!(
         item(&cost, "deckhouse")["quantity_basis"]

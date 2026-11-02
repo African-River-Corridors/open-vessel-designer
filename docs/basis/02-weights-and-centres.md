@@ -134,8 +134,8 @@ The hold geometry (h_hold, widths, l_cargo) is on page 06.
     neither item.
 - **Gas fuel system** (issue #775, spec 0011 D8). A gas-fuelled stern block, with its mass in the lightship,
   gains four items beside its gensets, at the gas valve unit room. **Every figure is an estimate**: no mass of
-  a gas valve unit, heater, compressor or gas combustion unit was found in a source read
-  (`docs/research/stern-arrangement.md` sec. 3). The results say so (`stern_block_mass.gas_fuel_system`, each
+  a gas valve unit or gas combustion unit was found (`docs/research/stern-arrangement.md` sec. 3 lists them
+  as "not found"), and the mass of a heater and a compressor was not looked for. The results say so (`stern_block_mass.gas_fuel_system`, each
   item's `status` and `basis`).
   - **Gas valve units** = 0.4 t × the number of gas engines, the reserve set included.
   - **Gas heater** = 0.2 kg per kWe of the installed gas gensets.

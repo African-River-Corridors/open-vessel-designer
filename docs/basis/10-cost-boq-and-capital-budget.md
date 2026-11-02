@@ -85,7 +85,7 @@ What OVD does **not** compute today:
      (issue #779 gives the area). The wheelhouse and accommodation lump stays for today's stern block.
    - **Gas fuel system** = the power it serves (kW) × `gas_fuel_system_rate_per_kw`. The power is the
      installed rating of the gas gensets, the reserve set included (issue #775); 0 for a hull that is not
-     gas-fuelled. The rate prices the whole system; its mass items are in the lightship (page 02).
+     gas-fuelled. The cost does not respond to the gas combustion unit (that input adds mass only); the mass items are in the lightship (page 02).
 
    **The split of the propulsion rate's basis.** The propulsion line stays installed propulsion power ×
    `propulsion_rate_per_kw` (1,000 per kW), and its basis now reads propulsors, drives, motors and

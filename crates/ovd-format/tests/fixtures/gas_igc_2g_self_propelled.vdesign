@@ -293,10 +293,6 @@
           "value": false,
           "source": "default"
         },
-        "gas_combustion_unit": {
-          "value": false,
-          "source": "default"
-        },
         "propulsive_efficiency": {
           "value": 0.45,
           "source": "default"

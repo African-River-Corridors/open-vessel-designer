@@ -1,7 +1,8 @@
 //! Seam: the gas fuel system allowances of a gas-fuelled stern block (issue #775, spec 0011 D8).
 //!
 //! Label: estimate. No source was read for any allowance (docs/research/stern-arrangement.md sec. 3
-//! lists the mass of a gas valve unit, heater, compressor and gas combustion unit as not found), so
+//! lists the mass of a gas valve unit and a gas combustion unit as not found; the mass of a heater and
+//! a compressor was not looked for), so
 //! each expected value is a hand sum of the stated estimate rates:
 //! - gas valve units: 0.4 t per gas engine;
 //! - heater: 0.2 kg per kWe; compressor: 0.6 kg per kWe;
