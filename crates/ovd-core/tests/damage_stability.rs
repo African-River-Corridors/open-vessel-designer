@@ -16,7 +16,7 @@
 use libm::{acos, cos, sin, sqrt, tan};
 use ovd_core::damage_stability::{
     DamageCriteria, Floats, FloodedVolume, INTERMEDIATE_FRACTIONS, IntactInclusion, assess,
-    intermediate_stages, righting_lever_at,
+    crossing_segment, intermediate_stages, righting_lever_at,
 };
 use ovd_core::hull::hull_form::{HullFormInputs, HullFormKind, HullShape, generate};
 use ovd_core::sections::{Gravity, SectionsTable, equilibrium};
@@ -923,4 +923,19 @@ fn a_hold_with_tanks_floods_at_the_greater_of_95_percent_of_the_net_and_70_perce
             out.draught_mid_m
         );
     }
+}
+
+/// The last segment of the curve, worked by hand. The lever falls from 0.6 m to -0.2 m over a 10 degree step,
+/// straight across it, so it reaches zero at 0.6 / (0.6 + 0.2) = 0.75 of the step, 7.5 degrees on. The area under it to
+/// there is a triangle: 0.5 x 0.6 m x 7.5 degrees x (pi / 180) = 0.5 x 0.6 x 0.1308997 = 0.03926991 m rad.
+/// (The fraction had been applied twice, which gave 0.02945243.)
+#[test]
+fn the_last_segment_of_the_curve_is_a_triangle_to_the_crossing() {
+    let (area, to_zero_deg) = crossing_segment(0.6, -0.2, 10.0);
+    assert!((to_zero_deg - 7.5).abs() < 1e-12, "{to_zero_deg}");
+    assert!((area - 0.039_269_908).abs() < 1e-8, "{area}");
+    // A lever that ends exactly at zero takes the whole step.
+    let (area, to_zero_deg) = crossing_segment(0.4, 0.0, 5.0);
+    assert!((to_zero_deg - 5.0).abs() < 1e-12);
+    assert!((area - 0.5 * 0.4 * 5.0 * core::f64::consts::PI / 180.0).abs() < 1e-12);
 }

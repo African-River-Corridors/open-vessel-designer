@@ -788,13 +788,9 @@ pub fn assess(
         let gz = side * residuals(&p, &s.wp())[2];
         // The first angle at which the lever is no longer positive ends the range, at its crossing.
         if gz <= 0.0 {
-            let frac = if prev_gz > 0.0 {
-                prev_gz / (prev_gz - gz)
-            } else {
-                0.0
-            };
-            area += 0.5 * prev_gz * frac * (frac * (next - prev_deg)) * RAD_PER_DEG;
-            end_deg = prev_deg + frac * (next - prev_deg);
+            let (tail_area, tail_deg) = crossing_segment(prev_gz, gz, next - prev_deg);
+            area += tail_area;
+            end_deg = prev_deg + tail_deg;
             break;
         }
         // trapezoid from the previous angle
@@ -822,6 +818,21 @@ pub fn assess(
         area_m_rad: area,
         ok,
     }
+}
+
+/// The last segment of a righting lever curve, where the lever (`prev_gz`, m) falls to zero or below
+/// (`gz`, m) over a step of `step_deg` degrees. The lever is taken as straight across the step, so it
+/// reaches zero at the fraction `prev_gz / (prev_gz - gz)` of it. Returns the area (m rad) under the
+/// lever to that crossing, and the angle (degrees) from the start of the step to it. Area is the
+/// triangle: half the starting lever times the angle to the crossing.
+pub fn crossing_segment(prev_gz: f64, gz: f64, step_deg: f64) -> (f64, f64) {
+    let frac = if prev_gz > 0.0 {
+        prev_gz / (prev_gz - gz)
+    } else {
+        0.0
+    };
+    let to_zero_deg = frac * step_deg;
+    (0.5 * prev_gz * to_zero_deg * RAD_PER_DEG, to_zero_deg)
 }
 
 /// The righting lever (m) of the damaged hull at one heel (degrees), with the floating position solved at
