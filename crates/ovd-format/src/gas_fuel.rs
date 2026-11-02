@@ -108,16 +108,19 @@ pub(crate) fn add_gas_fuel(option: &DesignOption, v: &mut Value) {
                 delta,
                 INSULATION_CONDUCTIVITY_W_PER_MK,
             );
-            // A storage temperature outside the saturation table gives no boil-off figure.
-            methane_latent_heat_kj_per_kg(cargo_c).ok().map(|latent| {
+            latent_heat_or_reason(cargo_c).map(|latent| {
                 let kw = n * per_tank_kw;
                 (kw, boil_off_kg_per_h(kw, latent), latent, cargo_c)
             })
         }
-        _ => None,
+        _ => Err(if cargo != "LNG" {
+            NOT_LNG_REASON
+        } else {
+            NO_TANK_REASON
+        }),
     };
     match boil {
-        Some((kw, boil_kg_h, latent, cargo_c)) => {
+        Ok((kw, boil_kg_h, latent, cargo_c)) => {
             // The service condition that burns the least gas: the boil-off continues in it.
             let least = use_by_environment
                 .iter()
@@ -156,12 +159,7 @@ pub(crate) fn add_gas_fuel(option: &DesignOption, v: &mut Value) {
                 "warning",
             ));
         }
-        None => {
-            let reason = if cargo != "LNG" {
-                "the boil-off is worked out for LNG only (the latent heat of methane is the data held)"
-            } else {
-                "the tank has no insulation, or the result has no tank dimensions"
-            };
+        Err(reason) => {
             v["boil_off"] = json!({ "evaluated": false, "reason": reason });
         }
     }
@@ -184,5 +182,31 @@ pub(crate) fn add_gas_fuel(option: &DesignOption, v: &mut Value) {
                 have.entry(k).or_insert(val);
             }
         }
+    }
+}
+
+const NOT_LNG_REASON: &str =
+    "the boil-off is worked out for LNG only (the latent heat of methane is the data held)";
+const NO_TANK_REASON: &str = "the tank has no insulation, or the result has no tank dimensions";
+const OUT_OF_TABLE_REASON: &str = "storage temperature outside the methane saturation table";
+
+/// The latent heat of methane (kJ/kg) at the storage temperature, or the reason there is none.
+/// The latent heat is the vapour less the liquid enthalpy of the NIST rows, each taken to 0.01 kJ/kg
+/// before the straight line between rows, so the boil-off figure is that of the rounded rows.
+fn latent_heat_or_reason(cargo_c: f64) -> Result<f64, &'static str> {
+    methane_latent_heat_kj_per_kg(cargo_c).map_err(|_| OUT_OF_TABLE_REASON)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_storage_temperature_outside_the_table_has_its_own_reason() {
+        assert_eq!(latent_heat_or_reason(-162.0), Ok(511.77));
+        for t in [-171.0, -99.0, f64::NAN] {
+            assert_eq!(latent_heat_or_reason(t), Err(OUT_OF_TABLE_REASON));
+        }
+        assert_ne!(OUT_OF_TABLE_REASON, NO_TANK_REASON);
     }
 }

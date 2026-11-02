@@ -98,16 +98,79 @@ fn the_inverse_returns_the_temperature_of_the_pressure() {
 #[test]
 fn gauge_and_absolute_round_trip_exactly() {
     assert_eq!(ATMOSPHERE_MPA, 0.101325);
-    for g in [0.0, 0.05, 0.1, 0.7, 1.0, 1.7, 2.5, 0.123456789] {
-        let p = Pressure::from_gauge_mpa(g);
-        assert_eq!(p.gauge_mpa(), g);
-        assert_eq!(p.absolute_mpa(), g + 0.101325);
-        // The absolute value of that pressure gives back the same two values.
-        let q = Pressure::from_absolute_mpa(p.absolute_mpa());
-        assert_eq!(q.absolute_mpa(), p.absolute_mpa());
-        assert_eq!(q.gauge_mpa(), p.absolute_mpa() - 0.101325);
-    }
     assert_eq!(Pressure::from_gauge_mpa(0.0).absolute_mpa(), 0.101325);
+    // Every whole pascal from 0 to 3 MPa g in steps of 7 Pa (over 400,000 values).
+    let mut pa = 0_i64;
+    while pa <= 3_000_000 {
+        let g = pa as f64 / 1.0e6;
+        let p = Pressure::from_gauge_mpa(g);
+        assert_eq!(p.gauge_mpa(), g, "{pa} Pa g");
+        // gauge -> absolute -> gauge, and absolute -> gauge -> absolute.
+        let q = Pressure::from_absolute_mpa(p.absolute_mpa());
+        assert_eq!(q.gauge_mpa(), g, "{pa} Pa g via absolute");
+        assert_eq!(q.absolute_mpa(), p.absolute_mpa());
+        let a = Pressure::from_absolute_mpa((pa + 101_325) as f64 / 1.0e6);
+        assert_eq!(
+            Pressure::from_gauge_mpa(a.gauge_mpa()).absolute_mpa(),
+            a.absolute_mpa()
+        );
+        pa += 7;
+    }
+}
+
+#[test]
+fn the_state_solve_returns_the_state_at_a_table_row() {
+    // At -150 C (row values as printed), quality 0.3.
+    let (rho_f, rho_g, u_f, u_g) = (405.02, 3.9877, 40.106, 468.95);
+    let x = 0.3;
+    let v = (1.0 - x) / rho_f + x / rho_g;
+    let u = u_f + x * (u_g - u_f);
+    let s = state_from_u_v(u, v).unwrap();
+    assert!((s.temperature_c + 150.0).abs() < 1e-8, "{s:?}");
+    assert!((s.quality - x).abs() < 1e-8, "{s:?}");
+    // Saturated liquid at the cold end, saturated vapour at the warm end.
+    let s = state_from_u_v(-29.594, 1.0 / 434.51).unwrap();
+    assert!(
+        (s.temperature_c + 170.0).abs() < 1e-8 && s.quality.abs() < 1e-8,
+        "{s:?}"
+    );
+    let s = state_from_u_v(
+        vapour_internal_energy_kj_per_kg(-100.0).unwrap(),
+        1.0 / vapour_density_kg_m3(-100.0).unwrap(),
+    )
+    .unwrap();
+    assert!(
+        (s.temperature_c + 100.0).abs() < 1e-8 && (s.quality - 1.0).abs() < 1e-8,
+        "{s:?}"
+    );
+}
+
+#[test]
+fn the_state_solve_between_rows_by_hand() {
+    // -149.5 C, midway between the -150 and -149 rows: each property the mean of the two rows.
+    let rho_f = (405.02 + 403.45) / 2.0; // 404.235
+    let rho_g = (3.9877 + 4.2416) / 2.0; // 4.11465
+    let u_f = (40.106 + 43.669) / 2.0; // 41.8875
+    let u_g = (468.95 + 470.07) / 2.0; // 469.51
+    let x = 0.25;
+    let v = 1.0 / rho_f + x * (1.0 / rho_g - 1.0 / rho_f);
+    let u = u_f + x * (u_g - u_f);
+    let s = state_from_u_v(u, v).unwrap();
+    assert!((s.temperature_c + 149.5).abs() < 1e-8, "{s:?}");
+    assert!((s.quality - x).abs() < 1e-8, "{s:?}");
+}
+
+#[test]
+fn the_state_solve_refuses_states_outside_the_table_and_the_dome() {
+    // Superheated vapour (volume above the saturated vapour at every temperature).
+    assert_eq!(state_from_u_v(470.0, 10.0), Err(OutOfTable));
+    // Compressed liquid (volume below the saturated liquid at every temperature).
+    assert_eq!(state_from_u_v(0.0, 0.001), Err(OutOfTable));
+    // An energy below the table at this volume, and one above it.
+    assert_eq!(state_from_u_v(-100.0, 0.1), Err(OutOfTable));
+    assert_eq!(state_from_u_v(1000.0, 0.1), Err(OutOfTable));
+    assert_eq!(state_from_u_v(f64::NAN, 0.1), Err(OutOfTable));
+    assert_eq!(state_from_u_v(0.0, 0.0), Err(OutOfTable));
 }
 
 #[test]

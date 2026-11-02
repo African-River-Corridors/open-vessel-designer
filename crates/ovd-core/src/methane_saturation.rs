@@ -24,34 +24,34 @@ pub const TABLE_HIGH_C: f64 = -100.0;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct OutOfTable;
 
-/// A pressure that carries its basis, so that a gauge value and an absolute value convert both ways
-/// without rounding: the value given is the value returned.
-#[derive(Debug, Clone, Copy, PartialEq)]
+/// A pressure held as a whole number of pascals, so that gauge and absolute convert both ways with
+/// no rounding: the gauge value of the absolute value of a gauge pressure is that gauge pressure. The
+/// resolution is 1 Pa (a value is rounded to it on entry), far finer than any rule or table figure.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Pressure {
-    gauge_mpa: f64,
-    absolute_mpa: f64,
+    gauge_pa: i64,
 }
+
+const ATMOSPHERE_PA: i64 = 101_325;
 
 impl Pressure {
     /// From a gauge pressure (MPa), the basis of the rules.
     pub fn from_gauge_mpa(gauge_mpa: f64) -> Self {
         Pressure {
-            gauge_mpa,
-            absolute_mpa: gauge_mpa + ATMOSPHERE_MPA,
+            gauge_pa: round(gauge_mpa * 1.0e6) as i64,
         }
     }
     /// From an absolute pressure (MPa), the basis of the table.
     pub fn from_absolute_mpa(absolute_mpa: f64) -> Self {
         Pressure {
-            gauge_mpa: absolute_mpa - ATMOSPHERE_MPA,
-            absolute_mpa,
+            gauge_pa: round(absolute_mpa * 1.0e6) as i64 - ATMOSPHERE_PA,
         }
     }
     pub fn gauge_mpa(&self) -> f64 {
-        self.gauge_mpa
+        self.gauge_pa as f64 / 1.0e6
     }
     pub fn absolute_mpa(&self) -> f64 {
-        self.absolute_mpa
+        (self.gauge_pa + ATMOSPHERE_PA) as f64 / 1.0e6
     }
 }
 
@@ -238,4 +238,75 @@ pub fn saturation_temperature_c(p_mpa: f64) -> Result<f64, OutOfTable> {
         }
     }
     Err(OutOfTable)
+}
+
+/// A two-phase state: the saturation temperature (C) and the quality (vapour mass fraction).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct State {
+    pub temperature_c: f64,
+    pub quality: f64,
+}
+
+/// The (T, x) of a closed tank's contents from the specific internal energy `u_kj_per_kg` and the
+/// specific volume `v_m3_per_kg`, solved together on the table: at T, x = (v - vf) / (vg - vf) from the
+/// volume, and the energy uf + x (ug - uf) must equal u. The state is in the two-phase dome only: a
+/// temperature outside the table, or a quality outside 0 to 1, is an error. The root is found between
+/// the rows (the energy of the volume-fixed state is a straight line in each 1 C interval of the
+/// interpolated properties, solved by bisection to a 1e-12 C bracket).
+pub fn state_from_u_v(u_kj_per_kg: f64, v_m3_per_kg: f64) -> Result<State, OutOfTable> {
+    if u_kj_per_kg.is_nan() || v_m3_per_kg.is_nan() || v_m3_per_kg <= 0.0 {
+        return Err(OutOfTable);
+    }
+    // The residual at T: the energy implied by the volume, less u; None outside the dome.
+    let at = |t: f64| -> Result<(f64, f64), OutOfTable> {
+        let vf = 1.0 / liquid_density_kg_m3(t)?;
+        let vg = 1.0 / vapour_density_kg_m3(t)?;
+        let x = (v_m3_per_kg - vf) / (vg - vf);
+        let uf = liquid_internal_energy_kj_per_kg(t)?;
+        let ug = vapour_internal_energy_kj_per_kg(t)?;
+        Ok((x, uf + x * (ug - uf) - u_kj_per_kg))
+    };
+    let (mut lo, mut hi) = (TABLE_LOW_C, TABLE_HIGH_C);
+    let (_, f_lo) = at(lo)?;
+    let (_, f_hi) = at(hi)?;
+    if f_lo == 0.0 {
+        return finish(lo, at(lo)?.0);
+    }
+    if f_hi == 0.0 {
+        return finish(hi, at(hi)?.0);
+    }
+    if (f_lo < 0.0) == (f_hi < 0.0) {
+        return Err(OutOfTable);
+    }
+    let lo_negative = f_lo < 0.0;
+    for _ in 0..200 {
+        let mid = 0.5 * (lo + hi);
+        let (_, f) = at(mid)?;
+        if f == 0.0 {
+            lo = mid;
+            hi = mid;
+            break;
+        }
+        if (f < 0.0) == lo_negative {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+        if hi - lo < 1.0e-12 {
+            break;
+        }
+    }
+    let t = 0.5 * (lo + hi);
+    finish(t, at(t)?.0)
+}
+
+fn finish(t: f64, x: f64) -> Result<State, OutOfTable> {
+    // A little slack for the rounding of the solve at the edge of the dome.
+    if !(-1.0e-9..=1.0 + 1.0e-9).contains(&x) {
+        return Err(OutOfTable);
+    }
+    Ok(State {
+        temperature_c: t,
+        quality: x.clamp(0.0, 1.0),
+    })
 }
