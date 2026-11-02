@@ -1,0 +1,3369 @@
+{
+  "$schema": "../rule-set.schema.json",
+  "id": "ccnr-rpn-19",
+  "family": "ccnr-rpn",
+  "title": "CCNR Regulations for Rhine Navigation Personnel, chapters 18 and 19: operating modes and the minimum crew of motor vessels, pushers and rigid convoys",
+  "version": "1.0.0",
+  "edition": {
+    "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+    "edition": "state 1 January 2026",
+    "amendments": "none: the 1 January 2026 state is the text read; the English text is an unofficial translation, the authentic texts are German, French and Dutch",
+    "in_force": "1 January 2026"
+  },
+  "sources": [
+    {
+      "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+      "edition": "state 1 January 2026",
+      "url": "https://www.ccr-zkr.org/files/documents/reglementSTF/RPN_01012026_en.pdf",
+      "access": "free",
+      "sha256": "0c52800d6c7aaf54f50691fe742c69fade4e0580f3cf34449bf485e0da69ea73"
+    }
+  ],
+  "status": "draft",
+  "applies_when": {
+    "service_area": [
+      "river-only"
+    ]
+  },
+  "includes": [],
+  "known_conflicts": [],
+  "tables": [
+    {
+      "id": "ccnr-rpn-18.01-operating-mode",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "18.01(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 51"
+      },
+      "input": {
+        "name": "navigation hours in 24 hours",
+        "unit": "h"
+      },
+      "unit": "mode (1 = A1, 2 = A2, 3 = B)",
+      "rows": [
+        {
+          "when": {
+            "le": 14
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "le": 18
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "le": 24
+          },
+          "shape": "const",
+          "a": 3.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.02-group",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.02(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 57"
+      },
+      "input": {
+        "name": "length of the vessel",
+        "unit": "m"
+      },
+      "unit": "group",
+      "rows": [
+        {
+          "when": {
+            "le": 70
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "le": 86
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "gt": 86
+          },
+          "shape": "const",
+          "a": 3.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.02-boatmaster",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.02(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 57"
+      },
+      "input": {
+        "name": "group, operating mode, equipment standard, alternative"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "g1-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.02-helmsman",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.02(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 57"
+      },
+      "input": {
+        "name": "group, operating mode, equipment standard, alternative"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "g1-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.02-able-boatman",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.02(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 57"
+      },
+      "input": {
+        "name": "group, operating mode, equipment standard, alternative"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "g1-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.02-boatman",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.02(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 57"
+      },
+      "input": {
+        "name": "group, operating mode, equipment standard, alternative"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "g1-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.02-apprentice",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.02(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 57"
+      },
+      "input": {
+        "name": "group, operating mode, equipment standard, alternative"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "g1-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.03-boatmaster",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.03(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 58"
+      },
+      "input": {
+        "name": "group, operating mode, equipment standard, alternative"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "g1-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.03-helmsman",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.03(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 58"
+      },
+      "input": {
+        "name": "group, operating mode, equipment standard, alternative"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "g1-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.03-able-boatman",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.03(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 58"
+      },
+      "input": {
+        "name": "group, operating mode, equipment standard, alternative"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "g1-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.03-boatman",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.03(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 58"
+      },
+      "input": {
+        "name": "group, operating mode, equipment standard, alternative"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "g1-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.03-apprentice",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.03(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 58"
+      },
+      "input": {
+        "name": "group, operating mode, equipment standard, alternative"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "g1-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    },
+    {
+      "id": "ccnr-rpn-19.03-engineer",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "locator": "19.03(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 58"
+      },
+      "input": {
+        "name": "group, operating mode, equipment standard, alternative"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "g1-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g1-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g2-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g3-B-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g4-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A1-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S1"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-A2-S2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S1-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt1"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "g5-B-S2-alt2"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "ccnr-rpn/18.01(1)/operating-modes",
+      "title": "Operating modes by navigation in a 24-hour period: A1 at most 14 hours, A2 at most 18 hours, B at most 24 hours",
+      "origin": "regulation",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "edition": "state 1 January 2026",
+        "locator": "18.01(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 51",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#778"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "input.crew"
+      },
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "finding": null,
+      "since": "1.0.0",
+      "gap": "A table or clause the crew model (spec 0011 4.1) reads from this set and shows in the results `crew` block; the Rule engine does not test a Design against it"
+    },
+    {
+      "id": "ccnr-rpn/19.02(1)/motor-vessel-crew",
+      "title": "Minimum crew of a motor vessel or pusher by length group (up to 70 m, over 70 to 86 m, over 86 m), operating mode and equipment standard S1 or S2; a cell merged across S1 and S2 in the table is written for both",
+      "origin": "regulation",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "edition": "state 1 January 2026",
+        "locator": "19.02(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 57",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#778"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "input.crew"
+      },
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "finding": null,
+      "since": "1.0.0",
+      "gap": "A table or clause the crew model (spec 0011 4.1) reads from this set and shows in the results `crew` block; the Rule engine does not test a Design against it"
+    },
+    {
+      "id": "ccnr-rpn/19.03(1)/rigid-convoy-crew",
+      "title": "Minimum crew of a rigid convoy or other rigid assembly by group 1 to 5, operating mode and equipment standard, with an engineer in groups 4 and 5",
+      "origin": "regulation",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "edition": "state 1 January 2026",
+        "locator": "19.03(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 58",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#778"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "input.crew"
+      },
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "finding": null,
+      "since": "1.0.0",
+      "gap": "A table or clause the crew model (spec 0011 4.1) reads from this set and shows in the results `crew` block; the Rule engine does not test a Design against it"
+    },
+    {
+      "id": "ccnr-rpn/19.06(1)/other-craft",
+      "title": "For a craft not in 19.02 to 19.04 (a tug, say) the vessel inspection body decides the crew from its size, form, equipment and use",
+      "origin": "regulation",
+      "source": {
+        "document": "Central Commission for the Navigation of the Rhine, Regulations for Rhine Navigation Personnel (RPN), unofficial English translation",
+        "edition": "state 1 January 2026",
+        "locator": "19.06(1)",
+        "page": "RPN_01012026_en.pdf, PDF p. 63",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#778"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "input.crew"
+      },
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "finding": null,
+      "since": "1.0.0",
+      "gap": "A table or clause the crew model (spec 0011 4.1) reads from this set and shows in the results `crew` block; the Rule engine does not test a Design against it"
+    }
+  ]
+}

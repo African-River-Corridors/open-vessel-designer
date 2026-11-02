@@ -55,7 +55,7 @@ START, END = "<!-- design-impact:start -->", "<!-- design-impact:end -->"
 # Top-level results keys that are not results (drawing geometry, what a view marks). The results hash
 # leaves them out too: UNHASHED_KEYS in crates/ovd-format/src/run.rs. tests/test_design_impact_unhashed_keys.py
 # checks that the two lists agree.
-UNHASHED_KEYS = ("drawing", "stability_marks", "cost_masses", "cost", "text_ids", "rule_trace", "calibration", "damage", "marpol_damage", "damage_by_rule", "oil_outflow", "fit_tried", "steel_list", "structure_geometry", "gross_tonnage")
+UNHASHED_KEYS = ("drawing", "stability_marks", "cost_masses", "cost", "text_ids", "rule_trace", "calibration", "damage", "marpol_damage", "damage_by_rule", "oil_outflow", "fit_tried", "steel_list", "structure_geometry", "gross_tonnage", "crew")
 
 LABEL = "design-change"
 MAX_ROWS = 40
@@ -214,6 +214,15 @@ OPTIONAL_INPUT_CASES = (
     # this case shows that typing one moves nothing; a base from before refuses the input.
     ("gross_tonnage", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"gross_tonnage": 2500.0}),
+    # Issue #778: the crew model's inputs. The crew block is outside the hash and nothing reads it
+    # yet, so these cases show that typing them moves nothing; a base from before refuses the input.
+    ("crew", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, {"crew": 14.0}),
+    ("manning_rule_set", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"manning_rule_set": "uk-msn-1868"}),
+    ("navigation_hours_per_day", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"navigation_hours_per_day": 12.0}),
+    ("unmanned_machinery_space", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"unmanned_machinery_space": False}),
     # The aft block inputs (issue #4, slice 4), set to their defaults in the same way. A self-propelled
     # hull carries the block; the unit counts default by Cargo phase (gas 1 battery and 2
     # accommodation units, dry bulk 2 and 1), so each has a gas and a dry case.

@@ -4,6 +4,7 @@
 pub mod class_input;
 mod convoy;
 mod cost;
+pub mod crew;
 pub mod damage;
 mod eval;
 pub mod export;

@@ -348,7 +348,7 @@ pub use arc_rules::load::canonical_json;
 /// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
 /// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
 /// moved no saved hash.
-pub const UNHASHED_KEYS: [&str; 15] = [
+pub const UNHASHED_KEYS: [&str; 16] = [
     "drawing",
     "stability_marks",
     "cost_masses",
@@ -364,6 +364,7 @@ pub const UNHASHED_KEYS: [&str; 15] = [
     "steel_list",
     "structure_geometry",
     "gross_tonnage",
+    "crew",
 ];
 
 /// SHA-256 of the canonical JSON of `results`, without the [`UNHASHED_KEYS`].
@@ -702,6 +703,8 @@ pub fn run_option_with(
                 measured.freeboard_laden_m = v["results"]["freeboard_m"].as_f64();
                 // Issue #777 (spec 0011 D15): the gross tonnage of ITC 1969, or the typed one.
                 measured.gross_tonnage = gross_tonnage_of(option, &measured);
+                // Issue #778 (spec 0011 4.1): the crew model, a new output outside the hash.
+                let crew_block = crew_block_of(option, library, &v, &measured);
                 let mut rule_trace = trace_json(
                     &trace_of(&selection, option, &measured),
                     crate::trace::service_area_of(option),
@@ -724,6 +727,9 @@ pub fn run_option_with(
                     o.insert("rule_trace".to_string(), rule_trace);
                     if let Some(g) = &measured.gross_tonnage {
                         o.insert("gross_tonnage".to_string(), gross_tonnage_json(g));
+                    }
+                    if let Some(c) = crew_block {
+                        o.insert("crew".to_string(), c);
                     }
                     // Spec 0009, D1 (b): the Type C tank Spaces, one row each (ADR 0021). Hashed:
                     // the rows are new, and no other value moves.
@@ -752,6 +758,36 @@ fn gross_tonnage_of(
     let volume = ovd_core::tonnage::enclosed_volume(&vessel.capacity, &vessel.result, &vessel.hull);
     let typed = option.input("gross_tonnage").and_then(|i| i.value.as_f64());
     Some(ovd_core::tonnage::GrossTonnage::of(volume, typed))
+}
+
+/// Issue #778: the `crew` results block of a self-propelled hull that has an installed power and a
+/// gross tonnage; `None` for any other (a barge has no crew of its own here). A Rule Set that lacks a
+/// value gives a block with an `error`, never a silent gap.
+fn crew_block_of(
+    option: &DesignOption,
+    library: &Library,
+    v: &Value,
+    measured: &crate::simulate::Measured,
+) -> Option<Value> {
+    let vessel = measured.vessel.as_ref()?;
+    let aft = vessel.result.aft_arrangement.as_ref()?;
+    let g = measured.gross_tonnage.as_ref()?;
+    let propulsion_kw = v["powering"]["installed_power_kw"].as_f64()?;
+    let facts = crate::crew::CrewFacts {
+        gt: g.value(),
+        gt_source: g.source().to_string(),
+        propulsion_kw,
+        genset_kw: ovd_core::aft_arrangement::installed_genset_kwe(aft),
+        length_m: vessel.capacity.loa,
+        gas_cargo: option
+            .input("cargo_containment")
+            .and_then(|i| i.value.as_str())
+            == Some("type_c_tanks"),
+    };
+    Some(match crate::crew::crew_json(option, library, &facts) {
+        Ok(block) => block,
+        Err(e) => json!({ "error": e }),
+    })
 }
 
 /// The `gross_tonnage` results block (issue #777): V by its parts, K1, the computed GT, the typed

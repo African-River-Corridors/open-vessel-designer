@@ -581,6 +581,22 @@
           "value": "container_block",
           "source": "default"
         },
+        "crew": {
+          "value": null,
+          "source": "default"
+        },
+        "manning_rule_set": {
+          "value": "ccnr-rpn-19",
+          "source": "default"
+        },
+        "navigation_hours_per_day": {
+          "value": 14.0,
+          "source": "default"
+        },
+        "unmanned_machinery_space": {
+          "value": true,
+          "source": "default"
+        },
         "rule_sets": {
           "value": [
             {

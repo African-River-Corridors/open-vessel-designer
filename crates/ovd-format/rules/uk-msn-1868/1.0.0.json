@@ -1,0 +1,241 @@
+{
+  "$schema": "../rule-set.schema.json",
+  "id": "uk-msn-1868",
+  "family": "uk-msn",
+  "title": "UK MSN 1868 (M) Amendment 1: guidance on the number of certificated deck officers and engineer officers, by trading area, gross tonnage and registered power",
+  "version": "1.0.0",
+  "edition": {
+    "document": "Maritime and Coastguard Agency, Merchant Shipping Notice MSN 1868 (M), STCW: UK Requirements for Safe Manning and Watchkeeping",
+    "edition": "Amendment 1 (December 2022)",
+    "amendments": "none: Amendment 1 is the text read",
+    "in_force": "December 2022"
+  },
+  "sources": [
+    {
+      "document": "Maritime and Coastguard Agency, Merchant Shipping Notice MSN 1868 (M), STCW: UK Requirements for Safe Manning and Watchkeeping",
+      "edition": "Amendment 1 (December 2022)",
+      "url": "https://assets.publishing.service.gov.uk/media/63a07317e90e07587364f663/Merchant_Shipping_Notice_1868__Amendment_1_.pdf",
+      "access": "free",
+      "sha256": "b472d769bcdbc29ac1e6aecfdc496640d5a2d620c494d907307c06ed8bdb7af6"
+    }
+  ],
+  "status": "draft",
+  "applies_when": {
+    "service_area": [
+      "coastal-and-river"
+    ]
+  },
+  "includes": [],
+  "known_conflicts": [],
+  "tables": [
+    {
+      "id": "uk-annex-a-unlimited",
+      "source": {
+        "document": "Maritime and Coastguard Agency, Merchant Shipping Notice MSN 1868 (M), STCW: UK Requirements for Safe Manning and Watchkeeping",
+        "locator": "Annex A",
+        "page": "Merchant_Shipping_Notice_1868__Amendment_1_.pdf (11 pages), PDF p. 10"
+      },
+      "input": {
+        "name": "gross tonnage",
+        "unit": "GT"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "ge": 3000
+          },
+          "shape": "const",
+          "a": 4.0
+        },
+        {
+          "when": {
+            "ge": 500
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "lt": 500
+          },
+          "shape": "const",
+          "a": 3.0
+        }
+      ]
+    },
+    {
+      "id": "uk-annex-a-near-coastal",
+      "source": {
+        "document": "Maritime and Coastguard Agency, Merchant Shipping Notice MSN 1868 (M), STCW: UK Requirements for Safe Manning and Watchkeeping",
+        "locator": "Annex A",
+        "page": "Merchant_Shipping_Notice_1868__Amendment_1_.pdf (11 pages), PDF p. 10"
+      },
+      "input": {
+        "name": "gross tonnage",
+        "unit": "GT"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "ge": 3000
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "ge": 500
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "lt": 500
+          },
+          "shape": "const",
+          "a": 2.0
+        }
+      ]
+    },
+    {
+      "id": "uk-annex-b-unlimited",
+      "source": {
+        "document": "Maritime and Coastguard Agency, Merchant Shipping Notice MSN 1868 (M), STCW: UK Requirements for Safe Manning and Watchkeeping",
+        "locator": "Annex B",
+        "page": "Merchant_Shipping_Notice_1868__Amendment_1_.pdf (11 pages), PDF p. 11"
+      },
+      "input": {
+        "name": "registered power",
+        "unit": "kW"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "ge": 3000
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "ge": 750
+          },
+          "shape": "const",
+          "a": 3.0
+        },
+        {
+          "when": {
+            "ge": 350
+          },
+          "shape": "const",
+          "a": 2.0
+        }
+      ]
+    },
+    {
+      "id": "uk-annex-b-near-coastal",
+      "source": {
+        "document": "Maritime and Coastguard Agency, Merchant Shipping Notice MSN 1868 (M), STCW: UK Requirements for Safe Manning and Watchkeeping",
+        "locator": "Annex B",
+        "page": "Merchant_Shipping_Notice_1868__Amendment_1_.pdf (11 pages), PDF p. 11"
+      },
+      "input": {
+        "name": "registered power",
+        "unit": "kW"
+      },
+      "unit": "persons",
+      "rows": [
+        {
+          "when": {
+            "ge": 9000
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "ge": 3000
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "ge": 750
+          },
+          "shape": "const",
+          "a": 2.0
+        },
+        {
+          "when": {
+            "ge": 350
+          },
+          "shape": "const",
+          "a": 1.0
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "uk-msn/AnnexA/deck-officers",
+      "title": "Guidance on the number of certificated deck officers (master, chief mate, officer in charge of a navigation watch) by trading area and gross tonnage; each row is the sum of the printed columns, footnote (a) taken as 2 officers of the watch and footnote (b) as carried",
+      "origin": "guideline",
+      "source": {
+        "document": "Maritime and Coastguard Agency, Merchant Shipping Notice MSN 1868 (M), STCW: UK Requirements for Safe Manning and Watchkeeping",
+        "edition": "Amendment 1 (December 2022)",
+        "locator": "Annex A",
+        "page": "Merchant_Shipping_Notice_1868__Amendment_1_.pdf (11 pages), PDF p. 10",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#778"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "input.crew"
+      },
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "finding": null,
+      "since": "1.0.0",
+      "gap": "A table or clause the crew model (spec 0011 4.1) reads from this set and shows in the results `crew` block; the Rule engine does not test a Design against it"
+    },
+    {
+      "id": "uk-msn/AnnexB/engineer-officers",
+      "title": "Guidance on the number of certificated engineer officers by trading area and registered power; the table assumes the ship is classed unattended machinery space",
+      "origin": "guideline",
+      "source": {
+        "document": "Maritime and Coastguard Agency, Merchant Shipping Notice MSN 1868 (M), STCW: UK Requirements for Safe Manning and Watchkeeping",
+        "edition": "Amendment 1 (December 2022)",
+        "locator": "Annex B",
+        "page": "Merchant_Shipping_Notice_1868__Amendment_1_.pdf (11 pages), PDF p. 11",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#778"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "input.crew"
+      },
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "finding": null,
+      "since": "1.0.0",
+      "gap": "A table or clause the crew model (spec 0011 4.1) reads from this set and shows in the results `crew` block; the Rule engine does not test a Design against it"
+    }
+  ]
+}

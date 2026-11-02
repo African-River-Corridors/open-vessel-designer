@@ -604,6 +604,19 @@ input-arrangement-style-default-by = service_area
 choice-arrangement-style-container-block = Container block
 choice-arrangement-style-deckhouse = Deckhouse
 
+input-crew = Crew
+
+input-manning-rule-set = Manning Rule Set
+input-manning-rule-set-default-by = service_area
+choice-manning-rule-set-liberia-man-001 = Liberia MAN-001
+choice-manning-rule-set-uk-msn-1868 = UK MSN 1868
+choice-manning-rule-set-ccnr-rpn-19 = CCNR RPN chapter 19
+
+input-navigation-hours-per-day = Navigation hours per day
+input-navigation-hours-per-day-default-by = service_area
+
+input-unmanned-machinery-space = Unmanned machinery space
+
 input-slop-share = Slop tank share
 input-slop-share-default-by = service_area
 

@@ -169,6 +169,10 @@
           "value": null,
           "source": "default"
         },
+        "propeller_diameter_basis": {
+          "value": "stern_form",
+          "source": "default"
+        },
         "propulsor_efficiency_factor": {
           "value": 0.447,
           "source": "default"
@@ -293,7 +297,19 @@
           "value": null,
           "source": "default"
         },
+        "lock_length_m": {
+          "value": null,
+          "source": "default"
+        },
+        "lock_width_m": {
+          "value": null,
+          "source": "default"
+        },
         "downflooding_angle_deg": {
+          "value": null,
+          "source": "default"
+        },
+        "downflooding_openings": {
           "value": null,
           "source": "default"
         },
@@ -479,6 +495,22 @@
         },
         "arrangement_style": {
           "value": "container_block",
+          "source": "default"
+        },
+        "crew": {
+          "value": null,
+          "source": "default"
+        },
+        "manning_rule_set": {
+          "value": "ccnr-rpn-19",
+          "source": "default"
+        },
+        "navigation_hours_per_day": {
+          "value": 14.0,
+          "source": "default"
+        },
+        "unmanned_machinery_space": {
+          "value": true,
           "source": "default"
         },
         "slop_share": {
