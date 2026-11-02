@@ -259,7 +259,16 @@ fn the_verdict_is_the_criteria_applied_to_the_numbers_it_reports() {
 // ---- the damage cases of a layout -----------------------------------------------------------------
 
 use ovd_core::compartments::{Side, Space, SpaceKind, SpaceShape};
-use ovd_core::liquid_bulk::damage::{AdnExtents, damage_cases, longitudinal_extent_m};
+use ovd_core::damage_cases::{AdnExtents, adn_damage_cases as damage_cases, longitudinal_extent_m};
+
+/// ADN 9.3.2.15.1 (c): 95 % in a space empty at the maximum draught, 0 % in a full cargo or slop tank (the
+/// `adn-tank` table holds the same values; `crates/ovd-format/tests/permeability_tables.rs` checks it).
+fn adn_0_95(kind: SpaceKind) -> f64 {
+    match kind {
+        SpaceKind::CargoTank | SpaceKind::Slop => 0.0,
+        _ => 0.95,
+    }
+}
 
 fn space(name: &str, kind: SpaceKind, x: (f64, f64), y: (f64, f64), z: (f64, f64)) -> Space {
     Space {
@@ -303,7 +312,7 @@ fn the_side_damage_reaches_079_m_inboard_for_type_c_and_059_m_for_type_n() {
         ),
     ];
     let flooded = |ext: &AdnExtents| -> Vec<String> {
-        damage_cases(&spaces, 60.0, 10.0, ext)
+        damage_cases(&spaces, 60.0, 10.0, ext, &adn_0_95)
             .into_iter()
             .filter(|c| c.name.starts_with("side"))
             .flat_map(|c| c.flooded.into_iter().map(|f| f.name))
@@ -353,7 +362,7 @@ fn a_ballast_space_is_cut_at_the_bulkheads_of_the_tanks_beside_it_and_a_window_f
             (0.0, 4.0),
         ),
     ];
-    let cases = damage_cases(&spaces, 60.0, 10.0, &AdnExtents::TYPE_C);
+    let cases = damage_cases(&spaces, 60.0, 10.0, &AdnExtents::TYPE_C, &adn_0_95);
     let side: Vec<Vec<String>> = cases
         .iter()
         .filter(|c| c.name.starts_with("side"))
@@ -370,13 +379,13 @@ fn a_ballast_space_is_cut_at_the_bulkheads_of_the_tanks_beside_it_and_a_window_f
 // ---- MARPOL Annex I regulation 28 (issue #341) ----
 // Label: sourced - MEPC.117(52), regulation 28.2 (extents), 28.3.2 and 28.3.3 (criteria), worked by hand here.
 
-use ovd_core::liquid_bulk::damage::{MarpolExtents, marpol_damage_cases};
+use ovd_core::damage_cases::{MarpolExtents, marpol_damage_cases};
 
 /// 28.2.1 and 28.2.2 by hand for L = 90 m, B = 14 m: 90^(2/3) = 20.083, a third is 6.694 m (under 14.5 m and
 /// over 5 m); B/5 = 2.8 m (under 11.5 m); B/6 = 2.333 m (under 10 m and 5 m); B/15 = 0.9333 m (under 6 m).
 #[test]
 fn the_marpol_extents_follow_regulation_28_2_by_hand() {
-    let e = MarpolExtents::of(90.0, 14.0);
+    let e = MarpolExtents::marpol(90.0, 14.0);
     assert!((e.side_long_m - 6.6943).abs() < 1e-3, "{e:?}");
     assert_eq!(e.side_inboard_m, 2.8);
     assert!((e.bottom_fwd_long_m - 6.6943).abs() < 1e-3);
@@ -385,7 +394,7 @@ fn the_marpol_extents_follow_regulation_28_2_by_hand() {
     assert!((e.bottom_aft_width_m - 14.0 / 6.0).abs() < 1e-12);
     assert!((e.bottom_height_m - 14.0 / 15.0).abs() < 1e-12);
     // the caps: a very large hull takes the metre limits (L = 400 m: (1/3) 400^(2/3) = 18.8 m, over 14.5 m)
-    let big = MarpolExtents::of(400.0, 120.0);
+    let big = MarpolExtents::marpol(400.0, 120.0);
     assert_eq!(big.side_long_m, 14.5);
     assert_eq!(big.side_inboard_m, 11.5);
     assert_eq!(big.bottom_fwd_width_m, 10.0);

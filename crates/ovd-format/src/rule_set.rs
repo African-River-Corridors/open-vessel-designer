@@ -31,6 +31,11 @@ const BUILT_IN: &[(&str, &str)] = &[
         "rules/adn-tank/1.0.0.json",
         include_str!("../rules/adn-tank/1.0.0.json"),
     ),
+    // Spec 0012 (issue #758): the ADN 9.3.2.15.1 (c) Permeability Table.
+    (
+        "rules/adn-tank/2.0.0.json",
+        include_str!("../rules/adn-tank/2.0.0.json"),
+    ),
     (
         "rules/marpol-i/1.0.0.json",
         include_str!("../rules/marpol-i/1.0.0.json"),
@@ -42,6 +47,11 @@ const BUILT_IN: &[(&str, &str)] = &[
     (
         "rules/es-trin-2025/1.0.0.json",
         include_str!("../rules/es-trin-2025/1.0.0.json"),
+    ),
+    // Spec 0012 (issue #758): the ES-TRIN 28.03(4)(d) Permeability Table.
+    (
+        "rules/es-trin-2025/2.0.0.json",
+        include_str!("../rules/es-trin-2025/2.0.0.json"),
     ),
     (
         "rules/icll-freeboard/1.0.0.json",
@@ -80,9 +90,14 @@ const BUILT_IN: &[(&str, &str)] = &[
         "rules/igc-2g/2.0.0.json",
         include_str!("../rules/igc-2g/2.0.0.json"),
     ),
+    // Spec 0012 (issue #757): the IGC 2.3 damage extents and the 2.6.1 standard of damage as tables.
     (
-        "rules/igc-2g/2.1.0.json",
-        include_str!("../rules/igc-2g/2.1.0.json"),
+        "rules/igc-2g/3.0.0.json",
+        include_str!("../rules/igc-2g/3.0.0.json"),
+    ),
+    (
+        "rules/igc-2g/3.1.0.json",
+        include_str!("../rules/igc-2g/3.1.0.json"),
     ),
     (
         "rules/lr-inland-gas/1.0.0.json",

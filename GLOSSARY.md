@@ -284,6 +284,24 @@ hull) and the compartments it floods, checked on the laden departure Loading Con
 the damaged hull, then its righting lever. The result is a verdict for one Rule object.
 _Avoid_: damage scenario, damage condition (a Loading Condition is intact)
 
+**Damage Extent**:
+The size of a Rule's assumed damage, from the Rule Set as data: a side damage (how long, how far inboard, how high)
+or a bottom damage (how long, how wide, how high), with a forward zone where the bottom set differs. IGC 2.3.1 and
+MARPOL I 28.2 give one.
+_Avoid_: damage size, damage box
+
+**Permeability Table**:
+The permeability of a damaged Space by its kind, from a Rule Set as data (IGC 2.5.2, ADN 9.3.2.15.1 (c),
+ES-TRIN 28.03(4)(d)). A liquid space may take its value from the Loading Condition's filling: the full value
+when empty, none when full.
+_Avoid_: permeability list, flooding factor
+
+**Standard of Damage**:
+Where along the hull a Damage Extent may lie and which bulkheads it may not involve: anywhere in the length, or
+between adjacent transverse bulkheads, and for a type 2G ship of 150 m or less not the bulkheads of a machinery
+space aft (IGC 2.6.1).
+_Avoid_: damage standard, damage criteria (the criteria are what the damaged hull must meet)
+
 **Flooded Volume**:
 A space the sea fills in a Damage Case: a Space shape (a prism or a Type C tank), the fraction of it the water
 fills (its permeability), and its Intact Inclusions. A box is the prism with four corners.

@@ -3,7 +3,7 @@
   "id": "igc-2g",
   "family": "igc",
   "title": "IGC Code as amended, ship type 2G: tank location and Type C tank walls",
-  "version": "2.1.0",
+  "version": "3.1.0",
   "edition": {
     "document": "IGC Code, resolution MSC.370(93)",
     "edition": "as adopted 22 May 2014, in force 1 January 2016",
@@ -214,6 +214,337 @@
           },
           "shape": "const",
           "a": 1.5
+        }
+      ]
+    },
+    {
+      "id": "igc-damage-side-long",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.3.1.1.1",
+        "page": "MSC.370-93.pdf, annex p. 20"
+      },
+      "input": {
+        "name": "L^(2/3), L the ship length",
+        "unit": "m^(2/3)"
+      },
+      "unit": "m",
+      "rows": [
+        {
+          "when": {
+            "le": 43.5
+          },
+          "shape": "a+v/c",
+          "a": 0.0,
+          "c": 3
+        },
+        {
+          "when": {
+            "gt": 43.5
+          },
+          "shape": "const",
+          "a": 14.5
+        }
+      ]
+    },
+    {
+      "id": "igc-damage-side-inboard",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.3.1.1.2",
+        "page": "MSC.370-93.pdf, annex p. 20"
+      },
+      "input": {
+        "name": "B",
+        "unit": "m"
+      },
+      "unit": "m",
+      "rows": [
+        {
+          "when": {
+            "le": 57.5
+          },
+          "shape": "a+v/c",
+          "a": 0.0,
+          "c": 5
+        },
+        {
+          "when": {
+            "gt": 57.5
+          },
+          "shape": "const",
+          "a": 11.5
+        }
+      ]
+    },
+    {
+      "id": "igc-damage-bottom-long",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.3.1.2.1",
+        "page": "MSC.370-93.pdf, annex p. 20"
+      },
+      "input": {
+        "name": "L^(2/3), L the ship length",
+        "unit": "m^(2/3)"
+      },
+      "unit": "m",
+      "rows": [
+        {
+          "when": {
+            "le": 43.5
+          },
+          "shape": "a+v/c",
+          "a": 0.0,
+          "c": 3
+        },
+        {
+          "when": {
+            "gt": 43.5
+          },
+          "shape": "const",
+          "a": 14.5
+        }
+      ]
+    },
+    {
+      "id": "igc-damage-bottom-width-forward",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.3.1.2.2",
+        "page": "MSC.370-93.pdf, annex p. 20"
+      },
+      "input": {
+        "name": "B",
+        "unit": "m"
+      },
+      "unit": "m",
+      "rows": [
+        {
+          "when": {
+            "le": 60.0
+          },
+          "shape": "a+v/c",
+          "a": 0.0,
+          "c": 6
+        },
+        {
+          "when": {
+            "gt": 60.0
+          },
+          "shape": "const",
+          "a": 10.0
+        }
+      ]
+    },
+    {
+      "id": "igc-damage-bottom-width",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.3.1.2.2",
+        "page": "MSC.370-93.pdf, annex p. 20"
+      },
+      "input": {
+        "name": "B",
+        "unit": "m"
+      },
+      "unit": "m",
+      "rows": [
+        {
+          "when": {
+            "le": 30.0
+          },
+          "shape": "a+v/c",
+          "a": 0.0,
+          "c": 6
+        },
+        {
+          "when": {
+            "gt": 30.0
+          },
+          "shape": "const",
+          "a": 5.0
+        }
+      ]
+    },
+    {
+      "id": "igc-damage-bottom-height",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.3.1.2.3",
+        "page": "MSC.370-93.pdf, annex p. 20"
+      },
+      "input": {
+        "name": "B",
+        "unit": "m"
+      },
+      "unit": "m",
+      "rows": [
+        {
+          "when": {
+            "le": 30.0
+          },
+          "shape": "a+v/c",
+          "a": 0.0,
+          "c": 15
+        },
+        {
+          "when": {
+            "gt": 30.0
+          },
+          "shape": "const",
+          "a": 2.0
+        }
+      ]
+    },
+    {
+      "id": "igc-damage-forward-zone",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.3.1.2",
+        "page": "MSC.370-93.pdf, annex p. 20"
+      },
+      "input": {
+        "name": "L",
+        "unit": "m"
+      },
+      "unit": "L",
+      "rows": [
+        {
+          "when": {
+            "ge": 0
+          },
+          "shape": "const",
+          "a": 0.3
+        }
+      ]
+    },
+    {
+      "id": "igc-damage-machinery-aft-intact",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.6.1.3",
+        "page": "MSC.370-93.pdf, annex p. 30"
+      },
+      "input": {
+        "name": "L",
+        "unit": "m"
+      },
+      "unit": "1 = intact, 0 = may be damaged",
+      "rows": [
+        {
+          "when": {
+            "le": 150
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "gt": 150
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "igc-permeability",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.5.2",
+        "page": "MSC.370-93.pdf, annex p. 29"
+      },
+      "input": {
+        "name": "space kind"
+      },
+      "unit": "-",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "double_bottom_ballast",
+              "wing_ballast",
+              "peak_ballast",
+              "consumables",
+              "cargo_tank",
+              "slop"
+            ]
+          },
+          "shape": "const",
+          "a": 0.95
+        },
+        {
+          "when": {
+            "in": [
+              "cofferdam",
+              "void",
+              "peak_void"
+            ]
+          },
+          "shape": "const",
+          "a": 0.95
+        },
+        {
+          "when": {
+            "in": [
+              "cargo_hold"
+            ]
+          },
+          "shape": "const",
+          "a": 0.95
+        },
+        {
+          "when": {
+            "in": [
+              "machinery",
+              "pump_room"
+            ]
+          },
+          "shape": "const",
+          "a": 0.85
+        }
+      ]
+    },
+    {
+      "id": "igc-permeability-by-filling",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "locator": "2.5.2",
+        "page": "MSC.370-93.pdf, annex p. 29"
+      },
+      "input": {
+        "name": "space kind"
+      },
+      "unit": "1 = by filling, 0 = fixed",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "double_bottom_ballast",
+              "wing_ballast",
+              "peak_ballast",
+              "consumables",
+              "cargo_tank",
+              "slop"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "cofferdam",
+              "void",
+              "peak_void",
+              "cargo_hold",
+              "machinery",
+              "pump_room"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
         }
       ]
     }
@@ -734,7 +1065,7 @@
       "sizes": false,
       "evaluated": true,
       "finding": null,
-      "since": "2.1.0"
+      "since": "3.1.0"
     },
     {
       "id": "igc/3.2.1/no-accommodation-in-cargo-area",
@@ -869,7 +1200,7 @@
       "sizes": false,
       "evaluated": true,
       "finding": null,
-      "since": "2.1.0"
+      "since": "3.1.0"
     },
     {
       "id": "igc/3.2.4.1/air-inlet-setback",
@@ -908,7 +1239,7 @@
       "sizes": false,
       "evaluated": true,
       "finding": null,
-      "since": "2.1.0"
+      "since": "3.1.0"
     }
   ]
 }
