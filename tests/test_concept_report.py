@@ -108,7 +108,6 @@ def test_not_evaluated_lists_each_rule_once():
 ORD = shutil.which("ord")
 needs_ord = pytest.mark.skipif(ORD is None, reason="ord is not on the path")
 CHAPTER_TITLES = {c[0]: c[1] for c in cr.CHAPTERS}
-NEED_CASES = [(c[0], need) for c in cr.CHAPTERS for need in c[3]]
 
 
 def _ids(doc):
@@ -182,33 +181,90 @@ def test_the_document_has_every_heading_of_the_skeleton_in_order():
     assert cr.build(RUN, "A basis", date="2026-10-30") == cr.build(RUN, "A basis", date="2026-10-30")
 
 
-@pytest.mark.parametrize("cid,need", NEED_CASES, ids=[f"{c}-{n if isinstance(n, str) else 'any'}" for c, n in NEED_CASES])
-def test_deleting_a_run_block_keeps_every_heading_and_reads_not_evaluated_in_three_places(cid, need):
+# Which chapters read each top-level run block, written here from spec 0015 section 4.2 and not from CHAPTERS.
+READ_BY = {
+    "results": ["a2", "a3", "a7", "a9"], "dims": ["a2"], "hydrostatics": ["a2", "a8"], "geometry": ["a2", "a3"],
+    "checks": ["a2"], "spaces": ["a3"], "arrangement": ["a3"], "drawing": ["a4", "a6"], "sightline": ["a4"],
+    "cost_masses": ["a5", "a7"], "structure": ["a5"], "powering": ["a6"], "boil_off": ["a6"],
+    "stern_block_mass": ["a7"], "calibration": ["a7"], "hydrostatic_table": ["a8"], "loading_conditions": ["a8"],
+    "stability": ["a10"], "curves": ["a10"], "stability_marks": ["a10"], "rule_trace": ["a12"], "cost": ["a13"],
+    "vessel": [], "cargo": [], "phase": [],   # A.1 prints a cell "not evaluated" for these
+    # no chapter reads these yet: a deletion must change nothing in the skeleton
+    "self_propelled": [], "warnings": [], "fit_tried": [], "text_ids": [],
+}
+GA = {"ga-side": "side.png", "ga-mid": "mid.png"}   # so A.4 is built, and its deletion shows
+
+
+def test_every_top_level_run_block_is_accounted_for():
+    """Label: property"""
+    assert set(A["results"]) == set(READ_BY)
+
+
+@pytest.mark.parametrize("key", sorted(READ_BY))
+def test_deleting_a_run_block_keeps_every_heading_and_reads_not_evaluated_in_three_places(key):
     """Label: property
-    Spec 0015 section 11, test 4: the body line, the part 9 row and the appendix block.
+    Spec 0015 section 11, test 4, for every block of the run: the body line, the part 9 row and the
+    appendix block of each chapter that reads it, and no change in a chapter that does not.
     """
-    base = cr.build(RUN, "A basis")
-    doc = cr.build(_run_without(need), "A basis")
+    base = cr.build(RUN, "A basis", assets=GA)
+    doc = cr.build(_run_without(key), "A basis", assets=GA)
     assert _ids(doc) == _ids(base)
-    chapter = next(c for c in cr.CHAPTERS if c[0] == cid)
-    part = _section(doc, chapter[2])
-    appendix = _section(doc, cid)
-    assert "**Not evaluated.**" in appendix["body"][0]["markdown"]
-    assert f"[[#{cid}]]" in part["body"][0]["markdown"] and "Not evaluated" in part["body"][0]["markdown"]
-    assert {i["label"]: i["value"] for i in part["body"][-1]["items"]}[chapter[1]] == "not evaluated"
-    for table_holder in (_section(doc, "p9"), _section(doc, "a14")):
-        tables = [b for b in table_holder["body"] if b["type"] == "table"]
-        assert any(r[0] == f"Chapter {chapter[1]}" for t in tables for r in t["rows"])
+    for chapter in cr.CHAPTERS:
+        cid, title, part = chapter[0], chapter[1], chapter[2]
+        md = _section(doc, cid)["body"][0]
+        was = _section(base, cid)["body"][0]
+        if cid in READ_BY[key]:
+            assert md["markdown"].startswith("**Not evaluated.**"), cid
+            body_line = _section(doc, part)["body"][0]["markdown"]
+            assert f"**Not evaluated.** {title}:" in body_line and f"[[#{cid}]]" in body_line
+            assert {i["label"]: i["value"] for i in _section(doc, part)["body"][-1]["items"]}[title] == "not evaluated"
+            for holder in ("p9", "a14"):
+                tables = [b for b in _section(doc, holder)["body"] if b["type"] == "table"]
+                assert any(r[0] == f"Chapter {title}" for t in tables for r in t["rows"]), (holder, cid)
+        elif (key, cid) == ("powering", "a2"):   # the particulars table has power and speed cells
+            assert [r[1] for r in md["rows"] if r[0] in ("Installed power", "Service speed, deep water")] == ["not evaluated"] * 2
+        elif (key, cid) == ("rule_trace", "a10"):   # the table's note on the IS Code criteria needs the trace
+            assert "notes" not in md and md["rows"] == was["rows"]
+        elif (key, cid) == ("rule_trace", "a11"):   # the reason is the trace's gap; without it, the general reason
+            assert md["markdown"].startswith("**Not evaluated.**") and "#838" in md["markdown"]
+        elif cid != "a14" and cid not in ("a1",) and key not in ("vessel", "cargo", "phase"):
+            assert md == was, cid
+    if key in ("vessel", "cargo", "phase"):
+        rows = _section(doc, "a1")["body"][0]["rows"]
+        assert any(r[1] == "not evaluated" for r in rows) and all(c not in ("", None) for r in rows for c in r)
+
+
+def test_a_chapter_the_run_can_fill_but_the_build_lacks_is_not_yet_in_this_report_not_not_evaluated():
+    """Label: property
+    A.3, A.9 and A.13 and the Appendix B sections B.2 to B.5, B.7 and B.8 carry their own state. It names the
+    issue that builds them, says the run holds the data, and never reaches the not-evaluated list.
+    """
+    doc = cr.build(RUN, "A basis")
+    want = {"a3": 830, "a9": 831, "a13": 831, **{b: 826 for b in ("b2", "b3", "b4", "b5", "b7", "b8")}}
+    for sid, ticket in want.items():
+        md = _section(doc, sid)["body"][0]["markdown"]
+        assert md.startswith("**Not yet in this report.**") and f"#{ticket}" in md and "The run holds the data" in md
+        assert "Not evaluated" not in md and "What would close it" not in md
+    for part in ("p2", "p5", "p8"):
+        text = _section(doc, part)["body"][0]["markdown"]
+        assert "Not yet in this report" in text
+    for holder in ("p9", "a14"):
+        rows = [r for b in _section(doc, holder)["body"] if b["type"] == "table" for r in b["rows"]]
+        for sid in ("a3", "a9", "a13"):
+            assert not any(r[0] == f"Chapter {CHAPTER_TITLES[sid]}" for r in rows)
+    assert _section(doc, "p8")["body"][-1]["items"][0]["value"] == "not yet in this report"
 
 
 def test_an_appendix_block_says_what_it_would_show_why_and_what_would_close_it():
     """Label: property"""
     doc = cr.build(RUN, "A basis")
-    md = _section(doc, "a11")["body"][0]["markdown"]    # the gas example holds no damage block
+    md = _section(doc, "a11")["body"][0]["markdown"]    # the gas example holds no damage cases
     assert md.startswith("**Not evaluated.**")
     for lead in ("What this part would show:", "Why it is not evaluated:", "What would close it:"):
         assert lead in md
-    assert "`damage` or `marpol_damage`" in md
+    gap = next(r["gap"] for r in A["results"]["rule_trace"]["rows"] if r["rule"] == "igc/2.7/damage-survival")
+    assert gap[0].upper() + gap[1:] in md and "igc/2.7/damage-survival" in md and "#838" in md
+    assert "`damage`" not in md and "marpol_damage" not in md
 
 
 def test_not_applicable_is_never_printed_by_the_skeleton():
@@ -278,8 +334,8 @@ def test_the_page_budget_warns_above_twelve_body_pages_and_not_at_twelve():
 @needs_ord
 def test_the_page_budget_fires_on_a_rendered_body_of_thirteen_pages_and_not_twelve(tmp_path):
     """Label: property
-    Real ORD renders of small documents of 12 and 13 body pages. ORD starts every numbered
-    section on a new page, so one section is one page.
+    Real ORD renders of small documents of 12 and 13 body pages. ORD breaks the page before each
+    level-1 section, and every body section here is level 1, so one section is one page.
     """
     def doc_of(pages):
         sections = [{"type": "section", "id": f"s{k}", "title": f"Part {k}", "body": [{"type": "prose", "markdown": "Text."}]}

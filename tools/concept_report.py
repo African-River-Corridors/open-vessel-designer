@@ -425,26 +425,26 @@ BODY_PAGE_LIMIT = 12   # spec 0015 section 4.1: a warning above this many body p
 # issue that builds it (None when this module builds it already).
 CHAPTERS = [
     ("a1", "Brief", "p1", [], "what the vessel must do and under which rules", "nothing: the brief is the input", None),
-    ("a2", "Main dimensions and form", "p1", ["dims", "hydrostatics", "geometry", "results"],
+    ("a2", "Main dimensions and form", "p1", ["dims", "hydrostatics", "geometry", "results", "checks"],
      "the size and shape, and what bounds each dimension", "a run that holds the dimensions, the hydrostatics and the geometry", None),
-    ("a3", "Cargo system and capacity", "p2", ["results", "geometry", "spaces"],
+    ("a3", "Cargo system and capacity", "p2", ["results", "geometry", "spaces", "arrangement"],
      "how much cargo, in what, and whether volume or weight binds", "a run that holds the cargo results, the geometry and the Spaces", 830),
-    ("a4", "General arrangement", "p2", ["drawing"],
+    ("a4", "General arrangement", "p2", ["drawing", "sightline"],
      "where everything is, as the general arrangement sheets", "the sheets drawn with `ovd draw` and passed to the build", None),
-    ("a5", "Structure", "p3", ["cost_masses"], "the midship section, the scantlings and the hull steel",
+    ("a5", "Structure", "p3", ["cost_masses", "structure"], "the midship section, the scantlings and the hull steel",
      "a run that holds the hull steel masses", None),
     ("a6", "Powering, propulsion and machinery", "p3", ["powering", "boil_off", "drawing"],
      "how fast, on what power, with which propulsors, stern and machinery", "a run that holds the powering, the boil-off and the drawing blocks", None),
-    ("a7", "Weights", "p4", ["cost_masses", "stern_block_mass", "results"], "lightship by item, deadweight by item, centres",
+    ("a7", "Weights", "p4", ["cost_masses", "stern_block_mass", "results", "calibration"], "lightship by item, deadweight by item, centres",
      "a run that holds the mass build-up and the stern block", None),
-    ("a8", "Hydrostatics and loading conditions", "p5", ["hydrostatic_table", "hydrostatics"], "how it floats in each condition",
+    ("a8", "Hydrostatics and loading conditions", "p5", ["hydrostatic_table", "hydrostatics", "loading_conditions"], "how it floats in each condition",
      "a run that holds the hydrostatic table", None),
     ("a9", "Freeboard", "p5", ["results.freeboard_m"], "the freeboard carried against the freeboard required",
      "a run that holds the freeboard", 831),
-    ("a10", "Intact stability", "p5", ["stability"], "whether it stands up, condition by condition",
+    ("a10", "Intact stability", "p5", ["stability", "curves", "stability_marks"], "whether it stands up, condition by condition",
      "a run that holds the loading conditions and their GZ curves", None),
     ("a11", "Damage stability", "p6", [("damage", "marpol_damage")], "whether it survives the rule damages",
-     "damage cases computed for the hull type and rule set (spec 0012)", 838),
+     "the engine computing damage cases for the hull type and rule set (spec 0012, issue #838)", 838),
     ("a12", "Compliance", "p7", ["rule_trace"], "every Rule, its outcome, and what was not evaluated",
      "a run that holds the rule trace", None),
     ("a13", "Cost", "p8", ["cost"], "what it costs, on which rates and price date", "a run that holds the cost block", 831),
@@ -564,15 +564,34 @@ def chapter_states(o, ref=None, assets=None):
     for cid, _title, _part, needs, _shows, _closes, ticket in CHAPTERS:
         missing = [x for x in needs if not _has(r, x)]
         if missing:
-            states[cid] = {"why": "The run holds no " + ", ".join(_names(x) for x in missing) + "."}
+            states[cid] = {"why": _missing_reason(o, cid, missing)}
         elif cid == "a14":
             states[cid] = {"blocks": []}   # gathered in build(), from the other states
         elif cid in builders:
             blocks = builders[cid]()
             states[cid] = {"blocks": blocks} if blocks else {"why": "No general arrangement sheet was drawn for this build."}
         else:
-            states[cid] = {"why": f"The report build does not hold this chapter yet (issue #{ticket})."}
+            states[cid] = {"pending": ticket}
     return states
+
+
+def _missing_reason(o, cid, missing):
+    """Why a chapter is not evaluated. For damage stability it is the engine gap the trace names, not a JSON key."""
+    if cid == "a11":
+        for r in R(o).get("rule_trace", {}).get("rows", []):
+            if r["outcome"] == "not evaluated" and (r.get("measure") or {}).get("id") == "stability.damage" and r.get("gap"):
+                return f"{r['gap'][0].upper()}{r['gap'][1:]} ({r['rule']}). Issue #838 builds it."
+        return "The engine holds no damage cases for this hull type and rule set (spec 0012). Issue #838 builds it."
+    return "The run holds no " + ", ".join(_names(x) for x in missing) + "."
+
+
+PENDING = "Not yet in this report"
+
+
+def pending_block(what, ticket):
+    """A chapter or section the run holds the data for and the report build does not hold yet. It is not "not evaluated"."""
+    return prose(f"**{PENDING}.**\n\nThe run holds the data. This report build does not show {what} yet. "
+                 f"Issue #{ticket} builds it.")
 
 
 def not_evaluated_block(shows, why, closes):
@@ -610,9 +629,12 @@ def _part(o, pid, title, chapter_ids, states):
         if "why" in states[cid]:
             lines.append(f"**Not evaluated.** {ctitle}: {states[cid]['why']} See [[#{cid}]].")
             items.append({"label": ctitle, "value": NOT_EVALUATED})
+        elif "pending" in states[cid]:
+            lines.append(f"**{PENDING}.** {ctitle}: issue #{states[cid]['pending']} builds it. See [[#{cid}]].")
+            items.append({"label": ctitle, "value": PENDING.lower()})
         else:
             items.append({"label": ctitle, "value": ", ".join(_names(x).replace("`", "") for x in needs) or "the run's inputs"})
-    ok = [c for c in chapter_ids if "blocks" in states[c]]
+    ok = [c for c in chapter_ids if "blocks" in states[c]]   # pending chapters are not listed as built
     if ok:
         lines.append("The full " + ("chapter is " if len(ok) == 1 else "chapters are ") + " and ".join(f"[[#{c}]]" for c in ok) + ".")
     body = [prose("\n\n".join(lines))]
@@ -654,7 +676,12 @@ def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", t
     chapters = []
     for cid, ctitle, _p, _n, shows, closes, _t in CHAPTERS:
         st = states[cid]
-        blocks = st["blocks"] if "blocks" in st else [not_evaluated_block(shows, st["why"], closes)]
+        if "blocks" in st:
+            blocks = st["blocks"]
+        elif "pending" in st:
+            blocks = [pending_block(shows, st["pending"])]
+        else:
+            blocks = [not_evaluated_block(shows, st["why"], closes)]
         chapters.append(section(cid, ctitle, blocks))
 
     evidence = []
@@ -664,8 +691,7 @@ def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", t
         elif bid == "b6":
             blocks = [prose("None supplied.")]
         else:
-            blocks = [not_evaluated_block(holds, f"The report build does not hold this section yet (issue #{ticket}).",
-                                          "the report build of that issue")]
+            blocks = [pending_block(holds, ticket)]
         evidence.append(section(bid, btitle, blocks))
 
     control = {"revision": revision, "date": date, "status": status}
