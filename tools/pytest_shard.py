@@ -36,12 +36,14 @@ def _spec():
 
 # The slowest tests of the `pr` profile (pytest --durations, 2026-10-30), placed for 4 shards. Shard 1
 # also runs the evaluation harness and the Calibration Bands in CI, so it gets the lighter ones.
+# Issue #852: re-placed from the CI JUnit times (the `pytest-junit-*` artifacts) once the edge sweep
+# (shard 3, ~200 s) and the stern oracle (shard 4) ran in parallel: two 70 s tests left shard 3.
 PINNED = {
     4: {
         "tests/test_stern_oracle.py::test_the_case_files_are_what_the_oracle_writes": 4,
         "tests/test_evaluation_runner.py::test_the_real_corpus_has_no_false_pass_and_its_results_are_current": 2,
-        "tests/test_evaluation_runner.py::test_a_limit_no_case_comes_near_is_a_weak_corpus_warning": 3,
-        "tests/test_evaluation_runner.py::test_a_stale_results_file_fails_the_check": 3,
+        "tests/test_evaluation_runner.py::test_a_limit_no_case_comes_near_is_a_weak_corpus_warning": 1,
+        "tests/test_evaluation_runner.py::test_a_stale_results_file_fails_the_check": 1,
         "tests/test_evaluation_runner.py::test_a_coverage_gap_is_only_a_warning": 2,
         "tests/test_evaluation_runner.py::test_a_deliberately_wrong_expected_verdict_turns_the_runner_red": 1,
         "tests/test_evaluation_runner.py::test_a_false_fail_is_only_a_warning": 1,
