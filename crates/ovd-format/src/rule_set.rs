@@ -80,6 +80,11 @@ const BUILT_IN: &[(&str, &str)] = &[
         "rules/igc-2g/2.0.0.json",
         include_str!("../rules/igc-2g/2.0.0.json"),
     ),
+    // Spec 0012 (issue #757): the IGC 2.3 damage extents and the 2.6.1 standard of damage as tables.
+    (
+        "rules/igc-2g/3.0.0.json",
+        include_str!("../rules/igc-2g/3.0.0.json"),
+    ),
     (
         "rules/lr-inland-gas/1.0.0.json",
         include_str!("../rules/lr-inland-gas/1.0.0.json"),
