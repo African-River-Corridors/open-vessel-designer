@@ -78,7 +78,7 @@ Round 1 (2026-11-02), as answered. Round 2 is open; recommendations in bold.
 |---|---|---|---|
 | D1 | Which tanks | (a) cargo tanks and separate LNG fuel tanks, each against its own rule; (b) cargo only; (c) fuel only | **(a).** Cargo tanks (including those whose boil-off fuels the vessel, IGC 16) against the design basis and ADN where it applies; separate fuel tanks against IGF 6.9.1.1 as well |
 | D2 | Required holding time, cargo tanks | (a) from the typed profile only; (b) a default, overridable; (c) always typed | **(b): a default design basis of 30 days, 10 of them idle**, overridable. IGC 7.5 sets no figure, so the default is printed as "design basis (default)", never as compliance |
-| D3 | Profile shape | (a) legs; (b) one idle period | **The 30-day default with 10 days idle**, editable. The leg states are fixed by D9. With D7, a passage leg credits the gas the engines burn and an idle leg credits none, so the split matters: 20 days of passage, then 10 idle (D3 order, worst case last) |
+| D3 | Profile shape | (a) legs; (b) one idle period | **The 30-day default with 10 days idle**, editable. The leg states are fixed by D9. With D7, a passage leg credits the gas the engines burn and an idle leg credits none, so the split matters: 20 days of passage, then 10 idle: the idle block last is the worst case, as the tank is warmest when the gas use stops |
 | D4 | Pressure model | (a) homogeneous; (b) homogeneous with a typed stratification margin; (c) stratified | **(a).** See section 4 for the balance. The app and report state that the model ignores thermal stratification, which can make the real pressure rise faster |
 | D5 | Solve mode | (a) check, then solve later; (b) check only; (c) solve from the start | **(c).** The cases are in D11 |
 | D6 | Test oracle | (a) vendor calculation plus NeqSim; (b) NeqSim only; (c) papers | **(b)**, plus the hand case and the published-case search of section 7 |
@@ -87,7 +87,7 @@ Round 1 (2026-11-02), as answered. Round 2 is open; recommendations in bold.
 | D9 | Leg states | (a) laden passage and idle only; the tank is closed and starts at the loading limit; loading, discharge and ballast are out of scope; (b) all five states with mass changes | **(a)**: a closed tank that starts full has no meaning for loading or discharge legs |
 | D10 | Start state | (a) cargo tanks: loaded to LL at the saturation state of 0 MPa g (atmospheric), typed override; separate fuel tanks: the typed normal service pressure that IGF 6.9.1.1 names, and with none typed the IGF row is "not evaluated"; (b) a typed storage temperature for both | **(a)**: no storage-temperature input exists; atmospheric loading is the usual LNG cargo case; IGF starts from "normal service pressure", which is usually above atmospheric, so it must be typed |
 | D11 | Solve cases | (a) pressure untyped, insulation typed or default: solve the lowest design pressure; pressure typed, insulation untyped: solve the thinnest insulation; both typed: check only; `design_pressure_igc_minimum = true` keeps today's meaning (the design pressure is the IGC minimum) and counts as typed, so the holding time is checked, not solved; (b) solve pressure only | **(a).** Every example without typed values moves (section 5) |
-| D12 | Solve numerics | (a) search in steps of 0.005 MPa (pressure) and 10 mm (insulation) between the IGC 4.23.1.2 minimum and a typed upper bound (default 1.0 MPa g; insulation 50 to 600 mm); iterate the wall, the steel radius in the heat leak, LL, and the tank mass, draught and passage gas use (D7) to a fixed point: stop when the solved value repeats within one step, and fail as "not converged" after 20 iterations; no solution in range is "infeasible", a fail row, and the typed or default values are kept | **(a)** |
+| D12 | Solve numerics | (a) search in steps of 0.005 MPa (pressure) and 10 mm (insulation) between the IGC 4.23.1.2 minimum and a typed upper bound (default 1.0 MPa g; insulation 50 to 600 mm); iterate the wall, the steel radius in the heat leak, LL, and the tank mass, draught and passage gas use (D7) to a fixed point: stop when the solved value repeats within one step; if it flips between two neighbouring steps, take the higher and confirm it meets the requirement after a last pass; fail as "not converged" after 20 iterations; no solution in range is "infeasible", a fail row, and the typed or default values are kept | **(a)** |
 | D13 | Heat leak through time | (a) constant at the start-state cargo temperature; (b) recomputed each step as the cargo warms | **(b)**: the leak falls as the cargo warms; (a) is simpler and slightly conservative. Recommend (b) because it costs little in the stepping. Ambient by rule: IGC 7.2 (air 45 °C, sea 32 °C) for the design basis and IGF; ADN 9.3.1.24.2 (air 30 °C, water 20 °C) for the ADN row |
 | D14 | Reference temperature for LL | (a) IGC 15.1.3.1 (saturation at the PRV setting) when no use is credited; 15.1.3.2 (the greatest cargo temperature in the profile) when a use is credited, as that use is a chapter 7 control; (b) 15.1.3.1 always | **(a)**, applied to the profile as a whole: if any leg relies on pressure accumulation alone (no credited use, as every idle leg does by default), 15.1.3.1 sets LL; only a profile with credited use in every leg uses 15.1.3.2 |
 | D15 | Published worked case | (a) the model ticket stays open until a published LNG Type C pressure-time case with its heat leak is found; (b) the maintainer accepts the hand case and the NeqSim cases in its place | **(b)** with a standing ticket to add a published case when one is found: no such case was found in the first search, and (a) could block the work indefinitely |
@@ -103,7 +103,7 @@ table) at 0.101325 MPa.
 - U(t + Δt) = U(t) + Q · Δt − ṁ · h_out · Δt
 - m(t + Δt) = m(t) − ṁ · Δt
 - h_out is the saturated vapour enthalpy when vapour is burned, or the saturated liquid enthalpy when liquid
-  is drawn to a forced vaporiser (typed with the gas use; default vapour).
+  is drawn to a forced vaporiser (an input with the gas use; default vapour).
 - The new state is the (T, x) whose specific internal energy is U/m and whose specific volume is V/m, solved
   together on the saturation table.
 - When the typed use exceeds the vapour available in a step, vapour withdrawal is capped at what is available
@@ -161,6 +161,8 @@ Outside the table the functions return an error.
 - **Monotonic.** More insulation never shortens the holding time; a higher design pressure never shortens it.
 - **Solve.** The solved value meets the requirement and the next step down does not; never below the IGC
   4.23.1.2 minimum; out of range gives "infeasible".
+- **Convergence.** A case built to flip between two steps returns the higher and meets the requirement; a case
+  forced past 20 iterations returns "not converged" and its row fails.
 - **Loading limit.** With no withdrawal, a tank loaded to LL is within 0.1 percentage point of FL at the relief
   setting; with withdrawal, at or below FL. A typed fill above LL is refused.
 - **Profiles.** A profile with an unknown state or a negative duration or use is refused with a message.
@@ -173,15 +175,16 @@ Outside the table the functions return an error.
    Accept: section 7 "Properties"; outside the table the functions return an error.
 2. **NeqSim reference cases**: the script, the tolerance from the equation-of-state spread, the stored cases.
    Blocked by 1 (the spread is measured against the table).
-3. **Operation profile input**: the 30/10 design basis, leg states (D9), minimum guaranteed use (D7), the
-   journey duration for ADN, the presets (D8), the `.vdesign` fields with their sources. Accept: old files load
+3. **Operation profile input**: the 30/10 design basis, leg states (D9), the passage speed per leg and the
+   link to the powering model's gas use (D7), the typed minimum guaranteed use for the ADN row and the domestic
+   load for the IGF row, the journey duration for ADN, the presets (D8), the `.vdesign` fields with their sources. Accept: old files load
    with the default, labelled default; bad profiles are refused (section 7).
 4. **Holding-time model**: the stepping, the withdrawal cap and floor, the heat leak by step and ambient by
    rule (D13; ambient becomes an input to `tank_heat_leak_kw`), the loading limit at the reference temperature
    (D14), the liquid-full guard, the per-leg result. Accept: the hand case, the NeqSim cases within the set
    tolerance, monotonic, loading limit, withdrawal. Blocked by 1, 2, 3.
-5. **Solve and Rule rows**: D11, D12, the three Rule rows, design impact with the changelog fragment.
-   Blocked by 4.
+5. **Solve and Rule rows**: D11, D12 with the fixed point through tank mass, draught and passage gas use, the
+   three Rule rows, design impact with the changelog fragment. Blocked by 3 (the powering link) and 4.
 6. **App Gas view** (section 6). Blocked by 4, 5.
 7. **Report subsection** (section 6). Blocked by 5 and #835.
 
