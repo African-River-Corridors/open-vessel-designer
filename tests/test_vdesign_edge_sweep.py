@@ -90,9 +90,10 @@ def to_simulate(inputs: dict) -> dict:
 
 @pytest.fixture(scope="module")
 def ovd() -> str:
-    """Build the `ovd` binary and return its path."""
+    """Build the `ovd` binary and return its path. Release, as the package's extension is built: the
+    shared crates are already built that way, so only the CLI compiles (issue #852)."""
     out = subprocess.run(
-        ["cargo", "build", "-q", "-p", "ovd-cli", "--bin", "ovd", "--message-format=json"],
+        ["cargo", "build", "-q", "--release", "-p", "ovd-cli", "--bin", "ovd", "--message-format=json"],
         cwd=ROOT, check=True, capture_output=True, text=True).stdout
     exes = [m["executable"] for m in map(json.loads, out.splitlines())
             if m.get("reason") == "compiler-artifact" and m.get("executable")]
