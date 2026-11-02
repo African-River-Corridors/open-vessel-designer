@@ -13,6 +13,9 @@ use crate::text::{Arg, Text};
 /// Design (issue #280), and since issue #280 it is no longer the default end space either (see
 /// [`default_end_space`]). The name stays for the original Python's `COFFERDAM_MIN_M`.
 pub const COFFERDAM_MIN_M: f64 = 0.60;
+/// The 2.00 m distance of entrances and openable windows from the cargo area (inland class rules
+/// 3.3.7 and 3.3.11). Since spec 0011 (D17) it is a limit on where the openings sit, checked by the
+/// Rule Sets on the opening inputs; the hull no longer keeps it as an empty length.
 pub const OPENING_SETBACK_M: f64 = 2.00;
 /// The space between the cargo tanks and the hold end bulkhead where the tanks have plane ends
 /// (inland class rules Pt 4 Ch 4 3.5.3; ADN 9.3.1.11.3(a)).
@@ -40,15 +43,25 @@ inland-waterways ships (Pt 4 Ch 4 Sec 3, Jul 2022). Confirm against the ADN text
 /// Inputs for the longitudinal cargo-area separation. `Default` is the Python dataclass default.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GasSeparationInputs {
+    /// The hold end clearance: the space between the tank ends and the hold end bulkhead, inside the
+    /// hold (spec 0011 D18). The name stays for the original Python; it is not an IGC 3.1.2
+    /// cofferdam.
     pub cofferdam_m: f64,
+    /// Kept so older callers still build. Spec 0011 (D17): no length of hull is kept for the opening
+    /// setback; the openings are placed on the deckhouse and checked there. No result reads it.
     pub opening_setback_m: f64,
     pub fwd_end_bulkhead_m: f64,
     /// Issue #381: `true` measures the opening setback from the cargo area, whose boundary is the aft
     /// face of the end space (the cofferdam stands inside the cargo area, ADN 1.2.1), as 3.3.7 and
     /// 3.3.11 do: the aft separation is the end space plus the setback. `false` is the earlier
     /// reading, the setback measured from the tank end, so the end space counts toward it (the aft
-    /// separation is the greater of the two). A file saved before keeps `false`.
+    /// separation is the greater of the two). Since spec 0011 (D17) neither reading keeps a length of
+    /// hull for the setback, so no result reads it.
     pub setback_from_cargo_area: bool,
+    /// The width of a cofferdam that segregates the hold from the machinery and the other spaces of
+    /// IGC 3.1.2, chosen in place of the gastight A-60 bulkhead (spec 0011 D18). It replaces the
+    /// bulkhead and is never added to it. `0` is the bulkhead, the default.
+    pub hold_cofferdam_m: f64,
     /// Kept so older callers still build. No check reads it: the end-bulkhead space is keyed to the
     /// tank end shape, as 3.5.3 says, not to the tank kind (issue #281).
     pub is_pressure_tank: bool,
@@ -69,6 +82,7 @@ impl Default for GasSeparationInputs {
             opening_setback_m: OPENING_SETBACK_M,
             fwd_end_bulkhead_m: default_end_space(false),
             setback_from_cargo_area: true,
+            hold_cofferdam_m: 0.0,
             is_pressure_tank: true,
             plane_tank_ends: false,
             side_clearance_m: 0.0,
@@ -80,7 +94,11 @@ impl Default for GasSeparationInputs {
 impl GasSeparationInputs {
     /// `__post_init__`: the `ValueError` message on failure.
     pub fn validate(&self) -> Result<(), String> {
-        if self.cofferdam_m < 0.0 || self.opening_setback_m < 0.0 || self.fwd_end_bulkhead_m < 0.0 {
+        if self.cofferdam_m < 0.0
+            || self.opening_setback_m < 0.0
+            || self.fwd_end_bulkhead_m < 0.0
+            || self.hold_cofferdam_m < 0.0
+        {
             return Err("separations must be non-negative".to_string());
         }
         Ok(())
@@ -91,9 +109,17 @@ impl GasSeparationInputs {
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct GasSeparationResult {
+    /// From the aft end of the tanks to the front of the stern block: the hold end clearance, plus
+    /// the hold cofferdam when one is chosen (spec 0011 D17, D18).
     pub aft_separation_m: f64,
     pub fwd_separation_m: f64,
+    /// The hold end clearance aft (see [`GasSeparationInputs::cofferdam_m`]).
     pub cofferdam_m: f64,
+    /// The IGC 3.1.2 cofferdam between the hold and the stern block; `0` when a gastight A-60
+    /// bulkhead segregates them.
+    pub hold_cofferdam_m: f64,
+    /// Always `0` since spec 0011 (D17): the hull keeps no empty length for the opening setback. Kept
+    /// so older callers still build.
     pub service_space_m: f64,
     pub total_length_taken_m: f64,
     pub checks: Vec<Check>,
@@ -107,21 +133,14 @@ impl GasSeparationResult {
     }
 }
 
-/// Python `max(a, b)`: the first of two equal items.
-fn py_max(a: f64, b: f64) -> f64 {
-    if b > a { b } else { a }
-}
-
 /// Resolve the aft and forward separations, with the rules as checks. `Err` is a `ValueError`.
 pub fn compute(inp: &GasSeparationInputs) -> Result<GasSeparationResult, String> {
     inp.validate()?;
-    let aft = if inp.setback_from_cargo_area {
-        inp.cofferdam_m + inp.opening_setback_m
-    } else {
-        py_max(inp.cofferdam_m, inp.opening_setback_m)
-    };
+    // Spec 0011 (D17, D18): the stern block starts at the hold's aft bulkhead, a gastight A-60
+    // division, or at a cofferdam chosen in its place. The opening setback is measured on the
+    // deckhouse, so it adds no length here.
+    let aft = inp.cofferdam_m + inp.hold_cofferdam_m;
     let fwd = inp.fwd_end_bulkhead_m;
-    let service = py_max(0.0, aft - inp.cofferdam_m);
 
     let floor = if inp.plane_tank_ends {
         END_BULKHEAD_SPACE_M
@@ -147,33 +166,27 @@ pub fn compute(inp: &GasSeparationInputs) -> Result<GasSeparationResult, String>
                 },
             ),
         ),
-        if inp.setback_from_cargo_area {
-            // Issue #381: the distance from the cargo area (the aft face of the end space) to the
-            // first opening, not the aft separation from the tank end.
-            Check::new(
-                "opening_setback",
-                service >= OPENING_SETBACK_M - 1e-9,
+        // IGC 3.1.2: a hold whose tanks need no secondary barrier (Type C) is segregated by a
+        // gastight A-60 bulkhead or by a cofferdam (spec 0011 D18). A chosen cofferdam is held to
+        // the 0.60 m type C cofferdam width of 3.6.13 (an inland figure, the only width read).
+        Check::new(
+            "hold_machinery_segregation",
+            inp.hold_cofferdam_m == 0.0 || inp.hold_cofferdam_m >= COFFERDAM_MIN_M - 1e-9,
+            if inp.hold_cofferdam_m == 0.0 {
+                Text::fixed(
+                    "check-hold-segregation-bulkhead",
+                    "hold segregated from the stern block by a gastight A-60 bulkhead (IGC 3.1.2)",
+                )
+            } else {
                 text!(
-                    "check-opening-distance",
-                    "distance {distance} m from the cargo area (end space included) to any entrance or \
-                     openable window >= {min} m (cl. 3.3.7 / 3.3.11)",
-                    distance = Arg::fixed(service, 2),
-                    min = Arg::fixed(OPENING_SETBACK_M, 2),
-                ),
-            )
-        } else {
-            Check::new(
-                "opening_setback",
-                aft >= OPENING_SETBACK_M - 1e-9,
-                text!(
-                    "check-opening-setback",
-                    "aft separation {aft} m >= {min} m from the cargo area to any entrance or openable \
-                     window (cl. 3.3.7 / 3.3.11)",
-                    aft = Arg::fixed(aft, 2),
-                    min = Arg::fixed(OPENING_SETBACK_M, 2),
-                ),
-            )
-        },
+                    "check-hold-segregation-cofferdam",
+                    "hold cofferdam {width} m >= {min} m in place of the A-60 bulkhead (IGC 3.1.2; \
+                     width cl. 3.6.13)",
+                    width = Arg::fixed(inp.hold_cofferdam_m, 2),
+                    min = Arg::fixed(COFFERDAM_MIN_M, 2),
+                )
+            },
+        ),
         Check::new(
             "fwd_end_bulkhead_space",
             fwd >= floor - 1e-9,
@@ -195,7 +208,8 @@ pub fn compute(inp: &GasSeparationInputs) -> Result<GasSeparationResult, String>
         aft_separation_m: aft,
         fwd_separation_m: fwd,
         cofferdam_m: inp.cofferdam_m,
-        service_space_m: service,
+        hold_cofferdam_m: inp.hold_cofferdam_m,
+        service_space_m: 0.0,
         total_length_taken_m: aft + fwd,
         checks,
         warnings: alloc::vec![Text::fixed("warn-separation-clauses", CLAUSE_WARNING)],

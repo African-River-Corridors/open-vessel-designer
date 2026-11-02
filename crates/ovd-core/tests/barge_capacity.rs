@@ -17,7 +17,8 @@ fn the_quickstart_propane_barge_matches_python() {
     // Re-pinned (issue #237); was 1156.0677139049296 under the stepped IGC_2G. Re-pinned again (issue
     // #280, the end space defaults to the type G rule, 0.20 m, not 0.60 m aft and 0.50 m forward);
     // was 1405.8516419707348.
-    assert_eq!(r.cargo_capacity_t, 1408.66852832557);
+    // Re-pinned again (spec 0011 D17, no hull length for the opening setback); was 1408.66852832557.
+    assert_eq!(r.cargo_capacity_t, 1465.0062554222573);
     // Re-pinned (issue #237); was 2.3053150177001953.
     // Re-pinned (#448); was 2.574557304382324.
     // Re-pinned again (issue #280); was 2.4156399922106404.
@@ -26,7 +27,8 @@ fn the_quickstart_propane_barge_matches_python() {
     // length overall); was 2.337301693393503.
     // Re-pinned again (issue #745, the lightship takes the plate model's ordered weight, the shell
     // on the hull's Sections Table and the rule length on it); was 2.318501845777376.
-    assert_eq!(r.full_load_draft_m, 2.298067547204077);
+    // Re-pinned again (spec 0011 D17, no hull length for the opening setback); was 2.298067547204077.
+    assert_eq!(r.full_load_draft_m, 2.3607660904430867);
     assert_eq!(r.n_tanks_wide, Some(2));
     assert!(r.ok());
 }
@@ -82,4 +84,26 @@ fn a_hull_too_short_for_its_stern_block_is_not_ok() {
     let r = compute(&i).unwrap();
     assert!(!r.ok());
     assert!(r.checks.iter().any(|c| !c.ok));
+}
+
+/// Spec 0011 (D18): a hold cofferdam chosen in place of the A-60 bulkhead takes its width from the
+/// cargo zone once, and nothing else: no setback length is added beside it.
+/// Label: property
+#[test]
+fn a_hold_cofferdam_is_charged_once_against_the_cargo_zone() {
+    use ovd_core::gas_separation::GasSeparationInputs;
+    let zone = |hold_cofferdam_m: f64| {
+        let mut i = BargeCapacityInputs::new(90.0, 14.8, 6.5);
+        i.cargo_type = "LPG_propane".to_string();
+        i.max_tank_od_m = 12.0;
+        i.separation = Some(GasSeparationInputs {
+            hold_cofferdam_m,
+            ..Default::default()
+        });
+        let r = compute(&i).unwrap();
+        let sep = r.separation.unwrap();
+        assert!((sep.aft_separation_m - sep.cofferdam_m - hold_cofferdam_m).abs() < 1e-12);
+        r.cargo_zone_length_m.unwrap()
+    };
+    assert!((zone(0.0) - zone(1.0) - 1.0).abs() < 1e-9);
 }

@@ -477,14 +477,11 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
     // 3-1-1/3.1): lightship_t was 1569.7907856537108. Re-pinned again (issue #745, the plate model's
     // ordered weight): lightship_t was 1537.517376832394.
     let r = &results["results"];
-    assert_close(
-        r["cargo_t"].as_f64().unwrap(),
-        2021.2487121368047,
-        "cargo_t",
-    );
+    assert_close(r["cargo_t"].as_f64().unwrap(), 2077.917858761847, "cargo_t");
     assert_close(
         r["lightship_t"].as_f64().unwrap(),
-        1506.0673218519578,
+        // Re-pinned again (spec 0011 D17); was 1506.0673218519578.
+        1521.630185591528,
         "lightship_t",
     );
     // Re-pinned (issue #264); was "tank volume" (stepped IGC_2G) and "draught — Draught limit" (issue #237).

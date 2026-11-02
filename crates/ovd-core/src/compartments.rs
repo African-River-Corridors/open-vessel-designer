@@ -41,7 +41,8 @@ pub enum SpaceKind {
     /// A dry cargo hold (issue #454): the hold of a dry bulk hull, or the hold that houses the Type C
     /// tanks of a gas hull.
     CargoHold,
-    /// An empty space with no other use: the service space of a gas hull's aft separation.
+    /// An empty space with no other use: the hold end clearance aft of a gas hull's tanks (spec 0011
+    /// D18), or a void strip.
     Void,
     /// A machinery space below deck: a thruster, drive, engine, genset, gas valve unit or battery
     /// room.

@@ -314,6 +314,8 @@ fn separation_from_json(value: &Value, ctx: &str) -> Result<GasSeparationResult,
         aft_separation_m: o.f64("aft_separation_m")?,
         fwd_separation_m: o.f64("fwd_separation_m")?,
         cofferdam_m: o.f64("cofferdam_m")?,
+        // Spec 0011 (D18): the Python result has no hold cofferdam; it is the A-60 bulkhead.
+        hold_cofferdam_m: opt_f64(value, "hold_cofferdam_m"),
         service_space_m: o.f64("service_space_m")?,
         total_length_taken_m: o.f64("total_length_taken_m")?,
         checks: o.checks("checks")?,

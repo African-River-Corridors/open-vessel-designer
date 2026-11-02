@@ -47,8 +47,10 @@ def test_gas_stability_assess_after_the_inputs_object_was_reused():
     # Re-pinned (issue #745, the plate model's ordered steel); were (5.250643355578404,
     # 7.661805406134341, 12.800389514554132) and (4.581406664531164, 7.3463340319215,
     # 13.953594111264215).
-    expected = {90.0: (5.3029579075663325, 7.768716812350073, 13.072670733155338),
-                70.0: (4.6161011627946955, 7.4329037070838595, 14.24445294799914)}
+    # Re-pinned again (spec 0011 D17); were (5.3029579075663325, 7.768716812350073,
+    # 13.072670733155338) and (4.6161011627946955, 7.4329037070838595, 14.24445294799914).
+    expected = {90.0: (5.608357300023035, 7.668926490684012, 12.836468776928992),
+                70.0: (4.572270196007116, 7.307897878330879, 13.90566832871623)}
     # The 12 m tank diameter cap of 0.1.0 (it is an input, 16 m by default, since issue #175).
     inp = B.BargeCapacityInputs(loa=90.0, beam=14.8, depth=6.5, cargo_type="LPG_propane",
                                 max_tank_od_m=12.0)

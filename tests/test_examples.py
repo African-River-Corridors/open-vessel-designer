@@ -16,4 +16,6 @@ def test_quickstart_runs(capsys):
     # light-condition angle of max GZ); was 1 tank abreast and 2,021 t.
     # Re-pinned again (issue #498: the angle of max GZ alone in the light condition is a warning, so
     # one tank abreast is feasible again); was 2 tanks abreast and 1,406 t.
-    assert "Searched   : 1 tank(s) abreast" in out and "2,025 t" in out   # was 2,021 t (issue #280)
+    # Re-pinned (spec 0011 D17, no hull length for the opening setback); was 2,025 t (and 2,021 t
+    # before issue #280).
+    assert "Searched   : 1 tank(s) abreast" in out and "2,106 t" in out

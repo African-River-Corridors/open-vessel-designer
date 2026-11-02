@@ -2815,6 +2815,8 @@ fn simulate_gas(
             .get("opening_setback_basis")
             .and_then(Value::as_str)
             .is_none_or(|b| b != "tank_end"),
+        // Spec 0011 (D18): the gastight A-60 bulkhead; the cofferdam option is not a file input yet.
+        hold_cofferdam_m: 0.0,
         tank_wall_thickness_mm: tank_wall_of(p)?,
         tank_design: tank_design_of(p)?,
         water_density_t_per_m3: rho,
