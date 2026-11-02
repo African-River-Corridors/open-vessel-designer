@@ -29,7 +29,7 @@ OVD cannot do this today:
 
 ## 2. Rules read
 
-Text read from the rule-source library (`ovcd-rule-sources`). Pressures in the IGC Code are gauge: MARVS
+Text read from the rule-source library. Pressures in the IGC Code are gauge: MARVS
 (1.2.34) and P0 (4.1.2).
 
 - **IGC Code (MSC.370(93)) 7.1.1**: tank pressure and temperature shall be maintained within the design range
