@@ -91,3 +91,20 @@ def test_the_required_checks_also_run_for_a_merge_group():
     # A merge group is never cancelled by a newer one: its concurrency group is its own run id.
     group = CI["concurrency"]["group"]
     assert "github.run_id" in group and "event_name == 'pull_request'" in group
+
+
+def test_the_design_impact_answers_of_the_base_commit_are_restored_first():
+    """Issue #852: the newest saved answers are often this branch's own, from before main moved, so
+    they lack the base's answers and the base is built and run again. The entry saved under the base
+    commit (which `design_impact.py base` names, as the check does) is tried before the newest.
+
+    Label: property"""
+    steps = CI["jobs"]["gate-impact"]["steps"]
+    names = [s.get("name", s.get("uses")) for s in steps]
+    base = next(s for s in steps if s.get("id") == "base")
+    assert "python3 tools/design_impact.py base" in base["run"]
+    restore = next(s for s in steps if s.get("name") == "Restore the saved design-impact answers")
+    assert names.index(base["name"]) < names.index(restore["name"])
+    keys = restore["with"]["restore-keys"].strip().splitlines()
+    assert keys == ["design-impact-${{ steps.base.outputs.sha }}", "design-impact-"]
+    assert restore["with"]["key"] == "design-impact-${{ github.sha }}"

@@ -38,7 +38,7 @@ jobs:
       - uses: ./.github/actions/gate-env
         with:
           cache-key: gate-lint
-      - name: Lint, Rule Set gate and WebAssembly build
+      - name: Lint, Rule Set gate, fixture hashes and WebAssembly build
         env:
           GATES_STEPS: lint,rules
         run: bash tools/gates.sh
@@ -97,20 +97,37 @@ jobs:
           fetch-depth: 0 # the design-impact check diffs against the merge base
       - uses: ./.github/actions/gate-env
         with:
-          cache-key: gate-impact
-      # The answers of a commit for the case set are always the same, so the newest saved ones are
-      # restored and the base commit's answers are not worked out again when they are there
-      # (tools/design_impact.py, issue #561). A run saves its own answers under its commit.
+          # Its own key since the release build (issue #852): the cache key does not hold the profile,
+          # so the release dependencies are saved only under a key that misses once.
+          cache-key: gate-impact-release
+          python-package: "false"
+      # The design-impact check runs the `ovd` binary; of the Python package it needs only PyYAML, so
+      # the job does not build the extension (issue #852).
+      - name: Install PyYAML
+        run: python -m pip install 'pyyaml>=6'
+      # The answers of a commit for the case set are always the same, so saved ones are restored and
+      # the base commit's answers are not worked out again when they are there (tools/design_impact.py,
+      # issue #561). A run saves its own answers under its commit. The entry saved under the base commit
+      # comes first: it holds the base's answers. The newest entry alone is often this branch's own,
+      # from before main moved, without them (issue #852).
+      - name: The base commit of the design-impact check
+        id: base
+        run: |
+          sha="$(python3 tools/design_impact.py base)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - name: Restore the saved design-impact answers
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/design-impact-cache
           key: design-impact-${{ github.sha }}
-          restore-keys: design-impact-
+          restore-keys: |
+            design-impact-${{ steps.base.outputs.sha }}
+            design-impact-
       - name: Design impact
         env:
           GATES_STEPS: impact
           DESIGN_IMPACT_CACHE: ${{ runner.temp }}/design-impact-cache
+          DESIGN_IMPACT_PROFILE: release
         run: bash tools/gates.sh
       - name: Save the design-impact answers
         if: always()
@@ -164,9 +181,17 @@ jobs:
         env:
           GATES_STEPS: pytest
           PYTHONPATH: tools
-          PYTEST_ADDOPTS: -p pytest_shard
+          # The JUnit file keeps each test's time, to balance the shards by (issue #852).
+          PYTEST_ADDOPTS: -p pytest_shard --junitxml=target/pytest/junit.xml
           PYTEST_SHARD: ${{ matrix.shard }}/4
         run: bash tools/gates.sh
+      - name: Upload the pytest times (JUnit)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-junit-${{ matrix.shard }}
+          path: target/pytest/junit.xml
+          if-no-files-found: ignore
       # Calibration Bands (issue #119): one warning annotation per case outside its band. A band miss
       # never fails the build; a crash does. It takes about a second.
       - name: Calibration against the Calibration Bands (warning only)

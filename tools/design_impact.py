@@ -860,7 +860,10 @@ def build(tree: Path, target: Path, fresh: bool = False) -> Path:
     started = time.time()
     env = {**os.environ, "CARGO_TARGET_DIR": str(target)}
     package, binary = cli_names(tree)
-    r = subprocess.run(["cargo", "build", "-q", "-p", package, "--message-format=json-render-diagnostics"],
+    # DESIGN_IMPACT_PROFILE=release builds an optimised `ovd` (issue #852): the cases run faster, and
+    # the answers are the same bits, as Rust does not reorder floating point at any opt level.
+    profile = ["--release"] if os.environ.get("DESIGN_IMPACT_PROFILE") == "release" else []
+    r = subprocess.run(["cargo", "build", "-q", *profile, "-p", package, "--message-format=json-render-diagnostics"],
                        cwd=tree, env=env, stdout=subprocess.PIPE, text=True)
     if r.returncode != 0:
         raise SystemExit(f"design_impact: cargo build failed in {tree}")
@@ -1151,7 +1154,7 @@ def branch_key() -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("mode", choices=["report", "gate", "changelog", "publish-artifact"])
+    ap.add_argument("mode", choices=["report", "gate", "changelog", "publish-artifact", "base"])
     ap.add_argument("artifact_dir", nargs="?", type=Path, help="publish-artifact: the downloaded artifact")
     ap.add_argument("--head-sha", help="publish-artifact: the commit the workflow run was made for")
     ap.add_argument("--head-repo", help="publish-artifact: the repository that commit is in")
@@ -1161,6 +1164,10 @@ def main() -> int:
     ap.add_argument("--legacy", action="store_true",
                     help="changelog: write the entry into CHANGELOG.md, not a fragment (the old form)")
     args = ap.parse_args()
+    if args.mode == "base":
+        # The commit the check compares with: CI restores the answers saved under it (issue #852).
+        print(base_commit()[0])
+        return 0
     if args.mode == "publish-artifact":
         if not (args.artifact_dir and args.head_sha and args.head_repo):
             raise SystemExit("design_impact: publish-artifact needs DIR, --head-sha and --head-repo")

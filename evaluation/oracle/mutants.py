@@ -27,7 +27,9 @@ targeted one. A criterion whose margin is inside the grid error is marked `grid:
 """
 from __future__ import annotations
 
+import concurrent.futures
 import math
+import multiprocessing
 import sys
 from pathlib import Path
 
@@ -163,20 +165,33 @@ def mutant_document(base: dict, criterion: str, side: str, magnitude: str) -> di
     }
 
 
-def generate() -> tuple[list[dict], list[dict]]:
-    """(mutants, skipped). A mutant is skipped when no KG on the hull (or depth) crosses the limit."""
+def _mutants_of(c: dict) -> tuple[list[dict], list[dict]]:
+    """(mutants, skipped) of one base case."""
     docs, skipped = [], []
-    for c in write_cases.BASE_CASES:
-        base = write_cases.case_document(c)
-        for criterion in oracle.CRITERIA:
-            for side in ("pass", "fail"):
-                for magnitude in ("big", "small"):
-                    try:
-                        docs.append(mutant_document(base, criterion, side, magnitude))
-                    except Unreachable as e:
-                        skipped.append({"parent": base["id"], "criterion": write_cases.RULE_IDS[criterion],
-                                        "side": side,
-                                        "magnitude": magnitude, "reason": str(e)})
+    base = write_cases.case_document(c)
+    for criterion in oracle.CRITERIA:
+        for side in ("pass", "fail"):
+            for magnitude in ("big", "small"):
+                try:
+                    docs.append(mutant_document(base, criterion, side, magnitude))
+                except Unreachable as e:
+                    skipped.append({"parent": base["id"], "criterion": write_cases.RULE_IDS[criterion],
+                                    "side": side,
+                                    "magnitude": magnitude, "reason": str(e)})
+    return docs, skipped
+
+
+def generate() -> tuple[list[dict], list[dict]]:
+    """(mutants, skipped). A mutant is skipped when no KG on the hull (or depth) crosses the limit.
+
+    The base cases are independent, so each is worked out in its own process and the lists are joined
+    in the order of BASE_CASES: the output is the same as one after another (issue #852)."""
+    docs, skipped = [], []
+    # Spawn, not fork: a pytest worker that calls this is multi-threaded, and a fork of it can deadlock.
+    with concurrent.futures.ProcessPoolExecutor(mp_context=multiprocessing.get_context("spawn")) as pool:
+        for d, s in pool.map(_mutants_of, write_cases.BASE_CASES):
+            docs += d
+            skipped += s
     return docs, skipped
 
 
