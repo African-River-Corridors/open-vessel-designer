@@ -36,6 +36,7 @@ pub fn measure_info(id: &str) -> Option<MeasureInfo> {
         | InputKind::ParameterSet
         | InputKind::OffsetsTable
         | InputKind::OpeningsList
+        | InputKind::OperationProfile
         | InputKind::RuleSets => return None,
     };
     // Parsed once: a run asks this for every input.

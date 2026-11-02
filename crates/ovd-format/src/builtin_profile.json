@@ -870,6 +870,60 @@
       "soft": { "min": 10.0, "max": 50.0 },
       "basis": "A fixed wall thickness for the shell and the heads, in mm. none: the pressure-vessel formula gives the thickness (the ASME UG-27 shell formula, two passes, the corrosion allowance, rounded up to 0.5 mm, not less than the IGC minimum), from the design pressure, the allowable stress and the steel diameter. A saved file that stores a value keeps it"
     },
+    "holding_profile": {
+      "default": [
+        { "state": "laden_passage", "days": 20.0 },
+        { "state": "idle", "days": 10.0 }
+      ],
+      "status": "estimate",
+      "basis": "The operation profile a Type C tank's holding time is judged over (spec 0016 D2, D3, D9, issue #869): legs in order, each a state (laden_passage or idle), its length in days, for a laden passage the typed passage speed in knots (passage_speed_kn), for an idle leg a typed gas use in kg/h (gas_use_kg_h, zero unless typed). The tank is closed and starts at the loading limit; loading, discharge and ballast legs are not modelled. The default is a design basis of 30 days, the first 20 laden passage, the last 10 idle (the idle block last is the worst case, as the tank is warmest when the gas use stops). It is a design basis (default), not a figure from a rule: it is never printed as compliance. A passage leg with no typed speed credits no gas use. Input only for now: no result reads it until the holding-time model (issue #870). A file saved before keeps this default"
+    },
+    "holding_preset": {
+      "default": "none",
+      "status": "estimate",
+      "basis": "A named preset of required holding time (spec 0016 D8): none, bv_nr467 or bv_nr217. Never applied by default. The preset names the rule; its figures are not read yet and the choice moves no result. A file saved before keeps none"
+    },
+    "holding_adn_min_use_kg_h": {
+      "default": 0.0,
+      "unit": "kg/h",
+      "hard": { "ge": 0, "le": 100000 },
+      "status": "estimate",
+      "basis": "The minimum guaranteed gas use the ADN holding-time row credits (spec 0016 D7): type it with its source. Default zero: that row credits only a typed use. Input only for now. A file saved before keeps zero"
+    },
+    "holding_igf_domestic_use_kg_h": {
+      "default": 0.0,
+      "unit": "kg/h",
+      "hard": { "ge": 0, "le": 100000 },
+      "status": "estimate",
+      "basis": "The domestic gas load the IGF fuel-tank holding-time row credits (spec 0016 D7): type it with its source. Default zero: that row credits domestic load only. Input only for now. A file saved before keeps zero"
+    },
+    "holding_adn_journey_days": {
+      "default": null,
+      "unit": "days",
+      "hard": { "gt": 0, "le": 365 },
+      "status": "estimate",
+      "basis": "The journey duration for the ADN holding-time row (spec 0016 D8). none: not typed, so the ADN check is not evaluated. Input only for now. A file saved before keeps none"
+    },
+    "holding_start_pressure_mpa": {
+      "default": null,
+      "unit": "MPa g",
+      "hard": { "ge": 0, "le": 10 },
+      "status": "estimate",
+      "basis": "The start pressure of the cargo tanks for the holding time, gauge (spec 0016 D10). none: the tank is loaded at the saturation state of 0 MPa g, atmospheric. Input only for now. A file saved before keeps none"
+    },
+    "holding_fuel_service_pressure_mpa": {
+      "default": null,
+      "unit": "MPa g",
+      "hard": { "ge": 0, "le": 10 },
+      "status": "estimate",
+      "basis": "The normal service pressure of a separate fuel tank, gauge, its start pressure for the holding time (spec 0016 D10). none: not typed, so the fuel-tank row is not evaluated. Input only for now. A file saved before keeps none"
+    },
+    "holding_fill_ratio": {
+      "default": null,
+      "hard": { "gt": 0, "le": 1 },
+      "status": "estimate",
+      "basis": "The fill of the tanks at the start of the holding time, as a fraction of the tank volume (spec 0016 D10). none: loaded to the loading limit. A typed fill above the loading limit is refused by the holding-time model (issue #870), not yet. Input only for now. A file saved before keeps none"
+    },
     "optimise_depth": {
       "default": false
     },

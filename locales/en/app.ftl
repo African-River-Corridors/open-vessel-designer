@@ -46,6 +46,7 @@ app-no = no
 app-parameter-count = Parameters: { $count }
 app-offset-station-count = Stations: { $count }
 app-opening-count = Openings: { $count }
+app-leg-summary = Legs: { $count }, { $days } days
 app-import-offsets = Import CSV
 app-pass = PASS
 app-fail = FAIL

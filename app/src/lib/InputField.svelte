@@ -220,6 +220,9 @@
   {:else if spec.kind === "openings_list"}
     <!-- Issue #592: shown, not edited here; the openings are typed in the file. -->
     <span class="summary">{Array.isArray(value) && value.length > 0 ? t("app-opening-count", { count: value.length }) : t("app-none")}</span>
+  {:else if spec.kind === "operation_profile"}
+    <!-- Issue #869: shown, not edited here; the legs are typed in the file. The source badge says default or typed. -->
+    <span class="summary">{Array.isArray(value) ? t("app-leg-summary", { count: value.length, days: value.reduce((a: number, l: { days: number }) => a + l.days, 0) }) : t("app-none")}</span>
   {:else if spec.kind === "offsets_table"}
     <!-- Issue #451: the station count, and an Import button that reads an offsets CSV. -->
     <div class="row">

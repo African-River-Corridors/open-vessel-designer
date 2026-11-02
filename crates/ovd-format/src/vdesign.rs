@@ -187,6 +187,10 @@ pub const SIGHTLINE_METHODS: &[&str] = &["margin", "blind_distance"];
 
 /// The tank insulation types. `unspecified` is the generic insulation the engine used before the
 /// type was an input; the density is the one value (60 kg/m3) for every type.
+/// The named holding-time presets (spec 0016 D8, issue #869). `none` is the default: a preset is
+/// never applied by default. The presets name the rule; their figures are not read yet.
+pub const HOLDING_PRESETS: &[&str] = &["none", "bv_nr467", "bv_nr217"];
+
 pub const INSULATION_TYPES: &[&str] = &["unspecified", "none", "pu_foam", "panel"];
 
 /// The inputs whose default comes from a table of the whole Defaults Profile keyed by the
@@ -995,8 +999,55 @@ pub struct LegacyFixedJson {
     pub value: &'static str,
 }
 
+/// The default holding-time profile as JSON text: 20 days laden passage, then 10 idle (issue #869).
+/// A test keeps it equal to `holding_profile::default_value`.
+pub const HOLDING_PROFILE_DEFAULT_JSON: &str =
+    r#"[{"state":"laden_passage","days":20.0},{"state":"idle","days":10.0}]"#;
+
 /// See [`LegacyFixedJson`]. Read by a file that lacks the input, like [`LEGACY_FIXED_INPUTS`].
 pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
+    // Issue #869 (spec 0016): a file saved before has the default design basis (20 days laden
+    // passage, then 10 idle), no preset, no typed gas use and no journey: no result reads them yet.
+    LegacyFixedJson {
+        name: "holding_profile",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        value: HOLDING_PROFILE_DEFAULT_JSON,
+    },
+    LegacyFixedJson {
+        name: "holding_preset",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        value: "\"none\"",
+    },
+    LegacyFixedJson {
+        name: "holding_adn_min_use_kg_h",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        value: "0.0",
+    },
+    LegacyFixedJson {
+        name: "holding_igf_domestic_use_kg_h",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        value: "0.0",
+    },
+    LegacyFixedJson {
+        name: "holding_adn_journey_days",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        value: "null",
+    },
+    LegacyFixedJson {
+        name: "holding_start_pressure_mpa",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        value: "null",
+    },
+    LegacyFixedJson {
+        name: "holding_fuel_service_pressure_mpa",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        value: "null",
+    },
+    LegacyFixedJson {
+        name: "holding_fill_ratio",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        value: "null",
+    },
     // Issue #739: ordinary-strength steel and no structural wing deck, as the panel model.
     LegacyFixedJson {
         name: "steel_grade",
@@ -1578,6 +1629,9 @@ pub enum InputKind {
     /// Issue #592: the deck openings of the angle of down-flooding, rows of `x_m`, `y_m`,
     /// `height_above_deck_m`, or null.
     OpeningsList,
+    /// Issue #869: the operation profile of a Type C tank's holding time, a list of legs
+    /// `{state, days, passage_speed_kn?, gas_use_kg_h?}`.
+    OperationProfile,
     /// Issue #429: a text. A `nullable` one takes `null` for "none". `currency` and
     /// `price_base_date` each have their own form (see [`check_text`]).
     Text {
@@ -1795,6 +1849,8 @@ pub const CHOICE_LABELS: &[(&str, &str)] = &[
     ("channel_jet", "Channel jet"),
     ("elevating", "Elevating"),
     ("container_block", "Container block"),
+    ("bv_nr467", "BV NR467"),
+    ("bv_nr217", "BV NR217"),
     ("deckhouse", "Deckhouse"),
     ("fixed", "Fixed"),
     ("margin", "Margin over the obstruction"),
@@ -2382,6 +2438,64 @@ pub const INPUTS: &[InputSpec] = &[
         "tank_insulation_thickness_mm",
         "Tank insulation thickness",
         NUM,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    // Issue #869 (spec 0016 D2, D3, D7 to D10): the operation profile of the holding time. Input
+    // only: the holding-time model reads them in a later ticket.
+    only(
+        "holding_profile",
+        "Holding-time profile",
+        InputKind::OperationProfile,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    only(
+        "holding_preset",
+        "Holding-time preset",
+        InputKind::Choice(HOLDING_PRESETS),
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    only(
+        "holding_adn_min_use_kg_h",
+        "Minimum guaranteed gas use (ADN)",
+        NUM,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    only(
+        "holding_igf_domestic_use_kg_h",
+        "Domestic gas load (IGF)",
+        NUM,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    only(
+        "holding_adn_journey_days",
+        "Journey duration (ADN)",
+        NUM_OR_NONE,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    only(
+        "holding_start_pressure_mpa",
+        "Holding-time start pressure (cargo tanks)",
+        NUM_OR_NONE,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    only(
+        "holding_fuel_service_pressure_mpa",
+        "Normal service pressure (fuel tanks)",
+        NUM_OR_NONE,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    only(
+        "holding_fill_ratio",
+        "Holding-time fill (override)",
+        NUM_OR_NONE,
         "type_c_tanks",
         Group::GasTanks,
     ),
@@ -5017,6 +5131,9 @@ fn check_value(spec: &InputSpec, v: &Value, profile: &Profile) -> Result<(Value,
                 input = input()
             )),
         },
+        InputKind::OperationProfile => {
+            crate::holding_profile::legs_of(v).map(|_| (v.clone(), vec![]))
+        }
         InputKind::Text { nullable } => check_text(name, v, nullable).map(|v| (v, vec![])),
         InputKind::VesselScheme => match v {
             Value::Null => Ok((Value::Null, vec![])),

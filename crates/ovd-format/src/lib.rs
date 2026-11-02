@@ -12,6 +12,7 @@ pub mod ga;
 mod gas_arrangement;
 mod gas_fuel;
 pub mod gas_stability;
+pub mod holding_profile;
 mod liquid;
 mod objects;
 pub mod offsets;
