@@ -284,6 +284,12 @@ pub struct BargeCapacityInputs {
     /// Issue #354: `Some(limit)` checks the sightline as a Blind Distance (ES-TRIN 7.02(2)) in the
     /// light condition, and lifts the wheelhouse to meet it; `None`: today's margin over the cargo.
     pub sightline_limit_m: Option<f64>,
+    /// Issue #779: the trimmed light waterline (draught aft, draught forward) of a first pass, which
+    /// the second pass sizes a fixed deckhouse wheelhouse to. `None`: the keel.
+    pub light_waterline_hint: Option<(f64, f64)>,
+    /// Issue #779: a fixed deckhouse wheelhouse is sized to the stricter of the Blind Distance limit
+    /// and SOLAS V/22.1.1 ([`crate::wheelhouse::solas_v22_limit_m`]); `true` for a coastal Option.
+    pub solas_v22_sizing: bool,
     /// Issue #352: the machinery of a specified Propulsor; it sets the stern block's run below deck
     /// and its mass items. `None`: today's stern block.
     pub machinery: Option<crate::machinery::MachineryInputs>,
@@ -381,6 +387,8 @@ impl BargeCapacityInputs {
             stern_block_mass: None,
             stern_geometry: None,
             sightline_limit_m: None,
+            light_waterline_hint: None,
+            solas_v22_sizing: false,
             machinery: None,
             dome_height: DEFAULT_TANK_DOME_HEIGHT_M,
             dome_diameter: DEFAULT_TANK_DOME_DIAMETER_M,
@@ -1364,6 +1372,54 @@ cargo-shift/angle-of-repose not modelled \u{2014} confirm with a full intact-sta
 
 /// Run the unified barge capacity chain (volume-bound).
 pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError> {
+    let first = compute_once(inp)?;
+    // Issue #779: a fixed deckhouse wheelhouse is sized in two passes. The first cannot know the
+    // light waterline, so it takes the keel, which is never too low and can add a tier. The second
+    // takes the trimmed light waterline of the first. Tiers can only drop; the second result is
+    // kept only if it has fewer tiers and its sightline still passes.
+    let tiers = |r: &BargeCapacityResult| {
+        r.aft_arrangement
+            .as_ref()
+            .and_then(|a| a.deckhouse.as_ref())
+            .map(|d| d.tiers)
+    };
+    let sized_by_pass = inp.self_propelled
+        && inp.light_waterline_hint.is_none()
+        && inp.sightline_limit_m.is_some()
+        && inp.aft.is_none()
+        && inp.aft_design.arrangement_style == crate::aft_arrangement::ArrangementStyle::Deckhouse
+        && inp.air_draft_limit_m.is_none();
+    let (Some(t1), true) = (tiers(&first), sized_by_pass) else {
+        return Ok(first);
+    };
+    let light = first
+        .trim_conditions
+        .iter()
+        .find(|(n, _)| *n == "Light")
+        .map(|(_, t)| (t.draft_aft, t.draft_fwd))
+        .or(first.light_draft_m.map(|d| (d, d)));
+    let Some(light) = light else {
+        return Ok(first);
+    };
+    let mut again = inp.clone();
+    again.light_waterline_hint = Some(light);
+    let second = compute_once(&again)?;
+    let limit = match crate::wheelhouse::solas_v22_limit_m(inp.loa) {
+        Some(solas) if inp.solas_v22_sizing => inp.sightline_limit_m.map(|l| l.min(solas)),
+        _ => inp.sightline_limit_m,
+    };
+    let passes = second
+        .sightline
+        .as_ref()
+        .zip(limit)
+        .is_some_and(|(s, limit)| s.enough && s.blind_distance_m <= limit + 1e-9);
+    match tiers(&second) {
+        Some(t2) if t2 < t1 && passes => Ok(second),
+        _ => Ok(first),
+    }
+}
+
+fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError> {
     // Python builds the nested inputs, and so runs their `__post_init__` checks, before
     // `compute` starts: aft first, then separation, and before the cargo lookup.
     if let Some(a) = &inp.aft {
@@ -1457,8 +1513,9 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
     let mut aft_second = arr.aft_inputs.clone();
     aft_second.sightline_obstruction_m = Some(cargo_top_above_keel);
     // Issue #779: a fixed deckhouse wheelhouse cannot lift for the Blind Distance, so the house is
-    // given the tiers that put the eye high enough. The light draught is not known yet, so the
-    // eye is sized for a waterline at the keel, which is never too low.
+    // given the tiers that put the eye high enough. The first pass does not know the light
+    // waterline, so it takes the keel (never too low); `compute` runs a second pass on the trimmed
+    // light waterline of the first (`light_waterline_hint`).
     if inp.self_propelled
         && aft_second.arrangement_style == crate::aft_arrangement::ArrangementStyle::Deckhouse
         && aft_second.wheelhouse_max_lift_m <= 0.0
@@ -1476,8 +1533,19 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
             probe.wheelhouse_x1_m,
             &obstructions,
             inp.loa,
-            &crate::wheelhouse::Waterline::even(0.0, inp.loa),
-            limit,
+            &match inp.light_waterline_hint {
+                Some((aft_m, fwd_m)) => crate::wheelhouse::Waterline {
+                    draught_aft_m: aft_m,
+                    draught_fwd_m: fwd_m,
+                    length_m: inp.loa,
+                },
+                None => crate::wheelhouse::Waterline::even(0.0, inp.loa),
+            },
+            // The stricter of the two limits sizes the eye (maintainer decision, issue #779).
+            match crate::wheelhouse::solas_v22_limit_m(inp.loa) {
+                Some(solas) if inp.solas_v22_sizing => limit.min(solas),
+                _ => limit,
+            },
         );
     }
     let aft = compute_aft_arrangement(&aft_second)?;

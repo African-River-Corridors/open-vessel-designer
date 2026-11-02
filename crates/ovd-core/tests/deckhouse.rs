@@ -251,3 +251,80 @@ fn a_fixed_wheelhouse_gets_tiers_until_its_eye_clears_the_cargo() {
     i.wheelhouse_max_lift_m = 12.0;
     assert_eq!(compute(&i).unwrap().deckhouse.unwrap().tiers, 3);
 }
+
+#[test]
+fn the_second_pass_on_the_light_waterline_never_adds_a_tier_and_keeps_the_sightline() {
+    // Issue #779: the first pass sizes a fixed wheelhouse for a waterline at the keel. `compute`
+    // then sizes it again on the trimmed light waterline of the first pass, and keeps the result
+    // only with fewer tiers and a passing sightline.
+    use ovd_core::barge_capacity::{BargeCapacityInputs, compute as capacity};
+    let mut i = BargeCapacityInputs::new(110.0, 11.4, 6.0);
+    i.cargo_type = "LPG_propane".to_string();
+    i.self_propelled = true;
+    i.sightline_limit_m = Some(250.0);
+    i.aft_design.arrangement_style = ArrangementStyle::Deckhouse;
+    i.aft_design.wheelhouse_max_lift_m = 0.0;
+    let tiers = |r: &ovd_core::barge_capacity::BargeCapacityResult| {
+        r.aft_arrangement
+            .as_ref()
+            .unwrap()
+            .deckhouse
+            .as_ref()
+            .unwrap()
+            .tiers
+    };
+    let two_pass = capacity(&i).unwrap();
+    // The keel pass alone: a hint of a waterline at the keel is the first pass's own assumption.
+    let mut keel = i.clone();
+    keel.light_waterline_hint = Some((0.0, 0.0));
+    let keel = capacity(&keel).unwrap();
+    assert!(
+        tiers(&two_pass) <= tiers(&keel),
+        "{} > {}",
+        tiers(&two_pass),
+        tiers(&keel)
+    );
+    assert!(two_pass.sightline.as_ref().unwrap().enough);
+}
+
+#[test]
+fn on_a_hull_under_125_m_solas_governs_the_fixed_wheelhouse_and_adds_a_tier() {
+    // Issue #779, maintainer decision: a coastal deckhouse is sized to the stricter of the 250 m
+    // ES-TRIN Blind Distance and SOLAS V/22.1.1, min(2 L, 500 m). Under 125 m, 2 L is under 250 m, so
+    // SOLAS governs; at and over 125 m ES-TRIN does.
+    use ovd_core::barge_capacity::{BargeCapacityInputs, compute as capacity};
+    use ovd_core::wheelhouse::solas_v22_limit_m;
+    assert_eq!(solas_v22_limit_m(44.9), None);
+    assert_eq!(solas_v22_limit_m(110.0), Some(220.0));
+    assert_eq!(solas_v22_limit_m(300.0), Some(500.0));
+    let run = |loa: f64, solas: bool| {
+        let mut i = BargeCapacityInputs::new(loa, 11.4, 6.0);
+        i.cargo_type = "LPG_propane".to_string();
+        i.self_propelled = true;
+        i.sightline_limit_m = Some(250.0);
+        i.solas_v22_sizing = solas;
+        i.aft_design.arrangement_style = ArrangementStyle::Deckhouse;
+        i.aft_design.wheelhouse_max_lift_m = 0.0;
+        let r = capacity(&i).unwrap();
+        let tiers = r
+            .aft_arrangement
+            .as_ref()
+            .unwrap()
+            .deckhouse
+            .as_ref()
+            .unwrap()
+            .tiers;
+        (tiers, r.sightline.as_ref().unwrap().blind_distance_m)
+    };
+    // 60 m: the ES-TRIN sizing leaves a light Blind Distance of 234.7 m, over 2 L = 120 m; SOLAS adds
+    // the tier that brings it to 105.0 m.
+    let (es_trin_tiers, es_trin_blind) = run(60.0, false);
+    let (solas_tiers, blind) = run(60.0, true);
+    assert_eq!((es_trin_tiers, solas_tiers), (3, 4));
+    assert!(
+        es_trin_blind > 120.0 && blind <= 120.0 + 1e-9,
+        "{es_trin_blind}, {blind}"
+    );
+    // At 125 m and over the two limits are the same, so the tiers are too.
+    assert_eq!(run(130.0, true).0, run(130.0, false).0);
+}

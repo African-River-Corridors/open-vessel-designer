@@ -581,10 +581,12 @@ pub mod steel_rates {
     /// layer I deckhouse coefficient C_DH at Fo/Fu = 1.0 of Schneekluth and Bertram, sec. 5,
     /// Table 5.2, p. 164 (edition not shown on the pages read), used for what it is a coefficient
     /// of. **Unverified estimate** until the calibration set (D11): the table also gives the
-    /// upper layers' coefficients, which were not read, so every tier takes the layer I value.
+    /// upper layers' coefficients, which were not read, so every tier takes the layer I value, and
+    /// the wheelhouse takes it too. The upper tiers and the wheelhouse are therefore taken as
+    /// over-stated (an upper layer is lighter per m3; not checked, the coefficients were not read).
     pub const DECKHOUSE_T_PER_M3: f64 = 0.057;
     /// What `DECKHOUSE_T_PER_M3` rests on, as the results give it.
-    pub const DECKHOUSE_RATE_BASIS: &str = "Schneekluth and Bertram, Ship Design for Efficiency and Economy, sec. 5, Table 5.2, p. 164: deckhouse coefficient C_DH, layer I, Fo/Fu = 1.0, taken for every tier (edition not shown on the pages read)";
+    pub const DECKHOUSE_RATE_BASIS: &str = "Schneekluth and Bertram, Ship Design for Efficiency and Economy, sec. 5, Table 5.2, p. 164: deckhouse coefficient C_DH, layer I, Fo/Fu = 1.0, taken for every tier and for the wheelhouse too, so the upper tiers and the wheelhouse are over-stated (edition not shown on the pages read)";
     /// The engine foundation weight W = 27 P_B / ((n + 250) (15 + P_B / 1000)) t, P_B (kW) and n
     /// (rpm) of one engine: Schneekluth and Bertram, sec. 5.1, p. 158 (edition not shown on the
     /// pages read).

@@ -172,6 +172,10 @@ fn a_deckhouse_option_has_a_deckhouse_a_fixed_wheelhouse_and_steel_items() {
         (area - d["area_m2"].as_f64().unwrap()).abs() < 1e-9,
         "{area}"
     );
+    // The lump keeps its wheelhouse and navigation share (an estimate), so they are still priced.
+    let split = &r["cost"]["wheelhouse_accommodation_split"];
+    assert_eq!(split["status"], json!("estimate"), "{split}");
+    assert!(split["wheelhouse_and_navigation_priced"].as_f64().unwrap() > 0.0);
     // The deckhouse volume joins the gross tonnage.
     assert!(r["gross_tonnage"]["deckhouse_volume_m3"].as_f64().unwrap() > 0.0);
     assert!(
@@ -215,4 +219,35 @@ fn the_container_block_has_no_deckhouse_key_and_the_style_moves_the_hash() {
     assert!(block["stern_block_mass"].get("deckhouse_steel").is_none());
     let house = results_of(&hand(Some("coastal-and-river"), json!({})));
     assert_ne!(results_hash(&block), results_hash(&house));
+}
+
+#[test]
+fn a_coastal_file_saved_before_keeps_the_container_block_and_its_hashes() {
+    // The coastal LNG example, with the `arrangement_style` lines taken out: the file as it was
+    // before the input. A coastal file is the one a wrong default would change.
+    let path = format!(
+        "{}/../../examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    let mut file: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let mut removed = 0;
+    for o in file["options"].as_array_mut().unwrap() {
+        let inputs = o["inputs"].as_object_mut().unwrap();
+        assert_eq!(inputs["service_area"]["value"], json!("coastal-and-river"));
+        removed += usize::from(inputs.remove("arrangement_style").is_some());
+    }
+    assert!(removed > 0, "the example holds the input");
+    let text = file.to_string();
+    let checked = check(&text, &Profile::built_in());
+    for o in &checked.design.unwrap().options {
+        let i = o.input("arrangement_style").unwrap();
+        assert_eq!(
+            (i.value.clone(), i.source),
+            (json!("container_block"), Source::Default)
+        );
+    }
+    let (_, opened) = DesignSession::open(&text, Profile::built_in()).unwrap();
+    for (option, status) in &opened.hash_status {
+        assert_eq!(status, &ovd_format::HashStatus::Matches, "{option}");
+    }
 }

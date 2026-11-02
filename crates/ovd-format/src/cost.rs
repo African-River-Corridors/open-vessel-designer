@@ -87,9 +87,9 @@ const ITEM_BASES: [(&str, &str, &str, &str); 4] = [
         "deckhouse",
         "deckhouse_rate_per_m2",
         "m2",
-        "Deckhouse deck area: the floor of every tier (issue #779). 0 for the container block, whose \
-         wheelhouse and accommodation lump stands for it; a deckhouse takes this line in place of that \
-         lump.",
+        "Deckhouse deck area: the floor of every tier (issue #779), the accommodation. 0 for the container \
+         block, whose wheelhouse and accommodation lump stands for it. A deckhouse keeps only the \
+         wheelhouse and navigation share of that lump (see `wheelhouse_accommodation_split`).",
     ),
     (
         "gas_fuel_system",
@@ -516,6 +516,23 @@ fn result_json(
     })
 }
 
+/// The share of the wheelhouse and accommodation lump that is the wheelhouse and its navigation and
+/// controls, which a deckhouse keeps (its tier floors price the accommodation). An **estimate**: no
+/// source was read for the split (issue #779).
+pub const WHEELHOUSE_NAV_SHARE_OF_LUMP: f64 = 0.5;
+
+/// The split of the lump, for the results of a deckhouse Option.
+fn lump_split_json(lump: f64) -> Value {
+    json!({
+        "lump_rate": lump,
+        "wheelhouse_and_navigation_share": WHEELHOUSE_NAV_SHARE_OF_LUMP,
+        "wheelhouse_and_navigation_priced": lump * WHEELHOUSE_NAV_SHARE_OF_LUMP,
+        "accommodation_priced_by": "deckhouse line (tier floor area x rate)",
+        "status": "estimate",
+        "basis": "a deckhouse prices its accommodation by the floor of its tiers, so the wheelhouse and accommodation lump keeps only the wheelhouse and its navigation and controls; the share is an estimate, with no source",
+    })
+}
+
 /// Whether the stern of these `cost_masses` is a deckhouse (issue #779): it has deck area to price.
 fn has_deckhouse(cost_masses: &Value) -> bool {
     cost_masses["stern_items"]["deckhouse_area_m2"]
@@ -534,10 +551,11 @@ pub fn cost_of(option: &DesignOption, results: &Value) -> Value {
     let (Some(mut inputs), Some(mut rates)) = (masses_of(masses), rates_of(option)) else {
         return Value::Null;
     };
-    // Issue #779: a deckhouse is priced by its floor area; the lump for the wheelhouse and
-    // accommodation of the container block would price the same rooms twice.
-    if has_deckhouse(masses) {
-        rates.wheelhouse_accom_lump = 0.0;
+    // Issue #779: a deckhouse prices its accommodation by floor area, so the lump for the wheelhouse
+    // and accommodation of the container block keeps only the wheelhouse and navigation share.
+    let split = has_deckhouse(masses).then(|| lump_split_json(rates.wheelhouse_accom_lump));
+    if split.is_some() {
+        rates.wheelhouse_accom_lump *= WHEELHOUSE_NAV_SHARE_OF_LUMP;
     }
     // Issue #402: part of the tank structure surplus is stiffeners and ring frames in tank steel, priced
     // at the tank shell rate; the rest (saddles) stays at the supports rate.
@@ -571,9 +589,12 @@ pub fn cost_of(option: &DesignOption, results: &Value) -> Value {
             let date = option
                 .input("price_base_date")
                 .and_then(|i| i.value.as_str());
-            with_items(
-                result_json(&r, masses, tug, rates_kind(option), date),
-                items,
+            with_split(
+                with_items(
+                    result_json(&r, masses, tug, rates_kind(option), date),
+                    items,
+                ),
+                split,
             )
         }
         Err(_) => Value::Null,
@@ -591,8 +612,9 @@ fn liquid_cost_of(option: &DesignOption, results: &Value) -> Value {
     ) else {
         return Value::Null;
     };
-    if has_deckhouse(masses) {
-        rates.wheelhouse_accom_lump = 0.0;
+    let split = has_deckhouse(masses).then(|| lump_split_json(rates.wheelhouse_accom_lump));
+    if split.is_some() {
+        rates.wheelhouse_accom_lump *= WHEELHOUSE_NAV_SHARE_OF_LUMP;
     }
     let tug = has_tug(option);
     let mut inputs = BargeCostInputs::default();
@@ -616,7 +638,10 @@ fn liquid_cost_of(option: &DesignOption, results: &Value) -> Value {
                 .and_then(|i| i.value.as_str());
             let mut m = liquid_masses_json(&q, &inputs, &from_design);
             m["steel"] = Value::Null;
-            with_items(result_json(&r, &m, tug, rates_kind(option), date), items)
+            with_split(
+                with_items(result_json(&r, &m, tug, rates_kind(option), date), items),
+                split,
+            )
         }
         Err(_) => Value::Null,
     }
@@ -656,6 +681,14 @@ fn liquid_masses_json(q: &CostQuantities, m: &BargeCostInputs, from_design: &[&s
 
 /// The budget with its `items` (issue #773): what each item line of a self-propelled hull prices, and
 /// whether its rate is an example rate. A Formation with a tug has none, and no `items` key.
+/// A deckhouse Option's results say how the wheelhouse and accommodation lump was split (issue #779).
+fn with_split(mut v: Value, split: Option<Value>) -> Value {
+    if let (Some(split), Some(o)) = (split, v.as_object_mut()) {
+        o.insert("wheelhouse_accommodation_split".to_string(), split);
+    }
+    v
+}
+
 fn with_items(mut v: Value, items: Value) -> Value {
     if !items.is_null() {
         v["items"] = items;

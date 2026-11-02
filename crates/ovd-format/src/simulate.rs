@@ -1349,6 +1349,7 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
         (&hull, rho),
     )?;
     inp.sightline_limit_m = sightline_limit_of(p, self_propelled);
+    inp.solas_v22_sizing = solas_v22_sizing_of(p);
     // The hold design values. A key left out keeps the core default, which is the value the engine
     // used before these were inputs.
     inp.wing_void_width = get_or(p, "hold_wing_void_width_m", inp.wing_void_width)?;
@@ -2058,6 +2059,12 @@ fn powering_json(
 
 /// Issue #354: the Blind Distance limit of a self-propelled hull whose sightline is checked as a
 /// distance (ES-TRIN 7.02(2), 250 m until the Rule Sets of #355); `None` for the margin method.
+/// Whether the Option reaches the sea, so a fixed deckhouse wheelhouse is also sized to SOLAS V/22
+/// (issue #779): its Service Area is `coastal-and-river`. River-only keeps ES-TRIN alone.
+fn solas_v22_sizing_of(p: &Map<String, Value>) -> bool {
+    p.get("service_area").and_then(Value::as_str) == Some("coastal-and-river")
+}
+
 fn sightline_limit_of(p: &Map<String, Value>, self_propelled: bool) -> Option<f64> {
     let method = p.get("sightline_method").and_then(Value::as_str);
     (self_propelled && method == Some("blind_distance"))
@@ -2883,6 +2890,7 @@ fn simulate_gas(
         rule_inputs: rules.inputs.clone(),
         machinery: gas_machinery,
         sightline_limit_m: sightline_limit_of(p, self_propelled),
+        solas_v22_sizing: solas_v22_sizing_of(p),
         is_code: is_code_options,
         ..FitOptions::default()
     };

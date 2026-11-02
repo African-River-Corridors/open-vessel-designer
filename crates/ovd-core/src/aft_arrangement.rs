@@ -1494,7 +1494,7 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
             d.tiers <= deckhouse_sizes::MAX_TIERS,
             text!(
                 "check-deckhouse-tier-count",
-                "{tiers} tiers of {tier_area} m2 hold the {required} m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over {max} tiers is a tall house over a short machinery space (ESTIMATE limit)",
+                "{tiers} tier(s) of {tier_area} m2 hold the {required} m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over {max} tiers is a tall house over a short machinery space (ESTIMATE limit)",
                 tiers = d.tiers,
                 tier_area = Arg::fixed(d.tier_area_m2, 1),
                 required = Arg::fixed(d.required_area_m2, 1),
@@ -1503,10 +1503,20 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
             "warning",
         ));
         warnings.push(Text::fixed(
+            "warn-aft-deckhouse-no-outfit",
+            "The deckhouse carries no outfit mass: the outfit of the accommodation units left with \
+             them, and no outfit rate has been found, so the lightship is under-stated and GM \
+             over-stated until the calibration set (issue #782) gives one.",
+        ));
+        warnings.push(Text::fixed(
             "warn-aft-deckhouse-estimates",
             "Deckhouse stern: the tier height, the side deck and the tier limit are ESTIMATES, and the \
              accommodation floor it holds is an interim stand-in (the floor of the 40 ft accommodation \
-             units the Option holds) until the rooms are sized from MLC A3.1 and ES-TRIN 15.",
+             units the Option holds) until the rooms are sized from MLC A3.1 and ES-TRIN 15. A fixed wheelhouse \
+             is given the tiers its Blind Distance needs, to the stricter of ES-TRIN 7.02(2) and, on a \
+             coastal Option, SOLAS V/22.1.1: the first pass sizes the eye for a waterline at \
+             the keel, which is never too low and can add a tier; a second pass on the trimmed light \
+             waterline of the first keeps the lower tier count only if the sightline still passes.",
         ));
     }
     if gas {

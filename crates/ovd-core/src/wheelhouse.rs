@@ -16,6 +16,13 @@ use alloc::vec::Vec;
 /// the limit.
 pub const ES_TRIN_BLIND_DISTANCE_M: f64 = 250.0;
 
+/// The obstructed view ahead that SOLAS V/22.1.1 allows (m): two ship lengths or 500 m, whichever is
+/// less, for a ship of 45 m length overall and more (read as the Rule Set `solas-v22` reads it);
+/// `None` below 45 m.
+pub fn solas_v22_limit_m(loa_m: f64) -> Option<f64> {
+    (loa_m >= 45.0).then(|| (2.0 * loa_m).min(500.0))
+}
+
 /// Something forward of the eye: its top above the keel at its forward edge.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Obstruction {

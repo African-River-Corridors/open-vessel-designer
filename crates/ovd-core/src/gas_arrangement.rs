@@ -83,6 +83,8 @@ pub struct FitOptions {
     pub machinery: Option<crate::machinery::MachineryInputs>,
     /// Issue #354: the Blind Distance limit (`BargeCapacityInputs::sightline_limit_m`).
     pub sightline_limit_m: Option<f64>,
+    /// Issue #779: size a fixed deckhouse wheelhouse to SOLAS V/22.1.1 as well (a coastal Option).
+    pub solas_v22_sizing: bool,
     pub self_propelled: bool,
     pub depths: Vec<f64>,
     pub tanks_wide: Vec<i64>,
@@ -355,6 +357,7 @@ impl Default for FitOptions {
             stern_geometry: None,
             machinery: None,
             sightline_limit_m: None,
+            solas_v22_sizing: false,
             self_propelled: true,
             depths: DEFAULT_DEPTHS_M.to_vec(),
             tanks_wide: DEFAULT_TANKS_WIDE.to_vec(),
@@ -1120,6 +1123,7 @@ impl Search<'_> {
         inp.stern_geometry = self.o.stern_geometry.clone();
         inp.machinery = self.o.machinery.clone();
         inp.sightline_limit_m = self.o.sightline_limit_m;
+        inp.solas_v22_sizing = self.o.solas_v22_sizing;
         inp.block_coefficient = self.o.block_coefficient;
         inp.n_tanks_wide = Some(nw);
         inp.n_tanks_long = nl;
