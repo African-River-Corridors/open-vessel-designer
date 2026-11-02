@@ -242,6 +242,9 @@ pub enum Permeability {
     /// (IGC 2.5.2 note 2, "consistent with the amount of liquid carried"; ADN and ES-TRIN "0 or 95 %" as the
     /// space is full or empty).
     ByFilling(f64),
+    /// A space whose water is the greater of `net` times its net volume (its Intact Inclusions taken out) and
+    /// `floor` times its gross volume (ES-TRIN 2025/1 28.03(4)(d): a cargo hold at 95 %, not less than 70 %).
+    WithGrossFloor { net: f64, floor: f64 },
 }
 
 /// A Permeability Table (spec 0012 D9): the permeability of a damaged Space by its `SpaceKind`, from a Rule
@@ -261,6 +264,18 @@ impl PermeabilityTable {
             .map(|(_, p)| match *p {
                 Permeability::Fixed(v) => v,
                 Permeability::ByFilling(v) => v * (1.0 - filling.clamp(0.0, 1.0)),
+                Permeability::WithGrossFloor { net, .. } => net,
+            })
+    }
+
+    /// The floor on the water as a fraction of the gross volume of a Space of `kind`, where the table gives one.
+    pub fn gross_floor(&self, kind: SpaceKind) -> Option<f64> {
+        self.rows
+            .iter()
+            .find(|(k, _)| *k == kind)
+            .and_then(|(_, p)| match *p {
+                Permeability::WithGrossFloor { floor, .. } => Some(floor),
+                _ => None,
             })
     }
 }
@@ -522,6 +537,13 @@ pub fn normam_damage_cases(
     })
 }
 
+/// NORMAM-202/DPC 5.23.9 (c): a final heel of at most 25 degrees, "podendo ser aceita uma inclinação de até 30°,
+/// caso não ocorra imersão do convés" (up to 30 degrees accepted when the deck is not immersed). `ok_to_30` is the
+/// verdict with the 30 degree limit ([`crate::damage_stability::DamageCriteria::NORMAM_5_23_9`]).
+pub fn normam_final_heel_ok(ok_to_30: bool, heel_deg: f64, deck_immersed: bool) -> bool {
+    ok_to_30 && (heel_deg.abs() <= 25.0 || !deck_immersed)
+}
+
 /// The damage cases of IGC 2.3 under the standard of damage of 2.6.1 (spec 0012): the box generator on the
 /// Spaces as they are (a gas hull is cut at its hold bulkheads), with the extents, standard and permeability
 /// the caller reads from the Rule Set.
@@ -736,6 +758,7 @@ pub fn gas_flooding(
                 .filter(|t| t.x_aft >= space.x_aft - 1e-9 && t.x_fwd <= space.x_fwd + 1e-9)
                 .map(|t| crate::damage_stability::IntactInclusion::of_space(t))
                 .collect();
+            v.gross_floor = table.gross_floor(space.kind);
         }
         flooded.push(v);
     }

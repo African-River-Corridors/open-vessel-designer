@@ -65,6 +65,9 @@ pub fn permeability_table(set: &RuleSet, table_id: &str) -> Result<PermeabilityT
     let table =
         find(table_id).ok_or_else(|| format!("{} holds no table `{table_id}`", set.key()))?;
     let by_filling = find(&format!("{table_id}-by-filling"));
+    // Issue #763: the kinds that table `<table_id>-gross-floor` names take the greater of their value times the net
+    // volume and the floor times the gross volume.
+    let gross_floor = find(&format!("{table_id}-gross-floor"));
     let mut rows = Vec::new();
     for kind in SpaceKind::ALL {
         let key = MeasureValue::Text(kind.key().to_string());
@@ -76,12 +79,13 @@ pub fn permeability_table(set: &RuleSet, table_id: &str) -> Result<PermeabilityT
             )
         })?;
         let liquid = by_filling.is_some_and(|t| table_value(t, &key).is_ok_and(|v| v != 0.0));
+        let floor = gross_floor.and_then(|t| table_value(t, &key).ok());
         rows.push((
             kind,
-            if liquid {
-                Permeability::ByFilling(value)
-            } else {
-                Permeability::Fixed(value)
+            match floor {
+                Some(floor) => Permeability::WithGrossFloor { net: value, floor },
+                None if liquid => Permeability::ByFilling(value),
+                None => Permeability::Fixed(value),
             },
         ));
     }
@@ -150,6 +154,7 @@ pub fn gas_damage_verdicts(
             stage_criteria: DamageCriteria::IGC_2_7,
             set_key: set.key(),
             method: "lost buoyancy, final stage of flooding (IGC 2.7.1.2, 2.7.2.1)",
+            full_load_only: false,
         },
         spaces,
         hull,
@@ -167,6 +172,9 @@ pub(crate) struct GasRun {
     pub stage_criteria: ovd_core::damage_stability::DamageCriteria,
     pub set_key: String,
     pub method: &'static str,
+    /// Damage the full load departure only (ES-TRIN 28.03(3): the cargo for the maximum draught, evenly spread,
+    /// with full supplies), not every IS Code condition.
+    pub full_load_only: bool,
 }
 
 /// The damage cases of `run` on every loading condition of a gas hull, as [`gas_damage_verdicts`] gives them for
@@ -191,6 +199,9 @@ pub(crate) fn run_gas_damage(
     let (cases, table) = (&run.cases, &run.table);
     let mut out: Vec<ovd_core::measured::DamageVerdict> = Vec::new();
     for c in conditions {
+        if run.full_load_only && c.role != ovd_core::loading_conditions::Role::FullLoadDeparture {
+            continue;
+        }
         let mass: f64 = c.weights.iter().map(|(_, i)| i.mass_t).sum();
         if mass.is_nan() || mass <= 0.0 {
             continue;
@@ -452,7 +463,7 @@ pub fn gas_box_damage_verdicts(
         GasBoxRule::EsTrin => (
             DamageCriteria::ES_TRIN_28_03_FINAL,
             DamageCriteria::ES_TRIN_28_03_INTERMEDIATE,
-            "lost buoyancy, final stage; intermediate stages by added mass at 25, 50 and 75 % (ES-TRIN 2025/1 28.03(3) to (6))",
+            "lost buoyancy, final stage; intermediate stages by added mass at 25, 50 and 75 % (ES-TRIN 2025/1 28.03(3) to (6)); full load departure",
         ),
     };
     run_gas_damage(
@@ -463,6 +474,7 @@ pub fn gas_box_damage_verdicts(
             stage_criteria,
             set_key: set.key(),
             method,
+            full_load_only: rule == GasBoxRule::EsTrin,
         },
         spaces,
         hull,

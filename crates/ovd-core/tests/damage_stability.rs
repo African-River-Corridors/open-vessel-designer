@@ -722,6 +722,7 @@ fn a_flooded_tank_cut_parallel_to_its_axis_keeps_the_closed_form_segment() {
             shape: tank_shape(kind, head_m),
             permeability: 1.0,
             inclusions: vec![],
+            gross_floor: None,
         };
         for heel in [0.0_f64, 30.0, -70.0] {
             for h in [0.4_f64, -0.7, 0.95] {
@@ -750,6 +751,7 @@ fn a_flooded_tank_takes_its_outer_volume_of_water_when_wholly_below() {
         shape: tank_shape(HeadKind::Hemisphere, 1.0),
         permeability: 0.95,
         inclusions: vec![],
+        gross_floor: None,
     };
     let deep = plane_through(0.0, 0.0, (30.0, 0.0, 1e6));
     assert!((breached.water_m3(&deep) - 0.95 * tank_volume(1.0)).abs() < 1e-9);
@@ -856,4 +858,69 @@ fn a_one_sided_flood_heels_more_at_each_stage() {
     let heels: Vec<f64> = stages.iter().map(|st| st.heel_deg).collect();
     assert!(heels[0] > 0.0, "{heels:?}");
     assert!(heels[0] < heels[1] && heels[1] < heels[2], "{heels:?}");
+}
+
+// ---- ES-TRIN 28.03(4)(d): a hold with tanks floods at the greater of two terms -------------------------------
+
+fn box_inclusion(x: (f64, f64), y: (f64, f64), z: (f64, f64)) -> IntactInclusion {
+    IntactInclusion {
+        name: "TK".to_string(),
+        x_aft_m: x.0,
+        x_fwd_m: x.1,
+        shape: SpaceShape::Prism {
+            section: vec![(y.0, z.0), (y.1, z.0), (y.1, z.1), (y.0, z.1)],
+        },
+    }
+}
+
+/// A hold of 5 x 10 x 1 m = 50 m3 at mid-length with one box tank inside, at 95 % with a floor of 70 % of the gross
+/// volume. Worked by hand (28.03(4)(d): 95 % unless a calculation gives less, not less than 70 %):
+///
+/// - a tank of 4 x 4 x 0.6 = 9.6 m3 (19.2 % of the hold): 0.95 x (50 - 9.6) = 38.38 m3 against 0.70 x 50 = 35 m3,
+///   so the net term governs;
+/// - a tank of 4.8 x 9.6 x 1 = 46.08 m3 (92.16 %): 0.95 x (50 - 46.08) = 3.724 m3 against 35 m3, so the floor
+///   governs.
+///
+/// The hull floats at (1200 + water) / (60 x 10) m, the whole hold being under the waterplane.
+#[test]
+fn a_hold_with_tanks_floods_at_the_greater_of_95_percent_of_the_net_and_70_percent_of_the_gross() {
+    let t = hull();
+    let s = start(&t);
+    for (tank, water, governs) in [
+        (
+            box_inclusion((28.0, 32.0), (-2.0, 2.0), (0.2, 0.8)),
+            0.95 * (50.0 - 9.6),
+            "net",
+        ),
+        (
+            box_inclusion((27.6, 32.4), (-4.8, 4.8), (0.0, 1.0)),
+            0.70 * 50.0,
+            "floor",
+        ),
+    ] {
+        let mut hold = flooded((27.5, 32.5), (-5.0, 5.0), (0.0, 1.0), 0.95, "H");
+        hold.inclusions = vec![tank];
+        hold.gross_floor = Some(0.70);
+        let high = Waterplane::upright(10.0);
+        assert!(
+            (hold.water_m3(&high) - water).abs() < 1e-9,
+            "{governs}: {} against {water}",
+            hold.water_m3(&high)
+        );
+        let out = assess(
+            &t,
+            &[hold],
+            MASS,
+            gravity(),
+            1.0,
+            s,
+            &DamageCriteria::ADN_2025,
+        );
+        let want = (MASS + water) / (L * B);
+        assert!(
+            (out.draught_mid_m - want).abs() < 1e-6,
+            "{governs}: {} against {want}",
+            out.draught_mid_m
+        );
+    }
 }

@@ -227,6 +227,8 @@ fn es_trin_cases_have_the_bottom_damage_of_0_39_m_and_three_stages() {
         .as_array()
         .unwrap();
     for c in cases {
+        // ES-TRIN 28.03(3): the cargo for the maximum draught, supplies full: the full load departure only
+        assert_eq!(c["condition"], "Full load, departure", "{c}");
         let stages = c["stages"].as_array().unwrap();
         assert_eq!(stages.len(), 3);
         let fractions: Vec<f64> = stages
@@ -357,4 +359,36 @@ fn es_trin_28_03_is_evaluated_on_a_liquid_craft_over_110_m() {
     );
     // the ADN cases do not move with the length rule in the stack
     assert!(short["damage"].is_array());
+}
+
+/// NORMAM 5.23 is for a gross tonnage over 20: the rows are `not applicable` under it; the rows for 5.23.7 (c),
+/// 5.23.8 (e) and (g) are listed `not evaluated`.
+#[test]
+fn normam_lists_what_it_does_not_check() {
+    let sets = [
+        ("is2008-a", "2.0.0"),
+        ("normam-202", "2.0.0"),
+        ("ovd", "3.1.0"),
+    ];
+    let r = liquid_results(&sets, None);
+    for id in [
+        "normam/5.23.7(c)/all-loading-conditions",
+        "normam/5.23.8(e)/openings-above-damage-waterline",
+        "normam/5.23.8(g)/lesser-damage",
+    ] {
+        let row = rows(&r, id);
+        assert_eq!(row.len(), 1, "{id}");
+        assert_eq!(row[0]["outcome"], "not evaluated", "{id}");
+        assert!(row[0]["gap"].as_str().unwrap().len() > 20, "{id}");
+    }
+    let lib = Library::built_in();
+    let set = lib.find("normam-202", "2.0.0").unwrap();
+    assert_eq!(
+        set.applies_when
+            .conditions
+            .iter()
+            .find(|(k, _)| k == "gross_tonnage_band")
+            .map(|(_, v)| v.clone()),
+        Some(vec!["over-20".to_string()])
+    );
 }

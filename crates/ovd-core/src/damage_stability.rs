@@ -45,6 +45,10 @@ pub struct FloodedVolume {
     /// Spaces inside this one that keep their buoyancy (an intact Type C tank in a flooded hold). Each lies
     /// wholly inside the Flooded Volume; it is not clipped to it.
     pub inclusions: Vec<IntactInclusion>,
+    /// A floor on the water as a fraction of the space's gross volume (its inclusions not taken out): the water is
+    /// the greater of `permeability` times the net volume and this times the gross volume. ES-TRIN 2025/1
+    /// 28.03(4)(d): a cargo hold floods at 95 % unless a calculation gives less, and not less than 70 %.
+    pub gross_floor: Option<f64>,
 }
 
 /// An Intact Inclusion (spec 0012, D7): a Space inside a Flooded Volume that keeps its buoyancy, so the
@@ -76,6 +80,7 @@ impl FloodedVolume {
             },
             permeability,
             inclusions: Vec::new(),
+            gross_floor: None,
         }
     }
 
@@ -88,13 +93,28 @@ impl FloodedVolume {
             shape: space.shape.clone(),
             permeability,
             inclusions: Vec::new(),
+            gross_floor: None,
         }
     }
 
     /// The volume of water in the space below a waterplane, m³: the permeability times its part below
     /// the waterplane less the parts of its inclusions below it.
     pub fn water_m3(&self, wp: &Waterplane) -> f64 {
-        self.permeability * self.below(wp).v
+        self.effective_permeability(wp) * self.below(wp).v
+    }
+
+    /// The fraction of its net part below the waterplane that the water fills: `permeability`, or the more that
+    /// makes the water the `gross_floor` of the gross part below it.
+    fn effective_permeability(&self, wp: &Waterplane) -> f64 {
+        let Some(floor) = self.gross_floor else {
+            return self.permeability;
+        };
+        let net = self.below(wp).v;
+        if net <= 0.0 {
+            return self.permeability;
+        }
+        let gross = shape_below(wp, self.x_aft_m, self.x_fwd_m, &self.shape).v;
+        self.permeability.max(floor * gross / net)
     }
 
     /// The part of the space below the waterplane, its inclusions taken out.
@@ -360,10 +380,11 @@ fn buoyancy(table: &SectionsTable, flooded: &[FloodedVolume], wp: &Waterplane) -
     let (mut mx, mut my, mut mz) = (v * im.lcb_m, v * im.tcb_m, v * im.kb_m);
     for b in flooded {
         let p = b.below(wp);
-        v -= b.permeability * p.v;
-        mx -= b.permeability * p.mx;
-        my -= b.permeability * p.my;
-        mz -= b.permeability * p.mz;
+        let k = b.effective_permeability(wp);
+        v -= k * p.v;
+        mx -= k * p.mx;
+        my -= k * p.my;
+        mz -= k * p.mz;
     }
     if v > 0.0 {
         Buoyancy {

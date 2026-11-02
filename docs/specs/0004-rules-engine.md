@@ -163,6 +163,8 @@ types them (spec 0006 §5.2, #336):
   result's deadweight, at the thresholds of MARPOL Annex I Reg. 19 ("x tonnes deadweight and above" is
   in the band that starts at x). So the 5,000 t switch of the MARPOL construction rules stays
   `input ∈ {values}`.
+- `gross_tonnage_band`: `20-or-under`, `over-20`, from the result's gross tonnage (ITC 1969, issue #777), at the
+  threshold of NORMAM-202/DPC 5.23 ("embarcações com AB superior a 20"; issue #763).
 - `length_band`: `under-45-m`, `45-to-110-m`, `over-110-m`, from the length overall of the Option, at
   the thresholds of SOLAS V/22.1 ("not less than 45 m": 45 m is in the band that starts at 45) and
   ES-TRIN 28.02 ("exceeds 110 m": 110 m is in the band below). The length overall stands in for the

@@ -325,7 +325,7 @@ pub(crate) enum LiquidRule {
 }
 
 /// Issue #763: the assumed damages of ES-TRIN 28.03(4) or NORMAM 5.23.8 on the laden departure condition of a
-/// liquid bulk hull, and what each does. `table` is the rule's Permeability Table; the cargo and slop tanks are
+/// liquid bulk hull, and what each does. `table` is the rule's Permeability Table; the cargo tanks are
 /// full at the laden departure (0 or 95 % "according to their function", ES-TRIN 28.03(4)(d), NORMAM 5.23.8 (f)),
 /// so they flood nothing and keep their oil; every other space is empty (its table value). Empty when the
 /// departure condition has no floating position.
@@ -348,7 +348,9 @@ pub(crate) fn liquid_rule_damage(
     };
     let (loa, beam) = (hull.spec.loa, hull.spec.beam);
     let by_function = |kind: SpaceKind| {
-        let full = matches!(kind, SpaceKind::CargoTank | SpaceKind::Slop);
+        // The cargo tanks are full at the laden departure; the slop tanks are empty in the loading conditions
+        // (see `damage_verdicts`), so they flood at their empty value like the ballast spaces.
+        let full = kind == SpaceKind::CargoTank;
         table.of(kind, if full { 1.0 } else { 0.0 }).unwrap_or(0.0)
     };
     let cases = match rule {
@@ -386,10 +388,8 @@ pub(crate) fn liquid_rule_damage(
                 &criteria,
             );
             // NORMAM 5.23.9 (c): a heel above 25 degrees is accepted up to 30 only when the deck is not immersed.
-            if rule == LiquidRule::Normam
-                && outcome.ok
-                && outcome.heel_deg.abs() > 25.0
-                && deck_edge_immersed(
+            if rule == LiquidRule::Normam {
+                let immersed = deck_edge_immersed(
                     &Waterplane {
                         heel_deg: outcome.heel_deg,
                         trim_deg: outcome.trim_deg,
@@ -398,9 +398,12 @@ pub(crate) fn liquid_rule_damage(
                     (0.0, loa),
                     0.5 * beam,
                     hull.spec.depth,
-                )
-            {
-                outcome.ok = false;
+                );
+                outcome.ok = ovd_core::damage_cases::normam_final_heel_ok(
+                    outcome.ok,
+                    outcome.heel_deg,
+                    immersed,
+                );
             }
             let stages = if rule == LiquidRule::EsTrin {
                 intermediate_stages(

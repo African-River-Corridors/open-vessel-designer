@@ -376,6 +376,11 @@ pub const DERIVED_INPUTS: &[(&str, &[&str])] = &[
     // Issue #355: the Formation's kind, read from the `formation` input.
     ("formation_kind", crate::vdesign::FORMATION_KINDS),
     ("deadweight_band", DEADWEIGHT_BANDS),
+    // Issue #763: the gross tonnage over 20 that NORMAM-202 5.23 applies to.
+    (
+        "gross_tonnage_band",
+        ovd_core::measured::GROSS_TONNAGE_BANDS,
+    ),
     // Issue #338: the ADN Tank Vessel Type of the Cargo, from its Crude Grade (ADN 2025 3.2.3.3).
     ("adn_vessel_type", &["N_open", "N_closed", "C"]),
     // Issue #543: the length overall, in the bands of SOLAS V/22.1 and ES-TRIN 28.02.
@@ -644,6 +649,13 @@ impl MeasureSource for OptionMeasures<'_> {
                     .measured
                     .deadweight_t
                     .map(|dw| deadweight_band(dw).to_string());
+            }
+            "gross_tonnage_band" => {
+                return self
+                    .measured
+                    .gross_tonnage
+                    .as_ref()
+                    .map(|g| ovd_core::measured::gross_tonnage_band(g.value()).to_string());
             }
             "adn_vessel_type" => {
                 let cargo = self.option.input("cargo")?.value.as_str()?;

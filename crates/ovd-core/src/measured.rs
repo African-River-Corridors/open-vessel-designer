@@ -166,6 +166,19 @@ pub fn downflooding_angle_value(angle: Option<f64>, openings_listed: bool) -> &'
     }
 }
 
+/// The gross tonnage bands, at the threshold of NORMAM-202/DPC 5.23 ("embarcações com AB superior a 20": a gross
+/// tonnage over 20). 20 itself is in the band below.
+pub const GROSS_TONNAGE_BANDS: &[&str] = &["20-or-under", "over-20"];
+
+/// The band of a gross tonnage (ITC 1969).
+pub fn gross_tonnage_band(gt: f64) -> &'static str {
+    if gt > 20.0 {
+        GROSS_TONNAGE_BANDS[1]
+    } else {
+        GROSS_TONNAGE_BANDS[0]
+    }
+}
+
 /// The length bands, at the thresholds of SOLAS V/22.1 (ships of not less than 45 m) and ES-TRIN
 /// 28.02 (craft whose length exceeds 110 m).
 pub const LENGTH_BANDS: &[&str] = &["under-45-m", "45-to-110-m", "over-110-m"];

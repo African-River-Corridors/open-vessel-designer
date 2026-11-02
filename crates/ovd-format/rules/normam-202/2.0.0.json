@@ -22,6 +22,9 @@
   "applies_when": {
     "cargo_class": [
       "liquid_bulk"
+    ],
+    "gross_tonnage_band": [
+      "over-20"
     ]
   },
   "includes": [],
@@ -197,8 +200,8 @@
       },
       "codified": {
         "by": "agent",
-        "date": "2026-10-22",
-        "review": "#338"
+        "date": "2026-11-02",
+        "review": "#763"
       },
       "verified": false,
       "kind": "check",
@@ -209,7 +212,7 @@
       "sizes": false,
       "evaluated": true,
       "finding": null,
-      "since": "1.0.0"
+      "since": "2.0.0"
     },
     {
       "id": "normam/5.23.9/damage-criteria-met",
@@ -224,8 +227,8 @@
       },
       "codified": {
         "by": "agent",
-        "date": "2026-10-22",
-        "review": "#338"
+        "date": "2026-11-02",
+        "review": "#763"
       },
       "verified": false,
       "kind": "check",
@@ -236,7 +239,7 @@
       "sizes": false,
       "evaluated": true,
       "finding": null,
-      "since": "1.0.0"
+      "since": "2.0.0"
     },
     {
       "id": "normam/5.23.3(l)/opening-setback",
@@ -265,6 +268,90 @@
       "gap": "the model has no opening positions",
       "finding": null,
       "since": "1.0.0"
+    },
+    {
+      "id": "normam/5.23.7(c)/all-loading-conditions",
+      "title": "Damage stability is proved for every expected loading condition and every variation of draught and trim",
+      "origin": "national-practice",
+      "source": {
+        "document": "NORMAM-202/DPC, Normas da Autoridade Marítima para Embarcações Empregadas na Navegação Interior, chapter 5 section III (alcohol, petroleum and derivatives)",
+        "edition": "1ª Revisão (2023), with Modificações 1 and 2",
+        "locator": "5.23.7(c)",
+        "page": "normam-202.pdf, printed p. 5-37",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_normam_conditions"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "OVD damages the laden departure condition only; the other conditions and the variations of draught and trim are not damaged",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "normam/5.23.8(e)/openings-above-damage-waterline",
+      "title": "At the final stage of flooding the lower edge of any non-watertight opening is at least 0.10 m above the damage waterline",
+      "origin": "national-practice",
+      "source": {
+        "document": "NORMAM-202/DPC, Normas da Autoridade Marítima para Embarcações Empregadas na Navegação Interior, chapter 5 section III (alcohol, petroleum and derivatives)",
+        "edition": "1ª Revisão (2023), with Modificações 1 and 2",
+        "locator": "5.23.8(e)",
+        "page": "normam-202.pdf, printed p. 5-38",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_openings_normam"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "The openings of the hull are not an input yet, so the damaged waterline cannot be checked against them (spec 0012, roadmap)",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "normam/5.23.8(g)/lesser-damage",
+      "title": "Where a damage smaller than the standard gives a worse heel, trim and reserve of buoyancy, the criteria are met for that damage too",
+      "origin": "national-practice",
+      "source": {
+        "document": "NORMAM-202/DPC, Normas da Autoridade Marítima para Embarcações Empregadas na Navegação Interior, chapter 5 section III (alcohol, petroleum and derivatives)",
+        "edition": "1ª Revisão (2023), with Modificações 1 and 2",
+        "locator": "5.23.8(g)",
+        "page": "normam-202.pdf, printed p. 5-38",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_normam_lesser"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "OVD generates the standard damage only, not the lesser damages that can govern",
+      "finding": null,
+      "since": "2.0.0"
     }
   ]
 }

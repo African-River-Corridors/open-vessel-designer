@@ -566,3 +566,38 @@ fn normam_is_the_marpol_extents_anywhere_with_the_engine_room_intact_and_full_ta
     let marpol = marpol_damage_cases(&spaces, 60.0, 12.0);
     assert!(!marpol.is_empty());
 }
+
+/// ES-TRIN 28.03(4)(d): a hold with a tank inside takes the table's floor on its gross volume (70 %), a hold the
+/// table gives no floor has none.
+#[test]
+fn gas_flooding_gives_a_hold_the_gross_floor_of_the_table() {
+    let spaces = gas_layout();
+    let case = DamageCase {
+        name: "c".to_string(),
+        flooded: vec![FloodedVolume::from_box(
+            "H1C",
+            (8.0, 34.0),
+            (-4.5, 4.5),
+            (1.0, 6.0),
+            0.95,
+        )],
+    };
+    let mut rows: Vec<(SpaceKind, Permeability)> = SpaceKind::ALL
+        .iter()
+        .map(|&k| (k, Permeability::Fixed(0.95)))
+        .collect();
+    let table = PermeabilityTable { rows: rows.clone() };
+    let f = gas_flooding(&case, &spaces, &table, &|_| 0.0);
+    assert_eq!(f.flooded[0].gross_floor, None);
+    for r in rows.iter_mut().filter(|(k, _)| *k == SpaceKind::CargoHold) {
+        r.1 = Permeability::WithGrossFloor {
+            net: 0.95,
+            floor: 0.70,
+        };
+    }
+    let table = PermeabilityTable { rows };
+    assert_eq!(table.of(SpaceKind::CargoHold, 0.0), Some(0.95));
+    let f = gas_flooding(&case, &spaces, &table, &|_| 0.0);
+    assert_eq!(f.flooded[0].gross_floor, Some(0.70));
+    assert_eq!(f.flooded[0].permeability, 0.95);
+}

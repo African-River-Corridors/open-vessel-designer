@@ -53,8 +53,7 @@
           "when": {
             "in": [
               "machinery",
-              "pump_room",
-              "void"
+              "pump_room"
             ]
           },
           "shape": "const",
@@ -67,13 +66,14 @@
             ]
           },
           "shape": "const",
-          "a": 0.7
+          "a": 0.95
         },
         {
           "when": {
             "in": [
               "cofferdam",
-              "peak_void"
+              "peak_void",
+              "void"
             ]
           },
           "shape": "const",
@@ -120,6 +120,29 @@
           },
           "shape": "const",
           "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "es-trin-permeability-gross-floor",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "locator": "28.03(4)(d)",
+        "page": "Edition 2025/1, page 200"
+      },
+      "input": {
+        "name": "space kind"
+      },
+      "unit": "-",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "cargo_hold"
+            ]
+          },
+          "shape": "const",
+          "a": 0.7
         }
       ]
     }
