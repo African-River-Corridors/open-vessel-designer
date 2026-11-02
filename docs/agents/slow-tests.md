@@ -5,10 +5,17 @@ below are left out of it and run in the `nightly` workflow (`.github/workflows/n
 day and on any PR that changes this list, the nextest profiles or the gate script. No test is
 deleted. Run every test locally with `GATES_NEXTEST_PROFILE=nightly bash tools/gates.sh`.
 
-The `test` check is split (issue #561). `ci.yml` runs the gate in four parallel jobs: `gate-lint`, `gate-rust` (four
+The `test` check is split (issue #561). `ci.yml` runs the gate in four parallel jobs: `gate-lint`, `gate-rust` (twelve
 partitions of the Rust tests), `gate-impact` and `gate-python`. The job named `test` waits for all of them and
 passes only if each passed. `tools/gates.sh` takes `GATES_STEPS` (a list of step groups) and `GATES_PARTITION`
-(for example `2/4`) to run one part; with neither set it runs everything, as before.
+(for example `2/12`) to run one part; with neither set it runs everything, as before.
+
+A partition runs the slow Rust tests that `.config/rust-partitions.txt` places in it, then its hash share of
+every other test, both at once (issue #819). The file places each test of 15 s or more by its measured time, so no job
+draws several slow tests by chance. Rewrite it from a CI run's JUnit artifacts (`nextest-junit-*`) when the
+slow tests change: `python3 tools/rust_partitions.py 12 <junit files> > .config/rust-partitions.txt`. A stale
+line costs balance only: a test the file does not name still runs in its hash partition. A job whose
+placed lines all name no test fails (nextest `--no-tests=fail`), so the file is rewritten then.
 
 A test moves here only by its measured time, and never if it proves a gate: the evaluation harness
 false-pass check, the fixture and results hashes, WebAssembly parity, the release guard and the

@@ -32,7 +32,9 @@
 # CI runs the steps in parallel jobs (issue #561). GATES_STEPS is a comma list of step groups: `lint`
 # (steps 1 to 3), `rust` (step 4), `rules` (steps 4a and 5), `impact` (step 6) and `pytest` (step 7).
 # It is unset for the whole gate. A group that is named runs in full; a name that is not a group fails.
-# GATES_PARTITION=k/N runs partition k of N of the Rust tests (cargo nextest --partition hash:k/N);
+# GATES_PARTITION=k/N runs partition k of N of the Rust tests: the slow tests that
+# .config/rust-partitions.txt places in job k (by measured time, tools/rust_partitions.py, issue #819),
+# then partition k of N of every test the file does not place (cargo nextest --partition hash:k/N);
 # the doctests run with partition 1. The required CI check `test` passes only when every group ran
 # in a job that passed.
 set -euo pipefail
@@ -81,14 +83,34 @@ if [ "$SELECTED" != all ]; then
   done
 fi
 case "$PARTITION" in
-  "" | [1-9]/[1-9]) ;;
+  "" | [1-9]/[1-9] | [1-9]/[1-9][0-9] | [1-9][0-9]/[1-9][0-9]) ;;
   *) fail "GATES_PARTITION must look like 2/4, not '$PARTITION'" ;;
 esac
+[ -z "$PARTITION" ] || [ "${PARTITION%/*}" -le "${PARTITION#*/}" ] \
+  || fail "GATES_PARTITION must look like 2/4, not '$PARTITION'"
+# The placed slow tests (issue #819): one line each, `job binary test seconds`. A filterset of the
+# lines of job $1, or of every line with `all`. A job number outside 1..N fails here, before any step.
+PLACED=.config/rust-partitions.txt
+placed() {
+  local expr="" k bin name _
+  while read -r k bin name _; do
+    case "$k" in "" | \#*) continue ;; esac
+    case "$PARTITION" in "") ;; *) [ "$k" -ge 1 ] && [ "$k" -le "${PARTITION#*/}" ] \
+      || fail "$PLACED places $name in job $k, not one of 1 to ${PARTITION#*/}" ;; esac
+    [ "$1" = all ] || [ "$k" = "$1" ] || continue
+    expr="${expr:+$expr | }(binary_id($bin) & test(=$name))"
+  done < "$PLACED"
+  echo "$expr"
+}
+[ -z "$PARTITION" ] || { [ -f "$PLACED" ] || fail "$PLACED is missing"; placed all >/dev/null; }
 selected() { [ "$SELECTED" = all ] || case ",$SELECTED," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 [ -d "$(rustc --print target-libdir --target "$WASM_TARGET" 2>/dev/null)" ] \
   || fail "the $WASM_TARGET target is not installed (rustup target add $WASM_TARGET)"
-"$PY" -c "import pytest" 2>/dev/null || fail "pytest is not importable by $PY (pip install -e '.[dev]')"
-"$PY" -c "import xdist" 2>/dev/null || fail "pytest-xdist is not importable by $PY (pip install -e '.[dev]')"
+# pytest is checked only when its step runs: the Rust test jobs do not install the package (issue #819).
+if selected pytest; then
+  "$PY" -c "import pytest" 2>/dev/null || fail "pytest is not importable by $PY (pip install -e '.[dev]')"
+  "$PY" -c "import xdist" 2>/dev/null || fail "pytest-xdist is not importable by $PY (pip install -e '.[dev]')"
+fi
 
 # Note: "$@" runs inside `||`, so bash ignores `set -e` in it. A step that is a shell function
 # must return non-zero on every failure itself (see cargo_test_without_python).
@@ -116,10 +138,25 @@ cargo_test_without_python() {
   done
   # Explicit `|| return 1`: `step` calls this function inside `||`, where bash ignores `set -e`,
   # so without it a failing cargo test would fall through and the step would report ok.
-  local part=()
-  [ -z "$PARTITION" ] || part=(--partition "hash:$PARTITION")
+  local part=() mine="" all placed_pid=""
+  if [ -n "$PARTITION" ]; then
+    mine="$(placed "${PARTITION%/*}")" || return 1
+    all="$(placed all)" || return 1
+    part=(--partition "hash:$PARTITION")
+    [ -z "$all" ] || part+=(-E "not ($all)")
+  fi
+  # This job's placed slow tests run beside its share of the rest (issue #819): while a slow test
+  # runs, the other cores take the rest. They write their own JUnit (the `pr-placed` profile).
+  if [ -n "$mine" ]; then
+    PATH="$shims:$PATH" OVD_PYTHON="$shims/python3" cargo nextest run --no-run --all-features || return 1
+    PATH="$shims:$PATH" OVD_PYTHON="$shims/python3" \
+      cargo nextest run --profile pr-placed --all-features --no-tests=fail -E "$mine" &
+    placed_pid=$!
+  fi
   PATH="$shims:$PATH" OVD_PYTHON="$shims/python3" \
-    cargo nextest run --profile "$PROFILE" --all-features --no-tests=fail ${part[@]+"${part[@]}"} || return 1
+    cargo nextest run --profile "$PROFILE" --all-features --no-tests=fail ${part[@]+"${part[@]}"} \
+    || { [ -z "$placed_pid" ] || wait "$placed_pid"; return 1; }
+  [ -z "$placed_pid" ] || wait "$placed_pid" || return 1
   # The doctests are not partitioned: they run once, with the first partition.
   case "$PARTITION" in
     "" | 1/*) PATH="$shims:$PATH" OVD_PYTHON="$shims/python3" cargo test --doc --all-features || return 1 ;;

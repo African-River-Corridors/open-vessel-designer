@@ -28,7 +28,7 @@ jobs:
 
   # Fast gate (spec 0001): one fail-closed script, tools/gates.sh. It is split across parallel jobs
   # (issue #561) with GATES_STEPS and GATES_PARTITION, and the job named `test` at the end is the
-  # required check: it passes only when every part passed. The Rust tests run in four partitions; the
+  # required check: it passes only when every part passed. The Rust tests run in twelve partitions; the
   # tests the `pr` profile leaves out run in nightly.yml (docs/agents/slow-tests.md).
   gate-lint:
     runs-on: ubuntu-latest
@@ -43,30 +43,36 @@ jobs:
           GATES_STEPS: lint,rules
         run: bash tools/gates.sh
 
+  # Twelve jobs, with the slow tests placed by their measured time (.config/rust-partitions.txt,
+  # issue #819). Line tables only: a failing test still names its line, and the test binaries link
+  # faster. The setting is in the cache key, so the cached dependencies match it.
   gate-rust:
-    name: gate-rust (${{ matrix.part }}/4)
+    name: gate-rust (${{ matrix.part }}/12)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      CARGO_PROFILE_DEV_DEBUG: line-tables-only
     strategy:
       fail-fast: false
       matrix:
-        part: [1, 2, 3, 4]
+        part: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/gate-env
         with:
           cache-key: gate-rust
-      - name: Rust tests, partition ${{ matrix.part }} of 4
+          python-package: "false"
+      - name: Rust tests, partition ${{ matrix.part }} of 12
         env:
           GATES_STEPS: rust
-          GATES_PARTITION: ${{ matrix.part }}/4
+          GATES_PARTITION: ${{ matrix.part }}/12
         run: bash tools/gates.sh
       - name: Upload the nextest times (JUnit)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nextest-junit-${{ matrix.part }}
-          path: target/nextest/pr/junit.xml
+          path: target/nextest/*/junit.xml
           if-no-files-found: ignore
 
   gate-impact:

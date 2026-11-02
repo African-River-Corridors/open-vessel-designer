@@ -27,3 +27,10 @@ fail-fast = false
 
 [profile.nightly.junit]
 path = "junit.xml"
+
+# The placed slow tests of a gate-rust job run beside the job's hash share of the rest, so they need a
+# JUnit file of their own (tools/gates.sh, issue #819). It has no filter: the job names its tests.
+[profile.pr-placed]
+
+[profile.pr-placed.junit]
+path = "junit.xml"

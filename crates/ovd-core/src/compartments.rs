@@ -253,10 +253,16 @@ impl ClippedSpace {
             let (mut lo, mut hi) = (z_lo, z_hi);
             for _ in 0..100 {
                 let mid = 0.5 * (lo + hi);
+                let before = (lo.to_bits(), hi.to_bits());
                 if self.below(mid, false).volume < target {
                     lo = mid;
                 } else {
                     hi = mid;
+                }
+                // A step that leaves both bounds as they were is a fixed point: `below` is pure, so
+                // every later step repeats it. Stopping gives the same bits (issue #819).
+                if (lo.to_bits(), hi.to_bits()) == before {
+                    break;
                 }
             }
             0.5 * (lo + hi)
@@ -471,15 +477,19 @@ fn quadratic_roots(a: f64, b: f64, c: f64) -> Vec<f64> {
 
 /// Clip `subject` by the convex polygon `clipper` (counter-clockwise), one half plane per edge.
 fn clip_convex(subject: &[(f64, f64)], clipper: &[(f64, f64)]) -> Vec<(f64, f64)> {
-    let mut out = subject.to_vec();
+    // Two buffers swapped per edge, so the clip allocates once and not once per edge (issue #819).
     let k = clipper.len();
+    let mut out = Vec::with_capacity(subject.len() + k);
+    out.extend_from_slice(subject);
+    let mut input = Vec::with_capacity(subject.len() + k);
     for i in 0..k {
         if out.is_empty() {
             break;
         }
         let (a, b) = (clipper[i], clipper[(i + 1) % k]);
         let side = |p: (f64, f64)| (b.0 - a.0) * (p.1 - a.1) - (b.1 - a.1) * (p.0 - a.0);
-        let input = core::mem::take(&mut out);
+        core::mem::swap(&mut input, &mut out);
+        out.clear();
         let n = input.len();
         for j in 0..n {
             let (p, q) = (input[j], input[(j + 1) % n]);

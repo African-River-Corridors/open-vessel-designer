@@ -22,8 +22,8 @@ use std::path::{Path, PathBuf};
 
 use ovd_core::machinery::layout_rates::DISC_THICKNESS_OVER_D;
 use ovd_core::mesh::{Mesh, PartSource};
-use ovd_format::export::option_glb;
-use ovd_format::{Profile, RunOutcome, check, option_vessel_run, run_option};
+use ovd_format::export::gltf_glb;
+use ovd_format::{DesignOption, Profile, RunOutcome, check, option_vessel_run, run_option};
 use serde_json::Value;
 
 struct Case {
@@ -53,33 +53,53 @@ fn design_files() -> Vec<PathBuf> {
 
 /// Every computed Option with a Propulsor Layout.
 fn cases() -> Vec<Case> {
+    let out = cases_of(design_files());
+    assert!(out.len() >= 5, "{} self-propelled designs", out.len());
+    out
+}
+
+/// The Options of `files`, each with the name of its file.
+fn options_of(files: Vec<PathBuf>) -> Vec<(String, DesignOption)> {
     let mut out = Vec::new();
-    for path in design_files() {
+    for path in files {
         let text = std::fs::read_to_string(&path).unwrap();
         let design = check(&text, &Profile::built_in())
             .design
             .expect("a valid design");
-        for option in &design.options {
-            let RunOutcome::Results { results, .. } = run_option(option) else {
-                continue;
-            };
-            if !results["drawing"]["propulsors"].is_object() {
-                continue;
-            }
-            let run = option_vessel_run(option).expect("a vessel run");
-            out.push(Case {
-                at: format!(
-                    "{} / {}",
-                    path.file_name().unwrap().to_string_lossy(),
-                    option.name
-                ),
-                results,
-                mesh: run.meshes(),
-            });
-        }
+        let file = path.file_name().unwrap().to_string_lossy().to_string();
+        out.extend(design.options.into_iter().map(|o| (file.clone(), o)));
     }
-    assert!(out.len() >= 5, "{} self-propelled designs", out.len());
     out
+}
+
+/// `f` of each item, each on its own thread, in the order of `items`. The runs are independent, so
+/// a test waits for the slowest Option and not for the sum of them (issue #819).
+fn each_in_parallel<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> {
+    std::thread::scope(|s| {
+        let handles: Vec<_> = items.iter().map(|i| s.spawn(|| f(i))).collect();
+        handles.into_iter().map(|h| h.join().unwrap()).collect()
+    })
+}
+
+/// The computed Options with a Propulsor Layout of `files`.
+fn cases_of(files: Vec<PathBuf>) -> Vec<Case> {
+    each_in_parallel(&options_of(files), |(file, option)| {
+        let RunOutcome::Results { results, .. } = run_option(option) else {
+            return None;
+        };
+        if !results["drawing"]["propulsors"].is_object() {
+            return None;
+        }
+        let run = option_vessel_run(option).expect("a vessel run");
+        Some(Case {
+            at: format!("{file} / {}", option.name),
+            results,
+            mesh: run.meshes(),
+        })
+    })
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
 fn part(m: &Mesh, source: &PartSource) -> Mesh {
@@ -335,8 +355,13 @@ fn every_propulsor_part_is_closed_and_faces_out() {
     }
 }
 
+/// The first case of the design file `name`: only that file is run (issue #819).
 fn case(name: &str) -> Case {
-    cases()
+    let files = design_files()
+        .into_iter()
+        .filter(|p| p.file_name().is_some_and(|f| f == name))
+        .collect();
+    cases_of(files)
         .into_iter()
         .find(|c| c.at.starts_with(name))
         .unwrap_or_else(|| panic!("no case {name}"))
@@ -426,47 +451,39 @@ const PINNED_SHAFT: [[f64; 3]; 2] = [[2.5, 2.7, 1.356_801], [2.5, -2.7, 1.356_80
 #[test]
 fn every_propulsor_part_is_a_named_gltf_node_with_the_propulsor_material() {
     let mut seen = 0;
-    for path in design_files() {
-        let design = check(
-            &std::fs::read_to_string(&path).unwrap(),
-            &Profile::built_in(),
-        )
-        .design
-        .expect("a valid design");
-        for option in &design.options {
-            let Ok(run) = option_vessel_run(option) else {
-                continue;
-            };
-            let mesh = run.meshes();
-            if !mesh.groups.iter().any(|g| g.layer == "propulsor") {
-                continue;
-            }
-            let glb = option_glb(option).unwrap();
-            let json_len = u32::from_le_bytes(glb[12..16].try_into().unwrap()) as usize;
-            let doc: Value = serde_json::from_slice(&glb[20..20 + json_len]).unwrap();
-            let nodes = doc["nodes"].as_array().unwrap();
-            let layer = nodes
-                .iter()
-                .find(|n| n["name"] == "propulsors")
-                .expect("a propulsors node");
-            let children: Vec<&str> = layer["children"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|i| {
-                    nodes[i.as_u64().unwrap() as usize]["name"]
-                        .as_str()
-                        .unwrap()
-                })
-                .collect();
-            for g in mesh.groups.iter().filter(|g| g.layer == "propulsor") {
-                assert!(children.contains(&g.id.as_str()), "{}", g.id);
-                let node = nodes.iter().find(|n| n["name"] == g.id.as_str()).unwrap();
-                let m = &doc["meshes"][node["mesh"].as_u64().unwrap() as usize];
-                let mat = m["primitives"][0]["material"].as_u64().unwrap() as usize;
-                assert_eq!(doc["materials"][mat]["name"], "propulsor", "{}", g.id);
-                seen += 1;
-            }
+    let meshes = each_in_parallel(&options_of(design_files()), |(_, option)| {
+        option_vessel_run(option).ok().map(|run| run.meshes())
+    });
+    for mesh in meshes.into_iter().flatten() {
+        if !mesh.groups.iter().any(|g| g.layer == "propulsor") {
+            continue;
+        }
+        // `option_glb` is `gltf_glb` of this mesh (export_gltf.rs tests it): one run, not two.
+        let glb = gltf_glb(&mesh);
+        let json_len = u32::from_le_bytes(glb[12..16].try_into().unwrap()) as usize;
+        let doc: Value = serde_json::from_slice(&glb[20..20 + json_len]).unwrap();
+        let nodes = doc["nodes"].as_array().unwrap();
+        let layer = nodes
+            .iter()
+            .find(|n| n["name"] == "propulsors")
+            .expect("a propulsors node");
+        let children: Vec<&str> = layer["children"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|i| {
+                nodes[i.as_u64().unwrap() as usize]["name"]
+                    .as_str()
+                    .unwrap()
+            })
+            .collect();
+        for g in mesh.groups.iter().filter(|g| g.layer == "propulsor") {
+            assert!(children.contains(&g.id.as_str()), "{}", g.id);
+            let node = nodes.iter().find(|n| n["name"] == g.id.as_str()).unwrap();
+            let m = &doc["meshes"][node["mesh"].as_u64().unwrap() as usize];
+            let mat = m["primitives"][0]["material"].as_u64().unwrap() as usize;
+            assert_eq!(doc["materials"][mat]["name"], "propulsor", "{}", g.id);
+            seen += 1;
         }
     }
     assert!(seen >= 20, "{seen}");
