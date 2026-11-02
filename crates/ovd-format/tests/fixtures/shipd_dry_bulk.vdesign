@@ -140,6 +140,10 @@
           "value": null,
           "source": "default"
         },
+        "gross_tonnage": {
+          "value": null,
+          "source": "default"
+        },
         "pushed_stern_void_m": {
           "value": 3.0,
           "source": "default"

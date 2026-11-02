@@ -101,6 +101,10 @@
           "value": null,
           "source": "default"
         },
+        "gross_tonnage": {
+          "value": null,
+          "source": "default"
+        },
         "lightship_factor_t_per_m3": {
           "value": 0.1141,
           "source": "default"

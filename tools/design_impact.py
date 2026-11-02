@@ -55,7 +55,7 @@ START, END = "<!-- design-impact:start -->", "<!-- design-impact:end -->"
 # Top-level results keys that are not results (drawing geometry, what a view marks). The results hash
 # leaves them out too: UNHASHED_KEYS in crates/ovd-format/src/run.rs. tests/test_design_impact_unhashed_keys.py
 # checks that the two lists agree.
-UNHASHED_KEYS = ("drawing", "stability_marks", "cost_masses", "cost", "text_ids", "rule_trace", "calibration", "damage", "marpol_damage", "oil_outflow", "fit_tried", "steel_list", "structure_geometry")
+UNHASHED_KEYS = ("drawing", "stability_marks", "cost_masses", "cost", "text_ids", "rule_trace", "calibration", "damage", "marpol_damage", "oil_outflow", "fit_tried", "steel_list", "structure_geometry", "gross_tonnage")
 
 LABEL = "design-change"
 MAX_ROWS = 40
@@ -210,6 +210,10 @@ OPTIONAL_INPUT_CASES = (
     # The lock (issue #358): the check of the overall size.
     ("lock_length_m", "bauxite", "box_hold", "self_propelled", 90.0, 14.0, 4.5, {"lock_length_m": 85.0}),
     ("lock_width_m", "bauxite", "box_hold", "pushed_barge", 90.0, 14.0, 4.5, {"lock_width_m": 13.0}),
+    # Issue #777: a typed gross tonnage. No result reads GT yet (its block is outside the hash), so
+    # this case shows that typing one moves nothing; a base from before refuses the input.
+    ("gross_tonnage", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"gross_tonnage": 2500.0}),
     # The aft block inputs (issue #4, slice 4), set to their defaults in the same way. A self-propelled
     # hull carries the block; the unit counts default by Cargo phase (gas 1 battery and 2
     # accommodation units, dry bulk 2 and 1), so each has a gas and a dry case.

@@ -341,8 +341,10 @@ pub use arc_rules::load::canonical_json;
 /// that the two lists agree). The plate model's steel summary (`structure`) is in the hash since the
 /// lightship reads it (issue #745). The per-item list (`steel_list`) and its geometry
 /// (`structure_geometry`) stay outside, like the meshes: `ovd run --json` stores them only on request
-/// (`--steel-list`), so the hash covers what a results file stores.
-pub const UNHASHED_KEYS: [&str; 13] = [
+/// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
+/// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
+/// moved no saved hash.
+pub const UNHASHED_KEYS: [&str; 14] = [
     "drawing",
     "stability_marks",
     "cost_masses",
@@ -356,6 +358,7 @@ pub const UNHASHED_KEYS: [&str; 13] = [
     "fit_tried",
     "steel_list",
     "structure_geometry",
+    "gross_tonnage",
 ];
 
 /// SHA-256 of the canonical JSON of `results`, without the [`UNHASHED_KEYS`].
@@ -692,11 +695,14 @@ pub fn run_option_with(
                 measured.blade_load_over_limit = blade;
                 // Issue #659: the ICLL freeboard Rules read the Freeboard the result has.
                 measured.freeboard_laden_m = v["results"]["freeboard_m"].as_f64();
-                let rule_trace = trace_json(
+                // Issue #777 (spec 0011 D15): the gross tonnage of ITC 1969, or the typed one.
+                measured.gross_tonnage = gross_tonnage_of(option, &measured);
+                let mut rule_trace = trace_json(
                     &trace_of(&selection, option, &measured),
                     crate::trace::service_area_of(option),
                     &selection.warnings,
                 );
+                rule_trace["measures"] = crate::trace::reported_measures_json(&measured);
                 let v_has_formation = v.get("formation").is_some_and(Value::is_object);
                 if let Some(o) = v.as_object_mut() {
                     o.insert("cost".to_string(), cost);
@@ -711,6 +717,9 @@ pub fn run_option_with(
                     }
                     o.insert("calibration".to_string(), calibration);
                     o.insert("rule_trace".to_string(), rule_trace);
+                    if let Some(g) = &measured.gross_tonnage {
+                        o.insert("gross_tonnage".to_string(), gross_tonnage_json(g));
+                    }
                     // Spec 0009, D1 (b): the Type C tank Spaces, one row each (ADR 0021). Hashed:
                     // the rows are new, and no other value moves.
                     if let Some(rows) = measured.vessel.as_ref().map(tank_space_rows)
@@ -726,6 +735,37 @@ pub fn run_option_with(
         Outcome::Raised(kind, message) => RunOutcome::Failed(format!("{kind}: {message}")),
         Outcome::Refused(message) => RunOutcome::Failed(message),
     }
+}
+
+/// Issue #777: the gross tonnage of the Option's hull from the Vessel Model inputs the run kept,
+/// with the typed `gross_tonnage` as its override; none when the run kept none.
+fn gross_tonnage_of(
+    option: &DesignOption,
+    measured: &crate::simulate::Measured,
+) -> Option<ovd_core::tonnage::GrossTonnage> {
+    let vessel = measured.vessel.as_ref()?;
+    let volume = ovd_core::tonnage::enclosed_volume(&vessel.capacity, &vessel.result, &vessel.hull);
+    let typed = option.input("gross_tonnage").and_then(|i| i.value.as_f64());
+    Some(ovd_core::tonnage::GrossTonnage::of(volume, typed))
+}
+
+/// The `gross_tonnage` results block (issue #777): V by its parts, K1, the computed GT, the typed
+/// one and the one used. Outside the results hash until a Rule reads GT.
+fn gross_tonnage_json(g: &ovd_core::tonnage::GrossTonnage) -> Value {
+    use crate::eval::num;
+    json!({
+        "gross_tonnage": num(g.value()),
+        "source": g.source(),
+        "computed_gt": num(g.computed),
+        "typed_gt": g.typed.map_or(Value::Null, num),
+        "k1": num(g.k1),
+        "enclosed_volume_m3": num(g.volume.total_m3()),
+        "hull_volume_m3": num(g.volume.hull_m3),
+        "stern_block_volume_m3": num(g.volume.stern_block_m3),
+        "deckhouse_volume_m3": num(g.volume.deckhouse_m3),
+        "basis": ovd_core::tonnage::BASIS,
+        "volume_basis": ovd_core::tonnage::VOLUME_BASIS,
+    })
 }
 
 /// The rows of the results Spaces table (spec 0009, D1): each Type C tank Space of a gas Design, with
