@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Damage stability verification (issue #762, spec 0012 D13): new oracles in `crates/ovd-core/tests/damage_verification.rs`: a closed form for a Type C tank cut by the waterline in a flooded hold, an independent grid integral of a gas hold less its tank below a heeled and trimmed waterplane, and the wall-sided closed form of an intermediate stage of a one-sided flood. Tests only.
