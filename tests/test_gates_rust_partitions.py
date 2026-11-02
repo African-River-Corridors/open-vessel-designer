@@ -21,6 +21,7 @@ def _lines():
 
 
 def test_every_placed_test_is_in_a_job_that_exists_and_is_placed_once():
+    """Label: property"""
     jobs = len(CI["jobs"]["gate-rust"]["strategy"]["matrix"]["part"])
     lines = _lines()
     assert lines
@@ -31,3 +32,15 @@ def test_every_placed_test_is_in_a_job_that_exists_and_is_placed_once():
     keys = [(b, t) for _, b, t, _ in lines]
     assert len(keys) == len(set(keys))
 
+
+
+def test_no_placed_test_is_one_the_pr_profile_leaves_out():
+    """The placed run has no filter of its own, so a placed test the `pr` profile leaves out would
+    run in every PR (docs/agents/slow-tests.md lists those tests).
+
+    Label: property"""
+    import tomllib
+
+    pr = tomllib.loads((ROOT / ".config" / "nextest.toml").read_text(encoding="utf-8"))["profile"]["pr"]
+    for _, binary, test, _ in _lines():
+        assert f"test(={test})" not in pr["default-filter"], test
