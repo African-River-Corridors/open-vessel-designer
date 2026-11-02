@@ -6,6 +6,7 @@
 //! - gas valve units: 0.4 t per gas engine;
 //! - heater: 0.2 kg per kWe; compressor: 0.6 kg per kWe;
 //! - gas combustion unit: 2 t, only when asked for.
+//!
 //! For 2 sets of 1,000 kWe (2,000 kWe): GVU 0.8 t, heater 0.4 t, compressor 1.2 t, GCU 2.0 t.
 
 use ovd_core::aft_arrangement::{AftArrangementInputs, SternMassInputs, compute, stern_block_mass};

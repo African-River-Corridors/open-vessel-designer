@@ -2494,16 +2494,20 @@ fn stern_mass_of(p: &Map<String, Value>) -> R<Option<ovd_core::aft_arrangement::
     }))
 }
 
+/// What `with_stern_mass` writes: the block's items, the trim conditions, the machinery steel summary
+/// and the gas fuel system.
+type SternMassParts<'a> = (
+    &'a [ovd_core::weights::MassItem],
+    &'a [(&'a str, ovd_core::models::TrimResult)],
+    Option<&'a ovd_core::aft_arrangement::MachinerySummary>,
+    Option<&'a ovd_core::gas_fuel::FuelSystem>,
+);
+
 /// The stern block's mass items in the results (issue #348), only when they are in the lightship:
 /// a file without the stern mass gets no new field, so its results hash is unchanged.
 fn with_stern_mass(
     mut result: Value,
-    (items, trims, machinery, gas_fuel): (
-        &[ovd_core::weights::MassItem],
-        &[(&str, ovd_core::models::TrimResult)],
-        Option<&ovd_core::aft_arrangement::MachinerySummary>,
-        Option<&ovd_core::gas_fuel::FuelSystem>,
-    ),
+    (items, trims, machinery, gas_fuel): SternMassParts,
 ) -> Value {
     // Issue #349: a dry-bulk hull's trim, laden and light, beside the block.
     if !trims.is_empty() {
