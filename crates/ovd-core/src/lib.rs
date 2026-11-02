@@ -58,6 +58,7 @@ pub mod pyint;
 pub mod pystr;
 mod pystr_tables;
 pub mod resistance;
+pub mod rooms;
 pub mod rule_trace;
 pub mod rules;
 pub mod scantling_rules;

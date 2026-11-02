@@ -711,8 +711,25 @@ fn aft_design_of(p: &Map<String, Value>) -> R<ovd_core::aft_arrangement::AftDesi
             }
         },
     };
+    // Issue #780: the berths the deckhouse rooms are sized from, set by the run once the crew model
+    // has given them. A key left out sizes the deckhouse from the interim floor.
+    let rooms_basis = match p.get("crew_berths") {
+        None | Some(Value::Null) => None,
+        Some(_) => Some(ovd_core::rooms::RoomsBasis {
+            berths: u32::try_from(whole("crew_berths", 0)?.max(0)).unwrap_or(u32::MAX),
+            reaches_sea: p
+                .get("crew_reaches_sea")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
+            mode_b: p
+                .get("crew_mode_b")
+                .and_then(Value::as_bool)
+                .unwrap_or(false),
+        }),
+    };
     Ok(a::AftDesign {
         arrangement_style,
+        rooms_basis,
         n_thrusters: whole("thruster_count", d.n_thrusters)?,
         thruster_envelope_m: get_or(p, "thruster_envelope_m", d.thruster_envelope_m)?,
         thruster_clear_m: get_or(p, "thruster_clearance_m", d.thruster_clear_m)?,

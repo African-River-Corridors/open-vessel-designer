@@ -362,7 +362,7 @@ pub use arc_rules::load::canonical_json;
 /// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
 /// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
 /// moved no saved hash.
-pub const UNHASHED_KEYS: [&str; 16] = [
+pub const UNHASHED_KEYS: [&str; 17] = [
     "drawing",
     "stability_marks",
     "cost_masses",
@@ -379,6 +379,7 @@ pub const UNHASHED_KEYS: [&str; 16] = [
     "structure_geometry",
     "gross_tonnage",
     "crew",
+    "rooms",
 ];
 
 /// SHA-256 of the canonical JSON of `results`, without the [`UNHASHED_KEYS`].
@@ -621,7 +622,8 @@ pub fn run_option_with(
         sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
         inputs: rule_inputs(option),
     };
-    let (outcome, mut measured) = simulate_params_measured(&params, &rules);
+    let mut params = params;
+    let (outcome, mut measured) = settle_rooms(option, library, &mut params, &rules);
     match outcome {
         Outcome::Result(v) => match v.get("error").and_then(Value::as_str) {
             Some(message) => RunOutcome::Failed(message.to_string()),
@@ -719,6 +721,7 @@ pub fn run_option_with(
                 measured.gross_tonnage = gross_tonnage_of(option, &measured);
                 // Issue #778 (spec 0011 4.1): the crew model, a new output outside the hash.
                 let crew_block = crew_block_of(option, library, &v, &measured);
+                let rooms_block = rooms_block_of(&measured, crew_block.as_ref());
                 let mut rule_trace = trace_json(
                     &trace_of(&selection, option, &measured),
                     crate::trace::service_area_of(option),
@@ -744,6 +747,9 @@ pub fn run_option_with(
                     }
                     if let Some(c) = crew_block {
                         o.insert("crew".to_string(), c);
+                    }
+                    if let Some(r) = rooms_block {
+                        o.insert("rooms".to_string(), r);
                     }
                     // Spec 0009, D1 (b): the Type C tank Spaces, one row each (ADR 0021). Hashed:
                     // the rows are new, and no other value moves.
@@ -802,6 +808,103 @@ fn crew_block_of(
         Ok(block) => block,
         Err(e) => json!({ "error": e }),
     })
+}
+
+/// The most passes `settle_rooms` makes after the first.
+const ROOMS_PASSES: usize = 4;
+
+/// What the deckhouse rooms are sized from, from a crew block: the berths, whether the Service Area
+/// reaches sea and whether the inland operating mode is B. `None` when the block gives no berths.
+fn rooms_facts_of(crew: &Value) -> Option<(i64, bool, bool)> {
+    let berths = crew["berths"].as_i64()?;
+    let sea = crew["inputs"]["service_area"].as_str() == Some("coastal-and-river");
+    let mode_b = crew["rpn"]["operating_mode"].as_str() == Some("B");
+    Some((berths, sea, mode_b))
+}
+
+/// Issue #780 (spec 0011 D5): run the Option, and on a deckhouse stern size its rooms from the berths
+/// of the crew model. The crew needs the gross tonnage, which includes the deckhouse volume, which
+/// follows the tiers, which follow the rooms, which follow the berths: so the run is repeated with
+/// the berths of the last pass until they stop changing (at most `ROOMS_PASSES` more runs). Any
+/// other style runs once, as before.
+fn settle_rooms(
+    option: &DesignOption,
+    library: &Library,
+    params: &mut Map<String, Value>,
+    rules: &RunRules,
+) -> (Outcome, crate::simulate::Measured) {
+    let (mut outcome, mut measured) = simulate_params_measured(params, rules);
+    if params.get("arrangement_style").and_then(Value::as_str) != Some("deckhouse") {
+        return (outcome, measured);
+    }
+    for _ in 0..ROOMS_PASSES {
+        let Outcome::Result(v) = &outcome else { break };
+        if v.get("error").is_some() {
+            break;
+        }
+        measured.gross_tonnage = gross_tonnage_of(option, &measured);
+        let Some(crew) = crew_block_of(option, library, v, &measured) else {
+            break;
+        };
+        let Some((berths, sea, mode_b)) = rooms_facts_of(&crew) else {
+            break;
+        };
+        if params.get("crew_berths").and_then(Value::as_i64) == Some(berths) {
+            break;
+        }
+        params.insert("crew_berths".to_string(), json!(berths));
+        params.insert("crew_reaches_sea".to_string(), json!(sea));
+        params.insert("crew_mode_b".to_string(), json!(mode_b));
+        (outcome, measured) = simulate_params_measured(params, rules);
+    }
+    (outcome, measured)
+}
+
+/// Issue #780: the `rooms` results block of a deckhouse stern: the rooms table, each row with its
+/// area and clause. Outside the hash, like `crew`; the app's Stern and crew view reads it.
+/// `settled` says the berths of the rooms are the berths the final crew block gives.
+fn rooms_block_of(measured: &crate::simulate::Measured, crew: Option<&Value>) -> Option<Value> {
+    let d = measured
+        .vessel
+        .as_ref()?
+        .result
+        .aft_arrangement
+        .as_ref()?
+        .deckhouse
+        .as_ref()?;
+    let r = d.rooms.as_ref()?;
+    let rows: Vec<Value> = r
+        .rows
+        .iter()
+        .map(|x| {
+            json!({
+                "id": x.id,
+                "name": x.name,
+                "count": x.count,
+                "area_each_m2": crate::eval::num(x.area_each_m2),
+                "area_m2": crate::eval::num(x.area_m2),
+                "clause": x.clause,
+                "basis": x.basis,
+                "note": x.note,
+            })
+        })
+        .collect();
+    let crew_berths = crew.and_then(|c| c["berths"].as_i64());
+    Some(json!({
+        "berths": r.berths,
+        "rows": rows,
+        "total_m2": crate::eval::num(r.total_m2),
+        "required_area_m2": crate::eval::num(d.required_area_m2),
+        "required_area_basis": d.required_area_basis,
+        "tiers": d.tiers,
+        "tier_area_m2": crate::eval::num(d.tier_area_m2),
+        "rule": if r.reaches_sea { "es-trin-2025-ch15 (MLC 2006 A3.1 not applied)" } else { "es-trin-2025-ch15" },
+        "mlc_applied": r.mlc_applied,
+        "rule_note": r.rule_note,
+        "settled": crew_berths == Some(i64::from(r.berths)),
+        "status": "estimate",
+        "basis": "Spec 0011 D5, section 2: rooms sized from the crew model's berths to ES-TRIN 2025/1 Chapter 15. Areas marked gap are required by the text but have no floor area in it. Concept and preliminary design only (ADR 0011).",
+    }))
 }
 
 /// The `gross_tonnage` results block (issue #777): V by its parts, K1, the computed GT, the typed
