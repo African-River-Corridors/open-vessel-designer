@@ -153,7 +153,8 @@ fn a_version_3_file_reads_the_defaults_with_one_note_and_keeps_its_results() {
         .filter(|w| w.contains("structure block"))
         .collect();
     assert_eq!(notes.len(), 1, "{:?}", checked.report.migration_notes);
-    assert!(notes[0].contains("results are unchanged"), "{}", notes[0]);
+    // Issue #745: the plate model reads the structure block, and the lightship reads the plate model.
+    assert!(notes[0].contains("lightship, reads them"), "{}", notes[0]);
     // No structure input is named in the generic "fixed value" note.
     for w in &checked.report.warnings {
         if w.contains("fixed value the engine used") {

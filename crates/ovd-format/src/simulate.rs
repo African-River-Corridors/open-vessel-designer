@@ -3101,6 +3101,7 @@ fn simulate_gas(
             }, steel.as_ref().map(|s| &s.0))),
             // Issue #742: the plate model's steel list, groups and purchase, and its geometry.
             "structure": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_json(&s.1)),
+            "steel_list": steel.as_ref().map_or(Value::Null, |s| crate::steel::steel_list_json(&s.1)),
             "structure_geometry": steel.as_ref().map_or(Value::Null, |s| crate::steel::structure_geometry_json(&s.1)),
         }),
             (&r.stern_block_items, &r.trim_conditions),
@@ -3610,7 +3611,6 @@ fn gas_steel(
         i.block_coefficient,
         i.hull_steel_density,
     )?;
-    let panels = ovd_core::hull_panels::hull_panels(&spec);
     // Issue #743: the shell and the end structure on the hull's Sections Table, the hold bulkheads
     // where the Vessel Model puts them (the ends of the cargo zone and the bulkheads between holds).
     let holds: Vec<f64> = model
@@ -3624,6 +3624,9 @@ fn gas_steel(
         })
         .map(|b| b.x_m)
         .collect();
-    let plates = ovd_core::hull_plates::hull_plates_on(&panels, &spec, &model.hull, &holds);
-    Some((panels, plates))
+    // Issue #745: the panel table rolled up from the plate model, the same steel the lightship takes.
+    Some(ovd_core::hull_plates::gas_hull_steel(
+        &spec,
+        Some((&model.hull, &holds)),
+    ))
 }

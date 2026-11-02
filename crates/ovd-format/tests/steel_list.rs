@@ -1,11 +1,11 @@
-//! Seam: the steel list of a gas hull's plate model in the results (`structure`,
+//! Seam: the steel list of a gas hull's plate model in the results (`structure`, `steel_list`,
 //! `structure_geometry`) and as `ovd export --format steel-csv` (issue #742, spec 0013 "Results" and
 //! "Outputs").
 //!
-//! Label: property - the steel list re-cuts the panel table (the members the ends do not lay out on
-//! the hull exactly; issue #743), the CSV has one row per item
-//! and says that lightening holes are not deducted, every item has its geometry, and the steel list
-//! is outside the results hash.
+//! Label: property - the panel table is the steel list rolled up (issue #745), the CSV has one row
+//! per item and says that lightening holes are not deducted, every item has its geometry, and the
+//! summary's weights and centres are in the results hash while the per-item list and its geometry
+//! are not (issue #745: `ovd run --json` stores the summary only, so the hash covers what is stored).
 
 use std::path::Path;
 
@@ -38,36 +38,26 @@ fn the_steel_list_re_cuts_the_panel_table() {
     for o in options_of("gas_igc_2g_exact.vdesign") {
         let (r, _) = results(&o);
         let st = &r["structure"];
-        let rows = st["steel_list"].as_array().expect("a steel list");
+        let rows = r["steel_list"].as_array().expect("a steel list");
+        assert!(
+            st.get("steel_list").is_none(),
+            "the list sits beside the summary"
+        );
         let net: f64 = rows.iter().map(|i| i["rule_net_t"].as_f64().unwrap()).sum();
         let panel = r["cost_masses"]["hull_panels"]["net_t"].as_f64().unwrap();
         assert!((st["groups"]["rule_net_t"].as_f64().unwrap() - net).abs() <= 1e-9 * net);
-        // Issue #743: the shell, the double bottom and the bulkheads follow the hull's Sections
-        // Table, and the end faces are plated, so the steel list differs from the panel table
-        // there. Every other member re-cuts its panel exactly.
-        let laid_out = [
-            "SHELL: Bottom shell",
-            "SHELL",
-            "DECK: Strength deck",
-            "SHELL: Inner bottom shell",
-            "LONGITUDINAL: Centerline girder",
-            "LONGITUDINAL: Side girder",
-            "WEB_FRAME: Floor frame",
-            "TRANSVERSAL_BULKHEAD",
-        ];
+        // Issue #745: the panel table is the plate model rolled up (spec 0013 D9): one member per
+        // group, each at the group's ordered weight, and its net weight the ordered total.
         let members = r["cost_masses"]["hull_panels"]["members"]
             .as_array()
             .unwrap();
         let groups = st["groups"]["members"].as_array().unwrap();
-        let mut same = 0;
+        assert_eq!(groups.len(), members.len());
         for (g, p) in groups.iter().zip(members) {
             assert_eq!(g["member"], p["member"]);
             assert_eq!(g["region"], p["region"]);
-            if laid_out.contains(&p["member"].as_str().unwrap()) {
-                continue;
-            }
             let (a, b) = (
-                g["rule_net_t"].as_f64().unwrap(),
+                g["ordered_t"].as_f64().unwrap(),
                 p["total_t"].as_f64().unwrap(),
             );
             assert!(
@@ -75,16 +65,15 @@ fn the_steel_list_re_cuts_the_panel_table() {
                 "{}: {a} vs {b}",
                 p["member"]
             );
-            same += 1;
         }
-        assert!(same > 0);
-        assert_eq!(
-            groups.len(),
-            members.len() + 1,
-            "the end plating is its own group"
+        let ordered_total = st["groups"]["ordered_t"].as_f64().unwrap();
+        assert!(
+            (panel - ordered_total).abs() <= 1e-9 * panel,
+            "{panel} vs {ordered_total}"
         );
-        // The ends follow the hull, within a few per cent of the box the panel table weighs.
-        assert!((net - panel).abs() <= 0.1 * panel, "{net} vs {panel}");
+        let total = st["groups"]["total_t"].as_f64().unwrap();
+        let table_total = r["cost_masses"]["hull_panels"]["total_t"].as_f64().unwrap();
+        assert!((total - table_total).abs() <= 1e-9 * total);
         let ordered = st["groups"]["ordered_t"].as_f64().unwrap();
         assert!(ordered >= net);
         let geometry = r["structure_geometry"].as_object().unwrap();
@@ -120,10 +109,7 @@ fn the_steel_csv_has_one_row_per_item_and_the_openings_note() {
     );
     let body: Vec<&str> = csv.lines().filter(|l| !l.starts_with('#')).collect();
     assert!(body[0].starts_with("id,kind,member,region,"));
-    assert_eq!(
-        body.len(),
-        r["structure"]["steel_list"].as_array().unwrap().len() + 1
-    );
+    assert_eq!(body.len(), r["steel_list"].as_array().unwrap().len() + 1);
     // Commas inside a quoted field do not count.
     let fields = |row: &str| {
         let mut quoted = false;
@@ -148,15 +134,19 @@ fn a_hull_with_no_plate_model_says_so() {
     let o = &options_of("dry_bulk_box_hold.vdesign")[0];
     let (r, _) = results(o);
     assert!(r["structure"].is_null());
+    assert!(r["steel_list"].is_null());
     assert!(option_export("steel-csv", o, None).is_err());
 }
 
 #[test]
-fn the_steel_list_is_outside_the_results_hash() {
+fn the_steel_summary_is_in_the_results_hash_and_the_list_and_its_geometry_are_not() {
     let o = &options_of("gas_igc_2g_exact.vdesign")[0];
     let (mut r, hash) = results(o);
     assert_eq!(results_hash(&r), hash);
-    r["structure"] = Value::Null;
     r["structure_geometry"] = Value::Null;
     assert_eq!(results_hash(&r), hash);
+    r["steel_list"] = Value::Null;
+    assert_eq!(results_hash(&r), hash);
+    r["structure"]["groups"]["ordered_t"] = Value::from(0.0);
+    assert_ne!(results_hash(&r), hash);
 }

@@ -116,7 +116,8 @@ fn every_example_design_validates_and_evaluates_as_run_json_does() {
         let validated = ovd(&["validate", path]);
         assert!(validated.status.success(), "{path}: {}", stdout(&validated));
 
-        let run = ovd(&["run", "--json", path]);
+        // `--steel-list`: the whole results, as the session gives them (issue #745).
+        let run = ovd(&["run", "--json", "--steel-list", path]);
         let run_json: Value = serde_json::from_str(&stdout(&run)).unwrap();
         let (session, _) = DesignSession::open(
             &std::fs::read_to_string(&file).unwrap(),
