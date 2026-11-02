@@ -103,15 +103,307 @@ def test_not_evaluated_lists_each_rule_once():
     assert set(ids) == {r["rule"] for r in A["results"]["rule_trace"]["rows"] if r["outcome"] == "not evaluated"}
 
 
-def test_the_document_has_the_standard_sections_and_no_project_text():
+# --- the skeleton (issue #825, spec 0015 sections 4, 5, 9, 10, 11) ---
+
+ORD = shutil.which("ord")
+needs_ord = pytest.mark.skipif(ORD is None, reason="ord is not on the path")
+CHAPTER_TITLES = {c[0]: c[1] for c in cr.CHAPTERS}
+
+
+def _ids(doc):
+    """Every section id of the document, body then appendices, in order."""
+    def walk(blocks):
+        for b in blocks:
+            if b["type"] == "section":
+                yield b["id"]
+                yield from walk(b["body"])
+    out = list(walk(doc["body"]))
+    for a in doc["appendices"]:
+        out.append(a["id"])
+        out += walk(a["body"])
+    return out
+
+
+def _section(doc, sid):
+    def walk(blocks):
+        for b in blocks:
+            if b["type"] == "section":
+                if b["id"] == sid:
+                    return b
+                hit = walk(b["body"])
+                if hit:
+                    return hit
+    return walk(doc["body"]) or next(h for a in doc["appendices"] if (h := walk(a["body"])))
+
+
+def _text(block):
+    return json.dumps(block, ensure_ascii=False)
+
+
+def _run_without(path):
+    if isinstance(path, tuple):
+        run = RUN
+        for p in path:
+            run = _run_without_one(run, p)
+        return run
+    return _run_without_one(RUN, path)
+
+
+def _run_without_one(base, path):
+    run = json.loads(json.dumps(base))
+    for o in run["options"]:
+        res = o["results"]
+        keys = path.split(".")
+        for k in keys[:-1]:
+            res = res[k]
+        res.pop(keys[-1], None)
+    return run
+
+
+def test_the_document_has_every_heading_of_the_skeleton_in_order():
     """Label: property"""
     doc = cr.build(RUN, "A basis", number="TN-0001", date="2026-10-30")
     assert doc["ord"] == "0.2"
-    assert [s["id"] for s in doc["body"]] == ["design", "lightship", "stability", "powering", "rules"]
-    assert [a["id"] for a in doc["appendices"]] == ["provenance"]
+    assert [s["id"] for s in doc["body"]] == ["body"]
+    parts = doc["body"][0]["body"]
+    assert [s["id"] for s in parts] == ["summary"] + [f"p{i}" for i in range(1, 10)]
+    assert parts[0]["numbered"] is False
+    assert [s["title"] for s in parts[1:]] == [
+        "The vessel and its brief", "Capacity and arrangement", "Structure, powering and machinery", "Weights",
+        "Floating, freeboard and stability", "Damage stability", "Compliance", "Cost", "Limits and open items"]
+    a, b = doc["appendices"]
+    assert [s["id"] for s in a["body"]] == [f"a{i}" for i in range(1, 15)]
+    assert [s["title"] for s in a["body"]][:4] == ["Brief", "Main dimensions and form", "Cargo system and capacity", "General arrangement"]
+    assert [s["id"] for s in b["body"]] == [f"b{i}" for i in range(1, 9)]
+    assert [s["title"] for s in b["body"]] == ["Run provenance", "Full rule trace", "Calibration", "Drawings", "Full tables",
+                                                "Trade studies", "Sources", "Symbols and terms"]
     assert doc["notice"] == cr.NOTICE
-    prov = doc["appendices"][0]["body"][0]
+    prov = _section(doc, "b1")["body"][0]
     assert prov["rows"][0][1] == A["results_hash"][:12]
+    assert cr.build(RUN, "A basis", date="2026-10-30") == cr.build(RUN, "A basis", date="2026-10-30")
+
+
+# Which chapters read each top-level run block, written here from spec 0015 section 4.2 and not from CHAPTERS.
+READ_BY = {
+    "results": ["a2", "a3", "a7", "a9"], "dims": ["a2"], "hydrostatics": ["a2", "a8"], "geometry": ["a2", "a3"],
+    "checks": ["a2"], "spaces": ["a3"], "arrangement": ["a3"], "drawing": ["a4", "a6"], "sightline": ["a4"],
+    "cost_masses": ["a5", "a7"], "structure": ["a5"], "powering": ["a6"], "boil_off": ["a6"],
+    "stern_block_mass": ["a7"], "calibration": ["a7"], "hydrostatic_table": ["a8"], "loading_conditions": ["a8"],
+    "stability": ["a10"], "curves": ["a10"], "stability_marks": ["a10"], "rule_trace": ["a12"], "cost": ["a13"],
+    "vessel": [], "cargo": [], "phase": [],   # A.1 prints a cell "not evaluated" for these
+    # no chapter reads these yet: a deletion must change nothing in the skeleton
+    "self_propelled": [], "warnings": [], "fit_tried": [], "text_ids": [],
+}
+GA = {"ga-side": "side.png", "ga-mid": "mid.png"}   # so A.4 is built, and its deletion shows
+
+
+def test_every_top_level_run_block_is_accounted_for():
+    """Label: property"""
+    assert set(A["results"]) == set(READ_BY)
+
+
+@pytest.mark.parametrize("key", sorted(READ_BY))
+def test_deleting_a_run_block_keeps_every_heading_and_reads_not_evaluated_in_three_places(key):
+    """Label: property
+    Spec 0015 section 11, test 4, for every block of the run: the body line, the part 9 row and the
+    appendix block of each chapter that reads it, and no change in a chapter that does not.
+    """
+    base = cr.build(RUN, "A basis", assets=GA)
+    doc = cr.build(_run_without(key), "A basis", assets=GA)
+    assert _ids(doc) == _ids(base)
+    for chapter in cr.CHAPTERS:
+        cid, title, part = chapter[0], chapter[1], chapter[2]
+        md = _section(doc, cid)["body"][0]
+        was = _section(base, cid)["body"][0]
+        if cid in READ_BY[key]:
+            assert md["markdown"].startswith("**Not evaluated.**"), cid
+            body_line = _section(doc, part)["body"][0]["markdown"]
+            assert f"**Not evaluated.** {title}:" in body_line and f"[[#{cid}]]" in body_line
+            assert {i["label"]: i["value"] for i in _section(doc, part)["body"][-1]["items"]}[title] == "not evaluated"
+            for holder in ("p9", "a14"):
+                tables = [b for b in _section(doc, holder)["body"] if b["type"] == "table"]
+                assert any(r[0] == f"Chapter {title}" for t in tables for r in t["rows"]), (holder, cid)
+        elif (key, cid) == ("powering", "a2"):   # the particulars table has power and speed cells
+            assert [r[1] for r in md["rows"] if r[0] in ("Installed power", "Service speed, deep water")] == ["not evaluated"] * 2
+        elif (key, cid) == ("rule_trace", "a10"):   # the table's note on the IS Code criteria needs the trace
+            assert "notes" not in md and md["rows"] == was["rows"]
+        elif (key, cid) == ("rule_trace", "a11"):   # the reason is the trace's gap; without it, the general reason
+            assert md["markdown"].startswith("**Not evaluated.**") and "#838" in md["markdown"]
+        elif cid != "a14" and cid not in ("a1",) and key not in ("vessel", "cargo", "phase"):
+            assert md == was, cid
+    if key in ("vessel", "cargo", "phase"):
+        rows = _section(doc, "a1")["body"][0]["rows"]
+        assert any(r[1] == "not evaluated" for r in rows) and all(c not in ("", None) for r in rows for c in r)
+
+
+def test_a_chapter_the_run_can_fill_but_the_build_lacks_is_not_yet_in_this_report_not_not_evaluated():
+    """Label: property
+    A.3, A.9 and A.13 and the Appendix B sections B.2 to B.5, B.7 and B.8 carry their own state. It names the
+    issue that builds them, says the run holds the data, and never reaches the not-evaluated list.
+    """
+    doc = cr.build(RUN, "A basis")
+    want = {"a3": 830, "a9": 831, "a13": 831, **{b: 826 for b in ("b2", "b3", "b4", "b5", "b7", "b8")}}
+    for sid, ticket in want.items():
+        md = _section(doc, sid)["body"][0]["markdown"]
+        assert md.startswith("**Not yet in this report.**") and f"#{ticket}" in md and "The run holds the data" in md
+        assert "Not evaluated" not in md and "What would close it" not in md
+    for part in ("p2", "p5", "p8"):
+        text = _section(doc, part)["body"][0]["markdown"]
+        assert "Not yet in this report" in text
+    for holder in ("p9", "a14"):
+        rows = [r for b in _section(doc, holder)["body"] if b["type"] == "table" for r in b["rows"]]
+        for sid in ("a3", "a9", "a13"):
+            assert not any(r[0] == f"Chapter {CHAPTER_TITLES[sid]}" for r in rows)
+    assert _section(doc, "p8")["body"][-1]["items"][0]["value"] == "not yet in this report"
+
+
+def test_an_appendix_block_says_what_it_would_show_why_and_what_would_close_it():
+    """Label: property"""
+    doc = cr.build(RUN, "A basis")
+    md = _section(doc, "a11")["body"][0]["markdown"]    # the gas example holds no damage cases
+    assert md.startswith("**Not evaluated.**")
+    for lead in ("What this part would show:", "Why it is not evaluated:", "What would close it:"):
+        assert lead in md
+    gap = next(r["gap"] for r in A["results"]["rule_trace"]["rows"] if r["rule"] == "igc/2.7/damage-survival")
+    assert gap[0].upper() + gap[1:] in md and "igc/2.7/damage-survival" in md and "#838" in md
+    assert "`damage`" not in md and "marpol_damage" not in md
+
+
+def test_not_applicable_is_never_printed_by_the_skeleton():
+    """Label: property
+    A separate state, printed only when a rule or module says so (none does yet).
+    """
+    assert "not applicable" not in _text(cr.build(RUN, "A basis")).lower()
+
+
+def test_a_missing_table_value_prints_not_evaluated_never_blank_or_zero():
+    """Label: property"""
+    t = cr.table("t", "cap", ["a", "b", "c"], [["x", None, ""]])
+    assert t["rows"] == [["x", "not evaluated", "not evaluated"]]
+    assert cr.n(None) == "not evaluated" and cr._fmt(None, "m") == "not evaluated"
+    doc = cr.build(_run_without("cargo"), "A basis")
+    rows = _section(doc, "a1")["body"][0]["rows"]
+    assert ["Cargo", "not evaluated"] in rows
+    assert all(c not in ("", None, "0") for r in rows for c in r)
+
+
+def test_every_part_has_one_data_box_and_the_summary_gives_the_trace_verdict():
+    """Label: property"""
+    doc = cr.build(RUN, "A basis")
+    for i in range(1, 10):
+        boxes = [b for b in _section(doc, f"p{i}")["body"] if b["type"] == "data_box"]
+        assert len(boxes) == 1 and boxes[0]["items"]
+    counts = cr.rule_counts(A)
+    summary = _section(doc, "summary")["body"][0]["markdown"]
+    assert f"{counts['pass']} pass" in summary and f"{counts['not evaluated']} not evaluated" in summary
+
+
+def test_the_control_block_has_a_revision_letter_and_date_and_no_change_table():
+    """Label: property"""
+    doc = cr.build(RUN, "A basis", number="TN-0001", revision="B", date="2026-10-30")
+    assert doc["control"] == {"revision": "B", "date": "2026-10-30", "status": "draft", "number": "TN-0001"}
+    assert "history" not in doc["control"] and "history" not in doc
+    with pytest.raises(ValueError):
+        cr.build(RUN, "A basis", revision="1")
+
+
+@pytest.mark.parametrize("status", ["approved", "issued", "final", "superseded", "bogus"])
+def test_the_status_cannot_be_set_above_the_cap(status):
+    """Label: property
+    Spec 0015 P7.
+    """
+    with pytest.raises(ValueError):
+        cr.build(RUN, "A basis", status=status)
+
+
+@pytest.mark.parametrize("status,kw", [("for-checking", {}), ("for-approval", {}), ("for-approval", {"prepared": "A"})])
+def test_a_status_that_needs_a_sign_off_name_fails_clearly_without_it(status, kw):
+    """Label: property"""
+    with pytest.raises(ValueError, match="ORD004"):
+        cr.build(RUN, "A basis", status=status, **kw)
+
+
+@needs_ord
+def test_ord_check_passes_at_for_approval_with_both_names_and_fails_without(tmp_path):
+    """Label: property"""
+    doc = cr.build(RUN, "A basis", status="for-approval", prepared="Preparer", checked="Checker", number="TN-0001")
+    assert doc["control"]["prepared"] == "Preparer" and doc["control"]["checked"] == "Checker"
+    src = tmp_path / "ok.json"
+    src.write_text(json.dumps(doc), encoding="utf-8")
+    assert subprocess.run([ORD, "check", str(src)], capture_output=True).returncode == 0
+    del doc["control"]["checked"]
+    src.write_text(json.dumps(doc), encoding="utf-8")
+    bad = subprocess.run([ORD, "check", str(src)], capture_output=True, text=True)
+    assert bad.returncode != 0 and "ORD004" in bad.stderr
+
+
+@pytest.mark.parametrize("status,want", [("draft", "draft"), ("for-checking", "for-checking"), ("For Review", "for-checking"),
+                                         ("for_checking", "for-checking"), ("for-approval", "for-approval"),
+                                         ("For Approval", "for-approval"), ("for-sign-off", "for-approval")])
+def test_a_status_at_or_below_the_cap_is_kept(status, want):
+    """Label: property"""
+    assert cr.build(RUN, "A basis", status=status, prepared="P", checked="C")["control"]["status"] == want
+    assert cr.STATUS_CAP == "for-approval"
+
+
+def test_the_page_budget_warns_above_twelve_body_pages_and_not_at_twelve():
+    """Label: property
+    Spec 0015 section 11, test 9, on the page counts.
+    """
+    assert cr.page_budget_warnings(12) == []
+    assert cr.page_budget_warnings(13) != []
+    assert "13" in cr.page_budget_warnings(13)[0]
+    assert cr.page_budget_warnings(3) == []
+
+
+@needs_ord
+def test_the_page_budget_fires_on_a_rendered_body_of_thirteen_pages_and_not_twelve(tmp_path):
+    """Label: property
+    Real ORD renders of small documents of 12 and 13 body pages. ORD breaks the page before each
+    level-1 section, and every body section here is level 1, so one section is one page.
+    """
+    def doc_of(pages):
+        sections = [{"type": "section", "id": f"s{k}", "title": f"Part {k}", "body": [{"type": "prose", "markdown": "Text."}]}
+                    for k in range(pages)]
+        return {"ord": "0.2", "class": "technical-note", "title": "T", "language": "en-GB", "notice": cr.NOTICE,
+                "control": {"revision": "A", "date": "2026-11-02", "status": "draft"}, "body": sections, "appendices": []}
+    base = cr.body_pages(doc_of(1), ORD, tmp_path)   # the cover and the control page come with any body
+    assert cr.body_pages(doc_of(12 - base + 1), ORD, tmp_path) == 12
+    assert cr.page_budget_warnings(12) == []
+    assert cr.body_pages(doc_of(13 - base + 1), ORD, tmp_path) == 13
+    assert cr.page_budget_warnings(13) != []
+
+
+@needs_ord
+def test_the_example_body_fits_the_page_budget_with_no_warning(tmp_path):
+    """Label: property
+    The summary and the nine parts flow under one level-1 section, so the body is far under the budget.
+    """
+    doc = cr.build(RUN, "A basis", number="TN-0001", date="2026-11-02")
+    pages = cr.body_pages(doc, ORD, tmp_path)
+    assert pages <= cr.BODY_PAGE_LIMIT, pages
+    assert cr.page_budget_warnings(pages) == []
+
+
+@needs_ord
+def test_the_notice_is_on_the_cover_and_in_every_footer_of_the_pdf(tmp_path):
+    """Label: property"""
+    doc = cr.build(RUN, "A basis", number="TN-0001", date="2026-10-30")
+    written = cr.render(ORD, doc, tmp_path / "r")
+    pdf = next(p for p in written if p.suffix == ".pdf")
+    pages = cr.pdf_pages(pdf)
+    assert pages > 2
+    for pg in range(1, pages + 1):
+        text = subprocess.run(["pdftotext", "-f", str(pg), "-l", str(pg), str(pdf), "-"], capture_output=True, text=True, check=True).stdout
+        assert " ".join(cr.NOTICE.split()) in " ".join(text.split()), f"page {pg}"
+
+
+@needs_ord
+def test_the_skeleton_passes_ord_check_and_the_three_formats_render(tmp_path):
+    """Label: property"""
+    doc = cr.build(RUN, "C deep", ref="A basis", number="TN-0001", date="2026-10-30")
+    written = cr.render(ORD, doc, tmp_path / "r")
+    assert {p.suffix for p in written} == {".pdf", ".html", ".docx"}
 
 
 def test_the_cli_writes_a_document_that_ord_accepts(tmp_path):
@@ -122,7 +414,7 @@ def test_the_cli_writes_a_document_that_ord_accepts(tmp_path):
     subprocess.run([sys.executable, str(ROOT / "tools" / "concept_report.py"), str(run), "--option", "C deep", "--ref", "A basis",
                     "-o", str(out)], check=True)
     doc = json.loads(out.read_text(encoding="utf-8"))
-    assert doc["body"][0]["body"][1]["columns"][2]["title"] == "Reference: A basis"
+    assert _section(doc, "a2")["body"][0]["columns"][2]["title"] == "Reference: A basis"
     ord_bin = shutil.which("ord")
     if ord_bin is None:
         pytest.skip("ord is not on the path")
