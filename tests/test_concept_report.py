@@ -188,7 +188,6 @@ READ_BY = {
     "results": ["a2", "a3", "a7", "a9"], "dims": ["a2"], "hydrostatics": ["a2", "a8"], "geometry": ["a2", "a3"],
     "checks": ["a2"], "spaces": ["a3"], "arrangement": ["a3"], "drawing": ["a4", "a6"], "sightline": ["a4"],
     "cost_masses": ["a5", "a7"], "structure": ["a5"], "powering": ["a6"], "boil_off": ["a6"],
-    "gross_tonnage": [],   # A.7 will read it (spec 0015 4.2 does not list it yet); no chapter does today
     "stern_block_mass": ["a7"], "calibration": ["a7"], "hydrostatic_table": ["a8"], "loading_conditions": ["a8"],
     "stability": ["a10"], "curves": ["a10"], "stability_marks": ["a10"], "rule_trace": ["a12"], "cost": ["a13"],
     "vessel": [], "cargo": [], "phase": [],   # A.1 prints a cell "not evaluated" for these

@@ -5,7 +5,7 @@
     {
       "name": "A basis",
       "status": "results",
-      "results_hash": "95f3c3575190e037d3cecda1e5d8ff73ff440c0e5ab2fb600f4506e27d7b44ee",
+      "results_hash": "6c8961e8166d23aff85946dedcfd0b485960b8aa612916ec2e0e5e330760ab1e",
       "hash_status": "matches",
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
@@ -634,9 +634,25 @@
           "draught_max_m": 10.19,
           "freeboard_m": 8.445029760347635,
           "light_draught_m": 1.5793639278910916,
-          "air_draft_loaded_m": 11.845029760347636,
-          "air_draft_light_m": 13.82063607210891,
-          "h_over_T": null
+          "air_draft_loaded_m": 18.111696427014298,
+          "air_draft_light_m": 20.087302738775573,
+          "h_over_T": null,
+          "vent_mast_x_m": 120.8,
+          "vent_exit_above_keel_m": 21.666666666666664,
+          "vent_exit_above_deck_m": 9.666666666666664,
+          "vent_exit_above_working_area_m": 7.563333333333331,
+          "vent_working_area_top_m": 14.103333333333333,
+          "vent_working_area": "weather_shield",
+          "vent_exit_governed_by": "deck",
+          "vent_distance_to_openings_m": 102.908,
+          "vent_distance_to_accommodation_m": 102.908,
+          "vent_mast_distance_target_m": 25.0,
+          "vent_mast_distance_met": true,
+          "vent_mast_lowerable": false,
+          "vent_mast_notes": [
+            "IGC 8.2.10.4: the working area is the top of the weather shield, or the tank top where the hull has no shield; the top of the tank domes is not counted as a working area.",
+            "IGC 8.2.11.1: the smaller distances it allows for ships under 90 m in length are not used."
+          ]
         },
         "checks": [
           {
@@ -1316,7 +1332,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.443856539275476,
-              "air_draft_m": 11.843856539275476,
+              "air_draft_m": 18.11052320594214,
               "air_draft_ok": null,
               "ok": true
             },
@@ -1632,7 +1648,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.451753818145448,
-              "air_draft_m": 11.851753818145449,
+              "air_draft_m": 18.118420484812113,
               "air_draft_ok": null,
               "ok": true
             },
@@ -1985,7 +2001,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.456993507326823,
-              "air_draft_m": 12.856993507326823,
+              "air_draft_m": 19.123660173993486,
               "air_draft_ok": null,
               "ok": true
             },
@@ -2338,7 +2354,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.46483031755619,
-              "air_draft_m": 12.86483031755619,
+              "air_draft_m": 19.131496984222853,
               "air_draft_ok": null,
               "ok": true
             }
@@ -4130,7 +4146,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.443856539275476,
-              "air_draft_m": 11.843856539275476,
+              "air_draft_m": 18.11052320594214,
               "air_draft_ok": null,
               "ok": true
             },
@@ -4446,7 +4462,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.451753818145448,
-              "air_draft_m": 11.851753818145449,
+              "air_draft_m": 18.118420484812113,
               "air_draft_ok": null,
               "ok": true
             },
@@ -4799,7 +4815,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.456993507326823,
-              "air_draft_m": 12.856993507326823,
+              "air_draft_m": 19.123660173993486,
               "air_draft_ok": null,
               "ok": true
             },
@@ -5152,7 +5168,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.46483031755619,
-              "air_draft_m": 12.86483031755619,
+              "air_draft_m": 19.131496984222853,
               "air_draft_ok": null,
               "ok": true
             }
@@ -10918,7 +10934,7 @@
     {
       "name": "B profile",
       "status": "results",
-      "results_hash": "6d27514f217f1c52b42dd8c1b5bdde6df4ed690ee96b9a00f0e684c38f11d51b",
+      "results_hash": "dc92a9b5903fd04be803c300fefac9085e0bb08f83969442c48bc5b33f11f5f1",
       "hash_status": "matches",
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
@@ -11547,9 +11563,25 @@
           "draught_max_m": 10.19,
           "freeboard_m": 8.42763850768644,
           "light_draught_m": 1.5818777458596347,
-          "air_draft_loaded_m": 11.82763850768644,
-          "air_draft_light_m": 13.818122254140366,
-          "h_over_T": null
+          "air_draft_loaded_m": 18.094305174353106,
+          "air_draft_light_m": 20.08478892080703,
+          "h_over_T": null,
+          "vent_mast_x_m": 120.8,
+          "vent_exit_above_keel_m": 21.666666666666664,
+          "vent_exit_above_deck_m": 9.666666666666664,
+          "vent_exit_above_working_area_m": 7.563333333333331,
+          "vent_working_area_top_m": 14.103333333333333,
+          "vent_working_area": "weather_shield",
+          "vent_exit_governed_by": "deck",
+          "vent_distance_to_openings_m": 102.908,
+          "vent_distance_to_accommodation_m": 102.908,
+          "vent_mast_distance_target_m": 25.0,
+          "vent_mast_distance_met": true,
+          "vent_mast_lowerable": false,
+          "vent_mast_notes": [
+            "IGC 8.2.10.4: the working area is the top of the weather shield, or the tank top where the hull has no shield; the top of the tank domes is not counted as a working area.",
+            "IGC 8.2.11.1: the smaller distances it allows for ships under 90 m in length are not used."
+          ]
         },
         "checks": [
           {
@@ -12229,7 +12261,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.426629422270251,
-              "air_draft_m": 11.826629422270251,
+              "air_draft_m": 18.093296088936917,
               "air_draft_ok": null,
               "ok": true
             },
@@ -12545,7 +12577,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.434524079564362,
-              "air_draft_m": 11.834524079564364,
+              "air_draft_m": 18.101190746231026,
               "air_draft_ok": null,
               "ok": true
             },
@@ -12898,7 +12930,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.447991271811077,
-              "air_draft_m": 12.847991271811077,
+              "air_draft_m": 19.11465793847774,
               "air_draft_ok": null,
               "ok": true
             },
@@ -13251,7 +13283,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.455826586914696,
-              "air_draft_m": 12.855826586914697,
+              "air_draft_m": 19.12249325358136,
               "air_draft_ok": null,
               "ok": true
             }
@@ -15043,7 +15075,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.426629422270251,
-              "air_draft_m": 11.826629422270251,
+              "air_draft_m": 18.093296088936917,
               "air_draft_ok": null,
               "ok": true
             },
@@ -15359,7 +15391,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 8.434524079564362,
-              "air_draft_m": 11.834524079564364,
+              "air_draft_m": 18.101190746231026,
               "air_draft_ok": null,
               "ok": true
             },
@@ -15712,7 +15744,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.447991271811077,
-              "air_draft_m": 12.847991271811077,
+              "air_draft_m": 19.11465793847774,
               "air_draft_ok": null,
               "ok": true
             },
@@ -16065,7 +16097,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 9.455826586914696,
-              "air_draft_m": 12.855826586914697,
+              "air_draft_m": 19.12249325358136,
               "air_draft_ok": null,
               "ok": true
             }
@@ -21831,7 +21863,7 @@
     {
       "name": "C deep",
       "status": "results",
-      "results_hash": "c41cb9437a5f010d99398a9877f6e313f5bda9872efa032fa7e50973e2ca7e72",
+      "results_hash": "8673c19b596bae183b449b848eb4e3f9134db650012c55dc738cb570757a3f76",
       "hash_status": "matches",
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
@@ -22460,9 +22492,25 @@
           "draught_max_m": 14.139999999999999,
           "freeboard_m": 11.638623686250627,
           "light_draught_m": 1.9385656030051561,
-          "air_draft_loaded_m": 15.038623686250626,
-          "air_draft_light_m": 17.411434396994842,
-          "h_over_T": null
+          "air_draft_loaded_m": 21.305290352917297,
+          "air_draft_light_m": 23.67810106366151,
+          "h_over_T": null,
+          "vent_mast_x_m": 114.48,
+          "vent_exit_above_keel_m": 25.616666666666667,
+          "vent_exit_above_deck_m": 9.666666666666668,
+          "vent_exit_above_working_area_m": 10.513333333333334,
+          "vent_working_area_top_m": 15.103333333333333,
+          "vent_working_area": "weather_shield",
+          "vent_exit_governed_by": "deck",
+          "vent_distance_to_openings_m": 96.58800000000001,
+          "vent_distance_to_accommodation_m": 96.58800000000001,
+          "vent_mast_distance_target_m": 25.0,
+          "vent_mast_distance_met": true,
+          "vent_mast_lowerable": false,
+          "vent_mast_notes": [
+            "IGC 8.2.10.4: the working area is the top of the weather shield, or the tank top where the hull has no shield; the top of the tank domes is not counted as a working area.",
+            "IGC 8.2.11.1: the smaller distances it allows for ships under 90 m in length are not used."
+          ]
         },
         "checks": [
           {
@@ -23142,7 +23190,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 11.651827467131342,
-              "air_draft_m": 15.051827467131341,
+              "air_draft_m": 21.318494133798012,
               "air_draft_ok": null,
               "ok": true
             },
@@ -23458,7 +23506,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 11.660583151322474,
-              "air_draft_m": 15.060583151322472,
+              "air_draft_m": 21.32724981798914,
               "air_draft_ok": null,
               "ok": true
             },
@@ -23811,7 +23859,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 13.041532724901334,
-              "air_draft_m": 16.441532724901332,
+              "air_draft_m": 22.708199391568,
               "air_draft_ok": null,
               "ok": true
             },
@@ -24164,7 +24212,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 13.050188584351664,
-              "air_draft_m": 16.450188584351665,
+              "air_draft_m": 22.716855251018334,
               "air_draft_ok": null,
               "ok": true
             }
@@ -25978,7 +26026,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 11.651827467131342,
-              "air_draft_m": 15.051827467131341,
+              "air_draft_m": 21.318494133798012,
               "air_draft_ok": null,
               "ok": true
             },
@@ -26294,7 +26342,7 @@
               "ballast": [],
               "plan_found": null,
               "freeboard_m": 11.660583151322474,
-              "air_draft_m": 15.060583151322472,
+              "air_draft_m": 21.32724981798914,
               "air_draft_ok": null,
               "ok": true
             },
@@ -26647,7 +26695,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 13.041532724901334,
-              "air_draft_m": 16.441532724901332,
+              "air_draft_m": 22.708199391568,
               "air_draft_ok": null,
               "ok": true
             },
@@ -27000,7 +27048,7 @@
               ],
               "plan_found": true,
               "freeboard_m": 13.050188584351664,
-              "air_draft_m": 16.450188584351665,
+              "air_draft_m": 22.716855251018334,
               "air_draft_ok": null,
               "ok": true
             }
