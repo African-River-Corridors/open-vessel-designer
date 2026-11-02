@@ -161,6 +161,7 @@ fn mass_items(r: &AftArrangementResult, i: &AftArrangementInputs) -> Vec<(String
     let m = SternMassInputs {
         battery_unit_energy_kwh: 5000.0,
         installed_power_kw: None,
+        gas_combustion_unit: false,
     };
     stern_block_mass(i, r, &m, 1.0)
         .iter()
