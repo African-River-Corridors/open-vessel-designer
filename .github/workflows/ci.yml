@@ -84,7 +84,9 @@ jobs:
           fetch-depth: 0 # the design-impact check diffs against the merge base
       - uses: ./.github/actions/gate-env
         with:
-          cache-key: gate-impact
+          # Its own key since the release build (issue #852): the cache key does not hold the profile,
+          # so the release dependencies are saved only under a key that misses once.
+          cache-key: gate-impact-release
           python-package: "false"
       # The design-impact check runs the `ovd` binary; of the Python package it needs only PyYAML, so
       # the job does not build the extension (issue #852).
