@@ -92,15 +92,22 @@ jobs:
       # the job does not build the extension (issue #852).
       - name: Install PyYAML
         run: python -m pip install 'pyyaml>=6'
-      # The answers of a commit for the case set are always the same, so the newest saved ones are
-      # restored and the base commit's answers are not worked out again when they are there
-      # (tools/design_impact.py, issue #561). A run saves its own answers under its commit.
+      # The answers of a commit for the case set are always the same, so saved ones are restored and
+      # the base commit's answers are not worked out again when they are there (tools/design_impact.py,
+      # issue #561). A run saves its own answers under its commit. The entry saved under the base commit
+      # comes first: it holds the base's answers. The newest entry alone is often this branch's own,
+      # from before main moved, without them (issue #852).
+      - name: The base commit of the design-impact check
+        id: base
+        run: echo "sha=$(python3 tools/design_impact.py base)" >> "$GITHUB_OUTPUT"
       - name: Restore the saved design-impact answers
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}/design-impact-cache
           key: design-impact-${{ github.sha }}
-          restore-keys: design-impact-
+          restore-keys: |
+            design-impact-${{ steps.base.outputs.sha }}
+            design-impact-
       - name: Design impact
         env:
           GATES_STEPS: impact
