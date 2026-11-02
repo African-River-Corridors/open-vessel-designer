@@ -92,8 +92,6 @@ check-stability-not-assessed = no se pudo evaluar la estabilidad: { $reason }
 ## crates/ovd-core/src/gas_separation.rs
 
 # status: draft
-check-opening-setback = separación a popa { $aft } m >= { $min } m desde la zona de carga hasta cualquier entrada o ventana que se pueda abrir (cl. 3.3.7 / 3.3.11)
-# status: draft
 check-fwd-end-bulkhead-space = espacio del mamparo de extremo de proa { $fwd } m >= { $min } m ({ $tank_ends }, cl. 3.5.3)
 # status: draft
 check-fwd-end-bulkhead-space-domed-ends = extremos de tanque abombados
@@ -488,8 +486,6 @@ check-name-tank-length-over-diameter = longitud del tanque sobre diámetro
 check-name-freeboard-at-payload = francobordo con carga útil
 # status: draft
 check-name-stability-not-assessed = Estabilidad — no evaluada
-# status: draft
-check-name-opening-setback = separación de aberturas
 # status: draft
 check-name-fwd-end-bulkhead-space = espacio del mamparo de extremo de proa
 # status: draft

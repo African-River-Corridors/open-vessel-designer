@@ -143,9 +143,12 @@ pub struct FitOptions {
     /// shape (`gas_separation::default_end_space`), or the Option's own values (issue #280).
     pub aft_end_space_m: f64,
     pub fwd_end_space_m: f64,
-    /// Issue #381: the opening setback is measured from the cargo area (the aft separation is the end
-    /// space plus the setback); `false`: from the tank end, as before.
+    /// Issue #381: where the opening setback was measured from. Since spec 0011 (D17) the hull keeps
+    /// no length for the setback, so no result reads it; kept so saved files still build.
     pub opening_setback_from_cargo_area: bool,
+    /// The IGC 3.1.2 cofferdam between the hold and the stern block (m), chosen in place of the
+    /// gastight A-60 bulkhead; `0`: the bulkhead (spec 0011 D18).
+    pub hold_cofferdam_m: f64,
     /// Fixed tank wall thickness (mm); `None`: the pressure-vessel formula gives it (issue #292).
     pub tank_wall_thickness_mm: Option<f64>,
     /// The Cargo-dependent tank design values: pressure, steel, insulation, structure factor.
@@ -384,6 +387,7 @@ impl Default for FitOptions {
             aft_end_space_m: crate::gas_separation::default_end_space(false),
             fwd_end_space_m: crate::gas_separation::default_end_space(false),
             opening_setback_from_cargo_area: true,
+            hold_cofferdam_m: 0.0,
             tank_wall_thickness_mm: Some(DEFAULT_TANK_WALL_THICKNESS_MM),
             tank_design: TankDesign::default(),
             water_density_t_per_m3: DEFAULT_WATER_DENSITY,
@@ -1145,11 +1149,13 @@ impl Search<'_> {
         if self.o.aft_end_space_m != default_space
             || self.o.fwd_end_space_m != default_space
             || !self.o.opening_setback_from_cargo_area
+            || self.o.hold_cofferdam_m != 0.0
         {
             inp.separation = Some(crate::gas_separation::GasSeparationInputs {
                 cofferdam_m: self.o.aft_end_space_m,
                 fwd_end_bulkhead_m: self.o.fwd_end_space_m,
                 setback_from_cargo_area: self.o.opening_setback_from_cargo_area,
+                hold_cofferdam_m: self.o.hold_cofferdam_m,
                 ..Default::default()
             });
         }

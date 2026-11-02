@@ -92,8 +92,6 @@ check-stability-not-assessed = 无法评估稳性：{ $reason }
 ## crates/ovd-core/src/gas_separation.rs
 
 # status: draft
-check-opening-setback = 尾部间隔{ $aft } m >= { $min } m，自货物区量至任何入口或可开启窗（cl. 3.3.7 / 3.3.11）
-# status: draft
 check-fwd-end-bulkhead-space = 首端舱壁处所{ $fwd } m >= { $min } m（{ $tank_ends }，cl. 3.5.3）
 # status: draft
 check-fwd-end-bulkhead-space-domed-ends = 液货舱端部为凸形
@@ -488,8 +486,6 @@ check-name-tank-length-over-diameter = 液货舱长径比
 check-name-freeboard-at-payload = 载货时干舷
 # status: draft
 check-name-stability-not-assessed = 稳性——未评估
-# status: draft
-check-name-opening-setback = 开口间隔
 # status: draft
 check-name-fwd-end-bulkhead-space = 首端舱壁处所
 # status: draft

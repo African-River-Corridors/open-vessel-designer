@@ -1330,44 +1330,50 @@ fn zones(c: &mut Canvas, h: &Hull, view: View, labels: &mut Vec<(String, [f64; 2
             c.line("ZONE", a, b, None);
         }
     }
-    if let Some((cofferdam, aft)) = h.separation
-        && cofferdam > 0.0
-    {
+    // Spec 0011 (D17, D18): aft of the cargo zone, a hold cofferdam only when one is chosen in place
+    // of the A-60 bulkhead, then the hold end clearance up to the tanks. No service space.
+    if let Some((clearance, aft)) = h.separation {
         let start = x0 - aft;
-        for x in [start, start + cofferdam] {
-            let (a, b) = across(x);
-            c.line("HIDDEN", a, b, None);
-        }
-        let mid = start + cofferdam / 2.0;
-        // The label stands under the hull, its text to the right of the label point, so that it
-        // keeps clear of the aft block and the first tank above the deck, and of the thrusters'
-        // label, whose text stands to the left of the stern.
-        c.leader(
-            &label!("draw-cofferdam", "COFFERDAM"),
-            [mid, lo],
-            [mid + 2.0 * c.k, lo - 6.0 * c.k],
-        );
-    }
-    // Issue #409: the service space between the cofferdam and the cargo zone, and the forward
-    // separation, the end-bulkhead space ahead of the last tank, from the separation result.
-    if let (Some((cofferdam, aft)), Some((fwd, service))) = (h.separation, h.fwd_separation) {
-        if service > 0.0 {
-            let mid = x0 - aft + cofferdam + service / 2.0;
-            // above the hull: under it the cofferdam's label and the LOA dimension stand
+        let cofferdam = (aft - clearance).max(0.0);
+        if cofferdam > 1e-9 {
+            for x in [start, start + cofferdam] {
+                let (a, b) = across(x);
+                c.line("HIDDEN", a, b, None);
+            }
+            let mid = start + cofferdam / 2.0;
+            // above the hull: under it stand the clearance's label and the LOA dimension
             c.leader(
-                &label!("draw-service-space", "SERVICE SPACE"),
+                &label!("draw-cofferdam", "COFFERDAM"),
                 [mid, hi],
                 [mid + 2.0 * c.k, hi + 6.0 * c.k],
             );
         }
-        if fwd > 0.0 && x1 + fwd < h.loa {
-            let (a, b) = across(x1 + fwd);
+        if clearance > 0.0 {
+            let (a, b) = across(start + cofferdam);
             c.line("HIDDEN", a, b, None);
-            labels.push((
-                label!("draw-fwd-separation", "FWD SEPARATION"),
-                [x1 + fwd / 2.0, hi],
-            ));
+            let mid = start + cofferdam + clearance / 2.0;
+            // The label stands under the hull, its text to the right of the label point, so that it
+            // keeps clear of the aft block and the first tank above the deck, and of the thrusters'
+            // label, whose text stands to the left of the stern.
+            c.leader(
+                &label!("draw-end-clearance", "END CLEARANCE"),
+                [mid, lo],
+                [mid + 2.0 * c.k, lo - 6.0 * c.k],
+            );
         }
+    }
+    // Issue #409: the forward separation, the end-bulkhead space ahead of the last tank, from the
+    // separation result.
+    if let (Some(_), Some((fwd, _))) = (h.separation, h.fwd_separation)
+        && fwd > 0.0
+        && x1 + fwd < h.loa
+    {
+        let (a, b) = across(x1 + fwd);
+        c.line("HIDDEN", a, b, None);
+        labels.push((
+            label!("draw-fwd-separation", "FWD SEPARATION"),
+            [x1 + fwd / 2.0, hi],
+        ));
     }
     if h.bow_void > 0.0 {
         let mid = h.loa - h.bow_void / 2.0;

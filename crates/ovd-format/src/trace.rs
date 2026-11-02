@@ -885,6 +885,10 @@ pub const CHECK_RULES: &[(&str, &str)] = &[
     ("aft end bulkhead space", "lr-inland/3.5.3/aft-end-space"),
     ("opening setback", "lr-inland/3.3.7/opening-setback"),
     ("fwd end bulkhead space", "lr-inland/3.5.3/end-space"),
+    (
+        "hold machinery segregation",
+        "igc/3.1.2/hold-machinery-segregation",
+    ),
     // The checks only the arrangement search makes (`fit`, #277).
     ("not overloaded", "ovd/capacity/not-overloaded"),
     ("freeboard ok", "ovd/capacity/freeboard"),

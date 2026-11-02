@@ -293,6 +293,10 @@ impl Measured {
                 k == "name"
                     && matches!(v, ArgValue::Text(n) if self.checks.iter().any(|(c, _)| c == n))
             }),
+            // Spec 0011 (D17): the aft separation no longer holds the opening setback, so the old
+            // inland Rule that read it as the distance to the openings (lr-inland 3.3.7 before set
+            // 2.0.0) is not applicable; set 2.0.0 checks the opening distances themselves.
+            "separation.aft" => false,
             id if id.starts_with("separation.") => self.separation.is_some(),
             // Issue #337: the liquid Measures exist for a liquid bulk layout only.
             "hull.double_side_width"

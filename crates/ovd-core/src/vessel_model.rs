@@ -402,21 +402,25 @@ fn spaces(c: &BargeCapacityInputs, r: &BargeCapacityResult) -> Vec<Space> {
     if let Some(l) = r.liquid.as_ref() {
         out.extend(l.spaces.iter().filter(|s| !s.kind.is_ballast()).cloned());
     }
-    // The gas separation aft of the cargo zone: the cofferdam, then the service space.
+    // The gas separation aft of the cargo zone (spec 0011 D17, D18): a hold cofferdam only when one
+    // is chosen in place of the A-60 bulkhead, then the hold end clearance up to the tanks. No
+    // length is kept for the opening setback.
     if let Some(s) = r.separation.as_ref() {
         let start = x0 - s.aft_separation_m;
-        let cofferdam = (start, start + s.cofferdam_m);
-        let service = (cofferdam.1, cofferdam.1 + s.service_space_m);
+        let cofferdam = (start, start + s.hold_cofferdam_m);
+        let clearance = (cofferdam.1, cofferdam.1 + s.cofferdam_m);
         for (name, kind, x) in [
             ("CD1C", SpaceKind::Cofferdam, cofferdam),
-            ("SV1C", SpaceKind::Void, service),
+            ("EC1C", SpaceKind::Void, clearance),
         ] {
-            out.push(centre(
-                name.to_string(),
-                kind,
-                x,
-                across(half_b, 0.0, c.depth),
-            ));
+            if x.1 - x.0 > 0.0 {
+                out.push(centre(
+                    name.to_string(),
+                    kind,
+                    x,
+                    across(half_b, 0.0, c.depth),
+                ));
+            }
         }
     }
     // The machinery spaces below the deck of the aft block, full beam and depth.
@@ -526,9 +530,20 @@ fn bulkheads(c: &BargeCapacityInputs, r: &BargeCapacityResult) -> Vec<Bulkhead> 
     }
     if let Some(s) = r.separation.as_ref() {
         let start = x0 - s.aft_separation_m;
-        if s.cofferdam_m > 0.0 {
+        if s.hold_cofferdam_m > 0.0 {
             add("cofferdam_aft".to_string(), start, true);
-            add("cofferdam_fwd".to_string(), start + s.cofferdam_m, true);
+            add(
+                "cofferdam_fwd".to_string(),
+                start + s.hold_cofferdam_m,
+                true,
+            );
+        }
+        if s.cofferdam_m > 0.0 {
+            add(
+                "end_clearance_aft".to_string(),
+                start + s.hold_cofferdam_m,
+                true,
+            );
         }
         if s.fwd_separation_m > 0.0 {
             add("fwd_separation".to_string(), x1 + s.fwd_separation_m, true);

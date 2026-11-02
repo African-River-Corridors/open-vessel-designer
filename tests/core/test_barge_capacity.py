@@ -57,13 +57,18 @@ def test_gas_golden_example():
     assert r.tank_outer_diameter_m <= 12.0 + 1e-9          # the rule itself
     # Re-pinned (issue #280: the end space defaults to the type G rule); was 1786.
     # Re-pinned again (issue #381: the opening setback is measured from the cargo area); was 1795.
-    assert abs(r.cargo_capacity_t - 1789) < 5
+    # Re-pinned (spec 0011 D17, no hull length for the opening setback; printed 1848.139930722507);
+    # was 1789.
+    assert abs(r.cargo_capacity_t - 1848) < 5
     # Re-pinned (#448); were draught 2.64 m and air draft 7.13 m: the hull's sections, not Cb.
     # Re-pinned (#722, the hull steel from the panel model); were draught 2.43 m and air draft 7.34 m.
     # Re-pinned (#740, the rule length of ABS 3-1-1/3.1); were draught 2.48 m and air draft 7.29 m.
-    assert abs(r.full_load_draft_m - 2.45) < 0.02
-    assert abs(r.air_draft_m - 7.31) < 0.05
-    assert abs(r.cargo_zone_length_m - 68.108) < 0.05    # was 68.01 (#280), 68.308 (#381)
+    # Re-pinned (spec 0011 D17; printed draught 2.5037902397935037 and air draft 7.262876426873162);
+    # were draught 2.45 m and air draft 7.31 m.
+    assert abs(r.full_load_draft_m - 2.50) < 0.02
+    assert abs(r.air_draft_m - 7.26) < 0.05
+    # was 68.01 (#280), 68.308 (#381), 68.108 (spec 0011 D17: the 2.00 m setback is cargo zone now)
+    assert abs(r.cargo_zone_length_m - 70.108) < 0.05
     assert r.ok and not r.overloaded
 
 
@@ -139,15 +144,19 @@ def test_cargo_volume_is_inner_volume_times_fill():
 
 
 def test_wider_cofferdam_costs_cargo():
-    """The separation is a real length: widen it and the cargo zone shrinks by the same.
+    """The separation is a real length: widen the hold end clearance and the cargo zone shrinks by
+    the same. The opening setback is not a length of hull (spec 0011 D17): widening it changes
+    nothing.
 
     Label: property
     """
     from ovd.core.gas_separation import GasSeparationInputs
     base = _gas()
-    wide = _gas(separation=GasSeparationInputs(opening_setback_m=4.0))
+    wide = _gas(separation=GasSeparationInputs(cofferdam_m=2.2))
     assert abs((base.cargo_zone_length_m - wide.cargo_zone_length_m) - 2.0) < 1e-9
     assert wide.cargo_capacity_t < base.cargo_capacity_t
+    setback = _gas(separation=GasSeparationInputs(opening_setback_m=4.0))
+    assert abs(base.cargo_zone_length_m - setback.cargo_zone_length_m) < 1e-9
 
 
 def test_navigating_air_draft_is_never_below_stowed():

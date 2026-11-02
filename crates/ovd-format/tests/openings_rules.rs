@@ -69,8 +69,9 @@ fn the_five_inputs_are_in_the_openings_group_for_type_c_tanks_with_estimate_defa
     for (name, default) in [
         ("deckhouse_front_opening", json!(false)),
         ("deckhouse_side_opening_distance_m", json!(5.0)),
-        ("entrance_distance_m", json!(2.0)),
-        ("engine_room_vent_inlet_distance_m", json!(2.0)),
+        // Spec 0011 (D17): 5 m, the most IGC 3.2.4.1 ever asks, so a new gas Option meets it.
+        ("entrance_distance_m", json!(5.0)),
+        ("engine_room_vent_inlet_distance_m", json!(5.0)),
         ("funnel_outlet_distance_m", json!(2.0)),
     ] {
         let e = list.iter().find(|i| i["name"] == name).unwrap();
@@ -201,12 +202,15 @@ fn a_new_gas_option_meets_the_opening_rules_and_names_the_ones_the_model_cannot_
         let results = results_of(&new_gas_design(cargo, json!({})));
         let sets = results["rule_trace"]["rule_sets"].to_string();
         assert!(
-            sets.contains("lr-inland-gas@2.0.0") && sets.contains("igc-2g@2.0.0"),
+            sets.contains("lr-inland-gas@2.0.0") && sets.contains("igc-2g@2.1.0"),
             "{sets}"
         );
         for id in [
             "igc/3.2.4.1/front-openings",
             "igc/3.2.4.1/side-opening-distance",
+            "igc/3.2.4.1/opening-setback",
+            "igc/3.2.4.1/air-inlet-setback",
+            "igc/3.1.2/hold-machinery-segregation",
             "lr-inland/3.3.7/entrance-setback",
             "lr-inland/3.3.8/vent-inlet-setback",
             "lr-inland/3.3.11/opening-setback",
@@ -263,6 +267,17 @@ fn a_typed_opening_that_breaks_a_rule_fails_that_rule_only() {
             json!(0.5),
             "lr-inland/3.4.1/funnel-setback",
         ),
+        // Spec 0011 (D17): 2.5 m meets the inland 2.00 m but not IGC 3.2.4.1 (at least 3 m).
+        (
+            "entrance_distance_m",
+            json!(2.5),
+            "igc/3.2.4.1/opening-setback",
+        ),
+        (
+            "engine_room_vent_inlet_distance_m",
+            json!(2.5),
+            "igc/3.2.4.1/air-inlet-setback",
+        ),
     ] {
         let design = new_gas_design("LNG", json!({ input: value }));
         let results = results_of(&design);
@@ -279,15 +294,15 @@ fn a_typed_opening_that_breaks_a_rule_fails_that_rule_only() {
 fn a_deep_cofferdam_with_a_door_on_its_aft_bulkhead_fails_the_opening_rule() {
     // Issue #381: the aft separation used to be max(cofferdam, opening setback), so a deep cofferdam
     // gave 3 m and the old Rule passed, though a door on the cofferdam's aft bulkhead is not 2 m from
-    // the cargo area. Now the separation is the cofferdam plus the setback, and the typed distance of
-    // the door says the door is too near.
+    // the cargo area. Spec 0011 (D17): the separation is the end clearance alone, and the typed
+    // distance of the door says the door is too near.
     let design = new_gas_design("LNG", json!({ "entrance_distance_m": 0.5 }));
     let deep = compute(&GasSeparationInputs {
         cofferdam_m: 3.0,
         ..GasSeparationInputs::default()
     })
     .unwrap();
-    assert_eq!(deep.aft_separation_m, 5.0);
+    assert_eq!(deep.aft_separation_m, 3.0);
     let measured = Measured {
         separation: Some((deep, false)),
         ..Measured::default()

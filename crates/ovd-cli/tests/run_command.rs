@@ -466,16 +466,13 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
     // stern and covering inputs of the issues since #410 moved it from 1604.5823133024817).
     // Re-pinned again (issue #722, the hull steel from the panel model): lightship_t was
     // 1583.438359298561. Re-pinned again (issue #740, the scantlings take the rule length of ABS
-    // 3-1-1/3.1): lightship_t was 1569.7907856537108.
+    // 3-1-1/3.1): lightship_t was 1569.7907856537108. Re-pinned again (spec 0011 D17, no hull
+    // length for the opening setback): cargo_t was 2021.2487121368047, lightship_t 1537.517376832394.
     let r = &results["results"];
-    assert_close(
-        r["cargo_t"].as_f64().unwrap(),
-        2021.2487121368047,
-        "cargo_t",
-    );
+    assert_close(r["cargo_t"].as_f64().unwrap(), 2077.917858761847, "cargo_t");
     assert_close(
         r["lightship_t"].as_f64().unwrap(),
-        1537.517376832394,
+        1552.88830260544,
         "lightship_t",
     );
     // Re-pinned (issue #264); was "tank volume" (stepped IGC_2G) and "draught — Draught limit" (issue #237).

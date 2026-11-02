@@ -574,7 +574,7 @@ pub static MEASURES: &[MeasureDef] = &[
         object: ObjectType::Option,
         value: ValueKind::Number,
         args: &[],
-        method: "Cofferdam width at the aft end of the cargo area, as the gas separation used it",
+        method: "Hold end clearance at the aft end of the cargo area, as the gas separation used it (not a cofferdam, spec 0011 D18)",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {
@@ -583,7 +583,7 @@ pub static MEASURES: &[MeasureDef] = &[
         object: ObjectType::Option,
         value: ValueKind::Number,
         args: &[],
-        method: "Aft separation from the cargo area: the greater of the cofferdam and the opening setback",
+        method: "Aft separation from the tanks to the stern block: the hold end clearance, plus a hold cofferdam when one replaces the A-60 bulkhead. Since spec 0011 (D17) no design has it as a Rule Measure: it no longer holds the opening setback",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {

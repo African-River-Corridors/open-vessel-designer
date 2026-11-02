@@ -961,14 +961,18 @@ fn the_elevation_and_plan_draw_the_cofferdam_zone_limits_and_forward_equipment()
                     "{file}: zone limit at {x}"
                 );
             }
-            // the cofferdam's two bulkheads, hidden under the deck
-            for x in [start, end] {
-                assert!(
-                    has_line(view, "HIDDEN", (x, lo), (x, hi)),
-                    "{file}: cofferdam bulkhead at {x}"
-                );
-            }
-            assert!(has_leader(view, "COFFERDAM") && has_leader(view, "FWD EQUIP."));
+            // the hold end clearance's aft bulkhead, hidden under the deck (spec 0011 D18: the
+            // clearance is inside the hold, up to the tanks; no hold cofferdam is chosen)
+            assert!(
+                has_line(view, "HIDDEN", (start, lo), (start, hi)),
+                "{file}: hold end bulkhead at {start}"
+            );
+            assert!(
+                close(end, stern),
+                "{file}: the clearance reaches the cargo zone"
+            );
+            assert!(has_leader(view, "END CLEARANCE") && has_leader(view, "FWD EQUIP."));
+            assert!(!has_leader(view, "COFFERDAM") && !has_leader(view, "SERVICE SPACE"));
         }
         // elevation: the double bottom is a hidden line along the hull, the wing tank a hidden band
         let db = f(&r["drawing"]["double_bottom_m"]);

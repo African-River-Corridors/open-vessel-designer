@@ -101,9 +101,9 @@ check-name-aft-end-bulkhead-space = aft end bulkhead space
 check-aft-end-bulkhead-space = aft end-bulkhead space { $aft } m >= { $min } m ({ $tank_ends }, cl. 3.5.3)
 check-fwd-end-bulkhead-space-plane-ends = plane tank ends
 check-fwd-end-bulkhead-space-domed-ends = domed tank ends
-check-name-opening-setback = opening setback
-check-opening-distance = distance { $distance } m from the cargo area (end space included) to any entrance or openable window >= { $min } m (cl. 3.3.7 / 3.3.11)
-check-opening-setback = aft separation { $aft } m >= { $min } m from the cargo area to any entrance or openable window (cl. 3.3.7 / 3.3.11)
+check-name-hold-machinery-segregation = hold machinery segregation
+check-hold-segregation-bulkhead = hold segregated from the stern block by a gastight A-60 bulkhead (IGC 3.1.2)
+check-hold-segregation-cofferdam = hold cofferdam { $width } m >= { $min } m in place of the A-60 bulkhead (IGC 3.1.2; width cl. 3.6.13)
 check-name-fwd-end-bulkhead-space = fwd end bulkhead space
 check-fwd-end-bulkhead-space = forward end-bulkhead space { $fwd } m >= { $min } m ({ $tank_ends }, cl. 3.5.3)
 warn-separation-clauses = Separation clauses are cited from the classification rules for inland-waterways ships (Pt 4 Ch 4 Sec 3, Jul 2022). Confirm against the ADN text before release.

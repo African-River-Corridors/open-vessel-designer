@@ -25,7 +25,9 @@ def test_cn_ii_benchmark_is_reproduced():
     # Re-pinned again (issue #498: the angle of max GZ alone in the light condition with no ballast is
     # a warning, so the one-wide arrangement is feasible again): 2,021.25 t, one tank wide.
     # Re-pinned again (issue #280: the end space defaults to the type G rule, 0.20 m): 2,033.41 t.
-    assert abs(f.payload_t - 2025.30) < 1.0
+    # Re-pinned (spec 0011 D17, no hull length for the opening setback): printed
+    # 2106.1768017414365; was 2025.30.
+    assert abs(f.payload_t - 2106.18) < 1.0
     assert f.n_tanks_wide == 1
 
 
@@ -98,7 +100,10 @@ def test_payload_never_exceeds_the_draught_cap():
 # 1677.3919953648792, 1702.1071766984594, 1900.5758634769286 and 2967.9842015072713.
 # Issue #381 (the opening setback is measured from the cargo area) re-pinned all four to the printed
 # values 1670.580303723772, 1694.82927479986, 1893.3032219800957 and 2960.8309821262383.
-SNAPSHOT = [((90, 12.9), 1671), ((90, 14.8), 1695), ((90, 18.0), 1893), ((120, 18.0), 2961)]
+# Re-pinned (spec 0011 D17, no hull length for the opening setback): all four to the printed values
+# 1728.3293387579888, 1767.608293785855, 1965.9927836300049 and 3032.327446305541; they were 1671,
+# 1695, 1893 and 2961.
+SNAPSHOT = [((90, 12.9), 1728), ((90, 14.8), 1768), ((90, 18.0), 1966), ((120, 18.0), 3032)]
 
 
 @pytest.mark.parametrize("dims,expected", SNAPSHOT)
@@ -119,7 +124,9 @@ def test_snapshot_120x18_is_two_8m_tanks_abreast():
     """
     f = fit(120.0, 18.0, "LNG", 3.0, ruleset="IGC_2G", fill_ratio=0.98, max_tank_od_m=12.0)
     assert f.feasible
-    assert f.n_tanks_wide == 2 and abs(f.tank_od_m - 8.016) < 0.001
+    # Re-pinned (spec 0011 D17, no hull length for the opening setback): printed 8.013735516268488;
+    # was 8.016.
+    assert f.n_tanks_wide == 2 and abs(f.tank_od_m - 8.014) < 0.001
 
 
 # The same hulls under the default 16 m cap. Values printed by this code when the cap moved
@@ -136,7 +143,9 @@ def test_snapshot_120x18_is_two_8m_tanks_abreast():
 # Issue #498 re-pinned (90, 14.8) to the printed value 1614.9482417833697.
 # Issue #280 re-pinned both to the printed values 1624.664228865461 and 2967.9842015072713.
 # Issue #381 re-pinned both to the printed values 1618.1877295647867 and 2960.8309821262383.
-SNAPSHOT_16 = [((90, 14.8), 1618.1877295647867), ((120, 18.0), 2960.8309821262383)]
+# Re-pinned (spec 0011 D17, no hull length for the opening setback): both to the printed values;
+# they were 1618.1877295647867 and 2960.8309821262383.
+SNAPSHOT_16 = [((90, 14.8), 1682.8045467306345), ((120, 18.0), 3032.327446305541)]
 
 
 @pytest.mark.parametrize("dims,expected", SNAPSHOT_16)
