@@ -4,48 +4,48 @@
 <!-- design-impact -->
 ### ticket/776-igc-opening-setback (2026-11-02)
 
-Between `main bb6a163` and `this branch ff65ac1d`.
+Between `main 85f8ef9` and `this branch b402b66a`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|
-| sweep CN-derived bulk 1 (88x16.3) | `checks[12].message` | blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 1.46 m of 6.00 m | blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 1.55 m of 6.00 m | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `checks[14].message` | intact GM 4.82 m >= 0.15 m at the reported cargo 3057 t, draught 3.80 m (first-order; cargo KG of the full hold; KG_light @0.5D) | intact GM 4.79 m >= 0.15 m at the reported cargo 3057 t, draught 3.83 m (first-order; cargo KG of the full hold; KG_light @0.5D) | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `checks[15].message` | barge form factor at the service speed: Fn 0.169, Cp 0.845, L/B 5.20, B/T 4.30; outside its range: Fn 0.17 (range 0.00 to 0.14), L/B 5.20 (range 7.59 to 16.29) | barge form factor at the service speed: Fn 0.169, Cp 0.846, L/B 5.21, B/T 4.27; outside its range: Fn 0.17 (range 0.00 to 0.14), L/B 5.21 (range 7.59 to 16.29) | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `checks[17].message` | GM 4.80 m (fluid), max GZ 1.30 m at 25° | GM 4.76 m (fluid), max GZ 1.30 m at 25° | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `checks[18].message` | GM 4.81 m (fluid), max GZ 1.28 m at 25° | GM 4.77 m (fluid), max GZ 1.29 m at 25° | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `checks[19].message` | GM 15.80 m (fluid), max GZ 4.16 m at 31° | GM 15.47 m (fluid), max GZ 4.13 m at 31° | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `checks[20].message` | GM 15.95 m (fluid), max GZ 4.15 m at 30° | GM 15.60 m (fluid), max GZ 4.13 m at 31° | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `checks[3].message` | freeboard 2.02 m >= required 0.3 m | freeboard 1.99 m >= required 0.3 m | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.items[12].kcg_m` | absent | 3.3 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.items[12].label` | absent | engine-room steel | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.items[12].lcg_m` | absent | 15.7636120126 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.items[12].mass_t` | absent | 33.7413072095 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.items[13].kcg_m` | absent | 0.8 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.items[13].label` | absent | engine seats | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.items[13].lcg_m` | absent | 15.7636120126 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.items[13].mass_t` | absent | 0.973747503982 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.engine_room_rate_basis` | absent | Schneekluth and Bertram, Ship Design for Efficiency and Economy, sec. 5, Table 5.2, p. 164: deckhouse coefficient C_DH, layer I, Fo/Fu = 1.0, taken for the engine room (edition not shown on the pages read) | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.engine_room_rate_status` | absent | unverified estimate | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.engine_room_rate_t_per_m3` | absent | 0.057 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.engine_room_steel_t` | absent | 33.7413072095 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.engine_room_volume_m3` | absent | 591.952758061 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.prime_movers.count` | absent | 2 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.prime_movers.kw_each` | absent | 575.779570032 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.prime_movers.rpm` | absent | 1800 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.prime_movers.rpm_status` | absent | estimate | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.seats_basis` | absent | Schneekluth and Bertram, sec. 5.1, p. 158: W = 27 P_B / ((n + 250) (15 + P_B / 1000)) t per engine | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.seats_t` | absent | 0.973747503982 | changed |
-| sweep CN-derived bulk 1 (88x16.3) | `stern_block_mass.machinery_steel.watson_cross_check` | absent | none | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `checks[12].message` | blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 2.27 m of 6.00 m | blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 2.36 m of 6.00 m | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `checks[14].message` | intact GM 3.81 m >= 0.15 m at the reported cargo 5935 t, draught 4.29 m (first-order; cargo KG of the full hold; KG_light @0.5D) | intact GM 3.82 m >= 0.15 m at the reported cargo 5896 t, draught 4.29 m (first-order; cargo KG of the full hold; KG_light @0.5D) | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `checks[15].message` | barge form factor at the service speed: Fn 0.138, Cp 0.905, L/B 7.83, B/T 3.79; outside its range: Fn 0.14 (range 0.00 to 0.14), Cp 0.91 (range 0.77 to 0.88), B/T 3.79 (range 4.05 to 8.12) | barge form factor at the service speed: Fn 0.138, Cp 0.906, L/B 7.83, B/T 3.79; outside its range: Fn 0.14 (range 0.00 to 0.14), Cp 0.91 (range 0.77 to 0.88), B/T 3.79 (range 4.05 to 8.12) | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `checks[17].message` | GM 3.79 m (fluid), max GZ 0.84 m at 22° — fails: Angle of max GZ 22.000 < 25.0 | GM 3.79 m (fluid), max GZ 0.86 m at 22° — fails: Angle of max GZ 22.000 < 25.0 | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `checks[18].message` | GM 3.79 m (fluid), max GZ 0.84 m at 22° — fails: Angle of max GZ 22.000 < 25.0 | GM 3.79 m (fluid), max GZ 0.85 m at 22° — fails: Angle of max GZ 22.000 < 25.0 | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `checks[19].message` | GM 16.34 m (fluid), max GZ 4.12 m at 29° | GM 16.06 m (fluid), max GZ 4.10 m at 30° | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `checks[20].message` | GM 16.49 m (fluid), max GZ 4.12 m at 29° | GM 16.20 m (fluid), max GZ 4.10 m at 29° | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `checks[3].message` | freeboard 1.46 m >= required 0.3 m | freeboard 1.44 m >= required 0.3 m | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `stern_block_mass.items[12].kcg_m` | absent | 3.3 | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `stern_block_mass.items[12].label` | absent | engine-room steel | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `stern_block_mass.items[12].lcg_m` | absent | 15.9336110575 | changed |
-| sweep CN-derived bulk 2 (130x16.3) | `stern_block_mass.items[12].mass_t` | absent | 35.3207683351 | changed |
-| ... | 3428052 more changed quantities | | | |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[15].message` | distance 2.00 m from the cargo area (end space included) to any entrance or openable window >= 2.00 m (cl. 3.3.7 / 3.3.11) | hold segregated from the stern block by a gastight A-60 bulkhead (IGC 3.1.2) | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[15].name` | opening setback | hold machinery segregation | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[21].message` | tank length 27.29 m / inner diameter 6.80 m = 4.02 <= 7.0 | tank length 28.29 m / inner diameter 6.80 m = 4.16 <= 7.0 | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[22].message` | freeboard 3.04 m at the carried draught 2.66 m >= required 0.3 m | freeboard 2.98 m at the carried draught 2.72 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[23].message` | GM 6.14 m (fluid), max GZ 2.58 m at 29° | GM 5.98 m (fluid), max GZ 2.54 m at 29° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[24].message` | GM 6.16 m (fluid), max GZ 2.57 m at 29° | GM 5.99 m (fluid), max GZ 2.53 m at 29° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[25].message` | GM 12.98 m (fluid), max GZ 3.50 m at 27° | GM 12.80 m (fluid), max GZ 3.48 m at 27° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[26].message` | GM 13.09 m (fluid), max GZ 3.49 m at 27° | GM 12.91 m (fluid), max GZ 3.47 m at 27° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[27].message` | barge form factor at the service speed: Fn 0.192, Cp 0.951, L/B 4.97, B/T 6.09; outside its range: Fn 0.19 (range 0.00 to 0.14), Cp 0.95 (range 0.77 to 0.88), L/B 4.97 (range 7.59 to 16.29) | barge form factor at the service speed: Fn 0.191, Cp 0.950, L/B 4.99, B/T 5.95; outside its range: Fn 0.19 (range 0.00 to 0.14), Cp 0.95 (range 0.77 to 0.88), L/B 4.99 (range 7.59 to 16.29) | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[3].message` | freeboard 3.04 m >= required 0.3 m | freeboard 2.98 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[4].message` | cargo zone 56.59 m = LOA 88.0 - bow void 9.32 m - stern void 22.09 m | cargo zone 58.59 m = LOA 88.0 - bow void 9.32 m - stern void 20.09 m | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[5].message` | 2 x 1.49 m thrusters need 4.77 m across a 16.30 m beam | 2 x 1.55 m thrusters need 4.91 m across a 16.30 m beam | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[6].message` | 2 of 2 requested thrusters fit; 2 would need 4.77 m of 16.30 m beam | 2 of 2 requested thrusters fit; 2 would need 4.91 m of 16.30 m beam | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[14].message` | blind distance ahead of the bow over 250 m, light (ES-TRIN 7.02(2)): lift needed 9.91 m of 6.00 m | blind distance ahead of the bow over 250 m, light (ES-TRIN 7.02(2)): lift needed 9.88 m of 6.00 m | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[16].message` | distance 2.00 m from the cargo area (end space included) to any entrance or openable window >= 2.00 m (cl. 3.3.7 / 3.3.11) | hold segregated from the stern block by a gastight A-60 bulkhead (IGC 3.1.2) | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[16].name` | opening setback | hold machinery segregation | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[22].message` | tank length 48.29 m / inner diameter 10.05 m = 4.80 <= 7.0 | tank length 49.29 m / inner diameter 10.04 m = 4.91 <= 7.0 | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[23].message` | freeboard 2.27 m at the carried draught 3.43 m >= required 0.3 m | freeboard 2.23 m at the carried draught 3.47 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[24].message` | GM 3.56 m (fluid), max GZ 1.33 m at 25° | GM 3.50 m (fluid), max GZ 1.30 m at 25° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[25].message` | GM 3.56 m (fluid), max GZ 1.34 m at 25° | GM 3.50 m (fluid), max GZ 1.30 m at 25° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[26].message` | GM 8.58 m (fluid), max GZ 2.87 m at 29° | GM 8.51 m (fluid), max GZ 2.86 m at 29° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[27].message` | GM 8.62 m (fluid), max GZ 2.86 m at 29° | GM 8.55 m (fluid), max GZ 2.85 m at 29° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[28].message` | barge form factor at the service speed: Fn 0.154, Cp 0.959, L/B 7.69, B/T 4.73; outside its range: Fn 0.15 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88) | barge form factor at the service speed: Fn 0.154, Cp 0.959, L/B 7.70, B/T 4.68; outside its range: Fn 0.15 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88) | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[4].message` | freeboard 2.27 m >= required 0.3 m | freeboard 2.23 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[5].message` | cargo zone 98.59 m = LOA 130.0 - bow void 9.32 m - stern void 22.09 m | cargo zone 100.59 m = LOA 130.0 - bow void 9.32 m - stern void 20.09 m | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[6].message` | 2 x 2.03 m thrusters need 5.85 m across a 16.30 m beam | 2 x 2.09 m thrusters need 5.99 m across a 16.30 m beam | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[7].message` | 2 of 2 requested thrusters fit; 2 would need 5.85 m of 16.30 m beam | 2 of 2 requested thrusters fit; 2 would need 5.99 m of 16.30 m beam | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `stability.lowest_gm_condition` | Full load, departure | Full load, arrival | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `warnings[1]` | The blind distance needs 9.91 m of lift; the column gives 6.00 m. Raise the column or lower the cargo top. | The blind distance needs 9.88 m of lift; the column gives 6.00 m. Raise the column or lower the cargo top. | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[15].message` | distance 2.00 m from the cargo area (end space included) to any entrance or openable window >= 2.00 m (cl. 3.3.7 / 3.3.11) | hold segregated from the stern block by a gastight A-60 bulkhead (IGC 3.1.2) | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[15].name` | opening setback | hold machinery segregation | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[21].message` | tank length 48.29 m / inner diameter 7.20 m = 6.71 <= 7.0 | tank length 49.29 m / inner diameter 7.20 m = 6.85 <= 7.0 | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[22].message` | freeboard 2.27 m at the carried draught 3.43 m >= required 0.3 m | freeboard 2.24 m at the carried draught 3.46 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[23].message` | GM 5.21 m (fluid), max GZ 1.94 m at 27° | GM 5.15 m (fluid), max GZ 1.91 m at 27° | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[24].message` | GM 5.22 m (fluid), max GZ 1.94 m at 27° | GM 5.16 m (fluid), max GZ 1.91 m at 27° | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[25].message` | GM 10.51 m (fluid), max GZ 3.53 m at 30° | GM 10.48 m (fluid), max GZ 3.52 m at 30° | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[26].message` | GM 10.56 m (fluid), max GZ 3.53 m at 30° | GM 10.54 m (fluid), max GZ 3.52 m at 30° | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[27].message` | barge form factor at the service speed: Fn 0.154, Cp 0.959, L/B 7.29, B/T 5.00; outside its range: Fn 0.15 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88), L/B 7.29 (range 7.59 to 16.29) | barge form factor at the service speed: Fn 0.154, Cp 0.959, L/B 7.29, B/T 4.95; outside its range: Fn 0.15 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88), L/B 7.29 (range 7.59 to 16.29) | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[3].message` | freeboard 2.27 m >= required 0.3 m | freeboard 2.24 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[4].message` | cargo zone 98.59 m = LOA 130.0 - bow void 9.32 m - stern void 22.09 m | cargo zone 100.59 m = LOA 130.0 - bow void 9.32 m - stern void 20.09 m | changed |
+| ... | 107839 more changed quantities | | | |
