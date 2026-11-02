@@ -88,6 +88,9 @@ pub struct DamageVerdict {
     /// The compartments the damage floods.
     pub flooded: Vec<String>,
     pub outcome: crate::damage_stability::DamageOutcome,
+    /// The intermediate stages of flooding at 25, 50 and 75 % (spec 0012 D15), in that order; empty where
+    /// they are not worked out (liquid bulk).
+    pub stages: Vec<crate::damage_stability::DamageOutcome>,
 }
 
 /// The kinds of loading condition an Applicability can name (the object input
@@ -308,6 +311,10 @@ impl Measured {
             "option.deadweight" => self.deadweight_t.is_some(),
             // The Rule on a hull with no damage computed is `not evaluated` with the reason (`missing`).
             "stability.damage" | "stability.damage_marpol" | "oil_outflow.ratio" => true,
+            // Issue #760: the stages of a damage case; a case with none (liquid bulk) has no value.
+            "stability.damage_stage_heel" | "stability.damage_intermediate" => {
+                self.damage.iter().any(|d| !d.stages.is_empty())
+            }
             "wheelhouse.blind_distance" => match m.args.iter().find(|(k, _)| k == "condition") {
                 Some((_, ArgValue::Text(c))) if c == "light" => {
                     self.blind_distance_light_m.is_some()
@@ -366,6 +373,34 @@ impl Measured {
                 .get(index)
                 .map(|d| MeasureValue::Bool(d.outcome.ok))
                 .ok_or_else(|| format!("no damage case {index}"));
+        }
+        if m.id == "stability.damage_stage_heel" || m.id == "stability.damage_intermediate" {
+            let d = self
+                .damage
+                .get(index)
+                .ok_or_else(|| format!("no damage case {index}"))?;
+            if m.id == "stability.damage_intermediate" {
+                return Ok(MeasureValue::Bool(
+                    !d.stages.is_empty() && d.stages.iter().all(|s| s.ok),
+                ));
+            }
+            let mut heel = 0.0_f64;
+            for (k, s) in d
+                .stages
+                .iter()
+                .chain(core::iter::once(&d.outcome))
+                .enumerate()
+            {
+                if s.floats != crate::damage_stability::Floats::Yes {
+                    return Err(if k < d.stages.len() {
+                        format!("intermediate stage {} has no floating position", k + 1)
+                    } else {
+                        "the final stage has no floating position".to_string()
+                    });
+                }
+                heel = heel.max(libm::fabs(s.heel_deg));
+            }
+            return Ok(MeasureValue::Number(heel));
         }
         if m.id == "oil_outflow.ratio" {
             return self

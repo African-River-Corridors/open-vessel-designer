@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Intermediate stages of flooding (issue #760, spec 0012 D5, D15-D18): every gas damage case is also checked at 25, 50 and 75 % of its final flood by added mass. All damaged Spaces fill together, the free surface is the gross surface (ES-TRIN 28.03(4)(e)), and a breached tank's cargo stays aboard until the final stage. `igc-2g` 3.0.0 evaluates IGC 2.7.1.2 (heel at any stage at most 30 degrees) and 2.7.1.3 (intermediate residual stability as 2.7.2.1). The stages are listed in the unhashed `damage` block.
