@@ -37,7 +37,7 @@ fn with_no_gas_consumer_the_passage_credit_is_zero() {
         passage_speed_kn: Some(8.0),
         gas_use_kg_h: 0.0,
     };
-    assert_eq!(leg_credit_kg_h(&leg, false, Some(100.0)), 0.0);
+    assert_eq!(leg_credit_kg_h(&leg, 9.7, false, Some(100.0)), 0.0);
     // Which Power Sources are consumers is checked against the format's list in ovd-format.
     assert!(has_gas_consumer("gas_fuelled"));
 }
@@ -50,16 +50,25 @@ fn with_a_consumer_a_typed_speed_credits_the_calm_water_use_and_without_the_spee
         passage_speed_kn: Some(8.0),
         gas_use_kg_h: 0.0,
     };
-    assert_eq!(leg_credit_kg_h(&leg, true, Some(100.0)), 100.0);
-    assert_eq!(leg_credit_kg_h(&leg, true, None), 0.0);
+    assert_eq!(leg_credit_kg_h(&leg, 9.7, true, Some(100.0)), 100.0);
+    assert_eq!(leg_credit_kg_h(&leg, 9.7, true, None), 0.0);
+    // No typed speed: the leg takes the design service speed, marked default, and still credits.
     leg.passage_speed_kn = None;
-    assert_eq!(leg_credit_kg_h(&leg, true, Some(100.0)), 0.0);
+    assert_eq!(leg_credit_kg_h(&leg, 9.7, true, Some(100.0)), 100.0);
+    assert_eq!(passage_speed_kn(&leg, 9.7), Some((9.7, true)));
+    // A typed speed overrides it.
+    leg.passage_speed_kn = Some(8.0);
+    assert_eq!(passage_speed_kn(&leg, 9.7), Some((8.0, false)));
+    // No usable speed at all: no credit.
+    leg.passage_speed_kn = None;
+    assert_eq!(leg_credit_kg_h(&leg, 0.0, true, Some(100.0)), 0.0);
+    assert_eq!(passage_speed_kn(&default_design_basis()[1], 9.7), None);
 }
 
 #[test]
 fn an_idle_leg_credits_zero_unless_a_use_is_typed() {
     let mut leg = default_design_basis()[1];
-    assert_eq!(leg_credit_kg_h(&leg, true, Some(100.0)), 0.0);
+    assert_eq!(leg_credit_kg_h(&leg, 9.7, true, Some(100.0)), 0.0);
     leg.gas_use_kg_h = 5.0;
-    assert_eq!(leg_credit_kg_h(&leg, false, None), 5.0);
+    assert_eq!(leg_credit_kg_h(&leg, 9.7, false, None), 5.0);
 }

@@ -330,3 +330,28 @@ fn the_gas_consumer_is_the_gas_power_sources_of_the_format() {
     }
     assert!(!ovd_core::holding_profile::has_gas_consumer(""));
 }
+
+#[test]
+fn the_default_passage_speed_is_the_options_design_speed_marked_default() {
+    use ovd_core::holding_profile::passage_speed_kn;
+    let mut s = gas_session();
+    let (profile, source) = stored(&s, "holding_profile").unwrap();
+    assert_eq!(source, Source::Default);
+    let design = stored(&s, "design_speed_kn").unwrap().0.as_f64().unwrap();
+    let legs = ovd_format::holding_profile::legs_of(&profile).unwrap();
+    assert_eq!(passage_speed_kn(&legs[0], design), Some((design, true)));
+    // It follows the Option's design speed, not a number copied into the profile.
+    s.set_input("Option 1", "design_speed_kn", json!(11.0))
+        .unwrap();
+    let design = stored(&s, "design_speed_kn").unwrap().0.as_f64().unwrap();
+    assert_eq!(design, 11.0);
+    assert_eq!(passage_speed_kn(&legs[0], design), Some((11.0, true)));
+    // A typed speed overrides it and is not marked default.
+    let typed = ovd_format::holding_profile::legs_of(&json!([
+        { "state": "laden_passage", "days": 20.0, "passage_speed_kn": 8.0 }
+    ]))
+    .unwrap();
+    assert_eq!(passage_speed_kn(&typed[0], design), Some((8.0, false)));
+    // The stored default holds no speed: nothing in the file goes stale.
+    assert!(profile[0].get("passage_speed_kn").is_none());
+}

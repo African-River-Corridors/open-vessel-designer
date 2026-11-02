@@ -51,14 +51,15 @@ pub struct Leg {
     /// The length of the leg (days).
     pub days: f64,
     /// A laden passage leg: the typed passage speed (knots), the speed at which the powering model
-    /// gives the calm-water gas use (D7). `None`: not typed, so no passage credit.
+    /// gives the calm-water gas use (D7). `None`: not typed, so the leg takes the Option's design
+    /// service speed, marked default (see [`passage_speed_kn`]).
     pub passage_speed_kn: Option<f64>,
     /// An idle leg: the typed gas use (kg/h) the tank gives up. Zero unless typed (D7).
     pub gas_use_kg_h: f64,
 }
 
 /// The default design basis as legs: 20 days of laden passage, then 10 days idle. No passage speed
-/// is typed, so the default credits no passage gas use until one is.
+/// is typed, so the passage leg takes the Option's design service speed, marked default.
 pub fn default_design_basis() -> Vec<Leg> {
     alloc::vec![
         Leg {
@@ -88,6 +89,19 @@ pub fn has_gas_consumer(power_source: &str) -> bool {
     power_source == "gas_fuelled"
 }
 
+/// The speed of a laden passage leg (knots) and whether it is the default: the typed speed, else the
+/// Option's design service speed (the maintainer's decision on PR 884). An idle leg has none.
+pub fn passage_speed_kn(leg: &Leg, design_speed_kn: f64) -> Option<(f64, bool)> {
+    if leg.state != LegState::LadenPassage {
+        return None;
+    }
+    let (v, by_default) = match leg.passage_speed_kn {
+        Some(v) => (v, false),
+        None => (design_speed_kn, true),
+    };
+    (v.is_finite() && v > 0.0).then_some((v, by_default))
+}
+
 /// The gas a laden passage credits (kg/h), D7: the calm-water gas use the powering model gives at
 /// the typed passage speed and the lightest draught in the leg. **Zero when the Option has no gas
 /// consumer that takes the boil-off**, or when no use could be worked out.
@@ -99,10 +113,15 @@ pub fn passage_credit_kg_h(has_consumer: bool, calm_water_use_kg_h: Option<f64>)
 }
 
 /// The gas a leg credits for the design basis row (kg/h): a passage leg its passage credit (zero
-/// with no typed passage speed), an idle leg the typed use (zero unless typed).
-pub fn leg_credit_kg_h(leg: &Leg, has_consumer: bool, calm_water_use_kg_h: Option<f64>) -> f64 {
+/// with no usable passage speed), an idle leg the typed use (zero unless typed).
+pub fn leg_credit_kg_h(
+    leg: &Leg,
+    design_speed_kn: f64,
+    has_consumer: bool,
+    calm_water_use_kg_h: Option<f64>,
+) -> f64 {
     match leg.state {
-        LegState::LadenPassage if leg.passage_speed_kn.is_some() => {
+        LegState::LadenPassage if passage_speed_kn(leg, design_speed_kn).is_some() => {
             passage_credit_kg_h(has_consumer, calm_water_use_kg_h)
         }
         LegState::LadenPassage => 0.0,

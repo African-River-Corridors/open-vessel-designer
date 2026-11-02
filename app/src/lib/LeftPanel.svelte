@@ -114,6 +114,7 @@
             messages={messagesFor(spec.name)}
             onEdit={(v) => onEdit(spec.name, v)}
             onReset={() => onReset(spec.name)}
+            designSpeed={option!.inputs["design_speed_kn"]?.value as number | undefined}
             {onFormation}
             {onImportOffsets}
           />

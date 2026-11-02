@@ -5,7 +5,7 @@
   // One input, drawn from its schema entry. It shows what Rust sent and sends back what the user
   // typed or chose. The number the user types stays in the box while it is typed: the box is filled
   // once and not rewritten, so "76." is not turned into "76".
-  let { spec, stored, messages, onEdit, onReset, onFormation, onImportOffsets }: {
+  let { spec, stored, messages, onEdit, onReset, onFormation, onImportOffsets, designSpeed }: {
     spec: InputSpec;
     stored: StoredInput;
     messages: Message[];
@@ -13,6 +13,8 @@
     onReset: () => void;
     onFormation: (kind: string, abreast: number | null, inLine: number | null) => void;
     onImportOffsets: () => void;
+    /** The Option's design service speed (kn): the default passage speed of the holding-time profile. */
+    designSpeed?: number;
   } = $props();
 
   // The box is filled once. When Rust changes the value later (the Vessel Class moved, say) it is
@@ -223,6 +225,14 @@
   {:else if spec.kind === "operation_profile"}
     <!-- Issue #869: shown, not edited here; the legs are typed in the file. The source badge says default or typed. -->
     <span class="summary">{Array.isArray(value) ? t("app-leg-summary", { count: value.length, days: value.reduce((a: number, l: { days: number }) => a + l.days, 0) }) : t("app-none")}</span>
+    {#if Array.isArray(value)}
+      {#each value.filter((l: { state: string }) => l.state === "laden_passage") as leg}
+        <!-- A passage leg with no typed speed takes the design service speed, and says so. -->
+        <span class="summary" data-testid="leg-speed">{leg.passage_speed_kn !== undefined && leg.passage_speed_kn !== null
+          ? t("app-leg-speed-typed", { days: leg.days, speed: leg.passage_speed_kn })
+          : t("app-leg-speed-default", { days: leg.days, speed: designSpeed ?? "?" })}</span>
+      {/each}
+    {/if}
   {:else if spec.kind === "offsets_table"}
     <!-- Issue #451: the station count, and an Import button that reads an offsets CSV. -->
     <div class="row">
