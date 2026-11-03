@@ -197,6 +197,8 @@ struct Hull {
     aft: Option<Aft>,
     /// The cargo vent mast of a gas hull (issue #822): where it stands and how high its exit is.
     vent_mast: Option<VentDraw>,
+    /// The river and sea air drafts of the laden and light conditions (`air_drafts`, issue #888).
+    air_drafts: Option<AirDraftsDraw>,
     /// The names of the checks that fail (`results.checks` with `ok` false), as plain capitals.
     failed_checks: Vec<String>,
     /// The Notch of an ATB barge and its tug (`drawing.atb`, issue #363); `None` for any other
@@ -211,6 +213,26 @@ struct VentDraw {
     x: f64,
     exit_above_keel: f64,
     exit_above_deck: f64,
+}
+
+/// The river and sea air drafts as the side elevation labels them, from `air_drafts` of the results
+/// (issue #888): the two tops above the keel, and each condition's air draft under them.
+struct AirDraftsDraw {
+    river_top: f64,
+    sea_top: f64,
+    laden: (f64, f64),
+    /// The light condition's river and sea air drafts, when the results have them.
+    light: Option<(f64, f64)>,
+}
+
+fn read_air_drafts(results: &Value) -> Option<AirDraftsDraw> {
+    let n = |path: &[&str]| num_at(&results["air_drafts"], path);
+    Some(AirDraftsDraw {
+        river_top: n(&["river_top_m"])?,
+        sea_top: n(&["sea_top_m"])?,
+        laden: (n(&["laden", "river_m"])?, n(&["laden", "sea_m"])?),
+        light: n(&["light", "river_m"]).zip(n(&["light", "sea_m"])),
+    })
 }
 
 fn read_vent_mast(results: &Value) -> Option<VentDraw> {
@@ -712,6 +734,7 @@ fn read_hull(results: &Value) -> Result<Hull, String> {
         )),
         aft: read_aft(results),
         vent_mast: read_vent_mast(results),
+        air_drafts: read_air_drafts(results),
         failed_checks: failed_checks(results),
         atb: read_atb(results),
         containment,
@@ -2109,14 +2132,47 @@ fn side_elevation(h: &Hull, n: u32) -> Canvas {
     // Issue #409: the top of the structure and the loaded air draft under it.
     if let Some(top) = h.air_top {
         c.line("ZONE", [0.0, top], [h.loa, top], None);
-        labels.push((
-            label!(
-                "draw-air-draft",
-                "AIR DRAFT {draught}",
-                draught = metres(top - h.draught)
-            ),
-            [h.loa, top],
-        ));
+        match &h.air_drafts {
+            // Issue #888: a gas hull's air drafts in the river and the sea, laden and light.
+            Some(a) => {
+                if a.sea_top > a.river_top + 1e-9 {
+                    c.line(
+                        "ZONE",
+                        [0.0, a.sea_top],
+                        [h.loa, a.sea_top],
+                        Some("chain_double_dashed"),
+                    );
+                }
+                labels.push((
+                    label!(
+                        "draw-air-draft-laden",
+                        "AIR DRAFT, LADEN: RIVER {river}, SEA {sea}",
+                        river = metres(a.laden.0),
+                        sea = metres(a.laden.1)
+                    ),
+                    [h.loa, top],
+                ));
+                if let (Some((river, sea)), Some(t)) = (a.light, h.light_draught) {
+                    labels.push((
+                        label!(
+                            "draw-air-draft-light",
+                            "AIR DRAFT, LIGHT: RIVER {river}, SEA {sea}",
+                            river = metres(river),
+                            sea = metres(sea)
+                        ),
+                        [h.x_at_height(t), t],
+                    ));
+                }
+            }
+            None => labels.push((
+                label!(
+                    "draw-air-draft",
+                    "AIR DRAFT {draught}",
+                    draught = metres(top - h.draught)
+                ),
+                [h.loa, top],
+            )),
+        }
     }
     if !c.try_dim_horizontal([0.0, 0.0], [h.loa, 0.0], -DIM_OFFSET_MM) {
         labels.push((

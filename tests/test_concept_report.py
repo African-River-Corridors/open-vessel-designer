@@ -195,6 +195,7 @@ READ_BY = {
     "self_propelled": [], "warnings": [], "fit_tried": [], "text_ids": [],
     "gross_tonnage": [],
     "crew": [],   # no chapter reads it yet; #830 maps it to A4
+    "air_drafts": [],   # unhashed (#888): the app and the side elevation read it; no chapter yet
 }
 GA = {"ga-side": "side.png", "ga-mid": "mid.png"}   # so A.4 is built, and its deletion shows
 
