@@ -22,15 +22,15 @@
           "source": "typed"
         },
         "length_overall_m": {
-          "value": 140.0,
+          "value": 100.0,
           "source": "typed"
         },
         "beam_m": {
-          "value": 24.0,
+          "value": 20.0,
           "source": "typed"
         },
         "moulded_depth_m": {
-          "value": 9.0,
+          "value": 5.0,
           "source": "typed"
         },
         "cargo_containment": {
@@ -684,7 +684,7 @@
           "source": "default"
         }
       },
-      "results_hash": "df6fa82778b042ed0cfcad40062b97dedb73221bbe3ebc08c56600797a86fec5"
+      "results_hash": "c16b1eed3edb2fe64bfd01b597c334ae1eb53856c3a842b44fda9ccc22071306"
     }
   ],
   "defaults_profile": "built-in"

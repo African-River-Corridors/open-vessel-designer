@@ -453,7 +453,7 @@ const TRIANGLES: &[(&str, &str, &str, u32)] = &[
     ("dry_bulk_sloped_hopper.vdesign", "Option 1", "hull", 26),
     ("dry_bulk_sloped_hopper.vdesign", "Option 1", "space", 290),
     ("dry_bulk_sloped_hopper.vdesign", "Option 1", "waterline", 6),
-    // Issue #850: a river-only gas design with two tanks across (140 x 24 m), so tanks side by side stay in the sweep.
+    // Issue #850: a river-only gas design with two tanks across (100 x 20 m), so tanks side by side stay in the sweep.
     ("gas_adn_river_two_wide.vdesign", "Option 1", "bulkhead", 36),
     ("gas_adn_river_two_wide.vdesign", "Option 1", "deck", 2),
     (
@@ -470,7 +470,7 @@ const TRIANGLES: &[(&str, &str, &str, u32)] = &[
         "propulsor",
         1752,
     ),
-    ("gas_adn_river_two_wide.vdesign", "Option 1", "space", 9506),
+    ("gas_adn_river_two_wide.vdesign", "Option 1", "space", 9546),
     (
         "gas_adn_river_two_wide.vdesign",
         "Option 1",
