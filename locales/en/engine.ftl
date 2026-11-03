@@ -37,6 +37,8 @@ warn-aft-gas-stern-estimates = Gas-fuelled stern block: the genset envelopes bey
 check-name-wheelhouse-sees-over-cargo = wheelhouse sees over cargo
 check-wheelhouse-sees-over-cargo = raised eye { $eye } m >= obstruction { $obstruction } m + { $margin } m margin (lift used { $lift } m of { $max_lift } m)
 warn-aft-sightline-lift = Sightline needs { $lift } m of lift; the column gives { $max_lift } m. Raise the column or lower the cargo top.
+check-name-deckhouse-clear-height = deckhouse clear height
+check-deckhouse-clear-height = tier height { $tier } m less { $allowance } m for deck structure and overhead services (ESTIMATE) = { $clear } m clear >= { $headroom } m headroom (MLC 2006 A3.1.6(a))
 
 ## crates/ovd-core/src/barge_capacity.rs
 

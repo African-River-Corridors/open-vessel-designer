@@ -983,7 +983,6 @@ fn rooms_block_of(measured: &crate::simulate::Measured, crew: Option<&Value>) ->
             })
         })
         .collect();
-    let crew_berths = crew.and_then(|c| c["berths"].as_i64());
     Some(json!({
         "berths": r.berths,
         "rows": rows,
@@ -996,7 +995,18 @@ fn rooms_block_of(measured: &crate::simulate::Measured, crew: Option<&Value>) ->
         "mlc_applied": r.mlc_applied,
         "headroom_m": crate::eval::num(r.headroom_m),
         "rule_note": r.rule_note,
-        "settled": crew_berths == Some(i64::from(r.berths)),
+        // Settled: the crew block's berths, officers, seafarers and (at sea) GT band are those the
+        // rooms were sized from.
+        "settled": crew.and_then(rooms_facts_of).map(|f| f.key())
+            == Some((
+                i64::from(r.berths),
+                i64::from(r.officers),
+                i64::from(r.seafarers),
+                if r.reaches_sea { ovd_core::rooms::gt_band(r.gt) } else { 0 },
+            )),
+        "gt_used": r.gt,
+        "officers": r.officers,
+        "seafarers": r.seafarers,
         "status": "estimate",
         "basis": "Spec 0011 D5, section 2: rooms sized from the crew model's berths to ES-TRIN 2025/1 Chapter 15. Areas marked estimate are required by the text but have no floor area in it: each is a stated estimate with its working. Concept and preliminary design only (ADR 0011).",
     }))

@@ -61,6 +61,14 @@ def test_the_depth_stand_in_is_stated_in_both_reports():
         assert "stand-in" in text and f"{di.CN_DEPTH_ABOVE_DRAUGHT_M:g} m" in text
 
 
+def test_the_small_coastal_hulls_that_gain_a_tier_under_mlc_are_in_the_set():
+    # Issue #892: coastal self-propelled 60x10 hulls go from 1 to 2 deckhouse tiers.
+    cs = di.cases()
+    for name in ("sweep crude coastal service 60x10", "sweep bauxite coastal service 60x10"):
+        assert name in cs
+        assert cs[name]["service_area"] == "coastal-and-river"
+
+
 def test_the_set_is_large_enough():
     cs = di.cases()
     assert len(cs) >= 60

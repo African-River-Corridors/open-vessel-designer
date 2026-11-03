@@ -85,6 +85,10 @@ pub mod deckhouse_sizes {
     /// headroom of 2.03 m (as `docs/research/stern-arrangement.md` records it, not read in the
     /// Convention) plus about 0.57 m for deck structure and overhead services.
     pub const TIER_HEIGHT_M: f64 = 2.6;
+    /// The allowance inside a tier for the deck plating and beams and for the deckhead lining and
+    /// services (m): ESTIMATE, 0.25 m of deck structure and 0.25 m of overhead. The clear height of
+    /// a tier is the tier height less this (issue #892).
+    pub const DECK_ALLOWANCE_M: f64 = 0.5;
     /// The side deck each side of the deckhouse, so the deckhouse is the beam less two of them (m).
     /// An estimate: a passage along the side of a cargo hull.
     pub const SIDE_DECK_M: f64 = 0.8;
@@ -1671,6 +1675,27 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
     if let Some(m) = &machinery {
         checks.extend(m.checks.iter().cloned());
         warnings.extend(m.warnings.iter().cloned());
+    }
+
+    // Issue #892: a hull that reaches sea needs 2.03 m clear (MLC A3.1.6(a)) in the accommodation:
+    // the tier height less an allowance for the deck and the deckhead services must give it.
+    if let Some(d) = &deckhouse
+        && let Some(r) = &d.rooms
+        && r.reaches_sea
+    {
+        let clear = deckhouse_sizes::TIER_HEIGHT_M - deckhouse_sizes::DECK_ALLOWANCE_M;
+        checks.push(Check::new(
+            "deckhouse_clear_height",
+            clear + 1e-9 >= crate::rooms::MLC_HEADROOM_M,
+            text!(
+                "check-deckhouse-clear-height",
+                "tier height {tier} m less {allowance} m for deck structure and overhead services (ESTIMATE) = {clear} m clear >= {headroom} m headroom (MLC 2006 A3.1.6(a))",
+                tier = Arg::fixed(deckhouse_sizes::TIER_HEIGHT_M, 2),
+                allowance = Arg::fixed(deckhouse_sizes::DECK_ALLOWANCE_M, 2),
+                clear = Arg::fixed(clear, 2),
+                headroom = Arg::fixed(crate::rooms::MLC_HEADROOM_M, 2),
+            ),
+        ));
     }
 
     Ok(AftArrangementResult {

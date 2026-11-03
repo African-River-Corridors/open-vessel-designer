@@ -66,6 +66,11 @@ const MLC: &str = "MLC 2006 as amended (2022 consolidated text) Standard A3.1 ";
 
 /// Headroom where full and free movement is needed, at least (m), for a ship that reaches sea:
 /// MLC 2006 A3.1.6(a) (203 cm).
+///
+/// The floor areas of the rooms are worked at 2.00 m of headroom (the ES-TRIN 15.02(6) figure the
+/// 7 m3 cabin volume is divided by). That is cautious for area: 7 m3 over 2.03 m is 3.45 m2, less
+/// than over 2.00 m (3.50 m2), and the MLC floors of A3.1.9(f) and (k) are in any case larger. The
+/// 2.03 m is a height, checked against the tier height (`TIER_HEIGHT_M`).
 pub const MLC_HEADROOM_M: f64 = 2.03;
 /// Single-berth sleeping room floor of a ship that is not a passenger ship or special purpose ship,
 /// at least (m2), for seafarers who are not officers: A3.1.9(f)(i), (ii), (iii), by gross tonnage
@@ -148,8 +153,14 @@ pub struct Rooms {
     pub reaches_sea: bool,
     /// MLC A3.1 was applied: the Service Area reaches sea.
     pub mlc_applied: bool,
-    /// The headroom the rooms are sized for (m): ES-TRIN 2.00, MLC 2.03 at sea.
+    /// The headroom of the clear height the rooms must allow (m): ES-TRIN 2.00, MLC 2.03 at sea.
+    /// The floor areas are worked at 2.00 m (see `MLC_HEADROOM_M`).
     pub headroom_m: f64,
+    /// What the rooms were sized from (the basis of this pass): the gross tonnage in whole units
+    /// (0 when not known), the officers' berths and the seafarers carried.
+    pub gt: u32,
+    pub officers: u32,
+    pub seafarers: u32,
     pub rule_note: String,
 }
 
@@ -228,7 +239,10 @@ pub fn size_rooms(b: &RoomsBasis) -> Rooms {
     let gt_note = if b.gt == 0 {
         "gross tonnage not known: the largest band is taken".to_string()
     } else {
-        alloc::format!("{} GT, band {band_name}", b.gt)
+        alloc::format!(
+            "{} GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band {band_name}",
+            b.gt
+        )
     };
     let mut rows: Vec<Room> = Vec::new();
     if n > 0 {
@@ -461,6 +475,9 @@ pub fn size_rooms(b: &RoomsBasis) -> Rooms {
         reaches_sea: sea,
         mlc_applied: sea,
         headroom_m: if sea { MLC_HEADROOM_M } else { HEADROOM_M },
+        gt: b.gt,
+        officers: b.officers,
+        seafarers: b.seafarers,
         rule_note: if sea {
             alloc::format!(
                 "The Service Area reaches sea, so each room is sized to the greater of MLC 2006 Standard A3.1 (as amended, 2022 consolidated text) and ES-TRIN 2025/1 Chapter 15; the governing source is on each row. {gt_note}. No exemption is applied: not the under-3,000 GT ones of A3.1.9(a), (h), (m), 10(a), 11(b), 15, nor the under-200 GT ones of A3.1.20, nor the coastal-trade relaxation of A3.1.12; the competent authority grants them, so a concept sizes without them. Berths held by officers are sized to A3.1.9(k) or (m) and all others as ratings."
