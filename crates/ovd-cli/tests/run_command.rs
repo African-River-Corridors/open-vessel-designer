@@ -553,12 +553,14 @@ fn json_results_are_what_simulate_answers_for_a_river_only_gas_hull_on_the_adn_s
     assert!(out.status.success(), "{}", stderr(&out));
     let v: Value = serde_json::from_str(&stdout(&out)).unwrap();
     let mut results = v["options"][0]["results"].clone();
+    // `stern_arrangement` (issue #887) is a block `run` adds that `simulate` does not answer.
     for key in [
         "cost",
         "rule_trace",
         "calibration",
         "gross_tonnage",
         "spaces",
+        "stern_arrangement",
     ] {
         assert!(!results[key].is_null(), "{key}");
         results.as_object_mut().unwrap().remove(key);
