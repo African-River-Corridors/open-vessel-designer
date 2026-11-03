@@ -144,7 +144,7 @@
   "lightship_t": 5374.919852479175,
   "vent_distance_to_accommodation_m": 104.96799999999999,
   "vent_distance_to_openings_m": 104.96799999999999,
-  "vent_exit_above_deck_m": 9.666666666666664,
+  "vent_exit_above_deck_m": 9.666666666666666,
   "vent_exit_above_keel_m": 21.666666666666664,
   "vent_exit_above_working_area_m": 6.563333333333331,
   "vent_exit_governed_by": "deck",
