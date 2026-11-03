@@ -5,7 +5,7 @@
     {
       "name": "A basis",
       "status": "results",
-      "results_hash": "6c8961e8166d23aff85946dedcfd0b485960b8aa612916ec2e0e5e330760ab1e",
+      "results_hash": "a6d0aca8294fa0d108f8bf4996af7bf1e3565b1b49428092ac9e6c436e4499e6",
       "hash_status": "matches",
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
@@ -639,7 +639,7 @@
           "h_over_T": null,
           "vent_mast_x_m": 120.8,
           "vent_exit_above_keel_m": 21.666666666666664,
-          "vent_exit_above_deck_m": 9.666666666666664,
+          "vent_exit_above_deck_m": 9.666666666666666,
           "vent_exit_above_working_area_m": 7.563333333333331,
           "vent_working_area_top_m": 14.103333333333333,
           "vent_working_area": "weather_shield",
@@ -5995,7 +5995,7 @@
           ],
           "service_area": "coastal-and-river",
           "warnings": [
-            "Rule Set igc-2g@2.0.0 is used as the file stores it; 3.1.0 is also built in with other content",
+            "Rule Set igc-2g@2.0.0 is used as the file stores it; 3.2.0 is also built in with other content",
             "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set icll-freeboard@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set ovd@3.0.0 is used as the file stores it; 3.1.0 is also built in with other content"
@@ -11061,7 +11061,7 @@
     {
       "name": "B profile",
       "status": "results",
-      "results_hash": "dc92a9b5903fd04be803c300fefac9085e0bb08f83969442c48bc5b33f11f5f1",
+      "results_hash": "1f73394c4d7dd19580365f85baa1fffad1612ce0cb15bfc50d35985e088b6422",
       "hash_status": "matches",
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
@@ -11695,7 +11695,7 @@
           "h_over_T": null,
           "vent_mast_x_m": 120.8,
           "vent_exit_above_keel_m": 21.666666666666664,
-          "vent_exit_above_deck_m": 9.666666666666664,
+          "vent_exit_above_deck_m": 9.666666666666666,
           "vent_exit_above_working_area_m": 7.563333333333331,
           "vent_working_area_top_m": 14.103333333333333,
           "vent_working_area": "weather_shield",
@@ -17051,7 +17051,7 @@
           ],
           "service_area": "coastal-and-river",
           "warnings": [
-            "Rule Set igc-2g@2.0.0 is used as the file stores it; 3.1.0 is also built in with other content",
+            "Rule Set igc-2g@2.0.0 is used as the file stores it; 3.2.0 is also built in with other content",
             "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set icll-freeboard@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set ovd@3.0.0 is used as the file stores it; 3.1.0 is also built in with other content"
@@ -28129,7 +28129,7 @@
           ],
           "service_area": "coastal-and-river",
           "warnings": [
-            "Rule Set igc-2g@2.0.0 is used as the file stores it; 3.1.0 is also built in with other content",
+            "Rule Set igc-2g@2.0.0 is used as the file stores it; 3.2.0 is also built in with other content",
             "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set icll-freeboard@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set ovd@3.0.0 is used as the file stores it; 3.1.0 is also built in with other content"

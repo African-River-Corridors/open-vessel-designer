@@ -39,6 +39,16 @@ of each limit by one step (the Blind Distance 249 and 251 m, the speed 12.9 and 
 with and without a bow thruster are base cases). Rule mutation runs on the Rules these cases expect, over the base
 cases and the boundary cases made for that Rule.
 
+### Vent cases (`kind: vent`, issue #849)
+
+A vent case is a gas barge on the Service Area `coastal-and-river` with the three numbers a run reads from its cargo
+vent mast: the exit height above the weather deck, the exit height above the working area, and the distance to the
+nearest air intake, outlet or opening. The runner selects `igc-2g` 3.2.0 and compares the three vent Rules keyed by
+rule id: IGC 8.2.10.3 (the greater of B/3 and 6 m), 8.2.10.4 (6 m) and 8.2.11.1 (the lesser of B and 25 m).
+`oracle/vent_oracle.py` works the verdicts out from the text; `vent_mutants.yaml` moves one number to each side of each
+limit by 0.005 m, on three beams (14 m: the 6 m governs; 24 m: B/3 governs; 30 m: the 25 m cap governs). The Rules do
+not apply on `river-only`; a Rust test (`crates/ovd-format/tests/vent_rules.rs`) covers that.
+
 ### Triage
 
 Each disagreement outside the grid error goes in one bucket, in this order:
