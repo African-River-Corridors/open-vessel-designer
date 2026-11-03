@@ -85,6 +85,10 @@ pub mod deckhouse_sizes {
     /// headroom of 2.03 m (as `docs/research/stern-arrangement.md` records it, not read in the
     /// Convention) plus about 0.57 m for deck structure and overhead services.
     pub const TIER_HEIGHT_M: f64 = 2.6;
+    /// The allowance inside a tier for the deck plating and beams and for the deckhead lining and
+    /// services (m): ESTIMATE, 0.25 m of deck structure and 0.25 m of overhead. The clear height of
+    /// a tier is the tier height less this (issue #892).
+    pub const DECK_ALLOWANCE_M: f64 = 0.5;
     /// The side deck each side of the deckhouse, so the deckhouse is the beam less two of them (m).
     /// An estimate: a passage along the side of a cargo hull.
     pub const SIDE_DECK_M: f64 = 0.8;
@@ -96,9 +100,8 @@ pub mod deckhouse_sizes {
     /// (issue #780), which replaces it.
     pub const REQUIRED_AREA_BASIS_ROOMS: &str =
         "the rooms of the crew's berths, sized to ES-TRIN 2025/1 Chapter 15 (issue #780)";
-    /// A hull that reaches sea: MLC 2006 A3.1 applies and its text is not in the rule sources, so the
-    /// floor is the larger of the ES-TRIN rooms and the interim stand-in.
-    pub const REQUIRED_AREA_BASIS_SEA: &str = "the larger of the ES-TRIN 2025/1 Chapter 15 rooms of the crew's berths and the interim floor of the 40 ft accommodation units; MLC 2006 A3.1 applies to this Service Area and is not applied (text not in the rule sources) (issue #780)";
+    /// A hull that reaches sea: the rooms are sized to the greater of MLC 2006 A3.1 and ES-TRIN 15.
+    pub const REQUIRED_AREA_BASIS_SEA: &str = "the rooms of the crew's berths, each sized to the greater of MLC 2006 Standard A3.1 and ES-TRIN 2025/1 Chapter 15 (this Service Area reaches sea); no exemption applied (issues #780, #892)";
     pub const REQUIRED_AREA_BASIS: &str = "interim: the floor area of the 40 ft accommodation units the Option holds, until the rooms are sized (issue #780)";
 }
 
@@ -1075,13 +1078,10 @@ fn size_deckhouse(inp: &AftArrangementInputs, x_fwd: f64) -> Deckhouse {
     let interim =
         py_max(inp.n_accom_units as f64, 0.0) * inp.container_length_m * inp.container_width_m;
     // Issue #780: the rooms of the crew's berths replace the interim floor. A hull that reaches sea
-    // is bound by MLC A3.1, which is not applied (its text is not in the rule sources), so the
-    // interim floor stays its lower bound.
+    // has its rooms sized to the greater of MLC A3.1 and ES-TRIN 15 (issue #892).
     let rooms = inp.rooms_basis.as_ref().map(crate::rooms::size_rooms);
     let (required, required_basis) = match (&rooms, inp.rooms_basis) {
-        (Some(r), Some(b)) if b.reaches_sea => {
-            (py_max(r.total_m2, interim), REQUIRED_AREA_BASIS_SEA)
-        }
+        (Some(r), Some(b)) if b.reaches_sea => (r.total_m2, REQUIRED_AREA_BASIS_SEA),
         (Some(r), _) => (r.total_m2, REQUIRED_AREA_BASIS_ROOMS),
         (None, _) => (interim, REQUIRED_AREA_BASIS),
     };
@@ -1559,11 +1559,12 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
                 ));
                 if r.reaches_sea {
                     warnings.push(Text::fixed(
-                        "warn-aft-deckhouse-mlc-not-applied",
-                        "This Service Area reaches sea, so MLC 2006 Standard A3.1 sets the cabin sizes. Its \
-                         text is not in the rule sources, so it is not applied: the rooms are sized to \
-                         ES-TRIN 2025/1 Chapter 15, and the deckhouse floor is no smaller than the interim \
-                         floor of the 40 ft accommodation units.",
+                        "warn-aft-deckhouse-mlc-applied",
+                        "This Service Area reaches sea, so each room is sized to the greater of MLC 2006 \
+                         Standard A3.1 (as amended, 2022 consolidated text) and ES-TRIN 2025/1 Chapter 15; \
+                         the rooms table names the governing source of each. No exemption is applied: not \
+                         those for ships under 3,000 GT or 200 GT, nor the coastal-trade relaxation of the \
+                         hospital. The day rooms and the hospital have ESTIMATE areas, as the text gives none.",
                     ));
                 }
             }
@@ -1674,6 +1675,27 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
     if let Some(m) = &machinery {
         checks.extend(m.checks.iter().cloned());
         warnings.extend(m.warnings.iter().cloned());
+    }
+
+    // Issue #892: a hull that reaches sea needs 2.03 m clear (MLC A3.1.6(a)) in the accommodation:
+    // the tier height less an allowance for the deck and the deckhead services must give it.
+    if let Some(d) = &deckhouse
+        && let Some(r) = &d.rooms
+        && r.reaches_sea
+    {
+        let clear = deckhouse_sizes::TIER_HEIGHT_M - deckhouse_sizes::DECK_ALLOWANCE_M;
+        checks.push(Check::new(
+            "deckhouse_clear_height",
+            clear + 1e-9 >= crate::rooms::MLC_HEADROOM_M,
+            text!(
+                "check-deckhouse-clear-height",
+                "tier height {tier} m less {allowance} m for deck structure and overhead services (ESTIMATE) = {clear} m clear >= {headroom} m headroom (MLC 2006 A3.1.6(a))",
+                tier = Arg::fixed(deckhouse_sizes::TIER_HEIGHT_M, 2),
+                allowance = Arg::fixed(deckhouse_sizes::DECK_ALLOWANCE_M, 2),
+                clear = Arg::fixed(clear, 2),
+                headroom = Arg::fixed(crate::rooms::MLC_HEADROOM_M, 2),
+            ),
+        ));
     }
 
     Ok(AftArrangementResult {

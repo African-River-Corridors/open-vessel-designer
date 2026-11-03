@@ -555,6 +555,11 @@ def cases() -> dict[str, dict]:
         "crude_oil", "integral_tanks", "pushed_barge", 90.0, 14.0, 4.5, **_CHANNEL)
     out["sweep crude coastal service 90x14"] = _inputs(
         "crude_oil", "integral_tanks", "self_propelled", 90.0, 14.0, 4.5, service_area="coastal-and-river")
+    # Issue #892: a small coastal self-propelled hull, where the MLC cabin floors add a deckhouse tier.
+    out["sweep crude coastal service 60x10"] = _inputs(
+        "crude_oil", "integral_tanks", "self_propelled", 60.0, 10.0, 4.5, service_area="coastal-and-river")
+    out["sweep bauxite coastal service 60x10"] = _inputs(
+        "bauxite", "box_hold", "self_propelled", 60.0, 10.0, 4.5, service_area="coastal-and-river")
     out["sweep crude carries nothing (draught limit)"] = _inputs(
         "crude_oil", "integral_tanks", "pushed_barge", 90.0, 14.0, 4.5, draught_limit_m=0.3)
     # Diesel fuel, the second oil (issue #342): a data row, so one pushed hull, one coastal self-propelled

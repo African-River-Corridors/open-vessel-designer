@@ -721,6 +721,13 @@ fn aft_design_of(p: &Map<String, Value>) -> R<ovd_core::aft_arrangement::AftDesi
                 .get("crew_reaches_sea")
                 .and_then(Value::as_bool)
                 .unwrap_or(false),
+            gt: p
+                .get("crew_gt")
+                .and_then(Value::as_f64)
+                .filter(|g| g.is_finite() && *g > 0.0)
+                .map_or(0, |g| libm::floor(g).min(f64::from(u32::MAX)) as u32),
+            officers: u32::try_from(whole("crew_officers", 0)?.max(0)).unwrap_or(u32::MAX),
+            seafarers: u32::try_from(whole("crew_seafarers", 0)?.max(0)).unwrap_or(u32::MAX),
             mode_b: p
                 .get("crew_mode_b")
                 .and_then(Value::as_bool)

@@ -52,6 +52,7 @@
   "notes": [
    "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
   ],
+  "officers": 8,
   "owner_margin": [
    {
     "count": 1,
@@ -162,19 +163,56 @@
  "rooms": {
   "basis": "Spec 0011 D5, section 2: rooms sized from the crew model's berths to ES-TRIN 2025/1 Chapter 15. Areas marked estimate are required by the text but have no floor area in it: each is a stated estimate with its working. Concept and preliminary design only (ADR 0011).",
   "berths": 19,
-  "mlc_applied": false,
-  "required_area_basis": "the larger of the ES-TRIN 2025/1 Chapter 15 rooms of the crew's berths and the interim floor of the 40 ft accommodation units; MLC 2006 A3.1 applies to this Service Area and is not applied (text not in the rule sources) (issue #780)",
-  "required_area_m2": 138.09,
+  "gt_used": 13919,
+  "headroom_m": 2.03,
+  "mlc_applied": true,
+  "officers": 8,
+  "required_area_basis": "the rooms of the crew's berths, each sized to the greater of MLC 2006 Standard A3.1 and ES-TRIN 2025/1 Chapter 15 (this Service Area reaches sea); no exemption applied (issues #780, #892)",
+  "required_area_m2": 266.7684210526316,
   "rows": [
    {
-    "area_each_m2": 3.5,
-    "area_m2": 66.5,
-    "basis": "derived",
-    "clause": "ES-TRIN 2025/1 15.02(9), 15.02(10), 15.02(6), 15.07(1)",
-    "count": 19,
+    "area_each_m2": 7.0,
+    "area_m2": 77.0,
+    "basis": "sourced",
+    "clause": "MLC 2006 as amended (2022 consolidated text) Standard A3.1 9(f)(iii), 9(a), 9(d), 9(e), 6(a); ES-TRIN 2025/1 15.02(9), 15.02(10), 15.02(6), 15.07(1)",
+    "count": 11,
+    "governing": "mlc",
     "id": "cabin",
-    "name": "Sleeping cabin (one berth)",
-    "note": "The largest of 7 m3 / 2.00 m headroom, 5 m3 of air / 2.00 m, and the 2.00 x 0.90 m berth. Furniture volume is not added. One cabin per crew member in every mode: OVD's own cautious rule (15.02(10) allows two to a cabin). Context: CCNR RPN, state 1 January 2026 (English unofficial translation), 18.02(4) is a derogation from (1) and (2), modes A1 and A2, allowing rest underway in a room assigned to one crew member only; it names no mode B and is not the source of this rule."
+    "name": "Sleeping cabin (rating, cook, margin or spare berth)",
+    "note": "MLC A3.1.9(f) single berth floor 7.0 m2. ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 13919 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
+   },
+   {
+    "area_each_m2": 7.0,
+    "area_m2": 21.0,
+    "basis": "sourced",
+    "clause": "MLC 2006 as amended (2022 consolidated text) Standard A3.1 9(f)(iii), 9(m), 9(a), 9(e), 6(a); ES-TRIN 2025/1 15.02(9), 15.02(10), 15.02(6), 15.07(1)",
+    "count": 3,
+    "governing": "mlc",
+    "id": "cabin_senior",
+    "name": "Sleeping cabin with day room (master, chief engineer, chief navigating officer)",
+    "note": "A3.1.9(m) gives each of the three an adjoining sitting room or day room, so the single berth floor 7.0 m2 of A3.1.9(f) applies and not the officer floor of A3.1.9(k), which is for \"no private sitting room or day room\". ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 13919 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
+   },
+   {
+    "area_each_m2": 6.0,
+    "area_m2": 18.0,
+    "basis": "estimate",
+    "clause": "MLC 2006 as amended (2022 consolidated text) Standard A3.1 9(m)",
+    "count": 3,
+    "governing": "mlc",
+    "id": "day_room",
+    "name": "Day room (sitting room) beside a senior officer's cabin",
+    "note": "Required for the master, the chief engineer and the chief navigating officer. ESTIMATE: A3.1.9(m) gives no area; a 2.5 x 2.4 m room for a settee, a table and a chair, rounded to 6.0 m2. The exemption for ships under 3,000 GT is not applied."
+   },
+   {
+    "area_each_m2": 10.0,
+    "area_m2": 50.0,
+    "basis": "sourced",
+    "clause": "MLC 2006 as amended (2022 consolidated text) Standard A3.1 9(k)(iii), 9(a), 9(e), 6(a); ES-TRIN 2025/1 15.02(9), 15.02(10), 15.02(6), 15.07(1)",
+    "count": 5,
+    "governing": "mlc",
+    "id": "cabin_officer",
+    "name": "Sleeping cabin (officer, no day room)",
+    "note": "MLC A3.1.9(k) officer floor 10.0 m2 where no private sitting room or day room is provided. ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 13919 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
    },
    {
     "area_each_m2": 38.0,
@@ -182,49 +220,54 @@
     "basis": "derived",
     "clause": "ES-TRIN 2025/1 15.02(8), 15.02(7), 15.04(3)",
     "count": 1,
+    "governing": "es-trin",
     "id": "communal",
     "name": "Communal living room and mess",
-    "note": "2 m2 per person, and 8 m2 in all, of free floor not counting furniture (15.02(8)), so a lower bound: furniture is not added, so the room is larger. One sitting; partitioned from the cabins (15.02(7))."
+    "note": "2 m2 per person, and 8 m2 in all, of free floor not counting furniture (15.02(8)), so a lower bound: furniture is not added, so the room is larger. One sitting; partitioned from the cabins (15.02(7)). For a sea-reaching hull this is the mess of A3.1.10 (apart from the sleeping rooms, near the galley, adequate size); Guideline B3.1.6(3) asks 1.5 m2 per seat, which 2 m2 a person already exceeds, so ES-TRIN governs."
    },
    {
     "area_each_m2": 1.0,
     "area_m2": 4.0,
     "basis": "sourced",
-    "clause": "ES-TRIN 2025/1 15.03(1)(a), 15.03(3)",
+    "clause": "MLC 2006 as amended (2022 consolidated text) Standard A3.1 11(c); ES-TRIN 2025/1 15.03(1)(a), 15.03(3)",
     "count": 4,
+    "governing": "both",
     "id": "toilet",
     "name": "Toilet compartment",
-    "note": "One per six crew, 1 m2 each."
+    "note": "One per six persons (A3.1.11(c) and ES-TRIN 15.03(1)(a) agree), 1 m2 each (15.03(3)). A3.1.11(b) asks for sanitary facilities within easy access of the bridge and the machinery space: that is a placement of these toilets, not an added count; the exemption under 3,000 GT is not applied."
    },
    {
     "area_each_m2": 0.5,
-    "area_m2": 2.5,
+    "area_m2": 9.5,
     "basis": "estimate",
-    "clause": "ES-TRIN 2025/1 15.03(1)(b)",
-    "count": 5,
+    "clause": "MLC 2006 as amended (2022 consolidated text) Standard A3.1 11(d), 11(c), 11(f); ES-TRIN 2025/1 15.03(1)(b)",
+    "count": 19,
+    "governing": "mlc",
     "id": "washbasin",
     "name": "Washbasin",
-    "note": "One per four crew. ESTIMATE: the text gives no floor area; 0.60 x 0.80 m of basin and standing room, rounded to 0.5 m2."
+    "note": "One in every sleeping room, with hot and cold running fresh water (A3.1.11(d), (f)); ES-TRIN 15.03(1)(b) asks one per four crew, fewer. A3.1.11(c) asks one per six persons without personal facilities, which these satisfy. ESTIMATE: the text gives no floor area; 0.60 x 0.80 m of basin and standing room, rounded to 0.5 m2, added to the cabin floor."
    },
    {
     "area_each_m2": 0.81,
     "area_m2": 3.24,
     "basis": "estimate",
-    "clause": "ES-TRIN 2025/1 15.03(1)(c)",
+    "clause": "MLC 2006 as amended (2022 consolidated text) Standard A3.1 11(c), 11(f); ES-TRIN 2025/1 15.03(1)(c)",
     "count": 4,
+    "governing": "both",
     "id": "shower",
     "name": "Shower or bath",
-    "note": "One per six crew. ESTIMATE: the text gives no floor area; a 0.90 x 0.90 m cubicle."
+    "note": "One tub or shower per six persons (A3.1.11(c) and ES-TRIN 15.03(1)(c) agree). ESTIMATE: the text gives no floor area; a 0.90 x 0.90 m cubicle."
    },
    {
-    "area_each_m2": 10.5,
-    "area_m2": 10.5,
+    "area_each_m2": 23.36842105263158,
+    "area_m2": 23.36842105263158,
     "basis": "derived",
     "clause": "ES-TRIN 2025/1 15.02(11)(a), 15.02(4)",
     "count": 1,
+    "governing": "es-trin",
     "id": "corridor",
     "name": "Corridor",
-    "note": "0.60 m wide (the clear width of a door) along cabins on both sides: two cabins per bay, each cabin front 1.75 m (the cabin floor over the 2.00 m berth length)."
+    "note": "0.60 m wide (the clear width of a door) along cabins on both sides: two cabins per bay, each cabin front the mean cabin floor over the 2.00 m berth length."
    },
    {
     "area_each_m2": 5.0,
@@ -232,6 +275,7 @@
     "basis": "estimate",
     "clause": "ES-TRIN 2025/1 15.04(2)",
     "count": 1,
+    "governing": "es-trin",
     "id": "galley",
     "name": "Galley",
     "note": "A cooker, sink, water, refrigerator, storage and working space. ESTIMATE: the text gives no floor area; a 2.4 m run of units 0.60 m deep with a 1.0 m aisle (3.84 m2) and 1.2 m2 of stores, rounded to 5.0 m2."
@@ -242,6 +286,7 @@
     "basis": "estimate",
     "clause": "ES-TRIN 2025/1 15.07(2)",
     "count": 1,
+    "governing": "es-trin",
     "id": "work_clothes",
     "name": "Work-clothes store and drying room",
     "note": "Required, not in the sleeping quarters. ESTIMATE: the text gives no floor area; 2.0 m2 for hanging and drying and 0.25 m2 a berth for the lockers of 15.07(1)."
@@ -252,18 +297,42 @@
     "basis": "estimate",
     "clause": "ES-TRIN 2025/1 15.02(12)",
     "count": 1,
+    "governing": "es-trin",
     "id": "stairs",
     "name": "Stairways between tiers",
     "note": "At least 0.60 m wide, tread 0.15 m. ESTIMATE: no floor area is given; 13 risers of 0.20 m at a 0.15 m tread is a 1.95 m run plus a 0.60 m landing, 0.60 x 2.55 m, rounded to 1.6 m2. One stairway (to the wheelhouse); a further one for each tier above the first is not counted, as the rooms do not know the tier count."
+   },
+   {
+    "area_each_m2": 7.0,
+    "area_m2": 7.0,
+    "basis": "estimate",
+    "clause": "MLC 2006 as amended (2022 consolidated text) Standard A3.1 12",
+    "count": 1,
+    "governing": "mlc",
+    "id": "hospital",
+    "name": "Hospital",
+    "note": "Separate hospital accommodation for medical use only, for a ship with 15 or more seafarers on a voyage over three days (A3.1.12); 17 are carried. The voyage length is not an input, so it is taken as over three days, and the relaxation for coastal trade is not applied. ESTIMATE: A3.1.12 gives no area; one berth (2.0 x 0.9 m) with 0.9 m at its head and 0.75 m of access each side, 2.9 x 2.4 m = 6.96 m2, rounded to 7.0 m2."
+   },
+   {
+    "area_each_m2": 2.31,
+    "area_m2": 2.31,
+    "basis": "estimate",
+    "clause": "MLC 2006 as amended (2022 consolidated text) Guideline B3.1.8(4)",
+    "count": 1,
+    "governing": "mlc",
+    "id": "hospital_sanitary",
+    "name": "Hospital toilet, washbasin and shower",
+    "note": "For the exclusive use of the hospital's occupants: one toilet, one washbasin and one tub or shower (a Guideline, not a Standard: applied cautiously). 1.00 m2 toilet (as ES-TRIN 15.03(3)), 0.5 m2 washbasin and 0.81 m2 shower, the ESTIMATES above."
    }
   ],
-  "rule": "es-trin-2025-ch15 (MLC 2006 A3.1 not applied)",
-  "rule_note": "The Service Area reaches sea, so MLC 2006 Standard A3.1 applies; its text is not in the rule sources, so it is NOT applied. The rooms are sized to ES-TRIN 2025/1 Chapter 15, and the deckhouse keeps the interim floor as its lower bound.",
+  "rule": "mlc-2006-a3.1 and es-trin-2025-ch15 (the greater, per room)",
+  "rule_note": "The Service Area reaches sea, so each room is sized to the greater of MLC 2006 Standard A3.1 (as amended, 2022 consolidated text) and ES-TRIN 2025/1 Chapter 15; the governing source is on each row. 13919 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over. No exemption is applied: not the under-3,000 GT ones of A3.1.9(a), (h), (m), 10(a), 11(b), 15, nor the under-200 GT ones of A3.1.20, nor the coastal-trade relaxation of A3.1.12; the competent authority grants them, so a concept sizes without them. Berths held by officers are sized to A3.1.9(k) or (m) and all others as ratings.",
+  "seafarers": 17,
   "settled": true,
   "status": "estimate",
   "tier_area_m2": 488.5968,
   "tiers": 3,
-  "total_m2": 138.09
+  "total_m2": 266.7684210526316
  },
  "stern_arrangement": {
   "style": "deckhouse",
@@ -490,12 +559,12 @@
    },
    "id": "check-thrusters-fit-beam"
   },
-  "3 tier(s) of 488.6 m2 hold the 138.1 m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over 4 tiers is a tall house over a short machinery space (ESTIMATE limit)": {
+  "3 tier(s) of 488.6 m2 hold the 266.8 m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over 4 tiers is a tall house over a short machinery space (ESTIMATE limit)": {
    "args": {
     "max": 4,
     "required": {
-     "num": "138.1",
-     "value": 138.09
+     "num": "266.8",
+     "value": 266.7684210526316
     },
     "tier_area": {
      "num": "488.6",
@@ -659,9 +728,9 @@
    "args": {},
    "id": "warn-aft-deckhouse-no-outfit"
   },
-  "This Service Area reaches sea, so MLC 2006 Standard A3.1 sets the cabin sizes. Its text is not in the rule sources, so it is not applied: the rooms are sized to ES-TRIN 2025/1 Chapter 15, and the deckhouse floor is no smaller than the interim floor of the 40 ft accommodation units.": {
+  "This Service Area reaches sea, so each room is sized to the greater of MLC 2006 Standard A3.1 (as amended, 2022 consolidated text) and ES-TRIN 2025/1 Chapter 15; the rooms table names the governing source of each. No exemption is applied: not those for ships under 3,000 GT or 200 GT, nor the coastal-trade relaxation of the hospital. The day rooms and the hospital have ESTIMATE areas, as the text gives none.": {
    "args": {},
-   "id": "warn-aft-deckhouse-mlc-not-applied"
+   "id": "warn-aft-deckhouse-mlc-applied"
   },
   "aft end-bulkhead space 0.60 m >= 0.20 m (domed tank ends, cl. 3.5.3)": {
    "args": {
@@ -880,6 +949,27 @@
    "args": {},
    "id": "name-governs-tank-volume"
   },
+  "tier height 2.60 m less 0.50 m for deck structure and overhead services (ESTIMATE) = 2.10 m clear >= 2.03 m headroom (MLC 2006 A3.1.6(a))": {
+   "args": {
+    "allowance": {
+     "num": "0.50",
+     "value": 0.5
+    },
+    "clear": {
+     "num": "2.10",
+     "value": 2.1
+    },
+    "headroom": {
+     "num": "2.03",
+     "value": 2.03
+    },
+    "tier": {
+     "num": "2.60",
+     "value": 2.6
+    }
+   },
+   "id": "check-deckhouse-clear-height"
+  },
   "volume utilisation 100% >= floor 50%": {
    "args": {
     "floor": {
@@ -915,7 +1005,7 @@
   "The deckhouse carries no outfit mass: the outfit of the accommodation units left with them, and no outfit rate has been found, so the lightship is under-stated and GM over-stated until the calibration set (issue #782) gives one.",
   "Deckhouse stern: the tier height, the side deck and the tier limit are ESTIMATES. A fixed wheelhouse is given the tiers its Blind Distance needs, to the stricter of ES-TRIN 7.02(2) and, on a coastal Option, SOLAS V/22.1.1: the first pass sizes the eye for a waterline at the keel, which is never too low and can add a tier; a second pass on the trimmed light waterline of the first keeps the lower tier count only if the sightline still passes.",
   "Deckhouse rooms (ES-TRIN 2025/1 Chapter 15): the galley, the work-clothes room, the washbasins, the showers and the stairway are required but the text gives no floor area, so each has a stated ESTIMATE area, marked estimate in the rooms table with its working. The cabin, communal room, toilet and corridor areas are worked from the paragraphs the table cites.",
-  "This Service Area reaches sea, so MLC 2006 Standard A3.1 sets the cabin sizes. Its text is not in the rule sources, so it is not applied: the rooms are sized to ES-TRIN 2025/1 Chapter 15, and the deckhouse floor is no smaller than the interim floor of the 40 ft accommodation units.",
+  "This Service Area reaches sea, so each room is sized to the greater of MLC 2006 Standard A3.1 (as amended, 2022 consolidated text) and ES-TRIN 2025/1 Chapter 15; the rooms table names the governing source of each. No exemption is applied: not those for ships under 3,000 GT or 200 GT, nor the coastal-trade relaxation of the hospital. The day rooms and the hospital have ESTIMATE areas, as the text gives none.",
   "Gas-fuelled stern block: the genset envelopes beyond the published engine (alternator, base frame) and the engine-room and GVU-room clearances are ESTIMATES (no vendor GA). The exhaust uptake and the fuel vent mast are not in the air draft (assumed lowerable). Fuel is taken from the cargo boil-off (IGC Code chapter 16); no separate fuel tank is in the block.",
   "Separation clauses are cited from the classification rules for inland-waterways ships (Pt 4 Ch 4 Sec 3, Jul 2022). Confirm against the ADN text before release."
  ]
