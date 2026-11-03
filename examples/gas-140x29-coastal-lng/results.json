@@ -11057,6 +11057,7 @@
               "count": 1
             }
           ],
+          "officers": 8,
           "deck_officers": 4,
           "engineers": 2,
           "ratings": 7,
@@ -22164,6 +22165,7 @@
               "count": 1
             }
           ],
+          "officers": 8,
           "deck_officers": 4,
           "engineers": 2,
           "ratings": 7,
@@ -33293,6 +33295,7 @@
               "count": 1
             }
           ],
+          "officers": 8,
           "deck_officers": 4,
           "engineers": 2,
           "ratings": 7,
