@@ -88,8 +88,9 @@ def test_a_coverage_gap_is_only_a_warning(tmp_path):
     cases, _, results = corpus_copy(tmp_path)
     r = run_runner("--cases", str(cases), "--mutants", str(tmp_path / "none.yaml"), "--results", str(results))
     assert r.returncode == 0, r.stdout
-    assert r.stdout.count("::warning title=Evaluation coverage gap") == 5
-    gaps = [line for line in r.stdout.splitlines() if "coverage gap" in line]
+    # The IS Code rows only: the Rule Sets of the other case kinds have gaps of their own.
+    gaps = [line for line in r.stdout.splitlines() if "coverage gap" in line and "`is2008/" in line]
+    assert len(gaps) == 5
     assert not any("angle-max-gz" in line for line in gaps)
 
 
@@ -271,13 +272,14 @@ def test_the_real_corpus_notices_every_mutant_of_is2008_a():
     # `marpol/23/accidental-oil-outflow` (issue #341): the evaluation harness has no draught, so it cannot work
     # out the mean oil outflow; `ovd-core/tests/oil_outflow.rs` checks that Rule's method on the published
     # tank barge of Res. MEPC.122(52) instead. A weak stern mutant (issue #355) is a coefficient of 0 moved
-    # by 0.01, which changes no limit.
+    # by 0.01, which changes no limit: the `lo` of the SOLAS rows, and of `igc/8.2.11.1/vent-exit-distance`
+    # (issue #849), whose "B or 25 m, whichever is less" has no lower bound.
     section = text.split("## Rule mutation", 1)[1].split("\n## ", 1)[0]
     unnoticed = [ln for ln in section.splitlines() if "none: weak corpus" in ln]
     oil = [ln for ln in unnoticed if "`marpol/23/accidental-oil-outflow`" in ln]
     stern = [ln for ln in unnoticed if ln not in oil]
     assert len(oil) == 2
-    assert all("| 0.0 |" in ln and ln.startswith("| `solas/") for ln in stern), stern
+    assert all("| 0.0 |" in ln and ln.startswith(("| `solas/", "| `igc/8.2.11.1/")) for ln in stern), stern
     assert sum(1 for line in section.splitlines() if line.startswith("| `is2008/")) == 12
 
 
@@ -308,4 +310,4 @@ def test_a_limit_no_case_comes_near_is_a_weak_corpus_warning(tmp_path):
     r = run_runner("--cases", str(one), "--mutants", str(tmp_path / "none.yaml"),
                    "--results", str(tmp_path / "results.md"))
     assert r.returncode == 0, r.stdout
-    assert r.stdout.count("::warning title=Evaluation weak corpus") == 14
+    assert r.stdout.count("::warning title=Evaluation weak corpus") == 16
