@@ -6,3 +6,51 @@
 
 - Old gas files, notes and tests (issue #850): opening such a file shows a note of its own (`msg-legacy-adn-stack`: it has no Rule Sets and, where it is missing, no Service Area, it is read with the ADN stack, and its results and hash move) in place of the "results are unchanged" note for those inputs. The stored results hashes of `crates/ovd-format/tests/legacy/v2_gas_lng_before_292.vdesign`, `v2_gas_lpg_before_292.vdesign` and `v2_gas_lpg_before_313.vdesign` are re-stamped to the new results, as the maintainer decided these files move. Also changed: `simulate`, given a river-only Service Area and no Rule Sets, reads that stack through `legacy_rule_sets`, with the set versions an old file is read with (`is2008-a` 1.0.0), so `run` and `simulate` agree on the same file; a Service Area left out stays "not river-only" in `simulate`, so the Python API's results do not move. The `*_igc_stack` copies in `crates/ovd-format/tests/legacy/` hold the three legacy gas files with the old stack stored, so the tests of their other inputs keep their old stored hashes; the original files are unchanged and show a hash mismatch, as a real old file does. A new fixture `gas_adn_river_two_wide.vdesign` keeps tanks side by side in the mesh sweeps. The wing row has a tolerance of 1e-9 m and reports the measured clearance less the gap. An ADN distance of the vent mast that a harness case does not give is not evaluated, not 0 m. Tests that need the IGC rows or the IGC damage cases now name the coastal-and-river Service Area or store the IGC stack; tests that pinned the river-only gas default stack pin the ADN one; the mesh sweeps keep their floors of 12 tanks.
 
+<!-- design-impact -->
+### ticket/850-adn-river-stack (2026-11-03)
+
+Between `main 2146241` and `this branch 8defb85e`.
+
+| Case | Quantity | Before | After | Change |
+|---|---|---|---|---|
+| sweep CN-derived liquid 1 (88x16.3) | `checks[13].message` | blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 3.54 m of 6.00 m | blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 2.84 m of 6.00 m | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[21].message` | tank length 28.29 m / inner diameter 6.80 m = 4.16 <= 7.0 | tank length 28.29 m / inner diameter 6.20 m = 4.56 <= 7.0 | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[22].message` | freeboard 2.98 m at the carried draught 2.72 m >= required 0.3 m | freeboard 3.28 m at the carried draught 2.42 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[23].message` | GM 5.97 m (fluid), max GZ 2.54 m at 29° | GM 7.01 m (fluid), max GZ 2.91 m at 30° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[24].message` | GM 5.99 m (fluid), max GZ 2.53 m at 29° | GM 7.03 m (fluid), max GZ 2.91 m at 30° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[25].message` | GM 12.78 m (fluid), max GZ 3.48 m at 28° | GM 14.03 m (fluid), max GZ 3.61 m at 27° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[26].message` | GM 12.89 m (fluid), max GZ 3.47 m at 27° | GM 14.16 m (fluid), max GZ 3.61 m at 27° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[27].message` | barge form factor at the service speed: Fn 0.191, Cp 0.950, L/B 4.99, B/T 5.95; outside its range: Fn 0.19 (range 0.00 to 0.14), Cp 0.95 (range 0.77 to 0.88), L/B 4.99 (range 7.59 to 16.29) | barge form factor at the service speed: Fn 0.192, Cp 0.955, L/B 4.93, B/T 6.69; outside its range: Fn 0.19 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88), L/B 4.93 (range 7.59 to 16.29) | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[3].message` | freeboard 2.98 m >= required 0.3 m | freeboard 3.28 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[5].message` | 2 x 1.55 m thrusters need 4.91 m across a 16.30 m beam | 2 x 1.49 m thrusters need 4.77 m across a 16.30 m beam | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[6].message` | 2 of 2 requested thrusters fit; 2 would need 4.91 m of 16.30 m beam | 2 of 2 requested thrusters fit; 2 would need 4.77 m of 16.30 m beam | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `structure.purchase.sections[6].section` | T 639x9.5+170x17 | T 638x9.5+170x17 | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `structure.purchase.sections[9].section` | T 639x9.5+80x8 | T 638x9.5+80x8 | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[14].message` | blind distance ahead of the bow over 250 m, light (ES-TRIN 7.02(2)): lift needed 9.88 m of 6.00 m | blind distance ahead of the bow over 250 m, light (ES-TRIN 7.02(2)): lift needed 8.93 m of 6.00 m | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[22].message` | tank length 49.29 m / inner diameter 10.04 m = 4.91 <= 7.0 | tank length 49.29 m / inner diameter 9.43 m = 5.23 <= 7.0 | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[23].message` | freeboard 2.23 m at the carried draught 3.47 m >= required 0.3 m | freeboard 2.50 m at the carried draught 3.20 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[24].message` | GM 3.50 m (fluid), max GZ 1.30 m at 25° | GM 4.12 m (fluid), max GZ 1.68 m at 26° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[25].message` | GM 3.50 m (fluid), max GZ 1.30 m at 25° | GM 4.12 m (fluid), max GZ 1.69 m at 26° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[26].message` | GM 8.50 m (fluid), max GZ 2.86 m at 29° | GM 9.23 m (fluid), max GZ 3.00 m at 29° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[27].message` | GM 8.54 m (fluid), max GZ 2.85 m at 29° | GM 9.28 m (fluid), max GZ 2.99 m at 29° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[28].message` | barge form factor at the service speed: Fn 0.154, Cp 0.959, L/B 7.70, B/T 4.68; outside its range: Fn 0.15 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88) | barge form factor at the service speed: Fn 0.154, Cp 0.962, L/B 7.65, B/T 5.07; outside its range: Fn 0.15 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88) | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[4].message` | freeboard 2.23 m >= required 0.3 m | freeboard 2.50 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[6].message` | 2 x 2.09 m thrusters need 5.99 m across a 16.30 m beam | 2 x 2.03 m thrusters need 5.85 m across a 16.30 m beam | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[7].message` | 2 of 2 requested thrusters fit; 2 would need 5.99 m of 16.30 m beam | 2 of 2 requested thrusters fit; 2 would need 5.85 m of 16.30 m beam | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `stability.lowest_gm_condition` | Full load, arrival | Full load, departure | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `structure.purchase.sections[5].section` | T 639x9.5+160x16 | T 638x9.5+160x16 | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `structure.purchase.sections[6].section` | T 400x9.0+120x12 | T 400x9.0+140x14 | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `structure.purchase.sections[8].section` | T 639x9.5+80x8 | T 638x9.5+80x8 | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `warnings[1]` | The blind distance needs 9.88 m of lift; the column gives 6.00 m. Raise the column or lower the cargo top. | The blind distance needs 8.93 m of lift; the column gives 6.00 m. Raise the column or lower the cargo top. | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `arrangement.feasible` | True | False | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[10].message` | 2 x 40 ft units beside a 6.40 m wheelhouse need 14.88 m of 17.20 m beam | wheelhouse 6.40 m wide on a 17.20 m beam | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[10].name` | accom beside wheelhouse | wheelhouse fits beam | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[10].severity` | warning | error | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[11].message` | 2 x 1.90 m gensets abreast need 6.80 m across a 17.20 m beam | 2 x 40 ft units beside a 6.40 m wheelhouse need 14.88 m of 17.20 m beam | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[11].name` | gensets fit beam | accom beside wheelhouse | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[11].severity` | error | warning | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[12].message` | genset 2.89 m + 1.00 m double bottom and deck structure (ESTIMATE) <= moulded depth 5.70 m | 2 x 1.90 m gensets abreast need 6.80 m across a 17.20 m beam | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[12].name` | gensets fit under deck | gensets fit beam | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[12].severity` | warning | error | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[13].message` | blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 5.30 m of 6.00 m | genset 2.89 m + 1.00 m double bottom and deck structure (ESTIMATE) <= moulded depth 5.70 m | changed |
+| ... | 130033 more changed quantities | | | |
