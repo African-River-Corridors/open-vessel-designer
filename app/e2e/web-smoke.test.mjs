@@ -1065,18 +1065,13 @@ describe("OVD web smoke tests", () => {
     assert.deepEqual(lowered.sea, before.sea);
     assert.deepEqual(lowered.river, fixed(lowered.air.conditions, "river_m"));
     // A typed limit adds the outcome column, one cell for each condition.
-    await b.execute(() => {
-      const field = document.querySelector('.field[data-input="air_draft_limit_m"]');
-      // The limit may be shown as "none": clear that box first, then type the number.
-      const none = field.querySelector("label.none input[type=checkbox]");
-      if (none && none.checked) none.click();
-    });
+    // The limit is shown as "none" until a number is typed: clear that box with a real click (`openDesign`
+    // turns the script's own `click()` on inputs off), then type the number.
+    const none = await b.$('.field[data-input="air_draft_limit_m"] label.none input[type=checkbox]');
+    await none.scrollIntoView();
+    if (await none.isSelected()) await none.click();
     await until(b, "the limit box", async () => (await b.$('.field[data-input="air_draft_limit_m"] input[type=text]')).isExisting());
-    await b.execute(() => {
-      const box = document.querySelector('.field[data-input="air_draft_limit_m"] input[type=text]');
-      box.value = "60";
-      box.dispatchEvent(new Event("input", { bubbles: true }));
-    });
+    await (await b.$('.field[data-input="air_draft_limit_m"] input[type=text]')).setValue("60");
     await until(b, "the limit column", async () => (await read()).limit.length > 0);
     const limited = await read();
     assert.equal(limited.limit.length, limited.air.conditions.length);
