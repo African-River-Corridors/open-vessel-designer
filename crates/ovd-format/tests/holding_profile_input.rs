@@ -63,7 +63,12 @@ fn stored(s: &DesignSession, name: &str) -> Option<(Value, Source)> {
 
 fn results_of(s: &DesignSession) -> Value {
     match s.evaluate().options[0].outcome.as_ref().expect("it ran") {
-        RunOutcome::Results { results, .. } => results.clone(),
+        // The holding-time block (#870) reads the profile; it is the one result that may move.
+        RunOutcome::Results { results, .. } => {
+            let mut r = results.clone();
+            r.as_object_mut().unwrap().remove("holding_time");
+            r
+        }
         other => panic!("{other:?}"),
     }
 }

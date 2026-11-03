@@ -362,7 +362,7 @@ pub use arc_rules::load::canonical_json;
 /// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
 /// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
 /// moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results. The stern arrangement (`stern_arrangement`, issue #887) is a summary of what the drawing block holds, for the Stern & crew view; it too is outside the hash.
-pub const UNHASHED_KEYS: [&str; 19] = [
+pub const UNHASHED_KEYS: [&str; 20] = [
     "drawing",
     "stability_marks",
     "cost_masses",
@@ -382,6 +382,7 @@ pub const UNHASHED_KEYS: [&str; 19] = [
     "rooms",
     "air_drafts",
     "stern_arrangement",
+    "holding_time",
 ];
 
 /// SHA-256 of the canonical JSON of `results`, without the [`UNHASHED_KEYS`].
@@ -647,6 +648,8 @@ pub fn run_option_with(
                 );
                 // Issue #464: the gas a gas-fuelled Option burns, and its boil-off check.
                 crate::gas_fuel::add_gas_fuel(option, &mut v);
+                // Issue #870 (spec 0016): the holding time, a new output outside the hash.
+                crate::holding_time::add_holding_time(option, &mut v);
                 let mut cost = crate::cost::cost_of(option, &v);
                 // Issue #552: the budget of a pushed convoy is that of every barge.
                 if let Some((abreast, in_line)) = crate::convoy::counts(option) {
