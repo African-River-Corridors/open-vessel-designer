@@ -1,0 +1,270 @@
+{
+  "$schema": "../rule-set.schema.json",
+  "id": "mlc-2006",
+  "family": "mlc",
+  "title": "Maritime Labour Convention 2006, Standard A3.1: accommodation (headroom, sleeping-room location and floor area, sanitary facilities), for a Service Area that reaches sea",
+  "version": "1.0.0",
+  "edition": {
+    "document": "Maritime Labour Convention, 2006, as amended",
+    "edition": "Consolidated text established by the International Labour Office, including the Amendments of 2014, 2016, 2018 and 2022 to the Code",
+    "in_force": "not stated in the text read: Regulation 3.1, paragraph 2, applies the construction requirements to ships constructed on or after the date the Convention came into force for the flag State"
+  },
+  "sources": [
+    {
+      "document": "Maritime Labour Convention, 2006, as amended - including 2022 amendments (ILO consolidated text)",
+      "edition": "as printed: consolidated text including the Amendments of 2014, 2016, 2018 and 2022 to the Code",
+      "url": "https://www.ilo.org/sites/default/files/2024-10/NORMES_MLC%20Amendments-EN_2022_Web_1.pdf",
+      "access": "free",
+      "sha256": "bc444a84c177558dfc043b027b47681f06d7155f793819e755984f1b785f7e43"
+    }
+  ],
+  "status": "draft",
+  "applies_when": {},
+  "includes": [],
+  "known_conflicts": [],
+  "tables": [
+    {
+      "id": "mlc-a3-1-9f-single-berth",
+      "source": {
+        "document": "Maritime Labour Convention, 2006, as amended (consolidated text including the 2022 amendments to the Code)",
+        "locator": "A3.1.9(f)",
+        "page": "mlc-2006-amended-2022.pdf, Standard A3.1, printed p. 46"
+      },
+      "input": {
+        "name": "gross tonnage",
+        "unit": "-"
+      },
+      "unit": "m2",
+      "rows": [
+        {
+          "when": {
+            "lt": 3000
+          },
+          "shape": "const",
+          "a": 4.5
+        },
+        {
+          "when": {
+            "ge": 3000,
+            "lt": 10000
+          },
+          "shape": "const",
+          "a": 5.5
+        },
+        {
+          "when": {
+            "ge": 10000
+          },
+          "shape": "const",
+          "a": 7.0
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "mlc/A3.1.6(a)/headroom",
+      "title": "Headroom in seafarer accommodation where full and free movement is necessary at least 203 cm (the competent authority may allow a limited reduction, not modelled)",
+      "origin": "regulation",
+      "source": {
+        "document": "Maritime Labour Convention, 2006, as amended (consolidated text including the 2022 amendments to the Code)",
+        "edition": "ILO consolidated text including the Amendments of 2014, 2016, 2018 and 2022 to the Code",
+        "locator": "A3.1.6(a)",
+        "page": "mlc-2006-amended-2022.pdf, Standard A3.1, printed p. 45",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.headroom_m"
+      },
+      "compare": "ge",
+      "limit": {
+        "value": 2.03,
+        "unit": "m"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "mlc/A3.1.6(c)/sleeping-room-location",
+      "title": "Sleeping rooms of a ship other than a passenger ship above the load line amidships or aft, and in no case forward of the collision bulkhead",
+      "origin": "regulation",
+      "source": {
+        "document": "Maritime Labour Convention, 2006, as amended (consolidated text including the 2022 amendments to the Code)",
+        "edition": "ILO consolidated text including the Amendments of 2014, 2016, 2018 and 2022 to the Code",
+        "locator": "A3.1.6(c)",
+        "page": "mlc-2006-amended-2022.pdf, Standard A3.1, printed p. 45",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "arrangement.sleeping_rooms_above_load_line"
+      },
+      "tolerance": 0,
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "the rooms table does not place rooms by deck or position, so the load line and the collision bulkhead are not checked",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "mlc/A3.1.9(f)/cabin-area",
+      "title": "Floor area of a single-berth seafarers' sleeping room at least 4.5 m2 under 3,000 gross tonnage, 5.5 m2 from 3,000 to under 10,000, 7 m2 from 10,000 (the room of a ship's officer, 9(k), and the reduced areas of 9(g) are not modelled)",
+      "origin": "regulation",
+      "source": {
+        "document": "Maritime Labour Convention, 2006, as amended (consolidated text including the 2022 amendments to the Code)",
+        "edition": "ILO consolidated text including the Amendments of 2014, 2016, 2018 and 2022 to the Code",
+        "locator": "A3.1.9(f)",
+        "page": "mlc-2006-amended-2022.pdf, Standard A3.1, printed p. 46",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "table",
+      "measure": {
+        "id": "rooms.cabin_area_m2"
+      },
+      "compare": "ge",
+      "limit": {
+        "table": "mlc-a3-1-9f-single-berth",
+        "at": "option.gross_tonnage",
+        "unit": "m2"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "mlc/A3.1.11(c)/toilets",
+      "title": "At least one toilet for every six persons or less who do not have personal facilities (every berth is counted as a person served)",
+      "origin": "regulation",
+      "source": {
+        "document": "Maritime Labour Convention, 2006, as amended (consolidated text including the 2022 amendments to the Code)",
+        "edition": "ILO consolidated text including the Amendments of 2014, 2016, 2018 and 2022 to the Code",
+        "locator": "A3.1.11(c)",
+        "page": "mlc-2006-amended-2022.pdf, Standard A3.1, printed p. 48",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.persons_per_fixture",
+        "args": {
+          "fixture": "toilet"
+        }
+      },
+      "compare": "le",
+      "limit": {
+        "value": 6.0,
+        "unit": "persons"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "mlc/A3.1.11(c)/washbasins",
+      "title": "At least one wash basin for every six persons or less who do not have personal facilities (every berth is counted as a person served)",
+      "origin": "regulation",
+      "source": {
+        "document": "Maritime Labour Convention, 2006, as amended (consolidated text including the 2022 amendments to the Code)",
+        "edition": "ILO consolidated text including the Amendments of 2014, 2016, 2018 and 2022 to the Code",
+        "locator": "A3.1.11(c)",
+        "page": "mlc-2006-amended-2022.pdf, Standard A3.1, printed p. 48",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.persons_per_fixture",
+        "args": {
+          "fixture": "washbasin"
+        }
+      },
+      "compare": "le",
+      "limit": {
+        "value": 6.0,
+        "unit": "persons"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "mlc/A3.1.11(c)/showers",
+      "title": "At least one tub or shower for every six persons or less who do not have personal facilities (every berth is counted as a person served)",
+      "origin": "regulation",
+      "source": {
+        "document": "Maritime Labour Convention, 2006, as amended (consolidated text including the 2022 amendments to the Code)",
+        "edition": "ILO consolidated text including the Amendments of 2014, 2016, 2018 and 2022 to the Code",
+        "locator": "A3.1.11(c)",
+        "page": "mlc-2006-amended-2022.pdf, Standard A3.1, printed p. 48",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.persons_per_fixture",
+        "args": {
+          "fixture": "shower"
+        }
+      },
+      "compare": "le",
+      "limit": {
+        "value": 6.0,
+        "unit": "persons"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "1.0.0"
+    }
+  ]
+}

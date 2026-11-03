@@ -1,0 +1,1221 @@
+{
+  "$schema": "../rule-set.schema.json",
+  "id": "es-trin-2025",
+  "family": "es-trin",
+  "title": "ES-TRIN 2025/1: safety clearance and freeboard (Chapter 4), wheelhouse view and speed (Chapters 5, 7), accommodation and sanitary installations (Chapter 15: headroom, cabin volume, communal room, toilets, washbasins, showers), craft over 110 m (Chapter 28: damage stability 28.03, propulsion 28.04)",
+  "version": "2.1.0",
+  "edition": {
+    "document": "ES-TRIN, Edition 2025/1",
+    "edition": "Edition 2025/1 (English, signed)",
+    "in_force": "adopted by CESNI on 17 October 2024; proposed in force 1 January 2026"
+  },
+  "sources": [
+    {
+      "document": "ES-TRIN Edition 2025/1 (English, signed)",
+      "edition": "2025/1",
+      "url": "https://www.cesni.eu/wp-content/uploads/2024/11/ES_TRIN_2025_signed_en.pdf",
+      "access": "free",
+      "sha256": "c69f9e216bf3a487ed02b9e20eca263f5ac45ce2271349c4c73d40474cfd0c3d"
+    }
+  ],
+  "status": "draft",
+  "applies_when": {},
+  "includes": [],
+  "known_conflicts": [],
+  "tables": [
+    {
+      "id": "es-trin-permeability",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "locator": "28.03(4)(d)",
+        "page": "Edition 2025/1, page 200"
+      },
+      "input": {
+        "name": "space kind"
+      },
+      "unit": "-",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "double_bottom_ballast",
+              "wing_ballast",
+              "peak_ballast",
+              "consumables",
+              "cargo_tank",
+              "slop"
+            ]
+          },
+          "shape": "const",
+          "a": 0.95
+        },
+        {
+          "when": {
+            "in": [
+              "machinery",
+              "pump_room"
+            ]
+          },
+          "shape": "const",
+          "a": 0.85
+        },
+        {
+          "when": {
+            "in": [
+              "cargo_hold"
+            ]
+          },
+          "shape": "const",
+          "a": 0.95
+        },
+        {
+          "when": {
+            "in": [
+              "cofferdam",
+              "peak_void",
+              "void"
+            ]
+          },
+          "shape": "const",
+          "a": 0.95
+        }
+      ]
+    },
+    {
+      "id": "es-trin-permeability-by-filling",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "locator": "28.03(4)(d)",
+        "page": "Edition 2025/1, page 200"
+      },
+      "input": {
+        "name": "space kind"
+      },
+      "unit": "1 = by filling, 0 = fixed",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "double_bottom_ballast",
+              "wing_ballast",
+              "peak_ballast",
+              "consumables",
+              "cargo_tank",
+              "slop"
+            ]
+          },
+          "shape": "const",
+          "a": 1.0
+        },
+        {
+          "when": {
+            "in": [
+              "machinery",
+              "pump_room",
+              "void",
+              "cargo_hold",
+              "cofferdam",
+              "peak_void"
+            ]
+          },
+          "shape": "const",
+          "a": 0.0
+        }
+      ]
+    },
+    {
+      "id": "es-trin-permeability-gross-floor",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "locator": "28.03(4)(d)",
+        "page": "Edition 2025/1, page 200"
+      },
+      "input": {
+        "name": "space kind"
+      },
+      "unit": "-",
+      "rows": [
+        {
+          "when": {
+            "in": [
+              "cargo_hold"
+            ]
+          },
+          "shape": "const",
+          "a": 0.7
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "es-trin/4.01(1)/safety-clearance",
+      "title": "Safety clearance at least 300 mm (checked against the freeboard to the deck edge; ES-TRIN measures to the lowest point that is not watertight, so this is the stricter reading for a vessel with openings above the deck)",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "4.01(1)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 4, p. 17",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#428"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "input.min_freeboard_m"
+      },
+      "compare": "ge",
+      "limit": {
+        "value": 0.3,
+        "unit": "m"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": "#428",
+      "since": "1.0.0",
+      "applies_when": {
+        "cargo_class": [
+          "gas",
+          "liquid_bulk"
+        ]
+      }
+    },
+    {
+      "id": "es-trin/4.01(1)/safety-clearance-covered-holds",
+      "title": "Safety clearance at least 300 mm for a dry-bulk vessel with covered holds (checked against the freeboard to the deck edge; the stricter reading)",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "4.01(1)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 4, p. 17",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#428"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "input.min_freeboard_m"
+      },
+      "compare": "ge",
+      "limit": {
+        "value": 0.3,
+        "unit": "m"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": "#428",
+      "since": "1.0.0",
+      "applies_when": {
+        "cargo_class": [
+          "dry_bulk"
+        ],
+        "hold_covering": [
+          "covered"
+        ]
+      }
+    },
+    {
+      "id": "es-trin/4.01(1)/safety-clearance-open-holds",
+      "title": "Safety clearance at least 300 mm for a dry-bulk vessel with open holds, measured to the top of the hatch coaming (the lowest point that is not watertight): freeboard at least 300 mm less the coaming height, not below 0",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "4.01(1)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 4, p. 17",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#428"
+      },
+      "verified": false,
+      "kind": "formula",
+      "measure": {
+        "id": "input.min_freeboard_m"
+      },
+      "limit": {
+        "shape": "at-least",
+        "x": "input.hatch_coaming_height_m",
+        "a": 0.3,
+        "b": -1.0,
+        "c": 1.0,
+        "lo": 0.0,
+        "unit": "m"
+      },
+      "tolerance": 1e-09,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": "#428",
+      "since": "1.0.0",
+      "applies_when": {
+        "cargo_class": [
+          "dry_bulk"
+        ],
+        "hold_covering": [
+          "open"
+        ]
+      },
+      "compare": "ge"
+    },
+    {
+      "id": "es-trin/4.01(2)/safety-clearance-uncovered-holds",
+      "title": "Safety clearance at least 500 mm to each opening, for a vessel that sails with its holds uncovered or whose openings cannot be closed spray-proof and weathertight (type the hold covering as open for either case); measured to the top of the hatch coaming: freeboard at least 500 mm less the coaming height, not below 0",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "4.01(2)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 4, p. 17",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#428"
+      },
+      "verified": false,
+      "applies_when": {
+        "cargo_class": [
+          "dry_bulk"
+        ],
+        "hold_covering": [
+          "open"
+        ]
+      },
+      "kind": "formula",
+      "measure": {
+        "id": "input.min_freeboard_m"
+      },
+      "compare": "ge",
+      "limit": {
+        "shape": "at-least",
+        "x": "input.hatch_coaming_height_m",
+        "a": 0.5,
+        "b": -1.0,
+        "c": 1.0,
+        "lo": 0.0,
+        "unit": "m"
+      },
+      "tolerance": 1e-09,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": "#428",
+      "since": "1.0.0"
+    },
+    {
+      "id": "es-trin/4.02(1)/freeboard",
+      "title": "Freeboard of a vessel with a continuous deck, without sheer and superstructures, at least 150 mm",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "4.02(1)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 4, p. 17",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#428"
+      },
+      "verified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "edition_held": "ES-TRIN 2025/1 (English, signed)",
+        "locator_read": "4.02(1), p. 17; 1.01 point 4.4, p. 5",
+        "review": "#428"
+      },
+      "kind": "limit",
+      "measure": {
+        "id": "input.min_freeboard_m"
+      },
+      "compare": "ge",
+      "limit": {
+        "value": 0.15,
+        "unit": "m"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": "#428",
+      "since": "1.0.0"
+    },
+    {
+      "id": "es-trin/7.02(2)/blind-zone-unladen",
+      "title": "Area of obstructed vision ahead of the vessel, unladen with half its supplies and without ballast, at most 250 m",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "7.02(2)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 7, p. 31",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#355"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "wheelhouse.blind_distance",
+        "args": {
+          "condition": "light"
+        }
+      },
+      "compare": "le",
+      "limit": {
+        "value": 250.0,
+        "unit": "m"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": "#355",
+      "since": "1.0.0"
+    },
+    {
+      "id": "es-trin/5.06(1)/speed-13kmh",
+      "title": "Speed in relation to the water at least 13 km/h, laden, in deep water; not for a pusher operating solo",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "5.06(1)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 5, p. 24",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#355"
+      },
+      "verified": false,
+      "applies_when": {
+        "formation_kind": [
+          "self_propelled",
+          "pushed_barge",
+          "pushed_convoy",
+          "atb",
+          "towed_barge"
+        ]
+      },
+      "kind": "limit",
+      "measure": {
+        "id": "powering.speed_through_water_kmh",
+        "args": {
+          "environment": "Deep water"
+        }
+      },
+      "compare": "ge",
+      "limit": {
+        "value": 13.0,
+        "unit": "km/h"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": "#355",
+      "since": "1.0.0"
+    },
+    {
+      "id": "es-trin/28.04(1)(a)/propulsion-redundancy",
+      "title": "A craft over 110 m has two propulsors and a bow thruster, or one propulsor and a bow thruster with its own power that lets it proceed after a breakdown",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.04(1)(a)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 202",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#355"
+      },
+      "verified": false,
+      "kind": "check",
+      "measure": {
+        "id": "propulsion.redundancy_28_04"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": "#355",
+      "since": "1.0.0"
+    },
+    {
+      "id": "es-trin/7.02(3)/field-of-view",
+      "title": "Helmsman's field of unobstructed vision at least 240 degrees, 140 degrees in the forward semicircle",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "7.02(3)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 7, p. 31",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#355"
+      },
+      "verified": false,
+      "applies_when": {
+        "formation_kind": [
+          "self_propelled"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "wheelhouse.field_of_view"
+      },
+      "tolerance": 0,
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "the model has no window geometry",
+      "finding": "#355",
+      "since": "1.0.0"
+    },
+    {
+      "id": "es-trin/7.12(2)/elevating-wheelhouse-stability",
+      "title": "An elevating wheelhouse does not endanger the stability of the vessel",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "7.12(2)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 7, p. 37",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#355"
+      },
+      "verified": false,
+      "applies_when": {
+        "formation_kind": [
+          "self_propelled"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "wheelhouse.raised_stability"
+      },
+      "tolerance": 0,
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "the model has no stability case with the wheelhouse raised",
+      "finding": "#355",
+      "since": "1.0.0"
+    },
+    {
+      "id": "es-trin/ESI-III-6.2.1/coupling-force",
+      "title": "Coupling force between a pusher and pushed craft, F = 270 P_B L_S / B_S x 10^-3 kN, as the tensile strength to size the coupling",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "ESI-III-6.2.1",
+        "page": "ES_TRIN_2025_signed_en.pdf, ESI-III-6, section 2.1",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#355"
+      },
+      "verified": false,
+      "applies_when": {
+        "formation_kind": [
+          "pushed_barge",
+          "pushed_convoy"
+        ]
+      },
+      "kind": "note",
+      "measure": {
+        "id": "formation.coupling_force"
+      },
+      "tolerance": 0,
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "es-trin/21.05(2)/no-downstream-towing-over-86m",
+      "title": "A craft of length L exceeding 86 m shall not be authorised for towing downstream",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "21.05(2)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Article 21.05 (contents p. 174)",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-23",
+        "review": "#361"
+      },
+      "verified": false,
+      "applies_when": {
+        "formation_kind": [
+          "towed_barge"
+        ]
+      },
+      "kind": "limit",
+      "measure": {
+        "id": "input.length_overall_m"
+      },
+      "compare": "le",
+      "limit": {
+        "value": 86.0,
+        "unit": "m"
+      },
+      "tolerance": 0,
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": true,
+      "finding": "#361",
+      "since": "1.0.0"
+    },
+    {
+      "id": "es-trin/28.03(4)/damage-stability",
+      "title": "A craft over 110 m survives the assumed side and bottom damage of 28.03(4) (side: 0.10 L long and 0.59 m deep; bottom: 0.10 L long, 3.00 m wide and 0.39 m high), with the final-stage criteria of 28.03(6): a heel of at most 12 degrees, a righting lever of 0.05 m and an area of 0.0065 m.rad",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(4)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 199 to 201",
+        "access": "free",
+        "also": [
+          "28.03(3)",
+          "28.03(6)"
+        ]
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_es_trin"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(5)/intermediate-stages",
+      "title": "A craft over 110 m at the intermediate stages of flooding (25, 50 and 75 % of the final flood): a heel of at most 15 degrees and a righting lever of at least 0.02 m before 27 degrees",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(5)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 200",
+        "access": "free",
+        "also": [
+          "28.03(5)(a)",
+          "28.03(5)(b)"
+        ]
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_es_trin_intermediate"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(2)/heeling-test",
+      "title": "The lightweight and its centre of gravity of a craft over 110 m are found by a heeling test to Annex 1 of IMO Resolution MSC.267(85)",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(2)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 199",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.heeling_test"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A heeling test is made on the built craft; a concept design has none, and OVD works the lightweight out by mass calculation",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(5)(c)/openings-intermediate",
+      "title": "Non-watertight openings are not immersed before the heel of the equilibrium position of the intermediate stage in question",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(5)(c)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 200",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_openings_es_trin_intermediate"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "The openings of the hull are not an input yet, so the damaged waterline cannot be checked against them (spec 0012, roadmap)",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(6)(a)/openings-above-damage-waterline",
+      "title": "At the final stage of flooding the lower edge of non-watertight openings is at least 0.10 m above the damaged waterline",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(6)(a)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 200",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_openings_es_trin_final"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "The openings of the hull are not an input yet, so the damaged waterline cannot be checked against them (spec 0012, roadmap)",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(6)(d)/openings-flooded-before-equilibrium",
+      "title": "If non-watertight openings are immersed before the equilibrium position is reached, the rooms they give access to count as flooded",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(6)(d)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 201",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.damage_openings_es_trin_flooded"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "The openings of the hull are not an input yet, so the rooms they give access to cannot be flooded (spec 0012, roadmap)",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(7)/cross-flooding",
+      "title": "Cross-flood openings that reduce asymmetrical flooding are self-acting, have no shut-off device, are calculated to IMO Resolution A.266 (VIII), and equalise within 15 minutes",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(7)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 201",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.cross_flooding"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "OVD models no flow between compartments (spec 0012 D16), so no cross-flooding time is calculated",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(8)/closing-instruction",
+      "title": "Shut-off devices on openings through which undamaged compartments may flood bear the instruction 'Close immediately after passage' on both sides",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(8)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 201",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.closing_instruction"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "A marking on the built craft; OVD models no such openings or markings",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(9)/adn-part-9-proof",
+      "title": "The proof by calculation of 28.03(3) to (7) is considered given if damage stability calculations to Part 9 of the ADN are produced with a positive result",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(9)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 201",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.adn_part_9_proof"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "OVD does not take its ADN damage rows (adn-tank, adn-gas) as this proof: the ES-TRIN rows above are evaluated on their own",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/28.03(10)/maximum-draught",
+      "title": "Where needed to meet 28.03(3), the plane of maximum draught is re-established",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "28.03(10)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 28, p. 201",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#763"
+      },
+      "verified": false,
+      "applies_when": {
+        "length_band": [
+          "over-110-m"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "stability.maximum_draught_reset"
+      },
+      "consequence": "warn",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "OVD does not lower the maximum draught to meet the damage rows; the draught is an input",
+      "finding": null,
+      "since": "2.0.0"
+    },
+    {
+      "id": "es-trin/15.02(6)/headroom",
+      "title": "Headroom in the accommodation at least 2.00 m",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "15.02(6)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 15, p. 104",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.headroom_m"
+      },
+      "compare": "ge",
+      "limit": {
+        "value": 2.0,
+        "unit": "m"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.1.0"
+    },
+    {
+      "id": "es-trin/15.02(8)/communal-per-person",
+      "title": "Free floor area of the communal living quarters at least 2 m2 per person (furniture other than tables and chairs not counted)",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "15.02(8)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 15, p. 104",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.communal_area_per_person_m2"
+      },
+      "compare": "ge",
+      "limit": {
+        "value": 2.0,
+        "unit": "m2"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.1.0"
+    },
+    {
+      "id": "es-trin/15.02(8)/communal-total",
+      "title": "Free floor area of the communal living quarters at least 8 m2 in all (furniture other than tables and chairs not counted)",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "15.02(8)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 15, p. 104",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.communal_area_m2"
+      },
+      "compare": "ge",
+      "limit": {
+        "value": 8.0,
+        "unit": "m2"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.1.0"
+    },
+    {
+      "id": "es-trin/15.02(9)/cabin-volume",
+      "title": "Cubic capacity of a sleeping cabin at least 7 m3",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "15.02(9)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 15, p. 104",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.cabin_volume_m3"
+      },
+      "compare": "ge",
+      "limit": {
+        "value": 7.0,
+        "unit": "m3"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.1.0"
+    },
+    {
+      "id": "es-trin/15.03(1)(a)/toilets",
+      "title": "One toilet per six crew members at least (the text also allows one per accommodation unit; every berth is counted as a person served)",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "15.03(1)(a)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 15, p. 105",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.persons_per_fixture",
+        "args": {
+          "fixture": "toilet"
+        }
+      },
+      "compare": "le",
+      "limit": {
+        "value": 6.0,
+        "unit": "persons"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.1.0"
+    },
+    {
+      "id": "es-trin/15.03(1)(b)/washbasins",
+      "title": "One washbasin per four crew members at least (the text also allows one per accommodation unit; every berth is counted as a person served)",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "15.03(1)(b)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 15, p. 105",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.persons_per_fixture",
+        "args": {
+          "fixture": "washbasin"
+        }
+      },
+      "compare": "le",
+      "limit": {
+        "value": 4.0,
+        "unit": "persons"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.1.0"
+    },
+    {
+      "id": "es-trin/15.03(1)(c)/showers",
+      "title": "One shower or bath per six crew members at least (the text also allows one per accommodation unit; every berth is counted as a person served)",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "15.03(1)(c)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 15, p. 105",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.persons_per_fixture",
+        "args": {
+          "fixture": "shower"
+        }
+      },
+      "compare": "le",
+      "limit": {
+        "value": 6.0,
+        "unit": "persons"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.1.0"
+    },
+    {
+      "id": "es-trin/15.03(3)/toilet-floor",
+      "title": "Floor space of a toilet compartment at least 1 m2 (the width and length minimums of the paragraph are not checked)",
+      "origin": "regulation",
+      "source": {
+        "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
+        "edition": "Edition 2025/1",
+        "locator": "15.03(3)",
+        "page": "ES_TRIN_2025_signed_en.pdf, Chapter 15, p. 105",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.toilet_area_m2"
+      },
+      "compare": "ge",
+      "limit": {
+        "value": 1.0,
+        "unit": "m2"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "2.1.0"
+    }
+  ]
+}
