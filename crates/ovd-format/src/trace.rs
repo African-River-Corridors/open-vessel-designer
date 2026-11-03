@@ -779,6 +779,13 @@ fn row_json(r: &TraceRow) -> Value {
     })
 }
 
+/// The two IGC 2.4.1.2 rows that size the tank clearance on a stack with `igc-tank-clearance` and no `igc-2g`.
+const IGC_CLEARANCE_RULES: [&str; 2] =
+    ["igc/2.4.1.2/side-clearance", "igc/2.4.1.2/bottom-clearance"];
+
+/// What the trace says of those rows (issue #850).
+pub const IGC_CLEARANCE_NOTE: &str = "This IGC 2.4.1.2 row sizes the tank on this Option, because ADN 9.3.1.11.2 (a) gives no distance from the tank to the hull";
+
 /// The trace as JSON: the selected sets, every row, and the verdict. A pass with blocking Rules
 /// not evaluated names them; nothing here says "meets every rule" while one is not evaluated.
 pub fn trace_json(t: &Trace, service_area: &str, warnings: &[String]) -> Value {
@@ -815,12 +822,28 @@ pub fn trace_json(t: &Trace, service_area: &str, warnings: &[String]) -> Value {
         "Service Area {service_area}; Rule Sets {}; {not_checked}. {summary}",
         t.sets.join(", ")
     );
+    let mut rows: Vec<Value> = t.rows.iter().map(row_json).collect();
+    // Issue #850: on a stack that holds the two IGC 2.4.1.2 rows through `igc-tank-clearance` and not the
+    // IGC Code (`igc-2g`), they size the tank because the design Rule Set (ADN 9.3.1.11.2 (a)) gives no
+    // distance from the tank to the hull.
+    let has = |id: &str| t.sets.iter().any(|s| s.split('@').next() == Some(id));
+    if has("igc-tank-clearance") && !has("igc-2g") {
+        for row in rows.iter_mut() {
+            if row["rule"]
+                .as_str()
+                .is_some_and(|r| IGC_CLEARANCE_RULES.contains(&r))
+                && let Some(o) = row.as_object_mut()
+            {
+                o.insert("note".to_string(), json!(IGC_CLEARANCE_NOTE));
+            }
+        }
+    }
     json!({
         "scope": scope,
         "rule_sets": t.sets,
         "service_area": service_area,
         "warnings": warnings,
-        "rows": t.rows.iter().map(row_json).collect::<Vec<_>>(),
+        "rows": rows,
         "verdict": {
             "passes": t.passes(),
             "failing_rows": failing,

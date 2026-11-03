@@ -121,6 +121,12 @@ const BUILT_IN: &[(&str, &str)] = &[
         "rules/lr-inland-gas/2.0.0.json",
         include_str!("../rules/lr-inland-gas/2.0.0.json"),
     ),
+    // Issue #850: the IGC 2.4.1.2 side and bottom distance rows, for a gas Option that takes ADN 9.3.1 in
+    // place of the IGC Code (the river-only stack, in a later change), beside `adn-gas`.
+    (
+        "rules/igc-tank-clearance/1.0.0.json",
+        include_str!("../rules/igc-tank-clearance/1.0.0.json"),
+    ),
     // Spec 0011 D13 (issue #778): the manning Rule Sets the crew model runs on.
     (
         "rules/liberia-man-001/1.0.0.json",
