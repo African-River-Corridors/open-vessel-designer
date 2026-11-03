@@ -188,7 +188,7 @@ describe("OVD app smoke tests", () => {
   const HULL_TABS = { side: "Side elevation", plan: "Plan", midship: "Cross-section" };
   // The views, by top tab. Every view is checked for scrolling and photographed.
   const GROUPS = [
-    ["Drawings", ["Side elevation", "Plan", "Cross-section", "3D"]],
+    ["Drawings", ["Side elevation", "Plan", "Cross-section", "3D", "Stern & crew"]],
     ["Stability & Propulsion", ["Intact stability", "Ballast tanks", "Damage stability", "Power and speed curves", "Rule check calculations"]],
     ["BOQ & Finance", ["BOQ", "Capital budget"]],
   ];
@@ -282,6 +282,39 @@ describe("OVD app smoke tests", () => {
     assert.equal(circles, 1, "one tank across");
   });
 
+  it("shows the Stern & crew view of a container-block Option and of a deckhouse Option, with their figures", async () => {
+    const EXAMPLES = path.resolve(here, "../../examples/gas-140x29-coastal-lng");
+    const figure = async (row) => (await browser.$(`[data-testid=stern-crew] [data-row=${row}] [data-cell=value]`)).getText();
+    await open(path.join(EXAMPLES, "gas-140x29-coastal-lng.vdesign"), "gas-140x29-coastal-lng.vdesign");
+    await show("Drawings", "Stern & crew");
+    await until("the stern view", async () => (await browser.$("[data-testid=stern-crew]")).isExisting());
+    assert.equal(await figure("style"), "Container block");
+    assert.equal((await browser.$$("[data-testid=stern-outfit-warning]")).length, 0, "no outfit warning on a container block");
+    assert.match(await figure("rule-set"), /liberia-man-001/);
+    for (const row of ["crew", "minimum", "berths"]) assert.match(await figure(row), /^\d+$/, row);
+    assert.ok((await browser.$$("[data-testid=stern-drawing-later]")).length === 1);
+    assert.equal((await browser.$$("[data-testid=stern-crew] svg")).length, 0, "no drawing until #783");
+    await browser.pause(300);
+    assert.ok((await overflow()) <= 0, "the stern view of a container block scrolls");
+    await open(path.resolve(here, "fixtures/gas_deckhouse_self_propelled.vdesign"), "gas_deckhouse_self_propelled.vdesign");
+    await show("Drawings", "Stern & crew");
+    await until("the deckhouse view", async () => (await browser.$$("[data-testid=stern-outfit-warning]")).length === 1);
+    // The warning is the engine's, found by its Message Id in the run: the view has no text of its own for it.
+    const warning = await browser.$("[data-testid=stern-outfit-warning]");
+    assert.equal(await warning.getAttribute("data-warning-id"), "warn-aft-deckhouse-no-outfit");
+    assert.match(await warning.getText(), /no outfit mass/);
+    assert.equal(await figure("style"), "Deckhouse");
+    assert.match(await figure("rule-set"), /liberia-man-001/);
+    for (const row of ["crew", "minimum", "berths"]) assert.match(await figure(row), /^\d+$/, `${row} of the deckhouse Option`);
+    assert.match(await figure("tiers"), /^\d+$/);
+    assert.match(await figure("wheelhouse"), /^(Fixed|Elevating)/);
+    assert.match(await figure("vent-deck"), /\d/);
+    assert.ok((await browser.$$("[data-row=fuel-item]")).length > 0, "the gas fuel system items");
+    assert.ok((await browser.$$("[data-testid=stern-rooms] [data-row=room]")).length > 0, "the rooms table");
+    await browser.pause(300);
+    assert.ok((await overflow()) <= 0, "the stern view of a deckhouse scrolls");
+  });
+
   it("shows two levels of tabs, with no jump list, and plain placeholders for later views", async () => {
     await open(path.join(FIXTURES, "dry_bulk_box_hold.vdesign"), "dry_bulk_box_hold.vdesign");
     assert.equal((await browser.$$('select[aria-label="Jump to view"]')).length, 0, "the jump list is gone");
@@ -331,7 +364,8 @@ describe("OVD app smoke tests", () => {
           for (const [group, views] of GROUPS) {
             for (const view of views) {
               await show(group, view);
-              if (group === "Drawings" && view !== "3D") await until(`the ${view} drawing`, async () => (await browser.$$("[data-testid^=slot-] svg")).length === 1);
+              // 3D and Stern & crew have no SVG until the deckhouse drawing joins (#783).
+              if (group === "Drawings" && view !== "3D" && view !== "Stern & crew") await until(`the ${view} drawing`, async () => (await browser.$$("[data-testid^=slot-] svg")).length === 1);
               await browser.pause(300);
               assert.ok((await overflow()) <= 0, `${view} scrolls (${cargo}, panels ${hidden ? "hidden" : "shown"})`);
               // The panels-shown views are in the 248 set; keep one panels-hidden shot per tab group.
@@ -923,7 +957,8 @@ describe("OVD app smoke tests", () => {
           for (const [group, views] of GROUPS) {
             for (const view of views) {
               await show(group, view);
-              if (group === "Drawings" && view !== "3D") await until(`the ${view} drawing`, async () => (await browser.$$("[data-testid^=slot-] svg")).length === 1);
+              // 3D and Stern & crew have no SVG until the deckhouse drawing joins (#783).
+              if (group === "Drawings" && view !== "3D" && view !== "Stern & crew") await until(`the ${view} drawing`, async () => (await browser.$$("[data-testid^=slot-] svg")).length === 1);
               if (view === "Power and speed curves") await until("the chart", async () => (await charts()).length >= 1);
               if (view === "Intact stability" && cargo === "gas") await until("the GZ chart", async () => (await browser.$$("[data-testid=stability-chart] canvas")).length >= 1);
               await settle();

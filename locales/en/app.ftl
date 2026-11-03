@@ -143,6 +143,7 @@ app-view-ballast = Ballast tanks
 app-view-damage = Damage stability
 app-view-convoy = Convoy totals
 app-view-3d = 3D
+app-view-stern = Stern & crew
 app-view-speed-power = Power and speed curves
 app-view-rules = Rule check calculations
 app-group-boq-finance = BOQ & Finance
@@ -320,6 +321,53 @@ app-stab-criteria-of = { $condition }: criteria
 app-stab-needs-at-least = needs at least
 app-stab-limitations = Limitations
 app-stab-limit-downflooding = The 0–40° and 30–40° areas run to 40° unless you type an angle of down-flooding below 40° (the input Angle of down-flooding). IS Code 2008 Part A 2.2.1 stops them at that angle when it is less than 40°. List the deck openings (the input Openings for down-flooding) and the model works the angle out for each loading condition. With neither typed nor listed, a hull whose openings immerse sooner can pass when it should fail (findings #282, #592).
+
+## Stern and crew view
+
+app-stern-none = This Option has no stern block of its own.
+app-stern-arrangement = Stern arrangement
+app-stern-style = Arrangement style
+app-stern-style-container_block = Container block
+app-stern-style-deckhouse = Deckhouse
+app-stern-tiers = Deckhouse tiers
+app-stern-wheelhouse = Wheelhouse
+app-stern-wheelhouse-fixed = Fixed
+app-stern-wheelhouse-elevating = Elevating
+app-stern-wheelhouse-why-fixed_input = the Wheelhouse type input is fixed
+app-stern-wheelhouse-why-lift_input = the wheelhouse can lift
+app-stern-wheelhouse-why-no_lift = the maximum lift is zero, so it cannot lift
+app-stern-wheelhouse-why-air_draft_limit = an air-draft limit is set
+app-stern-wheelhouse-why-no_air_draft_limit = no air-draft limit is set
+app-stern-crew = Crew
+app-stern-crew-none = The run has no crew for this Option: it needs an installed power.
+app-stern-rule-set = Manning Rule Set
+app-stern-crew-count = Crew carried
+app-stern-minimum = Minimum crew
+app-stern-berths = Berths
+app-stern-cross-check = Cross-check
+app-stern-cross-officers = { $other } officers against { $own }
+app-stern-flagged = flagged
+app-stern-not-flagged = not flagged
+app-stern-gas = Gas vent and fuel system
+app-stern-vent-deck = Vent mast exit above the deck
+app-stern-vent-keel = Vent mast exit above the keel
+app-stern-vent-accommodation = Vent mast to the accommodation
+app-stern-vent-openings = Vent mast to the nearest opening
+app-stern-vent-target = Distance wanted
+app-stern-met = met
+app-stern-not-met = not met
+app-stern-fuel-item = Gas fuel system item
+app-stern-fuel-mass = Mass
+app-stern-rooms = Rooms
+app-stern-rooms-none = Rooms are sized for a deckhouse stern only. A container block holds its accommodation in units.
+app-stern-room = Room
+app-stern-room-count = Count
+app-stern-room-each = Each
+app-stern-room-area = Area
+app-stern-room-clause = Clause
+app-stern-rooms-total = Total
+app-stern-rooms-unsettled = The berths of the rooms differ from the berths of the crew block above.
+app-stern-drawing-later = The deckhouse drawing joins this view with #783. Until then it shows no drawing.
 
 ## Capital budget view
 

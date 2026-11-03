@@ -251,3 +251,114 @@ fn a_coastal_file_saved_before_keeps_the_container_block_and_its_hashes() {
         assert_eq!(status, &ovd_format::HashStatus::Matches, "{option}");
     }
 }
+
+// Issue #887: the `stern_arrangement` summary for the Stern & crew view. It is outside the hash, and
+// each figure is checked against the inputs typed here and the drawing block, not against itself.
+const BIG: fn() -> Value =
+    || json!({ "length_overall_m": 140.0, "beam_m": 29.0, "moulded_depth_m": 9.0 });
+
+fn with(extra: Value) -> Value {
+    let mut v = BIG();
+    for (k, x) in extra.as_object().unwrap() {
+        v[k] = x.clone();
+    }
+    v
+}
+
+#[test]
+fn the_stern_arrangement_block_is_outside_the_hash() {
+    assert!(ovd_format::UNHASHED_KEYS.contains(&"stern_arrangement"));
+    let r = results_of(&hand(Some("coastal-and-river"), BIG()));
+    let mut without = r.clone();
+    without.as_object_mut().unwrap().remove("stern_arrangement");
+    assert_eq!(results_hash(&without), results_hash(&r));
+}
+
+#[test]
+fn a_deckhouse_wheelhouse_is_elevating_only_with_an_air_draft_limit_and_a_lift() {
+    let area = Some("coastal-and-river");
+    // No limit: fixed, and the reason says no limit is set.
+    let r = results_of(&hand(area, BIG()));
+    let s = &r["stern_arrangement"];
+    assert_eq!(s["style"], "deckhouse");
+    assert_eq!(
+        s["tiers"],
+        r["drawing"]["aft_arrangement"]["deckhouse"]["tiers"]
+    );
+    assert_eq!(
+        (s["wheelhouse"].clone(), s["wheelhouse_basis"].clone()),
+        (json!("fixed"), json!("no_air_draft_limit"))
+    );
+    // A limit and the default lift: elevating, by the limit.
+    let r = results_of(&hand(area, with(json!({ "air_draft_limit_m": 40.0 }))));
+    let s = &r["stern_arrangement"];
+    assert_eq!(
+        (s["wheelhouse"].clone(), s["wheelhouse_basis"].clone()),
+        (json!("elevating"), json!("air_draft_limit"))
+    );
+    assert_eq!(
+        r["drawing"]["aft_arrangement"]["deckhouse"]["wheelhouse"],
+        s["wheelhouse"]
+    );
+    // A limit and a lift of zero: the limit is set, but nothing can lift, so it is fixed and not "no limit".
+    let r = results_of(&hand(
+        area,
+        with(json!({ "air_draft_limit_m": 40.0, "wheelhouse_max_lift_m": 0.0 })),
+    ));
+    let s = &r["stern_arrangement"];
+    assert_eq!(
+        (s["wheelhouse"].clone(), s["wheelhouse_basis"].clone()),
+        (json!("fixed"), json!("no_lift"))
+    );
+}
+
+#[test]
+fn a_container_block_wheelhouse_follows_the_type_and_the_lift_inputs() {
+    let area = Some("river-only");
+    let got = |extra: Value| {
+        let r = results_of(&hand(area, with(extra)));
+        let s = r["stern_arrangement"].clone();
+        assert_eq!(s["style"], "container_block");
+        assert!(s["tiers"].is_null());
+        assert!(r["drawing"]["aft_arrangement"]["deckhouse"].is_null());
+        (s["wheelhouse"].clone(), s["wheelhouse_basis"].clone())
+    };
+    assert_eq!(
+        got(json!({ "wheelhouse_type": "fixed" })),
+        (json!("fixed"), json!("fixed_input"))
+    );
+    assert_eq!(
+        got(json!({ "wheelhouse_type": "elevating" })),
+        (json!("elevating"), json!("lift_input"))
+    );
+    // Elevating by type, but a lift of zero: the engine cannot lift it, so the block says fixed.
+    assert_eq!(
+        got(json!({ "wheelhouse_type": "elevating", "wheelhouse_max_lift_m": 0.0 })),
+        (json!("fixed"), json!("no_lift"))
+    );
+}
+
+// Issue #887: the app's unit test reads `app/scripts/fixtures/deckhouse-run.json`, a real run of the
+// deckhouse design of the e2e fixtures. It must be the run the engine gives today.
+#[test]
+fn the_apps_deckhouse_run_file_is_the_run_the_engine_gives() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let text =
+        std::fs::read_to_string(root.join("app/e2e/fixtures/gas_deckhouse_self_propelled.vdesign"))
+            .unwrap();
+    let d = check(&text, &Profile::built_in()).design.unwrap();
+    // `run_design` is what `ovd run` calls; it settles the rooms and the crew, which `run_option` does not.
+    let RunOutcome::Results { results, .. } = ovd_format::run_design(&d).remove(0).outcome else {
+        panic!("the deckhouse design did not run");
+    };
+    let stored: Value = serde_json::from_str(
+        &std::fs::read_to_string(root.join("app/scripts/fixtures/deckhouse-run.json")).unwrap(),
+    )
+    .unwrap();
+    for (k, v) in stored.as_object().unwrap() {
+        assert_eq!(
+            &results[k], v,
+            "`{k}` is stale: run python3 app/scripts/fixtures/refresh_deckhouse_run.py <ovd>"
+        );
+    }
+}

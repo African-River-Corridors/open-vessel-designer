@@ -196,6 +196,7 @@ READ_BY = {
     "gross_tonnage": [],
     "crew": [],   # no chapter reads it yet; #830 maps it to A4
     "air_drafts": [],   # unhashed (#888): the app and the side elevation read it; no chapter yet
+    "stern_arrangement": [],   # the Stern & crew view reads it (#887); no chapter does yet
 }
 GA = {"ga-side": "side.png", "ga-mid": "mid.png"}   # so A.4 is built, and its deletion shows
 

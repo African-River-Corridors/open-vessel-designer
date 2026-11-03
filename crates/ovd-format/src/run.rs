@@ -361,8 +361,8 @@ pub use arc_rules::load::canonical_json;
 /// (`structure_geometry`) stay outside, like the meshes: `ovd run --json` stores them only on request
 /// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
 /// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
-/// moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results.
-pub const UNHASHED_KEYS: [&str; 18] = [
+/// moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results. The stern arrangement (`stern_arrangement`, issue #887) is a summary of what the drawing block holds, for the Stern & crew view; it too is outside the hash.
+pub const UNHASHED_KEYS: [&str; 19] = [
     "drawing",
     "stability_marks",
     "cost_masses",
@@ -381,6 +381,7 @@ pub const UNHASHED_KEYS: [&str; 18] = [
     "crew",
     "rooms",
     "air_drafts",
+    "stern_arrangement",
 ];
 
 /// SHA-256 of the canonical JSON of `results`, without the [`UNHASHED_KEYS`].
@@ -724,6 +725,8 @@ pub fn run_option_with(
                 // Issue #778 (spec 0011 4.1): the crew model, a new output outside the hash.
                 let crew_block = crew_block_of(option, library, &v, &measured);
                 let rooms_block = rooms_block_of(&measured, crew_block.as_ref());
+                // Issue #887: the stern arrangement summary for the Stern & crew view.
+                let stern_arrangement = stern_arrangement_of(option, &measured);
                 let mut rule_trace = trace_json(
                     &trace_of(&selection, option, &measured),
                     crate::trace::service_area_of(option),
@@ -773,6 +776,9 @@ pub fn run_option_with(
                             }
                         }
                         o.insert("rooms".to_string(), r);
+                    }
+                    if let Some(a) = stern_arrangement {
+                        o.insert("stern_arrangement".to_string(), a);
                     }
                     // Spec 0009, D1 (b): the Type C tank Spaces, one row each (ADR 0021). Hashed:
                     // the rows are new, and no other value moves.
@@ -952,6 +958,54 @@ fn rooms_block_of(measured: &crate::simulate::Measured, crew: Option<&Value>) ->
         "status": "estimate",
         "basis": "Spec 0011 D5, section 2: rooms sized from the crew model's berths to ES-TRIN 2025/1 Chapter 15. Areas marked estimate are required by the text but have no floor area in it: each is a stated estimate with its working. Concept and preliminary design only (ADR 0011).",
     }))
+}
+
+/// Issue #887: the `stern_arrangement` results block of a self-propelled hull: the Arrangement Style
+/// in use, the deckhouse tier count (a deckhouse only) and the wheelhouse type with the reason for
+/// it. `None` for a hull with no stern block. Outside the results hash.
+fn stern_arrangement_of(
+    option: &DesignOption,
+    measured: &crate::simulate::Measured,
+) -> Option<Value> {
+    let vessel = measured.vessel.as_ref()?;
+    let aft = vessel.result.aft_arrangement.as_ref()?;
+    // The effective inputs the engine ran with: the lift (zeroed by a fixed container-block
+    // wheelhouse, and by a deckhouse with no air-draft limit) and the limit.
+    let lift = vessel
+        .capacity
+        .aft
+        .as_ref()
+        .map_or(vessel.capacity.aft_design.wheelhouse_max_lift_m, |a| {
+            a.wheelhouse_max_lift_m
+        });
+    let limit_set = vessel.capacity.air_draft_limit_m.is_some();
+    Some(match &aft.deckhouse {
+        // D4: fixed on the deckhouse, unless an air-draft limit is set and the wheelhouse can lift.
+        Some(d) => json!({
+            "style": "deckhouse",
+            "tiers": d.tiers,
+            "wheelhouse": if d.wheelhouse_elevating { "elevating" } else { "fixed" },
+            "wheelhouse_basis": if d.wheelhouse_elevating {
+                "air_draft_limit"
+            } else if limit_set && lift <= 0.0 {
+                "no_lift"
+            } else {
+                "no_air_draft_limit"
+            },
+        }),
+        None => json!({
+            "style": "container_block",
+            "tiers": Value::Null,
+            "wheelhouse": if lift > 0.0 { "elevating" } else { "fixed" },
+            "wheelhouse_basis": if lift > 0.0 {
+                "lift_input"
+            } else if option.input("wheelhouse_type").and_then(|i| i.value.as_str()) == Some("fixed") {
+                "fixed_input"
+            } else {
+                "no_lift"
+            },
+        }),
+    })
 }
 
 /// The `gross_tonnage` results block (issue #777): V by its parts, K1, the computed GT, the typed

@@ -443,6 +443,10 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
     // And the gross tonnage (issue #777), outside the results hash.
     assert!(results["gross_tonnage"].is_object());
     results.as_object_mut().unwrap().remove("gross_tonnage");
+    // And the stern arrangement summary (issue #887), outside the results hash: `run` reads it from the
+    // run's own inputs and the stern block; the plain `simulate` call does not answer it.
+    assert_eq!(results["stern_arrangement"]["style"], "container_block");
+    results.as_object_mut().unwrap().remove("stern_arrangement");
     // And the tank Spaces table (issue #687), inside the results hash: one row per Type C tank.
     let spaces = results.as_object_mut().unwrap().remove("spaces").unwrap();
     assert!(spaces.as_array().is_some_and(|rows| !rows.is_empty()));

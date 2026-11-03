@@ -1,0 +1,922 @@
+{
+ "crew": {
+  "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. The deckhouse rooms read the berths (issue #780).",
+  "below_minimum": false,
+  "berths": 19,
+  "cook": 1,
+  "crew": 17,
+  "cross_check": {
+   "basis": "officers only (MSN 1868 gives no ratings); trading area unlimited, the cautious reading, as the UK's near-coastal limit (150 nm from a UK haven) is a national meaning the Service Area cannot show; a difference over one person is flagged (spec 0011 4.1 step 10)",
+   "difference": 1,
+   "flagged": false,
+   "liberia_officers": 6,
+   "rule_set": {
+    "basis": "a draft Rule Set: no second reader has verified it",
+    "hash": "5bae3778bf5b365113976d597e23f36721c0493e764a754f3d3b46dee26b1efb",
+    "id": "uk-msn-1868",
+    "status": "draft",
+    "version": "1.0.0"
+   },
+   "trading_area": "unlimited",
+   "uk_deck_officers": 4,
+   "uk_engineer_officers": 3,
+   "uk_officers": 7
+  },
+  "deck_officers": 4,
+  "engineers": 2,
+  "inputs": {
+   "gas_cargo": true,
+   "genset_kw": 2400.0,
+   "gross_tonnage": 13919.948489038023,
+   "gross_tonnage_source": "computed",
+   "length_m": 140.0,
+   "navigation_hours_per_day": 24.0,
+   "power_basis": "the total genset rating (the higher band, spec 0011 D14)",
+   "power_kw": 2400.0,
+   "propulsion_kw": 1756.4760446429061,
+   "service_area": "coastal-and-river",
+   "unmanned_machinery_space": true
+  },
+  "manning_scale": {
+   "column": "c6",
+   "exact": false,
+   "gt_band": 4,
+   "hole": "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook",
+   "kw_band": 1,
+   "other_neighbour_column": "c9",
+   "other_neighbour_total": 12,
+   "table_total": 13,
+   "unattended_machinery": true
+  },
+  "minimum": 14,
+  "notes": [
+   "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
+  ],
+  "owner_margin": [
+   {
+    "count": 1,
+    "role": "cargo-engineer"
+   },
+   {
+    "count": 1,
+    "role": "steward"
+   },
+   {
+    "count": 1,
+    "role": "electro-technical-officer"
+   }
+  ],
+  "planning_high": 17,
+  "planning_low": 15,
+  "ratings": 7,
+  "regime": "seagoing",
+  "roles": [
+   {
+    "count": 1,
+    "role": "master"
+   },
+   {
+    "count": 1,
+    "role": "chief-mate"
+   },
+   {
+    "count": 2,
+    "role": "oow"
+   },
+   {
+    "count": 3,
+    "role": "ab-deck"
+   },
+   {
+    "count": 2,
+    "role": "rating-nav"
+   },
+   {
+    "count": 1,
+    "role": "chief-engineer"
+   },
+   {
+    "count": 1,
+    "role": "second-engineer"
+   },
+   {
+    "count": 1,
+    "role": "ab-engine"
+   },
+   {
+    "count": 1,
+    "role": "rating-engine"
+   }
+  ],
+  "rule_set": {
+   "basis": "a draft Rule Set: no second reader has verified it",
+   "hash": "dd6d5621017e1ec4dd93f82381b5543e090e46eea4668a6a38db1cf7f5b5c2c1",
+   "id": "liberia-man-001",
+   "status": "draft",
+   "version": "1.0.0"
+  },
+  "source": "computed",
+  "spare_berths": 2,
+  "status": "estimate",
+  "typed_crew": null,
+  "watches": {
+   "basis": "more than 12 navigation hours in 24: three watchkeepers (STCW A-VIII/1 rest, an estimate); the master keeps no regular watch above 3,000 GT (MAN-001 3.2.1)",
+   "deck_officers_needed": 4,
+   "master_watch_free": true,
+   "watchkeepers": 3
+  }
+ },
+ "results": {
+  "air_draft_light_m": 21.531443877079777,
+  "air_draft_loaded_m": 19.13479939909294,
+  "cargo_t": 8070.899599838365,
+  "cargo_volume_bound_t": 8070.899599838365,
+  "cargo_volume_m3": 17935.332444085256,
+  "cargo_weight_bound_t": 33137.55169223627,
+  "deadweight_t": 8106.274425039019,
+  "displacement_t": 13481.194277518194,
+  "draught_m": 4.0652006009070565,
+  "draught_max_m": 10.6,
+  "freeboard_m": 7.9347993990929435,
+  "governs": "tank volume",
+  "h_over_T": null,
+  "light_draught_m": 1.6685561229202217,
+  "lightship_t": 5374.919852479175,
+  "vent_distance_to_accommodation_m": 104.96799999999999,
+  "vent_distance_to_openings_m": 104.96799999999999,
+  "vent_exit_above_deck_m": 9.666666666666666,
+  "vent_exit_above_keel_m": 21.666666666666664,
+  "vent_exit_above_working_area_m": 6.563333333333331,
+  "vent_exit_governed_by": "deck",
+  "vent_mast_distance_met": true,
+  "vent_mast_distance_target_m": 25.0,
+  "vent_mast_lowerable": false,
+  "vent_mast_notes": [
+   "IGC 8.2.10.4: the working area is the top of the weather shield, or the tank top where the hull has no shield; the top of the tank domes is not counted as a working area.",
+   "IGC 8.2.11.1: the smaller distances it allows for ships under 90 m in length are not used."
+  ],
+  "vent_mast_x_m": 120.8,
+  "vent_working_area": "weather_shield",
+  "vent_working_area_top_m": 15.103333333333333
+ },
+ "rooms": {
+  "basis": "Spec 0011 D5, section 2: rooms sized from the crew model's berths to ES-TRIN 2025/1 Chapter 15. Areas marked estimate are required by the text but have no floor area in it: each is a stated estimate with its working. Concept and preliminary design only (ADR 0011).",
+  "berths": 19,
+  "mlc_applied": false,
+  "required_area_basis": "the larger of the ES-TRIN 2025/1 Chapter 15 rooms of the crew's berths and the interim floor of the 40 ft accommodation units; MLC 2006 A3.1 applies to this Service Area and is not applied (text not in the rule sources) (issue #780)",
+  "required_area_m2": 138.09,
+  "rows": [
+   {
+    "area_each_m2": 3.5,
+    "area_m2": 66.5,
+    "basis": "derived",
+    "clause": "ES-TRIN 2025/1 15.02(9), 15.02(10), 15.02(6), 15.07(1)",
+    "count": 19,
+    "id": "cabin",
+    "name": "Sleeping cabin (one berth)",
+    "note": "The largest of 7 m3 / 2.00 m headroom, 5 m3 of air / 2.00 m, and the 2.00 x 0.90 m berth. Furniture volume is not added. One cabin per crew member in every mode: OVD's own cautious rule (15.02(10) allows two to a cabin). Context: CCNR RPN, state 1 January 2026 (English unofficial translation), 18.02(4) is a derogation from (1) and (2), modes A1 and A2, allowing rest underway in a room assigned to one crew member only; it names no mode B and is not the source of this rule."
+   },
+   {
+    "area_each_m2": 38.0,
+    "area_m2": 38.0,
+    "basis": "derived",
+    "clause": "ES-TRIN 2025/1 15.02(8), 15.02(7), 15.04(3)",
+    "count": 1,
+    "id": "communal",
+    "name": "Communal living room and mess",
+    "note": "2 m2 per person, and 8 m2 in all, of free floor not counting furniture (15.02(8)), so a lower bound: furniture is not added, so the room is larger. One sitting; partitioned from the cabins (15.02(7))."
+   },
+   {
+    "area_each_m2": 1.0,
+    "area_m2": 4.0,
+    "basis": "sourced",
+    "clause": "ES-TRIN 2025/1 15.03(1)(a), 15.03(3)",
+    "count": 4,
+    "id": "toilet",
+    "name": "Toilet compartment",
+    "note": "One per six crew, 1 m2 each."
+   },
+   {
+    "area_each_m2": 0.5,
+    "area_m2": 2.5,
+    "basis": "estimate",
+    "clause": "ES-TRIN 2025/1 15.03(1)(b)",
+    "count": 5,
+    "id": "washbasin",
+    "name": "Washbasin",
+    "note": "One per four crew. ESTIMATE: the text gives no floor area; 0.60 x 0.80 m of basin and standing room, rounded to 0.5 m2."
+   },
+   {
+    "area_each_m2": 0.81,
+    "area_m2": 3.24,
+    "basis": "estimate",
+    "clause": "ES-TRIN 2025/1 15.03(1)(c)",
+    "count": 4,
+    "id": "shower",
+    "name": "Shower or bath",
+    "note": "One per six crew. ESTIMATE: the text gives no floor area; a 0.90 x 0.90 m cubicle."
+   },
+   {
+    "area_each_m2": 10.5,
+    "area_m2": 10.5,
+    "basis": "derived",
+    "clause": "ES-TRIN 2025/1 15.02(11)(a), 15.02(4)",
+    "count": 1,
+    "id": "corridor",
+    "name": "Corridor",
+    "note": "0.60 m wide (the clear width of a door) along cabins on both sides: two cabins per bay, each cabin front 1.75 m (the cabin floor over the 2.00 m berth length)."
+   },
+   {
+    "area_each_m2": 5.0,
+    "area_m2": 5.0,
+    "basis": "estimate",
+    "clause": "ES-TRIN 2025/1 15.04(2)",
+    "count": 1,
+    "id": "galley",
+    "name": "Galley",
+    "note": "A cooker, sink, water, refrigerator, storage and working space. ESTIMATE: the text gives no floor area; a 2.4 m run of units 0.60 m deep with a 1.0 m aisle (3.84 m2) and 1.2 m2 of stores, rounded to 5.0 m2."
+   },
+   {
+    "area_each_m2": 6.75,
+    "area_m2": 6.75,
+    "basis": "estimate",
+    "clause": "ES-TRIN 2025/1 15.07(2)",
+    "count": 1,
+    "id": "work_clothes",
+    "name": "Work-clothes store and drying room",
+    "note": "Required, not in the sleeping quarters. ESTIMATE: the text gives no floor area; 2.0 m2 for hanging and drying and 0.25 m2 a berth for the lockers of 15.07(1)."
+   },
+   {
+    "area_each_m2": 1.6,
+    "area_m2": 1.6,
+    "basis": "estimate",
+    "clause": "ES-TRIN 2025/1 15.02(12)",
+    "count": 1,
+    "id": "stairs",
+    "name": "Stairways between tiers",
+    "note": "At least 0.60 m wide, tread 0.15 m. ESTIMATE: no floor area is given; 13 risers of 0.20 m at a 0.15 m tread is a 1.95 m run plus a 0.60 m landing, 0.60 x 2.55 m, rounded to 1.6 m2. One stairway (to the wheelhouse); a further one for each tier above the first is not counted, as the rooms do not know the tier count."
+   }
+  ],
+  "rule": "es-trin-2025-ch15 (MLC 2006 A3.1 not applied)",
+  "rule_note": "The Service Area reaches sea, so MLC 2006 Standard A3.1 applies; its text is not in the rule sources, so it is NOT applied. The rooms are sized to ES-TRIN 2025/1 Chapter 15, and the deckhouse keeps the interim floor as its lower bound.",
+  "settled": true,
+  "status": "estimate",
+  "tier_area_m2": 488.5968,
+  "tiers": 3,
+  "total_m2": 138.09
+ },
+ "stern_arrangement": {
+  "style": "deckhouse",
+  "tiers": 3,
+  "wheelhouse": "fixed",
+  "wheelhouse_basis": "no_air_draft_limit"
+ },
+ "stern_block_mass": {
+  "deckhouse_steel": {
+   "outfit": "not in the mass: no outfit rate was found in a source read (spec 0011 D7); the calibration set (D11) gives one",
+   "rate_basis": "Schneekluth and Bertram, Ship Design for Efficiency and Economy, sec. 5, Table 5.2, p. 164: deckhouse coefficient C_DH, layer I, Fo/Fu = 1.0, taken for every tier and for the wheelhouse too, so the upper tiers and the wheelhouse are over-stated (edition not shown on the pages read)",
+   "rate_status": "unverified estimate",
+   "rate_t_per_m3": 0.057
+  },
+  "gas_fuel_system": {
+   "gas_combustion_unit": false,
+   "items": [
+    {
+     "basis": "estimate: 0.4 t per gas engine, the reserve set included; no source read",
+     "label": "gas valve units",
+     "mass_t": 0.8,
+     "status": "estimate"
+    },
+    {
+     "basis": "estimate: 0.2 kg per kWe of the gas gensets; no source read",
+     "label": "gas heater",
+     "mass_t": 0.48000000000000004,
+     "status": "estimate"
+    },
+    {
+     "basis": "estimate: 0.6 kg per kWe of the gas gensets; no source read",
+     "label": "gas compressor",
+     "mass_t": 1.44,
+     "status": "estimate"
+    }
+   ],
+   "reliquefaction": "not modelled",
+   "served_kwe": 2400.0,
+   "total_t": 2.7199999999999998
+  },
+  "items": [
+   {
+    "kcg_m": 15.9,
+    "label": "deckhouse steel",
+    "lcg_m": 8.916,
+    "mass_t": 217.23013727999998
+   },
+   {
+    "kcg_m": 21.5,
+    "label": "wheelhouse steel",
+    "lcg_m": 16.032,
+    "mass_t": 4.465152
+   },
+   {
+    "kcg_m": 2.5493333333333332,
+    "label": "gensets",
+    "lcg_m": 11.616,
+    "mass_t": 40.239999999999995
+   },
+   {
+    "kcg_m": 1.6033333333333333,
+    "label": "gas valve units",
+    "lcg_m": 16.832,
+    "mass_t": 0.8
+   },
+   {
+    "kcg_m": 1.6033333333333333,
+    "label": "gas heater",
+    "lcg_m": 16.832,
+    "mass_t": 0.48000000000000004
+   },
+   {
+    "kcg_m": 1.6033333333333333,
+    "label": "gas compressor",
+    "lcg_m": 16.832,
+    "mass_t": 1.44
+   },
+   {
+    "kcg_m": 4.2,
+    "label": "propulsors",
+    "lcg_m": 4.949999999999999,
+    "mass_t": 222.26400000000004
+   },
+   {
+    "kcg_m": 11.0,
+    "label": "switchboards",
+    "lcg_m": 3.6999999999999997,
+    "mass_t": 2.1955950558036323
+   },
+   {
+    "kcg_m": 11.0,
+    "label": "frequency converters",
+    "lcg_m": 3.6999999999999997,
+    "mass_t": 5.291190111607265
+   },
+   {
+    "kcg_m": 2.1,
+    "label": "electric motors",
+    "lcg_m": 4.949999999999999,
+    "mass_t": 10.538856267857437
+   },
+   {
+    "kcg_m": 1.0,
+    "label": "bow thruster",
+    "lcg_m": 120.8,
+    "mass_t": 25.563384000000003
+   },
+   {
+    "kcg_m": 1.1033333333333333,
+    "label": "small items",
+    "lcg_m": 8.916,
+    "mass_t": 1.7564760446429062
+   },
+   {
+    "kcg_m": 1.1033333333333333,
+    "label": "piping and cabling",
+    "lcg_m": 8.916,
+    "mass_t": 7.391190111607266
+   },
+   {
+    "kcg_m": 6.551666666666667,
+    "label": "engine-room steel",
+    "lcg_m": 11.616,
+    "mass_t": 151.87878608000003
+   },
+   {
+    "kcg_m": 1.1033333333333333,
+    "label": "engine seats",
+    "lcg_m": 11.616,
+    "mass_t": 3.2
+   }
+  ],
+  "machinery_steel": {
+   "engine_room_rate_basis": "Schneekluth and Bertram, Ship Design for Efficiency and Economy, sec. 5, Table 5.2, p. 164: deckhouse coefficient C_DH, layer I, Fo/Fu = 1.0, taken for the engine room (edition not shown on the pages read)",
+   "engine_room_rate_status": "unverified estimate",
+   "engine_room_rate_t_per_m3": 0.057,
+   "engine_room_steel_t": 151.87878608000003,
+   "engine_room_volume_m3": 2664.5401066666673,
+   "prime_movers": {
+    "count": 2,
+    "kw_each": 1200.0,
+    "rpm": 1000.0,
+    "rpm_status": "maker table"
+   },
+   "seats_basis": "Schneekluth and Bertram, sec. 5.1, p. 158: W = 27 P_B / ((n + 250) (15 + P_B / 1000)) t per engine",
+   "seats_t": 3.2,
+   "watson_cross_check": {
+    "in_lightship": false,
+    "mcr_kw": 2400.0,
+    "method": "Watson diesel-electric machinery total, 0.72 MCR^0.78 t (secondary: lecture notes citing Watson 1998)",
+    "ovd_machinery_t": 318.44069159151854,
+    "watson_total_t": 311.8151878817379
+   }
+  },
+  "total_t": 694.7347669515186
+ },
+ "text_ids": {
+  "0 x 40 ft units beside a 6.40 m wheelhouse need 8.20 m of 29.00 m beam; they go in a row aft of the cab instead, which lengthens the block": {
+   "args": {
+    "beam": {
+     "num": "29.00",
+     "value": 29.0
+    },
+    "needed": {
+     "num": "8.20",
+     "value": 8.200000000000001
+    },
+    "units": 0,
+    "wheelhouse": {
+     "num": "6.40",
+     "value": 6.4
+    }
+   },
+   "id": "check-accom-beside-wheelhouse-rows"
+  },
+  "2 of 2 requested thrusters fit; 2 would need 13.14 m of 29.00 m beam": {
+   "args": {
+    "beam": {
+     "num": "29.00",
+     "value": 29.0
+    },
+    "fit": 2,
+    "needed": {
+     "num": "13.14",
+     "value": 13.14
+    },
+    "requested": 2
+   },
+   "id": "check-requested-thruster-count-fits"
+  },
+  "2 x 1.90 m gensets abreast need 6.80 m across a 29.00 m beam": {
+   "args": {
+    "beam": {
+     "num": "29.00",
+     "value": 29.0
+    },
+    "count": 2,
+    "needed": {
+     "num": "6.80",
+     "value": 6.8
+    },
+    "width": {
+     "num": "1.90",
+     "value": 1.9
+    }
+   },
+   "id": "check-gensets-fit-beam"
+  },
+  "2 x 5.67 m thrusters need 13.14 m across a 29.00 m beam": {
+   "args": {
+    "beam": {
+     "num": "29.00",
+     "value": 29.0
+    },
+    "count": 2,
+    "envelope": {
+     "num": "5.67",
+     "value": 5.670000000000001
+    },
+    "needed": {
+     "num": "13.14",
+     "value": 13.14
+    }
+   },
+   "id": "check-thrusters-fit-beam"
+  },
+  "3 tier(s) of 488.6 m2 hold the 138.1 m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over 4 tiers is a tall house over a short machinery space (ESTIMATE limit)": {
+   "args": {
+    "max": 4,
+    "required": {
+     "num": "138.1",
+     "value": 138.09
+    },
+    "tier_area": {
+     "num": "488.6",
+     "value": 488.5968
+    },
+    "tiers": 3
+   },
+   "id": "check-deckhouse-tier-count"
+  },
+  "Angle of max GZ": {
+   "args": {},
+   "id": "name-criterion-angle-of-max-gz"
+  },
+  "Area 0\u201330\u00b0": {
+   "args": {},
+   "id": "name-criterion-area-0-30"
+  },
+  "Area 0\u201340\u00b0": {
+   "args": {},
+   "id": "name-criterion-area-0-40"
+  },
+  "Area 30\u201340\u00b0": {
+   "args": {},
+   "id": "name-criterion-area-30-40"
+  },
+  "Ballast and consumables tanks are moulded volumes with no structure deduction; one tank per side and kind, and the consumables tank height is an estimate.": {
+   "args": {},
+   "id": "stab-limit-moulded-tanks"
+  },
+  "Cargo > 0": {
+   "args": {},
+   "id": "name-check-cargo"
+  },
+  "Concept-stage: the hull's sections, first-order weight heights, no downflooding openings.": {
+   "args": {},
+   "id": "stab-limit-concept-stage"
+  },
+  "Deckhouse rooms (ES-TRIN 2025/1 Chapter 15): the galley, the work-clothes room, the washbasins, the showers and the stairway are required but the text gives no floor area, so each has a stated ESTIMATE area, marked estimate in the rooms table with its working. The cabin, communal room, toilet and corridor areas are worked from the paragraphs the table cites.": {
+   "args": {},
+   "id": "warn-aft-deckhouse-rooms-estimates"
+  },
+  "Deckhouse stern: the tier height, the side deck and the tier limit are ESTIMATES. A fixed wheelhouse is given the tiers its Blind Distance needs, to the stricter of ES-TRIN 7.02(2) and, on a coastal Option, SOLAS V/22.1.1: the first pass sizes the eye for a waterline at the keel, which is never too low and can add a tier; a second pass on the trimmed light waterline of the first keeps the lower tier count only if the sightline still passes.": {
+   "args": {},
+   "id": "warn-aft-deckhouse-estimates"
+  },
+  "Deep water": {
+   "args": {},
+   "id": "name-curve-deep-water"
+  },
+  "Feasible arrangement": {
+   "args": {},
+   "id": "name-check-feasible-arrangement"
+  },
+  "GM 13.55 m (fluid), max GZ 5.78 m at 35\u00b0": {
+   "args": {
+    "angle": {
+     "num": "35",
+     "value": 35.0
+    },
+    "gm": {
+     "num": "13.55",
+     "value": 13.549917625154439
+    },
+    "max_gz": {
+     "num": "5.78",
+     "value": 5.776214513121037
+    }
+   },
+   "id": "check-stability"
+  },
+  "GM 13.57 m (fluid), max GZ 5.77 m at 35\u00b0": {
+   "args": {
+    "angle": {
+     "num": "35",
+     "value": 35.0
+    },
+    "gm": {
+     "num": "13.57",
+     "value": 13.565513413302002
+    },
+    "max_gz": {
+     "num": "5.77",
+     "value": 5.773267563008076
+    }
+   },
+   "id": "check-stability"
+  },
+  "GM 24.04 m (fluid), max GZ 7.30 m at 35\u00b0": {
+   "args": {
+    "angle": {
+     "num": "35",
+     "value": 35.0
+    },
+    "gm": {
+     "num": "24.04",
+     "value": 24.035250003811033
+    },
+    "max_gz": {
+     "num": "7.30",
+     "value": 7.296306978205431
+    }
+   },
+   "id": "check-stability"
+  },
+  "GM 24.10 m (fluid), max GZ 7.29 m at 35\u00b0": {
+   "args": {
+    "angle": {
+     "num": "35",
+     "value": 35.0
+    },
+    "gm": {
+     "num": "24.10",
+     "value": 24.095591229421064
+    },
+    "max_gz": {
+     "num": "7.29",
+     "value": 7.291351582841164
+    }
+   },
+   "id": "check-stability"
+  },
+  "GZ at \u2265 30\u00b0": {
+   "args": {},
+   "id": "name-criterion-gz-at-30"
+  },
+  "Gas barge, IMO Type C tanks": {
+   "args": {},
+   "id": "name-vessel-gas"
+  },
+  "Gas-fuelled stern block: the genset envelopes beyond the published engine (alternator, base frame) and the engine-room and GVU-room clearances are ESTIMATES (no vendor GA). The exhaust uptake and the fuel vent mast are not in the air draft (assumed lowerable). Fuel is taken from the cargo boil-off (IGC Code chapter 16); no separate fuel tank is in the block.": {
+   "args": {},
+   "id": "warn-aft-gas-stern-estimates"
+  },
+  "Initial GM (fluid)": {
+   "args": {},
+   "id": "name-criterion-initial-gm"
+  },
+  "No arrangement passes every check on this hull. The closest one is shown. It fails: icll/28(1)/type-a-tabular-freeboard.": {
+   "args": {
+    "fails": "icll/28(1)/type-a-tabular-freeboard"
+   },
+   "id": "check-feasible-arrangement"
+  },
+  "No wind heel and no damage stability. Both are needed before approval: damage stability by ADN 9.3.1.15 and IGC 2.7, wind heel by the IS Code 2008 weather criterion (Part A 2.3).": {
+   "args": {},
+   "id": "stab-limit-no-wind-or-damage"
+  },
+  "OK": {
+   "args": {},
+   "id": "name-check-ok"
+  },
+  "Residuary Cr/Cf fit, Lackenby shallow-water, blockage and 1.02 form factor are uncalibrated first-order estimates (RS1) \u2014 ITTC-1957 friction is standard.": {
+   "args": {},
+   "id": "check-coefficients-are-first-order"
+  },
+  "Separation clauses are cited from the classification rules for inland-waterways ships (Pt 4 Ch 4 Sec 3, Jul 2022). Confirm against the ADN text before release.": {
+   "args": {},
+   "id": "warn-separation-clauses"
+  },
+  "The deckhouse carries no outfit mass: the outfit of the accommodation units left with them, and no outfit rate has been found, so the lightship is under-stated and GM over-stated until the calibration set (issue #782) gives one.": {
+   "args": {},
+   "id": "warn-aft-deckhouse-no-outfit"
+  },
+  "This Service Area reaches sea, so MLC 2006 Standard A3.1 sets the cabin sizes. Its text is not in the rule sources, so it is not applied: the rooms are sized to ES-TRIN 2025/1 Chapter 15, and the deckhouse floor is no smaller than the interim floor of the 40 ft accommodation units.": {
+   "args": {},
+   "id": "warn-aft-deckhouse-mlc-not-applied"
+  },
+  "aft end-bulkhead space 0.60 m >= 0.20 m (domed tank ends, cl. 3.5.3)": {
+   "args": {
+    "aft": {
+     "num": "0.60",
+     "value": 0.6
+    },
+    "min": {
+     "num": "0.20",
+     "value": 0.2
+    },
+    "tank_ends": {
+     "args": {},
+     "en": "domed tank ends",
+     "id": "check-fwd-end-bulkhead-space-domed-ends"
+    }
+   },
+   "id": "check-aft-end-bulkhead-space"
+  },
+  "blind distance ahead of the bow 220.3 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 0.00 m of 0.00 m": {
+   "args": {
+    "blind": {
+     "num": "220.3",
+     "value": 220.29029570919158
+    },
+    "lift": {
+     "num": "0.00",
+     "value": 0.0
+    },
+    "limit": {
+     "num": "250",
+     "value": 250.0
+    },
+    "max_lift": {
+     "num": "0.00",
+     "value": 0.0
+    }
+   },
+   "id": "check-wheelhouse-blind-distance"
+  },
+  "boil-off 834 kg/h > gas use 266 kg/h at the service speed: the excess needs reliquefaction, pressure accumulation or thermal oxidation, as venting is not acceptable (IGC Code 7.1.1, 7.1.3)": {
+   "args": {
+    "boil": {
+     "num": "834",
+     "value": 834.22763526208
+    },
+    "used": {
+     "num": "266",
+     "value": 266.4590679900895
+    }
+   },
+   "id": "check-boil-off-exceeds-gas-use"
+  },
+  "boil-off within gas use": {
+   "args": {},
+   "id": "name-check-boil-off-within-gas-use"
+  },
+  "cargo as fuel": {
+   "args": {},
+   "id": "name-check-cargo-as-fuel"
+  },
+  "cargo volume must be positive (tank/hold fits)": {
+   "args": {},
+   "id": "check-feasible-geometry"
+  },
+  "cargo zone 101.87 m = LOA 140.0 - bow void 19.70 m - stern void 18.43 m": {
+   "args": {
+    "bow_void": {
+     "num": "19.70",
+     "value": 19.700000000000003
+    },
+    "loa": {
+     "num": "140.0",
+     "value": 140.0
+    },
+    "stern_void": {
+     "num": "18.43",
+     "value": 18.432000000000002
+    },
+    "zone": {
+     "num": "101.87",
+     "value": 101.868
+    }
+   },
+   "id": "check-cargo-zone-positive"
+  },
+  "channel must float some cargo (T_max 10.60 m vs lightship draft)": {
+   "args": {
+    "t_max": {
+     "num": "10.60",
+     "value": 10.6
+    }
+   },
+   "id": "check-floats"
+  },
+  "deckhouse 17.83 m over the machinery space x 27.40 m wide (the 29.00 m beam less a side deck each side)": {
+   "args": {
+    "beam": {
+     "num": "29.00",
+     "value": 29.0
+    },
+    "length": {
+     "num": "17.83",
+     "value": 17.832
+    },
+    "width": {
+     "num": "27.40",
+     "value": 27.4
+    }
+   },
+   "id": "check-deckhouse-has-a-footprint"
+  },
+  "design depth must be >= UKC (pass depth + UKC, never a pre-reduced T_max)": {
+   "args": {},
+   "id": "check-ukc-consistent"
+  },
+  "forward end-bulkhead space 0.50 m >= 0.20 m (domed tank ends, cl. 3.5.3)": {
+   "args": {
+    "fwd": {
+     "num": "0.50",
+     "value": 0.5
+    },
+    "min": {
+     "num": "0.20",
+     "value": 0.2
+    },
+    "tank_ends": {
+     "args": {},
+     "en": "domed tank ends",
+     "id": "check-fwd-end-bulkhead-space-domed-ends"
+    }
+   },
+   "id": "check-fwd-end-bulkhead-space"
+  },
+  "freeboard 7.94 m >= required 1.4 m": {
+   "args": {
+    "freeboard": {
+     "num": "7.94",
+     "value": 7.944973690132534
+    },
+    "required": {
+     "num": "1.4",
+     "value": 1.4
+    }
+   },
+   "id": "check-freeboard-ok"
+  },
+  "freeboard 7.94 m at the carried draught 4.06 m >= required 1.4 m": {
+   "args": {
+    "draught": {
+     "num": "4.06",
+     "value": 4.055026309867466
+    },
+    "freeboard": {
+     "num": "7.94",
+     "value": 7.944973690132534
+    },
+    "required": {
+     "num": "1.4",
+     "value": 1.4
+    }
+   },
+   "id": "check-freeboard-at-payload"
+  },
+  "genset 2.89 m + 1.00 m double bottom and deck structure (ESTIMATE) <= moulded depth 12.00 m": {
+   "args": {
+    "depth": {
+     "num": "12.00",
+     "value": 12.0
+    },
+    "height": {
+     "num": "2.89",
+     "value": 2.892
+    }
+   },
+   "id": "check-gensets-fit-under-deck"
+  },
+  "hold segregated from the stern block by a gastight A-60 bulkhead (IGC 3.1.2)": {
+   "args": {},
+   "id": "check-hold-segregation-bulkhead"
+  },
+  "input capacity must be a feasible volume-bound design (not overloaded)": {
+   "args": {},
+   "id": "check-capacity-is-volume-bound"
+  },
+  "methane (LNG) vapour may fuel the gensets (IGC Code 16.1)": {
+   "args": {},
+   "id": "check-cargo-as-fuel-lng"
+  },
+  "tank length 49.93 m / inner diameter 11.31 m = 4.41 <= 7.0": {
+   "args": {
+    "diameter": {
+     "num": "11.31",
+     "value": 11.315
+    },
+    "length": {
+     "num": "49.93",
+     "value": 49.934
+    },
+    "max": {
+     "num": "7.0",
+     "value": 7.0
+    },
+    "ratio": {
+     "num": "4.41",
+     "value": 4.413079982324348
+    }
+   },
+   "id": "check-tank-length-over-inner-diameter"
+  },
+  "tank length over diameter": {
+   "args": {},
+   "id": "name-check-tank-length"
+  },
+  "tank volume": {
+   "args": {},
+   "id": "name-governs-tank-volume"
+  },
+  "volume utilisation 100% >= floor 50%": {
+   "args": {
+    "floor": {
+     "num": "50%",
+     "value": 0.5
+    },
+    "utilisation": {
+     "num": "100%",
+     "value": 1.0
+    }
+   },
+   "id": "check-utilisation-reasonable"
+  },
+  "volume-bound load must float within the moulded depth": {
+   "args": {},
+   "id": "check-not-overloaded"
+  },
+  "wheelhouse 6.40 m wide on a 29.00 m beam": {
+   "args": {
+    "beam": {
+     "num": "29.00",
+     "value": 29.0
+    },
+    "width": {
+     "num": "6.40",
+     "value": 6.4
+    }
+   },
+   "id": "check-wheelhouse-fits-beam"
+  }
+ },
+ "warnings": [
+  "The deckhouse carries no outfit mass: the outfit of the accommodation units left with them, and no outfit rate has been found, so the lightship is under-stated and GM over-stated until the calibration set (issue #782) gives one.",
+  "Deckhouse stern: the tier height, the side deck and the tier limit are ESTIMATES. A fixed wheelhouse is given the tiers its Blind Distance needs, to the stricter of ES-TRIN 7.02(2) and, on a coastal Option, SOLAS V/22.1.1: the first pass sizes the eye for a waterline at the keel, which is never too low and can add a tier; a second pass on the trimmed light waterline of the first keeps the lower tier count only if the sightline still passes.",
+  "Deckhouse rooms (ES-TRIN 2025/1 Chapter 15): the galley, the work-clothes room, the washbasins, the showers and the stairway are required but the text gives no floor area, so each has a stated ESTIMATE area, marked estimate in the rooms table with its working. The cabin, communal room, toilet and corridor areas are worked from the paragraphs the table cites.",
+  "This Service Area reaches sea, so MLC 2006 Standard A3.1 sets the cabin sizes. Its text is not in the rule sources, so it is not applied: the rooms are sized to ES-TRIN 2025/1 Chapter 15, and the deckhouse floor is no smaller than the interim floor of the 40 ft accommodation units.",
+  "Gas-fuelled stern block: the genset envelopes beyond the published engine (alternator, base frame) and the engine-room and GVU-room clearances are ESTIMATES (no vendor GA). The exhaust uptake and the fuel vent mast are not in the air draft (assumed lowerable). Fuel is taken from the cargo boil-off (IGC Code chapter 16); no separate fuel tank is in the block.",
+  "Separation clauses are cited from the classification rules for inland-waterways ships (Pt 4 Ch 4 Sec 3, Jul 2022). Confirm against the ADN text before release."
+ ]
+}
