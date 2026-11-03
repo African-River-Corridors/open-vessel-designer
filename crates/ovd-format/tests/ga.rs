@@ -80,12 +80,18 @@ fn every_document_of_every_fixture_validates() {
             let norm = normalise(document);
             assert_eq!(norm.sheet.size, "A3", "{file} {option} {view}");
             assert_eq!(norm.sheet.orientation, "landscape");
-            assert_eq!(norm.viewports.len(), 1, "one viewport");
+            // the cargo detail sheet has two views at one scale (issue #844)
+            let detail = view == "cargo-detail";
+            assert_eq!(
+                norm.viewports.len(),
+                if detail { 2 } else { 1 },
+                "{view}: viewports"
+            );
             assert_eq!(document["status"], "concept");
             // Issue #409: the ISO 7200 title block, with the view, the Option and the sheet.
             assert_eq!(document["title_block"]["template"], "iso7200");
             let fields = &document["title_block"]["fields"];
-            assert_eq!(fields["sheet_count"], 3);
+            assert_eq!(fields["sheet_count"], if detail { 1 } else { 3 });
             assert!(fields["title"].as_str().is_some_and(|t| !t.is_empty()));
             assert!(
                 document["notes"].to_string().contains("RULE SETS"),
@@ -917,10 +923,33 @@ fn the_dxf_of_every_view_reads_back_to_the_same_entities_at_the_stated_scale() {
             want.sort_by(ovd_draw::entities::compare);
             got.sort_by(ovd_draw::entities::compare);
             assert_eq!(got, want, "{file} {option} {view}");
-            assert_eq!(
-                back.viewports["main"].n, norm.viewports[0].scale,
-                "{file} {option} {view}: the viewport holds the stated scale"
-            );
+            for viewport in &norm.viewports {
+                let id = if view == "cargo-detail" {
+                    viewport.id.as_str()
+                } else {
+                    "main"
+                };
+                assert_eq!(
+                    back.viewports[id].n, viewport.scale,
+                    "{file} {option} {view}: the viewport holds the stated scale"
+                );
+                let f = &back.viewports[id].frame;
+                let (g, w) = (
+                    [f.x, f.y, f.w, f.h],
+                    [
+                        viewport.frame.x,
+                        viewport.frame.y,
+                        viewport.frame.w,
+                        viewport.frame.h,
+                    ],
+                );
+                for (got, want) in g.iter().zip(w) {
+                    assert!(
+                        (got - want).abs() < 5e-7,
+                        "{file} {option} {view} {id}: the viewport holds its frame: {g:?} against {w:?}"
+                    );
+                }
+            }
         }
     }
 }

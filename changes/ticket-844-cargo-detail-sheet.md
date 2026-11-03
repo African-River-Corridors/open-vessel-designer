@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Drawings: an Option with Type C tanks gets a cargo detail sheet, `<option>-cargo-detail` (issue #844): an elevation and a cross-section of one cargo tank at one scale, with the shell and head wall thicknesses, the steel and insulated diameters, the dome, the insulation, the support block (labelled ESTIMATE), the pressures, the design temperature, the material and the volume at the filling limit (derived). An Option with a hold or liquid tanks has no such sheet. `GaViews` gains `cargo_detail`, and `GaViews::all()` returns a `Vec`. No result moves.

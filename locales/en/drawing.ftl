@@ -18,6 +18,24 @@ draw-note-barges = { $abreast } ABREAST BY { $in_line } IN LINE.
 draw-note-blind-distance = BLIND DISTANCE AHEAD OF THE BOW: LIGHT { $light } M, LADEN { $laden } M, LIMIT { $limit } M.
 draw-note-scope = FOR CONCEPT AND PRELIMINARY DESIGN ONLY, NOT FOR APPROVAL.
 
+## crates/ovd-format/src/ga/cargo_detail.rs
+
+draw-cd-cylinder-wall = CYLINDER WALL { $thickness }
+draw-cd-steel-diameter = STEEL OUTER DIAMETER { $diameter }
+draw-cd-outer-diameter = OUTER DIAMETER OVER INSULATION { $diameter }
+draw-cd-insulation = INSULATION { $thickness }
+draw-cd-dome = DOME HEIGHT { $height }
+draw-cd-support = SUPPORT BLOCK { $height } (ESTIMATE)
+draw-cd-head-wall = HEAD WALL { $thickness }
+draw-cd-length = OVERALL LENGTH { $length }
+draw-view-cargo-detail = CARGO DETAIL
+draw-note-cargo-detail = { $view }: ELEVATION AND CROSS-SECTION OF ONE CARGO TANK, AT ONE SCALE. DIMENSIONS IN METRES.
+draw-note-tank-pressure = DESIGN VAPOUR PRESSURE { $design } MPA. INTERNAL PRESSURE WITH THE LIQUID HEAD { $internal } MPA.
+draw-note-tank-temperature = DESIGN TEMPERATURE { $temperature } DEG C. MATERIAL { $material }.
+draw-note-tank-material = MATERIAL { $material }.
+draw-note-tank-volume = VOLUME AT FILLING LIMIT, PER TANK: { $volume } M3 (DERIVED: { $per_tank } X { $fill }).
+draw-note-support-estimate = SUPPORT BLOCK: THE HEIGHT IS THE RUN'S, ITS WIDTH AND POSITION ARE A DRAWING PROPORTION. ESTIMATE, NOT SADDLE DATA.
+
 ## crates/ovd-format/src/ga/damage.rs
 
 draw-damaged-waterline = DAMAGED WATERLINE

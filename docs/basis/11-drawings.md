@@ -11,13 +11,18 @@ and `drawing` result objects), `crates/ovd-cli/src/draw.rs`  ·  **Rule Sets:** 
 ## What OVD computes here
 
 OVD computes no engineering value for a drawing. It draws the values that the calculation already gives.
-For each Option that runs, it makes three drawings (General Arrangement views, spec 0003):
+For each Option that runs, it makes three drawings (General Arrangement views, spec 0003), and a fourth for an Option with Type C tanks:
 
 - **Side elevation** (`side-elevation`): hull profile, deck, waterlines, cargo containment, zones, the stern
   block of a self-propelled hull, labels for draught and freeboard.
 - **Plan** (`plan`): hull outline, hold opening or tank outlines, zones, the stern block, centre line.
 - **Midship section** (`midship-section`): hull section, the hold shape or the tank circles with the double
   bottom, wing ballast tanks, voids, cradles and domes, waterlines, clearances.
+- **Cargo detail** (`cargo-detail`, Type C tanks only, issue #844): an elevation and a cross-section of one tank
+  on one sheet at one scale: the shell and head wall thicknesses, the steel and insulated diameters, the length,
+  the dome, the insulation and the support block (an estimate: the run holds no saddle geometry). The pressures,
+  the design temperature, the material and the volume at the filling limit (derived: per tank volume times the
+  fill ratio) are in its notes.
 
 Each drawing is one drawing document (JSON) of the Drawing Format Standard. `ovd-draw` turns it into
 normalised content, then SVG, PDF and DXF. OVD code names the crate `ovd_draw` (the dependency's

@@ -132,6 +132,8 @@ fn designs() -> Vec<(String, String)> {
 /// One label on the paper: its line from the label point to the target, its text and the box of
 /// its letters (the text less the spaces at its ends), in paper millimetres.
 struct Label {
+    /// The viewport the label belongs to (`main`, or `elevation` and `section` of the cargo detail).
+    viewport: String,
     text: String,
     line: ([f64; 2], [f64; 2]),
     letters: [f64; 4],
@@ -200,7 +202,9 @@ fn labels(norm: &Value) -> Vec<Label> {
         let trail = width(&" ".repeat(text.len() - text.trim_end().len()));
         let x0 = if right { a[0] - full } else { a[0] };
         assert_eq!(e["align_v"], "middle");
+        let origin = e["origin"].as_str().unwrap();
         out.push(Label {
+            viewport: origin.split('.').nth(1).unwrap_or("main").to_string(),
             text: text.trim().to_string(),
             line,
             letters: [x0 + lead, a[1] - h / 2.0, x0 + full - trail, a[1] + h / 2.0],
@@ -259,14 +263,21 @@ fn segment_to_box(s: ([f64; 2], [f64; 2]), r: [f64; 4]) -> f64 {
 #[test]
 fn every_label_text_lies_inside_the_frame_clear_of_the_centring_marks() {
     for (name, norm) in views() {
-        let f = &norm["viewports"][0]["frame"];
-        let g = |k: &str| f[k].as_f64().unwrap();
-        let frame = [
-            g("x_mm"),
-            g("y_mm"),
-            g("x_mm") + g("width_mm"),
-            g("y_mm") + g("height_mm"),
-        ];
+        let frame_of = |id: &str| {
+            let viewport = norm["viewports"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|v| v["id"] == id)
+                .unwrap_or_else(|| panic!("{name}: no viewport `{id}`"));
+            let g = |k: &str| viewport["frame"][k].as_f64().unwrap();
+            [
+                g("x_mm"),
+                g("y_mm"),
+                g("x_mm") + g("width_mm"),
+                g("y_mm") + g("height_mm"),
+            ]
+        };
         let marks: Vec<([f64; 2], [f64; 2])> = norm["entities"]
             .as_array()
             .unwrap()
@@ -277,6 +288,8 @@ fn every_label_text_lies_inside_the_frame_clear_of_the_centring_marks() {
         assert_eq!(marks.len(), 4, "{name}: four centring marks");
         for l in labels(&norm) {
             let b = l.text_box;
+            // each viewport's leaders stand inside that viewport's own frame
+            let frame = frame_of(&l.viewport);
             assert!(
                 b[0] >= frame[0] + FRAME_GAP_MM
                     && b[1] >= frame[1] + FRAME_GAP_MM
