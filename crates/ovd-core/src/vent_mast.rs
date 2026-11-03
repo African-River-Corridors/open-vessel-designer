@@ -145,6 +145,41 @@ pub fn working_area_top(i: &VentMastInputs) -> f64 {
     i.shield_top_m.unwrap_or(i.tank_top_m)
 }
 
+/// The exit less each datum, before any snapping: above the deck and above the working area.
+fn raw_heights(i: &VentMastInputs, exit: f64) -> (f64, f64) {
+    (exit - i.deck_m, exit - working_area_top(i))
+}
+
+/// The heights above the deck and above the working area. Where an IGC term sets the exit, the sum
+/// and the difference can differ from the term by one rounding step, which a Rule with no tolerance
+/// (IGC 8.2.10.3 and 8.2.10.4, issue #849) would read as a failure of the mast the engine placed. A
+/// height under its term by no more than 1e-9 m is the term; a larger gap is a bug.
+fn heights(i: &VentMastInputs, exit: f64) -> (f64, f64) {
+    let (deck, working) = raw_heights(i, exit);
+    if i.river_only {
+        return (deck, working);
+    }
+    let snap = |raw: f64, term: f64| {
+        if raw < term {
+            debug_assert!(
+                term - raw <= SNAP_M,
+                "exit {raw} m is under its term {term} m"
+            );
+            if term - raw <= SNAP_M {
+                return term;
+            }
+        }
+        raw
+    };
+    (
+        snap(deck, igc_above_deck(i.beam_m)),
+        snap(working, IGC_ABOVE_WORKING_AREA_M),
+    )
+}
+
+/// The most a height may sit under the term that set it before it is read as the term, m.
+const SNAP_M: f64 = 1e-9;
+
 /// Place the mast and read its heights and distances.
 pub fn place(i: &VentMastInputs, lowerable: bool) -> VentMast {
     let (exit, governs) = exit_above_keel(i);
@@ -171,21 +206,7 @@ pub fn place(i: &VentMastInputs, lowerable: bool) -> VentMast {
         };
         (cap, to_openings)
     };
-    // Heights above the deck and above the working area are the exit less the datum. Where the IGC
-    // term sets the exit, the sum and the difference can differ from the term by one rounding step, which
-    // a Rule with no tolerance (IGC 8.2.10.3 and 8.2.10.4, issue #849) would read as a failure of the
-    // mast the engine itself placed: the height is then never less than the term.
-    let mut above_deck = exit - i.deck_m;
-    let mut above_working = exit - working;
-    if !i.river_only {
-        let term = igc_above_deck(i.beam_m);
-        if term > above_deck {
-            above_deck = term;
-        }
-        if IGC_ABOVE_WORKING_AREA_M > above_working {
-            above_working = IGC_ABOVE_WORKING_AREA_M;
-        }
-    }
+    let (above_deck, above_working) = heights(i, exit);
     VentMast {
         river_only: i.river_only,
         x_m: i.mast_x_m,
@@ -198,7 +219,7 @@ pub fn place(i: &VentMastInputs, lowerable: bool) -> VentMast {
         distance_to_openings_m: to_openings,
         distance_to_accommodation_m: to_accommodation,
         target_distance_m: target,
-        distance_met: achieved >= target - 1e-9,
+        distance_met: achieved >= target,
         lowerable,
     }
 }
@@ -225,24 +246,54 @@ mod tests {
     }
 
     #[test]
-    fn an_igc_exit_is_never_read_below_the_term_that_set_it() {
-        // Issue #849: the deck and the shield sit at heights whose sum and difference round, so the
-        // exit less the datum could fall one step under B/3 or 6 m. The Rules have no tolerance.
-        for deck in [4.5, 6.0, 7.3, 9.0, 9.1, 11.7] {
-            for beam in [11.4, 14.0, 17.2, 24.0, 29.0, 30.1] {
-                for tank_top in [3.3, 8.7, 12.4] {
+    fn an_igc_height_is_the_term_when_the_raw_difference_falls_a_step_under_it() {
+        // Issue #849: the raw difference may fall one rounding step under B/3 or 6 m; it may never be
+        // more than 1e-9 m under, and the reported height is then exactly the term.
+        let mut snapped = 0;
+        for deck in [4.5, 6.0, 7.3, 9.0, 9.1, 11.7, 13.37] {
+            for beam in [11.4, 14.0, 17.2, 19.9, 24.0, 29.0, 30.1] {
+                for tank_top in [3.3, 8.7, 12.4, 16.1] {
                     let i = VentMastInputs {
                         beam_m: beam,
                         deck_m: deck,
                         tank_top_m: tank_top,
                         ..base()
                     };
+                    let (exit, _) = exit_above_keel(&i);
+                    let (raw_deck, raw_working) = raw_heights(&i, exit);
+                    let (term_deck, term_working) =
+                        (igc_above_deck(beam), IGC_ABOVE_WORKING_AREA_M);
+                    assert!(term_deck - raw_deck <= 1e-9, "{deck} {beam}: {raw_deck}");
+                    assert!(
+                        term_working - raw_working <= 1e-9,
+                        "{deck} {tank_top}: {raw_working}"
+                    );
                     let m = place(&i, false);
-                    assert!(m.exit_above_deck_m >= igc_above_deck(beam), "{deck} {beam}");
-                    assert!(m.exit_above_working_area_m >= IGC_ABOVE_WORKING_AREA_M);
+                    assert_eq!(
+                        m.exit_above_deck_m,
+                        if raw_deck < term_deck {
+                            term_deck
+                        } else {
+                            raw_deck
+                        }
+                    );
+                    assert_eq!(
+                        m.exit_above_working_area_m,
+                        if raw_working < term_working {
+                            term_working
+                        } else {
+                            raw_working
+                        }
+                    );
+                    snapped +=
+                        usize::from(raw_deck < term_deck) + usize::from(raw_working < term_working);
                 }
             }
         }
+        assert!(
+            snapped > 0,
+            "no input reached the rounding step: the test cannot fail"
+        );
     }
 
     #[test]

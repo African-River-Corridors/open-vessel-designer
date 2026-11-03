@@ -88,9 +88,16 @@ def test_a_coverage_gap_is_only_a_warning(tmp_path):
     cases, _, results = corpus_copy(tmp_path)
     r = run_runner("--cases", str(cases), "--mutants", str(tmp_path / "none.yaml"), "--results", str(results))
     assert r.returncode == 0, r.stdout
-    # The IS Code rows only: the Rule Sets of the other case kinds have gaps of their own.
-    gaps = [line for line in r.stdout.splitlines() if "coverage gap" in line and "`is2008/" in line]
-    assert len(gaps) == 5
+    gaps = [line for line in r.stdout.splitlines() if "coverage gap" in line]
+    # The five IS Code rows, and the seven `igc-2g` 3.2.0 rows the vent cases select with the set and have no
+    # case for (issue #849).
+    assert len(gaps) == 12, len(gaps)
+    assert sum("`is2008/" in line for line in gaps) == 5
+    for rule in ("igc/2.7.1.2/heel-any-stage", "igc/2.7.1.3/intermediate-residual-stability",
+                 "igc/3.1.2/hold-machinery-segregation", "igc/3.2.4.1/front-openings",
+                 "igc/3.2.4.1/side-opening-distance", "igc/3.2.4.1/opening-setback",
+                 "igc/3.2.4.1/air-inlet-setback"):
+        assert sum(f"`{rule}`" in line for line in gaps) == 1, rule
     assert not any("angle-max-gz" in line for line in gaps)
 
 
@@ -279,7 +286,10 @@ def test_the_real_corpus_notices_every_mutant_of_is2008_a():
     oil = [ln for ln in unnoticed if "`marpol/23/accidental-oil-outflow`" in ln]
     stern = [ln for ln in unnoticed if ln not in oil]
     assert len(oil) == 2
-    assert all("| 0.0 |" in ln and ln.startswith(("| `solas/", "| `igc/8.2.11.1/")) for ln in stern), stern
+    assert sum(ln.startswith("| `igc/8.2.11.1/") for ln in stern) == 2
+    assert all("| 0.0 |" in ln and (ln.startswith("| `solas/")
+                                       or (ln.startswith("| `igc/8.2.11.1/") and "coefficient lo" in ln))
+               for ln in stern), stern
     assert sum(1 for line in section.splitlines() if line.startswith("| `is2008/")) == 12
 
 

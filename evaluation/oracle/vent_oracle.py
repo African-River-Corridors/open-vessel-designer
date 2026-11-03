@@ -12,13 +12,14 @@ Rule Set data:
 
 A case (`kind: vent`) gives the beam and the three numbers a run reads from its results: the exit height above
 the deck, the exit height above the working area, and the distance to the nearest opening. The boundary cases
-move one number to each side of its limit. The Rules apply to the Service Area `coastal-and-river` only; the
+move one number to each side of its limit by 0.005 m, exactly onto it (meets), and one float step under it (fails). The Rules apply to the Service Area `coastal-and-river` only; the
 cases are all on it.
 
     python3 evaluation/oracle/vent_oracle.py CASE.yaml      # print the verdicts of one case
 """
 from __future__ import annotations
 
+import math
 import sys
 from pathlib import Path
 
@@ -64,11 +65,19 @@ def boundary_case(base: dict, rule_id: str, side: str, magnitude: str) -> dict:
     i = base["inputs"]
     entry = verdicts(i)[rule_id]
     big, small = STEPS["m"]
-    step = big if magnitude == "big" else small
-    target = entry["limit"] + (step if side == "pass" else -step)
     name = MOVES[rule_id]
+    # The limit as the text works it out, not rounded for the file.
+    limit = {DECK: max(i["beam_m"] / 3.0, 6.0), WORKING: 6.0, DISTANCE: min(i["beam_m"], 25.0)}[rule_id]
+    if magnitude == "exact":
+        target = limit
+    elif magnitude == "ulp":
+        # One float step under the limit: the value a difference that rounds down gives.
+        target = math.nextafter(limit, -math.inf)
+    else:
+        step = big if magnitude == "big" else small
+        target = limit + (step if side == "pass" else -step)
     inputs = dict(i)
-    inputs[name] = float(f"{target:.12g}")
+    inputs[name] = target if magnitude in ("exact", "ulp") else float(f"{target:.12g}")
     expected = verdicts(inputs)
     slug = rule_id.replace("/", "_")
     return {
@@ -94,8 +103,8 @@ def generate(bases: list[dict]) -> tuple[list[dict], list[dict]]:
     docs = []
     for base in bases:
         for rule_id in verdicts(base["inputs"]):
-            for side in ("pass", "fail"):
-                docs.append(boundary_case(base, rule_id, side, "big"))
+            for side, magnitude in (("pass", "big"), ("fail", "big"), ("pass", "exact"), ("fail", "ulp")):
+                docs.append(boundary_case(base, rule_id, side, magnitude))
     return docs, []
 
 

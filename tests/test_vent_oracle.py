@@ -64,7 +64,7 @@ def test_the_case_files_are_what_the_oracle_writes():
 def test_every_boundary_case_moves_one_number_across_one_limit():
     """Label: property"""
     docs = yaml.safe_load((EVAL / "vent_mutants.yaml").read_text(encoding="utf-8"))["mutants"]
-    assert len(docs) == 18
+    assert len(docs) == 48
     parents = {c["id"]: c for c in write_cases.VENT_BASES}
     for d in docs:
         m = d["mutant"]
@@ -73,4 +73,11 @@ def test_every_boundary_case_moves_one_number_across_one_limit():
         assert changed == [m["moved"]], (d["id"], changed)
         e = d["expected"][m["criterion"]]
         assert e["verdict"] == m["side"], d["id"]
-        assert abs(e["margin"]) == pytest.approx(oracle.STEPS["m"][0], rel=1e-3, abs=1e-9)
+        if m["magnitude"] == "big":
+            assert abs(e["margin"]) == pytest.approx(oracle.STEPS["m"][0], rel=1e-3, abs=1e-9)
+        else:
+            assert abs(e["margin"]) < 1e-9
+    # Every row has a case exactly on the limit (meets) and one float step under it (fails).
+    seen = {(d["mutant"]["criterion"], d["mutant"]["magnitude"], d["mutant"]["side"]) for d in docs}
+    for rule in (oracle.DECK, oracle.WORKING, oracle.DISTANCE):
+        assert (rule, "exact", "pass") in seen and (rule, "ulp", "fail") in seen

@@ -106,6 +106,112 @@ mutants:
     locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
     licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
     confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_14__igc_8.2.10.3_vent-exit-height__pass_exact
+  title: Gas barge of 14 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.3/vent-exit-height
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 6.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 20.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 6.0
+      limit: 6.0
+      margin: 0.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 20.0
+      limit: 14.0
+      margin: 6.0
+  mutant:
+    parent: vent_beam_14
+    criterion: igc/8.2.10.3/vent-exit-height
+    side: pass
+    magnitude: exact
+    moved: vent_exit_above_deck_m
+    target_value: 6.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_14__igc_8.2.10.3_vent-exit-height__fail_ulp
+  title: Gas barge of 14 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.3/vent-exit-height
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 5.999999999999999
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 20.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: fail
+      value: 6.0
+      limit: 6.0
+      margin: -8.881784197e-16
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 20.0
+      limit: 14.0
+      margin: 6.0
+  mutant:
+    parent: vent_beam_14
+    criterion: igc/8.2.10.3/vent-exit-height
+    side: fail
+    magnitude: ulp
+    moved: vent_exit_above_deck_m
+    target_value: 6.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
 - id: vent_beam_14__igc_8.2.10.4_vent-exit-above-working-areas__pass_big
   title: Gas barge of 14 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
     just inside its limit (big step)
@@ -203,6 +309,112 @@ mutants:
     magnitude: big
     moved: vent_exit_above_working_area_m
     target_value: 5.995
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_14__igc_8.2.10.4_vent-exit-above-working-areas__pass_exact
+  title: Gas barge of 14 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 8.0
+    vent_exit_above_working_area_m: 6.0
+    vent_distance_to_openings_m: 20.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 8.0
+      limit: 6.0
+      margin: 2.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 6.0
+      limit: 6.0
+      margin: 0.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 20.0
+      limit: 14.0
+      margin: 6.0
+  mutant:
+    parent: vent_beam_14
+    criterion: igc/8.2.10.4/vent-exit-above-working-areas
+    side: pass
+    magnitude: exact
+    moved: vent_exit_above_working_area_m
+    target_value: 6.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_14__igc_8.2.10.4_vent-exit-above-working-areas__fail_ulp
+  title: Gas barge of 14 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 8.0
+    vent_exit_above_working_area_m: 5.999999999999999
+    vent_distance_to_openings_m: 20.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 8.0
+      limit: 6.0
+      margin: 2.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: fail
+      value: 6.0
+      limit: 6.0
+      margin: -8.881784197e-16
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 20.0
+      limit: 14.0
+      margin: 6.0
+  mutant:
+    parent: vent_beam_14
+    criterion: igc/8.2.10.4/vent-exit-above-working-areas
+    side: fail
+    magnitude: ulp
+    moved: vent_exit_above_working_area_m
+    target_value: 6.0
     grid: false
   provenance:
     verdict_basis: derived
@@ -318,6 +530,112 @@ mutants:
     locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
     licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
     confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_14__igc_8.2.11.1_vent-exit-distance__pass_exact
+  title: Gas barge of 14 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 8.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 14.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 8.0
+      limit: 6.0
+      margin: 2.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 14.0
+      limit: 14.0
+      margin: 0.0
+  mutant:
+    parent: vent_beam_14
+    criterion: igc/8.2.11.1/vent-exit-distance
+    side: pass
+    magnitude: exact
+    moved: vent_distance_to_openings_m
+    target_value: 14.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_14__igc_8.2.11.1_vent-exit-distance__fail_ulp
+  title: Gas barge of 14 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 8.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 13.999999999999998
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 8.0
+      limit: 6.0
+      margin: 2.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: fail
+      value: 14.0
+      limit: 14.0
+      margin: -1.776356839e-15
+  mutant:
+    parent: vent_beam_14
+    criterion: igc/8.2.11.1/vent-exit-distance
+    side: fail
+    magnitude: ulp
+    moved: vent_distance_to_openings_m
+    target_value: 14.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
 - id: vent_beam_24__igc_8.2.10.3_vent-exit-height__pass_big
   title: Gas barge of 24 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.3/vent-exit-height
     just inside its limit (big step)
@@ -415,6 +733,112 @@ mutants:
     magnitude: big
     moved: vent_exit_above_deck_m
     target_value: 7.995
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_24__igc_8.2.10.3_vent-exit-height__pass_exact
+  title: Gas barge of 24 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.3/vent-exit-height
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 24.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 8.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 30.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 8.0
+      limit: 8.0
+      margin: 0.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 30.0
+      limit: 24.0
+      margin: 6.0
+  mutant:
+    parent: vent_beam_24
+    criterion: igc/8.2.10.3/vent-exit-height
+    side: pass
+    magnitude: exact
+    moved: vent_exit_above_deck_m
+    target_value: 8.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_24__igc_8.2.10.3_vent-exit-height__fail_ulp
+  title: Gas barge of 24 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.3/vent-exit-height
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 24.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 7.999999999999999
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 30.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: fail
+      value: 8.0
+      limit: 8.0
+      margin: -8.881784197e-16
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 30.0
+      limit: 24.0
+      margin: 6.0
+  mutant:
+    parent: vent_beam_24
+    criterion: igc/8.2.10.3/vent-exit-height
+    side: fail
+    magnitude: ulp
+    moved: vent_exit_above_deck_m
+    target_value: 8.0
     grid: false
   provenance:
     verdict_basis: derived
@@ -530,6 +954,112 @@ mutants:
     locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
     licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
     confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_24__igc_8.2.10.4_vent-exit-above-working-areas__pass_exact
+  title: Gas barge of 24 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 24.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 9.0
+    vent_exit_above_working_area_m: 6.0
+    vent_distance_to_openings_m: 30.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 9.0
+      limit: 8.0
+      margin: 1.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 6.0
+      limit: 6.0
+      margin: 0.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 30.0
+      limit: 24.0
+      margin: 6.0
+  mutant:
+    parent: vent_beam_24
+    criterion: igc/8.2.10.4/vent-exit-above-working-areas
+    side: pass
+    magnitude: exact
+    moved: vent_exit_above_working_area_m
+    target_value: 6.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_24__igc_8.2.10.4_vent-exit-above-working-areas__fail_ulp
+  title: Gas barge of 24 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 24.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 9.0
+    vent_exit_above_working_area_m: 5.999999999999999
+    vent_distance_to_openings_m: 30.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 9.0
+      limit: 8.0
+      margin: 1.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: fail
+      value: 6.0
+      limit: 6.0
+      margin: -8.881784197e-16
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 30.0
+      limit: 24.0
+      margin: 6.0
+  mutant:
+    parent: vent_beam_24
+    criterion: igc/8.2.10.4/vent-exit-above-working-areas
+    side: fail
+    magnitude: ulp
+    moved: vent_exit_above_working_area_m
+    target_value: 6.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
 - id: vent_beam_24__igc_8.2.11.1_vent-exit-distance__pass_big
   title: Gas barge of 24 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
     just inside its limit (big step)
@@ -627,6 +1157,748 @@ mutants:
     magnitude: big
     moved: vent_distance_to_openings_m
     target_value: 23.995
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_24__igc_8.2.11.1_vent-exit-distance__pass_exact
+  title: Gas barge of 24 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 24.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 9.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 24.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 9.0
+      limit: 8.0
+      margin: 1.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 24.0
+      limit: 24.0
+      margin: 0.0
+  mutant:
+    parent: vent_beam_24
+    criterion: igc/8.2.11.1/vent-exit-distance
+    side: pass
+    magnitude: exact
+    moved: vent_distance_to_openings_m
+    target_value: 24.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_24__igc_8.2.11.1_vent-exit-distance__fail_ulp
+  title: Gas barge of 24 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 24.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 9.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 23.999999999999996
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 9.0
+      limit: 8.0
+      margin: 1.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: fail
+      value: 24.0
+      limit: 24.0
+      margin: -3.552713679e-15
+  mutant:
+    parent: vent_beam_24
+    criterion: igc/8.2.11.1/vent-exit-distance
+    side: fail
+    magnitude: ulp
+    moved: vent_distance_to_openings_m
+    target_value: 24.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.10.3_vent-exit-height__pass_big
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.3/vent-exit-height
+    just inside its limit (big step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 9.67166666667
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 9.671666667
+      limit: 9.666666667
+      margin: 0.005000000003
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.10.3/vent-exit-height
+    side: pass
+    magnitude: big
+    moved: vent_exit_above_deck_m
+    target_value: 9.671666667
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.10.3_vent-exit-height__fail_big
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.3/vent-exit-height
+    just across its limit (big step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 9.66166666667
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: fail
+      value: 9.661666667
+      limit: 9.666666667
+      margin: -0.004999999997
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.10.3/vent-exit-height
+    side: fail
+    magnitude: big
+    moved: vent_exit_above_deck_m
+    target_value: 9.661666667
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.10.3_vent-exit-height__pass_exact
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.3/vent-exit-height
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 9.666666666666666
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 9.666666667
+      limit: 9.666666667
+      margin: 0.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.10.3/vent-exit-height
+    side: pass
+    magnitude: exact
+    moved: vent_exit_above_deck_m
+    target_value: 9.666666667
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.10.3_vent-exit-height__fail_ulp
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.3/vent-exit-height
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 9.666666666666664
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: fail
+      value: 9.666666667
+      limit: 9.666666667
+      margin: -1.776356839e-15
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.10.3/vent-exit-height
+    side: fail
+    magnitude: ulp
+    moved: vent_exit_above_deck_m
+    target_value: 9.666666667
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.10.4_vent-exit-above-working-areas__pass_big
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
+    just inside its limit (big step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 6.005
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 9.666666667
+      margin: 1.333333333
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 6.005
+      limit: 6.0
+      margin: 0.005
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.10.4/vent-exit-above-working-areas
+    side: pass
+    magnitude: big
+    moved: vent_exit_above_working_area_m
+    target_value: 6.005
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.10.4_vent-exit-above-working-areas__fail_big
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
+    just across its limit (big step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 5.995
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 9.666666667
+      margin: 1.333333333
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: fail
+      value: 5.995
+      limit: 6.0
+      margin: -0.005
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.10.4/vent-exit-above-working-areas
+    side: fail
+    magnitude: big
+    moved: vent_exit_above_working_area_m
+    target_value: 5.995
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.10.4_vent-exit-above-working-areas__pass_exact
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 6.0
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 9.666666667
+      margin: 1.333333333
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 6.0
+      limit: 6.0
+      margin: 0.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.10.4/vent-exit-above-working-areas
+    side: pass
+    magnitude: exact
+    moved: vent_exit_above_working_area_m
+    target_value: 6.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.10.4_vent-exit-above-working-areas__fail_ulp
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 5.999999999999999
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 9.666666667
+      margin: 1.333333333
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: fail
+      value: 6.0
+      limit: 6.0
+      margin: -8.881784197e-16
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.10.4/vent-exit-above-working-areas
+    side: fail
+    magnitude: ulp
+    moved: vent_exit_above_working_area_m
+    target_value: 6.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.11.1_vent-exit-distance__pass_big
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
+    just inside its limit (big step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 25.005
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 9.666666667
+      margin: 1.333333333
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 25.005
+      limit: 25.0
+      margin: 0.005
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.11.1/vent-exit-distance
+    side: pass
+    magnitude: big
+    moved: vent_distance_to_openings_m
+    target_value: 25.005
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.11.1_vent-exit-distance__fail_big
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
+    just across its limit (big step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 24.995
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 9.666666667
+      margin: 1.333333333
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: fail
+      value: 24.995
+      limit: 25.0
+      margin: -0.005
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.11.1/vent-exit-distance
+    side: fail
+    magnitude: big
+    moved: vent_distance_to_openings_m
+    target_value: 24.995
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.11.1_vent-exit-distance__pass_exact
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 25.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 9.666666667
+      margin: 1.333333333
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 25.0
+      limit: 25.0
+      margin: 0.0
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.11.1/vent-exit-distance
+    side: pass
+    magnitude: exact
+    moved: vent_distance_to_openings_m
+    target_value: 25.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_29__igc_8.2.11.1_vent-exit-distance__fail_ulp
+  title: Gas barge of 29 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 29.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 24.999999999999996
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 9.666666667
+      margin: 1.333333333
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: fail
+      value: 25.0
+      limit: 25.0
+      margin: -3.552713679e-15
+  mutant:
+    parent: vent_beam_29
+    criterion: igc/8.2.11.1/vent-exit-distance
+    side: fail
+    magnitude: ulp
+    moved: vent_distance_to_openings_m
+    target_value: 25.0
     grid: false
   provenance:
     verdict_basis: derived
@@ -742,6 +2014,112 @@ mutants:
     locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
     licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
     confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_30__igc_8.2.10.3_vent-exit-height__pass_exact
+  title: Gas barge of 30 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.3/vent-exit-height
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 30.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 10.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 10.0
+      limit: 10.0
+      margin: 0.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_30
+    criterion: igc/8.2.10.3/vent-exit-height
+    side: pass
+    magnitude: exact
+    moved: vent_exit_above_deck_m
+    target_value: 10.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_30__igc_8.2.10.3_vent-exit-height__fail_ulp
+  title: Gas barge of 30 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.3/vent-exit-height
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 30.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 9.999999999999998
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: fail
+      value: 10.0
+      limit: 10.0
+      margin: -1.776356839e-15
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_30
+    criterion: igc/8.2.10.3/vent-exit-height
+    side: fail
+    magnitude: ulp
+    moved: vent_exit_above_deck_m
+    target_value: 10.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
 - id: vent_beam_30__igc_8.2.10.4_vent-exit-above-working-areas__pass_big
   title: Gas barge of 30 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
     just inside its limit (big step)
@@ -848,6 +2226,112 @@ mutants:
     locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
     licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
     confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_30__igc_8.2.10.4_vent-exit-above-working-areas__pass_exact
+  title: Gas barge of 30 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 30.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 6.0
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 10.0
+      margin: 1.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 6.0
+      limit: 6.0
+      margin: 0.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_30
+    criterion: igc/8.2.10.4/vent-exit-above-working-areas
+    side: pass
+    magnitude: exact
+    moved: vent_exit_above_working_area_m
+    target_value: 6.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_30__igc_8.2.10.4_vent-exit-above-working-areas__fail_ulp
+  title: Gas barge of 30 m beam, coastal and river service, vent exit inside every limit, igc/8.2.10.4/vent-exit-above-working-areas
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 30.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 5.999999999999999
+    vent_distance_to_openings_m: 40.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 10.0
+      margin: 1.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: fail
+      value: 6.0
+      limit: 6.0
+      margin: -8.881784197e-16
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 40.0
+      limit: 25.0
+      margin: 15.0
+  mutant:
+    parent: vent_beam_30
+    criterion: igc/8.2.10.4/vent-exit-above-working-areas
+    side: fail
+    magnitude: ulp
+    moved: vent_exit_above_working_area_m
+    target_value: 6.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
 - id: vent_beam_30__igc_8.2.11.1_vent-exit-distance__pass_big
   title: Gas barge of 30 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
     just inside its limit (big step)
@@ -945,6 +2429,112 @@ mutants:
     magnitude: big
     moved: vent_distance_to_openings_m
     target_value: 24.995
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_30__igc_8.2.11.1_vent-exit-distance__pass_exact
+  title: Gas barge of 30 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 30.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 25.0
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 10.0
+      margin: 1.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: pass
+      value: 25.0
+      limit: 25.0
+      margin: 0.0
+  mutant:
+    parent: vent_beam_30
+    criterion: igc/8.2.11.1/vent-exit-distance
+    side: pass
+    magnitude: exact
+    moved: vent_distance_to_openings_m
+    target_value: 25.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), MSC.476(102),
+      MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 8.2.10 or 8.2.11.1
+    locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_beam_30__igc_8.2.11.1_vent-exit-distance__fail_ulp
+  title: Gas barge of 30 m beam, coastal and river service, vent exit inside every limit, igc/8.2.11.1/vent-exit-distance
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 30.0
+    depth_m: 4.5
+    service_area: coastal-and-river
+    vent_exit_above_deck_m: 11.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 24.999999999999996
+  expected:
+    igc/8.2.10.3/vent-exit-height:
+      rule: IGC 8.2.10.3
+      what: cargo vent exit above the weather deck
+      unit: m
+      verdict: pass
+      value: 11.0
+      limit: 10.0
+      margin: 1.0
+    igc/8.2.10.4/vent-exit-above-working-areas:
+      rule: IGC 8.2.10.4
+      what: cargo vent exit above working areas and walkways
+      unit: m
+      verdict: pass
+      value: 7.0
+      limit: 6.0
+      margin: 1.0
+    igc/8.2.11.1/vent-exit-distance:
+      rule: IGC 8.2.11.1
+      what: cargo vent exit from the nearest opening
+      unit: m
+      verdict: fail
+      value: 25.0
+      limit: 25.0
+      margin: -3.552713679e-15
+  mutant:
+    parent: vent_beam_30
+    criterion: igc/8.2.11.1/vent-exit-distance
+    side: fail
+    magnitude: ulp
+    moved: vent_distance_to_openings_m
+    target_value: 25.0
     grid: false
   provenance:
     verdict_basis: derived
