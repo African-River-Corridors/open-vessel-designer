@@ -48,15 +48,16 @@ async function inSettings(act) {
  * draws the form afresh (each field is keyed on the open), so mark the fields first and wait until
  * none of the marked ones is left (issue #470: a click on the old form was lost).
  */
-async function open(file, expectName) {
+async function open(file, expectName, timeout = 15000) {
   await browser.execute(() => document.querySelectorAll(".field[data-input]").forEach((e) => e.setAttribute("data-before-open", "")));
   answer("open.txt", file);
   await (await browser.$("button=Open")).click();
-  await until(`${expectName} to open`, async () => (await fileLabel()).includes(expectName));
+  await until(`${expectName} to open`, async () => (await fileLabel()).includes(expectName), timeout);
   await until("the form of the opened file", () =>
     browser.execute(() => document.querySelector(".field[data-input]") !== null && document.querySelector("[data-before-open]") === null),
+    timeout,
   );
-  await until("outputs", async () => (await browser.$("[data-testid=outputs]")).isExisting());
+  await until("outputs", async () => (await browser.$("[data-testid=outputs]")).isExisting(), timeout);
 }
 
 /** Untick "none" on a number input, and wait until its box is there to type in. */
@@ -387,6 +388,7 @@ describe("OVD app smoke tests", () => {
    * coastal-and-river stack; a river-only gas Design takes ADN 9.3.1 in place of the IGC Code (issue #850),
    * whose cases the view lists without a drawing.
    */
+  const SLOW_OPEN_MS = 60000;
   function gasDamageDesign(area = "coastal-and-river") {
     const inputs = {
       cargo: { value: "LNG", source: "typed" },
@@ -407,9 +409,11 @@ describe("OVD app smoke tests", () => {
   }
 
   it("shows the damage cases, the governing case of each condition and the damage drawing of a gas Design (issue #886)", async () => {
-    await open(gasDamageDesign(), "gas-damage-coastal-and-river.vdesign");
+    // The coastal-and-river design computes the IGC damage cases and the stern arrangement: several seconds in
+    // a debug build, so the open and the drawing get more than the usual 15 s (issue #850).
+    await open(gasDamageDesign(), "gas-damage-coastal-and-river.vdesign", SLOW_OPEN_MS);
     await show("Stability & Propulsion", "Damage stability");
-    await until("the damage drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1);
+    await until("the damage drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1, SLOW_OPEN_MS);
     const rows = await browser.$$("[data-testid=damage-case-row]");
     assert.ok(rows.length >= 10, `${rows.length} damage cases`);
     // One governing case in the condition shown, and it is the first failing case, as the trace has it.
@@ -467,7 +471,7 @@ describe("OVD app smoke tests", () => {
   for (const [what, file] of [["a gas Design with damage cases", () => gasDamageDesign()], ["a liquid hull with a long case table", () => path.join(FIXTURES, "crude_integral_tanks_coastal.vdesign")]]) {
     it(`the Damage stability view does not scroll the panel, with the side panels shown or hidden (${what}) (issue #886)`, async () => {
       const f = file();
-      await open(f, path.basename(f));
+      await open(f, path.basename(f), SLOW_OPEN_MS);
       try {
         for (const hidden of [false, true]) {
           await setPanel("Input", !hidden);
