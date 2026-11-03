@@ -451,7 +451,7 @@ One row per Rule per object, in selection order, then the set's rule order, then
 | Cargo | `river-only` and `coastal-and-river` (this spec) |
 |---|---|
 | Gas, `coastal-and-river` | `igc-2g`, which includes `is2008-a`; `lr-inland-gas` (draft, unverified, until the IGC chapter 3 rules replace it); `ovd` |
-| Gas, `river-only` (#850) | `adn-gas` (ADN 2025 9.3.1, the design Rule Set) in place of `igc-2g`; `igc-tank-clearance` (the two IGC 2.4.1.2 tank distance rows, which size the tank because ADN 9.3.1.11.2 (a) gives no distance from the tank to the hull); `is2008-a`; `lr-inland-gas`; `ovd` |
+| Gas, `river-only` (#850) | `adn-gas` (ADN 2025 9.3.1, the design Rule Set) in place of `igc-2g`; `igc-tank-clearance` (the two IGC 2.4.1.2 tank distance rows, which size the tank because the double-hull branch of ADN 9.3.1.11.2 (a) gives no distance from the tank to the hull); `is2008-a`; `lr-inland-gas`; `ovd` |
 | Dry bulk and others | `is2008-a` (its rows are `not evaluated` until intact stability covers every Cargo, roadmap phase 1); `ovd` |
 | Liquid bulk (crude oil, #339) | the dry bulk stack with `adn-tank` (any Service Area), and on `coastal-and-river` also `marpol-i` and the freeboard sets (`icll-freeboard`, `solas-v22`); `normam-202` is never in a default stack; `ovd` |
 

@@ -408,21 +408,13 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
             env!("CARGO_MANIFEST_DIR")
         )
     };
-    let (is_code, igc) = (rules("is2008-a/2.0.0"), rules("igc-2g/2.0.0"));
+    let is_code = rules("is2008-a/2.0.0");
     // The stack differs from the one the hash was stored with, so the stored hash is dropped.
     let mut saved: Value = serde_json::from_str(&std::fs::read_to_string(&file).unwrap()).unwrap();
     saved["options"][0]
         .as_object_mut()
         .unwrap()
         .remove("results_hash");
-    // Issue #850: a gas file that stores no Rule Sets is read with the ADN stack, whose hull limits size
-    // the tank beside IGC 2.4.1.2; `simulate` has none. This comparison is about `run` and `simulate`
-    // giving the same answer under the IGC stack, so the file stores that stack (the one it was read
-    // with before), and keeps it.
-    saved["options"][0]["inputs"]["rule_sets"] = json!({
-        "value": ovd_format::trace::legacy_rule_sets(Some("type_c_tanks"), Some("coastal-and-river")),
-        "source": "default"
-    });
     write_json(&file, &saved);
     // `--steel-list`: the whole results, as `simulate` answers them (issue #745).
     let out = ovd(&[
@@ -431,8 +423,6 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
         "--steel-list",
         "--rule-set",
         &is_code,
-        "--rule-set",
-        &igc,
         p(&file),
     ]);
     assert!(out.status.success(), "{}", stderr(&out));
@@ -492,11 +482,18 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
     // 3-1-1/3.1): lightship_t was 1569.7907856537108. Re-pinned again (issue #745, the plate model's
     // ordered weight): lightship_t was 1537.517376832394.
     let r = &results["results"];
-    assert_close(r["cargo_t"].as_f64().unwrap(), 2077.917858761847, "cargo_t");
+    // Re-pinned again (issue #850, the ADN hull limits size the tank on a river-only stack): cargo_t was
+    // 2077.917858761847.
+    assert_close(
+        r["cargo_t"].as_f64().unwrap(),
+        1815.3019802248543,
+        "cargo_t",
+    );
     assert_close(
         r["lightship_t"].as_f64().unwrap(),
-        // Re-pinned again (spec 0011 D17); was 1506.0673218519578.
-        1521.630185591528,
+        // Re-pinned again (spec 0011 D17); was 1506.0673218519578. Re-pinned again (issue #850, the ADN
+        // hull limits size the tank on a river-only stack); was 1521.630185591528.
+        1505.4984725541242,
         "lightship_t",
     );
     // Re-pinned (issue #264); was "tank volume" (stepped IGC_2G) and "draught — Draught limit" (issue #237).
