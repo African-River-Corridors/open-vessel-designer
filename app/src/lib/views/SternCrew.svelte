@@ -81,7 +81,35 @@
     {/if}
 
     <h4>{t("app-stern-rooms")}</h4>
-    <p class="note" data-testid="stern-rooms">{t("app-stern-rooms-later")}</p>
+    {#if f.rooms}
+      <table data-testid="stern-rooms">
+        <thead>
+          <tr>
+            <th>{t("app-stern-room")}</th>
+            <th class="num">{t("app-stern-room-count")}</th>
+            <th class="num">{t("app-stern-room-each")}<span class="unit">&nbsp;(m²)</span></th>
+            <th class="num">{t("app-stern-room-area")}<span class="unit">&nbsp;(m²)</span></th>
+            <th>{t("app-stern-room-clause")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each f.rooms.rows as r (r.id)}
+            <tr data-row="room">
+              <th>{say(r.name, ids)}</th>
+              <td class="num" title={full(r.count)}>{n(r.count, 0)}</td>
+              <td class="num" title={full(r.areaEachM2)}>{n(r.areaEachM2, 2)}</td>
+              <td class="num" title={full(r.areaM2)}>{n(r.areaM2, 2)}</td>
+              <td class="why">{r.clause}</td>
+            </tr>
+          {/each}
+          <tr data-row="rooms-total"><th>{t("app-stern-rooms-total")}</th><td></td><td></td><td class="num" title={full(f.rooms.totalM2)}>{n(f.rooms.totalM2, 2)}</td><td></td></tr>
+        </tbody>
+      </table>
+      {#if f.rooms.ruleNote}<p class="note">{say(f.rooms.ruleNote, ids)}</p>{/if}
+      {#if !f.rooms.settled}<p class="note" data-testid="stern-rooms-unsettled">{t("app-stern-rooms-unsettled")}</p>{/if}
+    {:else}
+      <p class="note" data-testid="stern-rooms">{t("app-stern-rooms-none")}</p>
+    {/if}
     <p class="note" data-testid="stern-drawing-later">{t("app-stern-drawing-later")}</p>
   {/if}
 </div>

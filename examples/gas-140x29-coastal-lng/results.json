@@ -3566,132 +3566,11 @@
             "vcg_m": 7.1033333333333335
           }
         ],
-        "crew": {
-          "inputs": {
-            "gross_tonnage": 12843.008855522432,
-            "gross_tonnage_source": "computed",
-            "navigation_hours_per_day": 24.0,
-            "unmanned_machinery_space": true,
-            "propulsion_kw": 1717.1299626370062,
-            "genset_kw": 2400.0,
-            "power_kw": 2400.0,
-            "power_basis": "the total genset rating (the higher band, spec 0011 D14)",
-            "length_m": 140.0,
-            "gas_cargo": true,
-            "service_area": "coastal-and-river"
-          },
-          "regime": "seagoing",
-          "rule_set": {
-            "id": "liberia-man-001",
-            "version": "1.0.0",
-            "hash": "dd6d5621017e1ec4dd93f82381b5543e090e46eea4668a6a38db1cf7f5b5c2c1",
-            "status": "draft",
-            "basis": "a draft Rule Set: no second reader has verified it"
-          },
-          "manning_scale": {
-            "column": "c6",
-            "exact": false,
-            "gt_band": 4,
-            "kw_band": 1,
-            "unattended_machinery": true,
-            "table_total": 13,
-            "hole": "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook",
-            "other_neighbour_column": "c9",
-            "other_neighbour_total": 12
-          },
-          "watches": {
-            "watchkeepers": 3,
-            "master_watch_free": true,
-            "deck_officers_needed": 4,
-            "basis": "more than 12 navigation hours in 24: three watchkeepers (STCW A-VIII/1 rest, an estimate); the master keeps no regular watch above 3,000 GT (MAN-001 3.2.1)"
-          },
-          "roles": [
-            {
-              "role": "master",
-              "count": 1
-            },
-            {
-              "role": "chief-mate",
-              "count": 1
-            },
-            {
-              "role": "oow",
-              "count": 2
-            },
-            {
-              "role": "ab-deck",
-              "count": 3
-            },
-            {
-              "role": "rating-nav",
-              "count": 2
-            },
-            {
-              "role": "chief-engineer",
-              "count": 1
-            },
-            {
-              "role": "second-engineer",
-              "count": 1
-            },
-            {
-              "role": "ab-engine",
-              "count": 1
-            },
-            {
-              "role": "rating-engine",
-              "count": 1
-            }
-          ],
-          "deck_officers": 4,
-          "engineers": 2,
-          "ratings": 7,
-          "cook": 1,
-          "cross_check": {
-            "rule_set": {
-              "id": "uk-msn-1868",
-              "version": "1.0.0",
-              "hash": "5bae3778bf5b365113976d597e23f36721c0493e764a754f3d3b46dee26b1efb",
-              "status": "draft",
-              "basis": "a draft Rule Set: no second reader has verified it"
-            },
-            "uk_officers": 7,
-            "uk_deck_officers": 4,
-            "uk_engineer_officers": 3,
-            "liberia_officers": 6,
-            "difference": 1,
-            "flagged": false,
-            "trading_area": "unlimited",
-            "basis": "officers only (MSN 1868 gives no ratings); trading area unlimited, the cautious reading, as the UK's near-coastal limit (150 nm from a UK haven) is a national meaning the Service Area cannot show; a difference over one person is flagged (spec 0011 4.1 step 10)"
-          },
-          "source": "computed",
-          "typed_crew": null,
-          "below_minimum": false,
-          "minimum": 14,
-          "owner_margin": [
-            {
-              "role": "cargo-engineer",
-              "count": 1
-            },
-            {
-              "role": "steward",
-              "count": 1
-            },
-            {
-              "role": "electro-technical-officer",
-              "count": 1
-            }
-          ],
-          "planning_low": 15,
-          "planning_high": 17,
-          "crew": 17,
-          "spare_berths": 2,
-          "berths": 19,
-          "notes": [
-            "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
-          ],
-          "status": "estimate",
-          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. The deckhouse rooms read the berths (issue #780)."
+        "stern_arrangement": {
+          "style": "container_block",
+          "tiers": null,
+          "wheelhouse": "elevating",
+          "wheelhouse_basis": "input"
         },
         "stern_block_mass": {
           "total_t": 513.7969035703804,
@@ -11100,6 +10979,133 @@
           "deckhouse_volume_m3": 0.0,
           "basis": "ITC 1969, Annex I, Regulation 3 (UN Treaty Series vol. 1291, No. I-21264, p. 15): GT = K1 V, K1 = 0.2 + 0.02 log10 V; V the total volume of all enclosed spaces (Regulation 2(4)), measured to the inner side of the shell (Regulation 6(1))",
           "volume_basis": "V = the moulded hull volume to the deck at the centre line (sheer and camber included) plus the enclosed volume above the main deck that the stern block has today (the 40 ft units and the wheelhouse). The tiers of the deckhouse (spec 0011) join V when the Arrangement Style is deckhouse, and are nothing for the container block. No hatch coamings, no appendages, and no excluded spaces (Regulation 2(5)) are taken off"
+        },
+        "crew": {
+          "inputs": {
+            "gross_tonnage": 12843.008855522432,
+            "gross_tonnage_source": "computed",
+            "navigation_hours_per_day": 24.0,
+            "unmanned_machinery_space": true,
+            "propulsion_kw": 1717.1299626370062,
+            "genset_kw": 2400.0,
+            "power_kw": 2400.0,
+            "power_basis": "the total genset rating (the higher band, spec 0011 D14)",
+            "length_m": 140.0,
+            "gas_cargo": true,
+            "service_area": "coastal-and-river"
+          },
+          "regime": "seagoing",
+          "rule_set": {
+            "id": "liberia-man-001",
+            "version": "1.0.0",
+            "hash": "dd6d5621017e1ec4dd93f82381b5543e090e46eea4668a6a38db1cf7f5b5c2c1",
+            "status": "draft",
+            "basis": "a draft Rule Set: no second reader has verified it"
+          },
+          "manning_scale": {
+            "column": "c6",
+            "exact": false,
+            "gt_band": 4,
+            "kw_band": 1,
+            "unattended_machinery": true,
+            "table_total": 13,
+            "hole": "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook",
+            "other_neighbour_column": "c9",
+            "other_neighbour_total": 12
+          },
+          "watches": {
+            "watchkeepers": 3,
+            "master_watch_free": true,
+            "deck_officers_needed": 4,
+            "basis": "more than 12 navigation hours in 24: three watchkeepers (STCW A-VIII/1 rest, an estimate); the master keeps no regular watch above 3,000 GT (MAN-001 3.2.1)"
+          },
+          "roles": [
+            {
+              "role": "master",
+              "count": 1
+            },
+            {
+              "role": "chief-mate",
+              "count": 1
+            },
+            {
+              "role": "oow",
+              "count": 2
+            },
+            {
+              "role": "ab-deck",
+              "count": 3
+            },
+            {
+              "role": "rating-nav",
+              "count": 2
+            },
+            {
+              "role": "chief-engineer",
+              "count": 1
+            },
+            {
+              "role": "second-engineer",
+              "count": 1
+            },
+            {
+              "role": "ab-engine",
+              "count": 1
+            },
+            {
+              "role": "rating-engine",
+              "count": 1
+            }
+          ],
+          "deck_officers": 4,
+          "engineers": 2,
+          "ratings": 7,
+          "cook": 1,
+          "cross_check": {
+            "rule_set": {
+              "id": "uk-msn-1868",
+              "version": "1.0.0",
+              "hash": "5bae3778bf5b365113976d597e23f36721c0493e764a754f3d3b46dee26b1efb",
+              "status": "draft",
+              "basis": "a draft Rule Set: no second reader has verified it"
+            },
+            "uk_officers": 7,
+            "uk_deck_officers": 4,
+            "uk_engineer_officers": 3,
+            "liberia_officers": 6,
+            "difference": 1,
+            "flagged": false,
+            "trading_area": "unlimited",
+            "basis": "officers only (MSN 1868 gives no ratings); trading area unlimited, the cautious reading, as the UK's near-coastal limit (150 nm from a UK haven) is a national meaning the Service Area cannot show; a difference over one person is flagged (spec 0011 4.1 step 10)"
+          },
+          "source": "computed",
+          "typed_crew": null,
+          "below_minimum": false,
+          "minimum": 14,
+          "owner_margin": [
+            {
+              "role": "cargo-engineer",
+              "count": 1
+            },
+            {
+              "role": "steward",
+              "count": 1
+            },
+            {
+              "role": "electro-technical-officer",
+              "count": 1
+            }
+          ],
+          "planning_low": 15,
+          "planning_high": 17,
+          "crew": 17,
+          "spare_berths": 2,
+          "berths": 19,
+          "notes": [
+            "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
+          ],
+          "status": "estimate",
+          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. The deckhouse rooms read the berths (issue #780)."
         }
       }
     },
@@ -14667,132 +14673,11 @@
             "vcg_m": 7.1033333333333335
           }
         ],
-        "crew": {
-          "inputs": {
-            "gross_tonnage": 12843.008855522432,
-            "gross_tonnage_source": "computed",
-            "navigation_hours_per_day": 24.0,
-            "unmanned_machinery_space": true,
-            "propulsion_kw": 1717.1299626370062,
-            "genset_kw": 2400.0,
-            "power_kw": 2400.0,
-            "power_basis": "the total genset rating (the higher band, spec 0011 D14)",
-            "length_m": 140.0,
-            "gas_cargo": true,
-            "service_area": "coastal-and-river"
-          },
-          "regime": "seagoing",
-          "rule_set": {
-            "id": "liberia-man-001",
-            "version": "1.0.0",
-            "hash": "dd6d5621017e1ec4dd93f82381b5543e090e46eea4668a6a38db1cf7f5b5c2c1",
-            "status": "draft",
-            "basis": "a draft Rule Set: no second reader has verified it"
-          },
-          "manning_scale": {
-            "column": "c6",
-            "exact": false,
-            "gt_band": 4,
-            "kw_band": 1,
-            "unattended_machinery": true,
-            "table_total": 13,
-            "hole": "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook",
-            "other_neighbour_column": "c9",
-            "other_neighbour_total": 12
-          },
-          "watches": {
-            "watchkeepers": 3,
-            "master_watch_free": true,
-            "deck_officers_needed": 4,
-            "basis": "more than 12 navigation hours in 24: three watchkeepers (STCW A-VIII/1 rest, an estimate); the master keeps no regular watch above 3,000 GT (MAN-001 3.2.1)"
-          },
-          "roles": [
-            {
-              "role": "master",
-              "count": 1
-            },
-            {
-              "role": "chief-mate",
-              "count": 1
-            },
-            {
-              "role": "oow",
-              "count": 2
-            },
-            {
-              "role": "ab-deck",
-              "count": 3
-            },
-            {
-              "role": "rating-nav",
-              "count": 2
-            },
-            {
-              "role": "chief-engineer",
-              "count": 1
-            },
-            {
-              "role": "second-engineer",
-              "count": 1
-            },
-            {
-              "role": "ab-engine",
-              "count": 1
-            },
-            {
-              "role": "rating-engine",
-              "count": 1
-            }
-          ],
-          "deck_officers": 4,
-          "engineers": 2,
-          "ratings": 7,
-          "cook": 1,
-          "cross_check": {
-            "rule_set": {
-              "id": "uk-msn-1868",
-              "version": "1.0.0",
-              "hash": "5bae3778bf5b365113976d597e23f36721c0493e764a754f3d3b46dee26b1efb",
-              "status": "draft",
-              "basis": "a draft Rule Set: no second reader has verified it"
-            },
-            "uk_officers": 7,
-            "uk_deck_officers": 4,
-            "uk_engineer_officers": 3,
-            "liberia_officers": 6,
-            "difference": 1,
-            "flagged": false,
-            "trading_area": "unlimited",
-            "basis": "officers only (MSN 1868 gives no ratings); trading area unlimited, the cautious reading, as the UK's near-coastal limit (150 nm from a UK haven) is a national meaning the Service Area cannot show; a difference over one person is flagged (spec 0011 4.1 step 10)"
-          },
-          "source": "computed",
-          "typed_crew": null,
-          "below_minimum": false,
-          "minimum": 14,
-          "owner_margin": [
-            {
-              "role": "cargo-engineer",
-              "count": 1
-            },
-            {
-              "role": "steward",
-              "count": 1
-            },
-            {
-              "role": "electro-technical-officer",
-              "count": 1
-            }
-          ],
-          "planning_low": 15,
-          "planning_high": 17,
-          "crew": 17,
-          "spare_berths": 2,
-          "berths": 19,
-          "notes": [
-            "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
-          ],
-          "status": "estimate",
-          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. The deckhouse rooms read the berths (issue #780)."
+        "stern_arrangement": {
+          "style": "container_block",
+          "tiers": null,
+          "wheelhouse": "elevating",
+          "wheelhouse_basis": "input"
         },
         "stern_block_mass": {
           "total_t": 513.7969035703804,
@@ -22201,6 +22086,133 @@
           "deckhouse_volume_m3": 0.0,
           "basis": "ITC 1969, Annex I, Regulation 3 (UN Treaty Series vol. 1291, No. I-21264, p. 15): GT = K1 V, K1 = 0.2 + 0.02 log10 V; V the total volume of all enclosed spaces (Regulation 2(4)), measured to the inner side of the shell (Regulation 6(1))",
           "volume_basis": "V = the moulded hull volume to the deck at the centre line (sheer and camber included) plus the enclosed volume above the main deck that the stern block has today (the 40 ft units and the wheelhouse). The tiers of the deckhouse (spec 0011) join V when the Arrangement Style is deckhouse, and are nothing for the container block. No hatch coamings, no appendages, and no excluded spaces (Regulation 2(5)) are taken off"
+        },
+        "crew": {
+          "inputs": {
+            "gross_tonnage": 12843.008855522432,
+            "gross_tonnage_source": "computed",
+            "navigation_hours_per_day": 24.0,
+            "unmanned_machinery_space": true,
+            "propulsion_kw": 1717.1299626370062,
+            "genset_kw": 2400.0,
+            "power_kw": 2400.0,
+            "power_basis": "the total genset rating (the higher band, spec 0011 D14)",
+            "length_m": 140.0,
+            "gas_cargo": true,
+            "service_area": "coastal-and-river"
+          },
+          "regime": "seagoing",
+          "rule_set": {
+            "id": "liberia-man-001",
+            "version": "1.0.0",
+            "hash": "dd6d5621017e1ec4dd93f82381b5543e090e46eea4668a6a38db1cf7f5b5c2c1",
+            "status": "draft",
+            "basis": "a draft Rule Set: no second reader has verified it"
+          },
+          "manning_scale": {
+            "column": "c6",
+            "exact": false,
+            "gt_band": 4,
+            "kw_band": 1,
+            "unattended_machinery": true,
+            "table_total": 13,
+            "hole": "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook",
+            "other_neighbour_column": "c9",
+            "other_neighbour_total": 12
+          },
+          "watches": {
+            "watchkeepers": 3,
+            "master_watch_free": true,
+            "deck_officers_needed": 4,
+            "basis": "more than 12 navigation hours in 24: three watchkeepers (STCW A-VIII/1 rest, an estimate); the master keeps no regular watch above 3,000 GT (MAN-001 3.2.1)"
+          },
+          "roles": [
+            {
+              "role": "master",
+              "count": 1
+            },
+            {
+              "role": "chief-mate",
+              "count": 1
+            },
+            {
+              "role": "oow",
+              "count": 2
+            },
+            {
+              "role": "ab-deck",
+              "count": 3
+            },
+            {
+              "role": "rating-nav",
+              "count": 2
+            },
+            {
+              "role": "chief-engineer",
+              "count": 1
+            },
+            {
+              "role": "second-engineer",
+              "count": 1
+            },
+            {
+              "role": "ab-engine",
+              "count": 1
+            },
+            {
+              "role": "rating-engine",
+              "count": 1
+            }
+          ],
+          "deck_officers": 4,
+          "engineers": 2,
+          "ratings": 7,
+          "cook": 1,
+          "cross_check": {
+            "rule_set": {
+              "id": "uk-msn-1868",
+              "version": "1.0.0",
+              "hash": "5bae3778bf5b365113976d597e23f36721c0493e764a754f3d3b46dee26b1efb",
+              "status": "draft",
+              "basis": "a draft Rule Set: no second reader has verified it"
+            },
+            "uk_officers": 7,
+            "uk_deck_officers": 4,
+            "uk_engineer_officers": 3,
+            "liberia_officers": 6,
+            "difference": 1,
+            "flagged": false,
+            "trading_area": "unlimited",
+            "basis": "officers only (MSN 1868 gives no ratings); trading area unlimited, the cautious reading, as the UK's near-coastal limit (150 nm from a UK haven) is a national meaning the Service Area cannot show; a difference over one person is flagged (spec 0011 4.1 step 10)"
+          },
+          "source": "computed",
+          "typed_crew": null,
+          "below_minimum": false,
+          "minimum": 14,
+          "owner_margin": [
+            {
+              "role": "cargo-engineer",
+              "count": 1
+            },
+            {
+              "role": "steward",
+              "count": 1
+            },
+            {
+              "role": "electro-technical-officer",
+              "count": 1
+            }
+          ],
+          "planning_low": 15,
+          "planning_high": 17,
+          "crew": 17,
+          "spare_berths": 2,
+          "berths": 19,
+          "notes": [
+            "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
+          ],
+          "status": "estimate",
+          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. The deckhouse rooms read the berths (issue #780)."
         }
       }
     },
@@ -25790,132 +25802,11 @@
             "vcg_m": 7.6033333333333335
           }
         ],
-        "crew": {
-          "inputs": {
-            "gross_tonnage": 16467.910427052655,
-            "gross_tonnage_source": "computed",
-            "navigation_hours_per_day": 24.0,
-            "unmanned_machinery_space": true,
-            "propulsion_kw": 2021.8984403083487,
-            "genset_kw": 2400.0,
-            "power_kw": 2400.0,
-            "power_basis": "the total genset rating (the higher band, spec 0011 D14)",
-            "length_m": 140.0,
-            "gas_cargo": true,
-            "service_area": "coastal-and-river"
-          },
-          "regime": "seagoing",
-          "rule_set": {
-            "id": "liberia-man-001",
-            "version": "1.0.0",
-            "hash": "dd6d5621017e1ec4dd93f82381b5543e090e46eea4668a6a38db1cf7f5b5c2c1",
-            "status": "draft",
-            "basis": "a draft Rule Set: no second reader has verified it"
-          },
-          "manning_scale": {
-            "column": "c6",
-            "exact": false,
-            "gt_band": 4,
-            "kw_band": 1,
-            "unattended_machinery": true,
-            "table_total": 13,
-            "hole": "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook",
-            "other_neighbour_column": "c9",
-            "other_neighbour_total": 12
-          },
-          "watches": {
-            "watchkeepers": 3,
-            "master_watch_free": true,
-            "deck_officers_needed": 4,
-            "basis": "more than 12 navigation hours in 24: three watchkeepers (STCW A-VIII/1 rest, an estimate); the master keeps no regular watch above 3,000 GT (MAN-001 3.2.1)"
-          },
-          "roles": [
-            {
-              "role": "master",
-              "count": 1
-            },
-            {
-              "role": "chief-mate",
-              "count": 1
-            },
-            {
-              "role": "oow",
-              "count": 2
-            },
-            {
-              "role": "ab-deck",
-              "count": 3
-            },
-            {
-              "role": "rating-nav",
-              "count": 2
-            },
-            {
-              "role": "chief-engineer",
-              "count": 1
-            },
-            {
-              "role": "second-engineer",
-              "count": 1
-            },
-            {
-              "role": "ab-engine",
-              "count": 1
-            },
-            {
-              "role": "rating-engine",
-              "count": 1
-            }
-          ],
-          "deck_officers": 4,
-          "engineers": 2,
-          "ratings": 7,
-          "cook": 1,
-          "cross_check": {
-            "rule_set": {
-              "id": "uk-msn-1868",
-              "version": "1.0.0",
-              "hash": "5bae3778bf5b365113976d597e23f36721c0493e764a754f3d3b46dee26b1efb",
-              "status": "draft",
-              "basis": "a draft Rule Set: no second reader has verified it"
-            },
-            "uk_officers": 7,
-            "uk_deck_officers": 4,
-            "uk_engineer_officers": 3,
-            "liberia_officers": 6,
-            "difference": 1,
-            "flagged": false,
-            "trading_area": "unlimited",
-            "basis": "officers only (MSN 1868 gives no ratings); trading area unlimited, the cautious reading, as the UK's near-coastal limit (150 nm from a UK haven) is a national meaning the Service Area cannot show; a difference over one person is flagged (spec 0011 4.1 step 10)"
-          },
-          "source": "computed",
-          "typed_crew": null,
-          "below_minimum": false,
-          "minimum": 14,
-          "owner_margin": [
-            {
-              "role": "cargo-engineer",
-              "count": 1
-            },
-            {
-              "role": "steward",
-              "count": 1
-            },
-            {
-              "role": "electro-technical-officer",
-              "count": 1
-            }
-          ],
-          "planning_low": 15,
-          "planning_high": 17,
-          "crew": 17,
-          "spare_berths": 2,
-          "berths": 19,
-          "notes": [
-            "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
-          ],
-          "status": "estimate",
-          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. The deckhouse rooms read the berths (issue #780)."
+        "stern_arrangement": {
+          "style": "container_block",
+          "tiers": null,
+          "wheelhouse": "elevating",
+          "wheelhouse_basis": "input"
         },
         "stern_block_mass": {
           "total_t": 582.4165430995258,
@@ -33324,6 +33215,133 @@
           "deckhouse_volume_m3": 0.0,
           "basis": "ITC 1969, Annex I, Regulation 3 (UN Treaty Series vol. 1291, No. I-21264, p. 15): GT = K1 V, K1 = 0.2 + 0.02 log10 V; V the total volume of all enclosed spaces (Regulation 2(4)), measured to the inner side of the shell (Regulation 6(1))",
           "volume_basis": "V = the moulded hull volume to the deck at the centre line (sheer and camber included) plus the enclosed volume above the main deck that the stern block has today (the 40 ft units and the wheelhouse). The tiers of the deckhouse (spec 0011) join V when the Arrangement Style is deckhouse, and are nothing for the container block. No hatch coamings, no appendages, and no excluded spaces (Regulation 2(5)) are taken off"
+        },
+        "crew": {
+          "inputs": {
+            "gross_tonnage": 16467.910427052655,
+            "gross_tonnage_source": "computed",
+            "navigation_hours_per_day": 24.0,
+            "unmanned_machinery_space": true,
+            "propulsion_kw": 2021.8984403083487,
+            "genset_kw": 2400.0,
+            "power_kw": 2400.0,
+            "power_basis": "the total genset rating (the higher band, spec 0011 D14)",
+            "length_m": 140.0,
+            "gas_cargo": true,
+            "service_area": "coastal-and-river"
+          },
+          "regime": "seagoing",
+          "rule_set": {
+            "id": "liberia-man-001",
+            "version": "1.0.0",
+            "hash": "dd6d5621017e1ec4dd93f82381b5543e090e46eea4668a6a38db1cf7f5b5c2c1",
+            "status": "draft",
+            "basis": "a draft Rule Set: no second reader has verified it"
+          },
+          "manning_scale": {
+            "column": "c6",
+            "exact": false,
+            "gt_band": 4,
+            "kw_band": 1,
+            "unattended_machinery": true,
+            "table_total": 13,
+            "hole": "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook",
+            "other_neighbour_column": "c9",
+            "other_neighbour_total": 12
+          },
+          "watches": {
+            "watchkeepers": 3,
+            "master_watch_free": true,
+            "deck_officers_needed": 4,
+            "basis": "more than 12 navigation hours in 24: three watchkeepers (STCW A-VIII/1 rest, an estimate); the master keeps no regular watch above 3,000 GT (MAN-001 3.2.1)"
+          },
+          "roles": [
+            {
+              "role": "master",
+              "count": 1
+            },
+            {
+              "role": "chief-mate",
+              "count": 1
+            },
+            {
+              "role": "oow",
+              "count": 2
+            },
+            {
+              "role": "ab-deck",
+              "count": 3
+            },
+            {
+              "role": "rating-nav",
+              "count": 2
+            },
+            {
+              "role": "chief-engineer",
+              "count": 1
+            },
+            {
+              "role": "second-engineer",
+              "count": 1
+            },
+            {
+              "role": "ab-engine",
+              "count": 1
+            },
+            {
+              "role": "rating-engine",
+              "count": 1
+            }
+          ],
+          "deck_officers": 4,
+          "engineers": 2,
+          "ratings": 7,
+          "cook": 1,
+          "cross_check": {
+            "rule_set": {
+              "id": "uk-msn-1868",
+              "version": "1.0.0",
+              "hash": "5bae3778bf5b365113976d597e23f36721c0493e764a754f3d3b46dee26b1efb",
+              "status": "draft",
+              "basis": "a draft Rule Set: no second reader has verified it"
+            },
+            "uk_officers": 7,
+            "uk_deck_officers": 4,
+            "uk_engineer_officers": 3,
+            "liberia_officers": 6,
+            "difference": 1,
+            "flagged": false,
+            "trading_area": "unlimited",
+            "basis": "officers only (MSN 1868 gives no ratings); trading area unlimited, the cautious reading, as the UK's near-coastal limit (150 nm from a UK haven) is a national meaning the Service Area cannot show; a difference over one person is flagged (spec 0011 4.1 step 10)"
+          },
+          "source": "computed",
+          "typed_crew": null,
+          "below_minimum": false,
+          "minimum": 14,
+          "owner_margin": [
+            {
+              "role": "cargo-engineer",
+              "count": 1
+            },
+            {
+              "role": "steward",
+              "count": 1
+            },
+            {
+              "role": "electro-technical-officer",
+              "count": 1
+            }
+          ],
+          "planning_low": 15,
+          "planning_high": 17,
+          "crew": 17,
+          "spare_berths": 2,
+          "berths": 19,
+          "notes": [
+            "MAN-001 12.2 has no column for GT band 4, kW band 0, unattended machinery: column c6 (the higher neighbour, spec 0011 4.1 step 6) is used; the other neighbour, column c9, has 12 persons before the cook"
+          ],
+          "status": "estimate",
+          "basis": "Spec 0011 section 4.1: the minimum crew from a manning Rule Set (draft, unverified), the owner margin apart from it, and 2 spare berths (D16, an estimate: a pilot and one supernumerary). Concept and preliminary design only: never a Safe Manning Document. The deckhouse rooms read the berths (issue #780)."
         }
       }
     }

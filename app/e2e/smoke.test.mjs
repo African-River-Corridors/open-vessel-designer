@@ -304,6 +304,7 @@ describe("OVD app smoke tests", () => {
     assert.match(await figure("wheelhouse"), /^(Fixed|Elevating)/);
     assert.match(await figure("vent-deck"), /\d/);
     assert.ok((await browser.$$("[data-row=fuel-item]")).length > 0, "the gas fuel system items");
+    assert.ok((await browser.$$("[data-testid=stern-rooms] [data-row=room]")).length > 0, "the rooms table");
     await browser.pause(300);
     assert.ok((await overflow()) <= 0, "the stern view of a deckhouse scrolls");
   });

@@ -358,7 +358,14 @@ app-stern-not-met = not met
 app-stern-fuel-item = Gas fuel system item
 app-stern-fuel-mass = Mass
 app-stern-rooms = Rooms
-app-stern-rooms-later = Rooms: sized when #780 lands.
+app-stern-rooms-none = Rooms are sized for a deckhouse stern only. A container block holds its accommodation in units.
+app-stern-room = Room
+app-stern-room-count = Count
+app-stern-room-each = Each
+app-stern-room-area = Area
+app-stern-room-clause = Clause
+app-stern-rooms-total = Total
+app-stern-rooms-unsettled = The berths of the rooms differ from the berths of the crew block above.
 app-stern-drawing-later = The deckhouse drawing joins this view with #783. Until then it shows no drawing.
 
 ## Capital budget view

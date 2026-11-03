@@ -23,6 +23,7 @@ test("the crew figures are the keys of the run's crew block", () => {
   assert.equal(f.crew.crossCheck.flagged, c.cross_check.flagged);
   assert.equal(f.crew.crossCheck.difference, c.cross_check.difference);
   assert.equal(f.outfitWarning, null, "a container block has no outfit warning");
+  assert.equal(f.rooms, null, "a container block has no rooms table");
 });
 
 test("the gas figures are the keys of the run and the gas fuel system items", () => {
@@ -45,6 +46,7 @@ test("a deckhouse Option shows its tiers, its wheelhouse and the outfit warning"
     text_ids: { [english]: { id: OUTFIT_WARNING_ID } },
     results: { vent_exit_above_keel_m: 15.3, vent_exit_above_deck_m: 10.8, vent_distance_to_accommodation_m: 84.3, vent_mast_distance_met: true },
     stern_block_mass: { gas_fuel_system: { items: [{ label: "gas heater", mass_t: 0.48 }] } },
+    rooms: { berths: 19, total_m2: 138.09, settled: true, rows: [{ id: "cabin", name: "Sleeping cabin", count: 19, area_each_m2: 3.5, area_m2: 66.5, clause: "15.02(9)" }] },
   };
   const f = sternCrewFigures(results, results.text_ids);
   assert.equal(f.style, "deckhouse");
@@ -56,6 +58,8 @@ test("a deckhouse Option shows its tiers, its wheelhouse and the outfit warning"
   assert.equal(f.gas.ventExitAboveDeckM, 10.8);
   assert.equal(f.gas.ventDistanceMet, true);
   assert.deepEqual(f.gas.fuelItems, [{ label: "gas heater", massT: 0.48 }]);
+  assert.equal(f.rooms.totalM2, 138.09);
+  assert.deepEqual(f.rooms.rows, [{ id: "cabin", name: "Sleeping cabin", count: 19, areaEachM2: 3.5, areaM2: 66.5, clause: "15.02(9)" }]);
 });
 
 test("a run with no stern arrangement gives no figures", () => {

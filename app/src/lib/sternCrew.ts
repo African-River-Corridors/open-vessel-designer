@@ -39,6 +39,17 @@ export interface GasFigures {
   fuelItems: { label: string; massT: number | null }[];
 }
 
+export interface RoomsFigures {
+  berths: number | null;
+  totalM2: number | null;
+  requiredAreaM2: number | null;
+  tiers: number | null;
+  rule: string | null;
+  ruleNote: string | null;
+  settled: boolean;
+  rows: { id: string; name: string; count: number | null; areaEachM2: number | null; areaM2: number | null; clause: string }[];
+}
+
 export interface SternCrewFigures {
   style: "container_block" | "deckhouse" | null;
   tiers: number | null;
@@ -49,6 +60,8 @@ export interface SternCrewFigures {
   outfitWarning: string | null;
   crew: CrewFigures | null;
   gas: GasFigures | null;
+  /** The rooms table of a deckhouse (`rooms`); null for any other style. */
+  rooms: RoomsFigures | null;
 }
 
 function ruleSetOf(v: unknown): RuleSetRef | null {
@@ -94,6 +107,24 @@ function gasOf(results: Obj): GasFigures | null {
   };
 }
 
+function roomsOf(v: unknown): RoomsFigures | null {
+  const r = obj(v);
+  if (!r || !Array.isArray(r.rows)) return null;
+  return {
+    berths: numOf(r.berths),
+    totalM2: numOf(r.total_m2),
+    requiredAreaM2: numOf(r.required_area_m2),
+    tiers: numOf(r.tiers),
+    rule: strOf(r.rule),
+    ruleNote: strOf(r.rule_note),
+    settled: r.settled === true,
+    rows: r.rows.map((x) => {
+      const o = obj(x) ?? {};
+      return { id: strOf(o.id) ?? "", name: strOf(o.name) ?? "", count: numOf(o.count), areaEachM2: numOf(o.area_each_m2), areaM2: numOf(o.area_m2), clause: strOf(o.clause) ?? "" };
+    }),
+  };
+}
+
 /** The figures of the view; `null` where the Option has no stern block (a barge, a pushed Formation). */
 export function sternCrewFigures(
   results: Record<string, unknown> | null | undefined,
@@ -112,5 +143,6 @@ export function sternCrewFigures(
     outfitWarning: style === "deckhouse" ? outfit : null,
     crew: crewOf(results.crew),
     gas: gasOf(results),
+    rooms: roomsOf(results.rooms),
   };
 }
