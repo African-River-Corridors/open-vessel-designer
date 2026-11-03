@@ -83,6 +83,8 @@
   /** The convoy totals of the shown results; only a pushed convoy has them, so only it has the Convoy tab. */
   const convoyOf = (r: unknown) => (r as { convoy?: never } | null)?.convoy ?? null;
   const stabilityOf = (r: unknown) => (r as { stability?: never }).stability;
+  /** The river and sea air drafts of each condition (`air_drafts`, issue #888); only a gas hull has them. */
+  const airDraftsOf = (r: unknown) => (r as { air_drafts?: never } | null)?.air_drafts ?? null;
   let stale = $derived(outcome?.status === "not_run");
   /** The views of the Option: its own, or the last good ones while the Design has a hard error. */
   let views = $derived.by((): HullViews | null => {
@@ -186,8 +188,8 @@
         <p class="note">{t("app-no-results-show")}</p>
       {:else}
         <!-- New results build a new chart, fitted. -->
-        {#key JSON.stringify([active, stabilityOf(results)])}
-          <Stability {ids} stability={stabilityOf(results)} marks={(results as { stability_marks?: never }).stability_marks} />
+        {#key JSON.stringify([active, stabilityOf(results), airDraftsOf(results)])}
+          <Stability {ids} stability={stabilityOf(results)} marks={(results as { stability_marks?: never }).stability_marks} airDrafts={airDraftsOf(results)} />
         {/key}
       {/if}
     {:else if current === "ballast"}

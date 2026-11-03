@@ -44,11 +44,32 @@
     limitations: string[];
     conditions: Condition[];
   }
+  /** One condition's river and sea air draft, from `air_drafts` of the results (issue #888). */
+  interface AirRow {
+    name: string;
+    draught_m: number;
+    river_m: number;
+    sea_m: number;
+    /** The river air draft against the typed limit; `null` when no limit is typed. */
+    river_ok: boolean | null;
+  }
+  interface AirDrafts {
+    limit_m: number | null;
+    vent_mast_lowerable: boolean;
+    conditions: AirRow[];
+  }
   /** What the engine says to mark on the curves (`stability_marks` of the results). */
   interface Marks {
     criteria_angles_deg: number[];
   }
-  let { stability, marks, ids }: { stability: StabilityResults | null | undefined; marks: Marks | null | undefined; ids: TextIds | null } = $props();
+  let {
+    stability,
+    marks,
+    ids,
+    airDrafts = null,
+  }: { stability: StabilityResults | null | undefined; marks: Marks | null | undefined; ids: TextIds | null; airDrafts?: AirDrafts | null } = $props();
+  /** The air draft row of a condition, when the results have the block. */
+  const airOf = (name: string): AirRow | undefined => airDrafts?.conditions.find((a) => a.name === name);
   /** Engine text (a condition or criterion name, a limitation) in the Display Language. */
   const tr = (text: string) => say(text, ids);
 
@@ -309,6 +330,11 @@
     { label: "app-stab-col-max-gz-angle", unit: "deg", dp: 0, get: (c) => c.max_gz_deg },
     { label: "app-stab-col-deck-edge", unit: "deg", dp: 1, get: (c) => c.deck_edge_deg },
   ];
+  /** The air draft columns (issue #888): river and sea, and the limit outcome when a limit is typed. */
+  const AIR_COLUMNS: { label: string; testid: string; get: (a: AirRow) => number }[] = [
+    { label: "app-stab-col-air-river", testid: "air-river", get: (a) => a.river_m },
+    { label: "app-stab-col-air-sea", testid: "air-sea", get: (a) => a.sea_m },
+  ];
 
   // Another Display Language: the axis titles again, then a full draw (tick numbers, curve names).
   // Only the language is tracked here; the data has its own effect.
@@ -363,6 +389,14 @@
             {#each COLUMNS as col (col.label)}
               <th class="num">{t(col.label)}{#if col.unit}<span class="unit">&nbsp;({col.unit})</span>{/if}</th>
             {/each}
+            {#if airDrafts}
+              {#each AIR_COLUMNS as col (col.label)}
+                <th class="num">{t(col.label)}<span class="unit">&nbsp;(m)</span></th>
+              {/each}
+              {#if airDrafts.limit_m !== null}
+                <th class="num">{t("app-stab-col-air-limit")}<span class="unit">&nbsp;({num(airDrafts.limit_m, 2)} m)</span></th>
+              {/if}
+            {/if}
           </tr>
         </thead>
         <tbody>
@@ -376,10 +410,23 @@
                 {@const v = col.get(c)}
                 <td class="num" title={v === null ? t("app-not-applicable") : String(v)}>{r(v, col.dp)}</td>
               {/each}
+              {#if airDrafts}
+                {@const air = airOf(c.name)}
+                {#each AIR_COLUMNS as col (col.label)}
+                  <td class="num" data-testid={col.testid} title={air ? String(col.get(air)) : t("app-not-applicable")}>{air ? r(col.get(air), 2) : "–"}</td>
+                {/each}
+                {#if airDrafts.limit_m !== null}
+                  <td class="num" data-testid="air-limit">
+                    {#if air && air.river_ok !== null}<span class="tag {air.river_ok ? 'ok' : 'fail'}">{t(air.river_ok ? "app-pass" : "app-fail")}</span>{:else}–{/if}
+                  </td>
+                {/if}
+              {/if}
             </tr>
           {/each}
         </tbody>
       </table>
+
+      {#if airDrafts}<p class="dim" data-testid="air-note">{t("app-stab-air-note")}</p>{/if}
 
       {#each stability.conditions as c (c.name)}
         <h4>{t("app-stab-criteria-of", { condition: tr(c.name) })}</h4>

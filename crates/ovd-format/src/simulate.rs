@@ -3374,6 +3374,23 @@ fn simulate_gas(
         {
             insert_vent_mast(results, vm);
         }
+        // Issue #888: the river and sea air drafts of each condition, in the results (unhashed).
+        if let (Some(vm), Some(sea_top)) = (&r.vent_mast, r.navigating_top_above_keel_m) {
+            let drafts = air_drafts_block(
+                &AirTops {
+                    river: r.air_draft_top_above_keel_m,
+                    sea: sea_top,
+                    limit: f.engine_inputs.air_draft_limit_m,
+                    lowerable: vm.lowerable,
+                },
+                t,
+                (r.air_draft_light_m, r.air_draft_navigating_light_m),
+                v.get("stability").and_then(|s| s.get("conditions")),
+            );
+            if let Some(o) = v.as_object_mut() {
+                o.insert("air_drafts".to_string(), drafts);
+            }
+        }
         (
             v,
             Measured {
@@ -3397,6 +3414,65 @@ fn simulate_gas(
                 ..Measured::default()
             },
         )
+    })
+}
+
+/// The two tops the air drafts are read from, each above the keel: the river top (wheelhouse lowered;
+/// the vent exit unless the mast lowers) and the sea top (wheelhouse raised, the vent exit always).
+struct AirTops {
+    river: f64,
+    sea: f64,
+    /// The `air_draft_limit_m` the river air draft is checked against, when one is typed.
+    limit: Option<f64>,
+    lowerable: bool,
+}
+
+/// Issue #888: the `air_drafts` block of the results. Each air draft is its top less the condition's
+/// draught: the river one is the `air_draft_m` of the condition, the sea one is new. The block is
+/// outside the results hash (`UNHASHED_KEYS`) so that no saved hash moves. The river top is already in
+/// the hash through the hashed air drafts and draughts; the sea top (wheelhouse raised, the vent exit
+/// always) is not otherwise in the results, so this block is where a reader finds it. `laden` is the
+/// laden draught `t` of the results; `light` carries the engine's own light-condition air drafts
+/// (river, sea). `conditions` follows the `stability` block's conditions, with the limit outcome of
+/// the river air draft.
+fn air_drafts_block(
+    tops: &AirTops,
+    laden_draught: f64,
+    light: (Option<f64>, Option<f64>),
+    conditions: Option<&Value>,
+) -> Value {
+    let rows: Vec<Value> = conditions
+        .and_then(Value::as_array)
+        .map(|list| {
+            list.iter()
+                .filter_map(|c| {
+                    let draught = c.get("draught_m")?.as_f64()?;
+                    Some(json!({
+                        "name": c.get("name").cloned().unwrap_or(Value::Null),
+                        "draught_m": num(draught),
+                        "river_m": num(tops.river - draught),
+                        "sea_m": num(tops.sea - draught),
+                        "river_ok": c.get("air_draft_ok").cloned().unwrap_or(Value::Null),
+                    }))
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    json!({
+        "river_top_m": num(tops.river),
+        "sea_top_m": num(tops.sea),
+        "limit_m": opt_num(tops.limit),
+        "vent_mast_lowerable": tops.lowerable,
+        "laden": {
+            "draught_m": num(laden_draught),
+            "river_m": num(tops.river - laden_draught),
+            "sea_m": num(tops.sea - laden_draught),
+        },
+        "light": {
+            "river_m": opt_num(light.0),
+            "sea_m": opt_num(light.1),
+        },
+        "conditions": rows,
     })
 }
 

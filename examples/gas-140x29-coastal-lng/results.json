@@ -5787,6 +5787,51 @@
             "args": {}
           }
         },
+        "air_drafts": {
+          "river_top_m": 21.666666666666664,
+          "sea_top_m": 21.666666666666664,
+          "limit_m": null,
+          "vent_mast_lowerable": false,
+          "laden": {
+            "draught_m": 3.554970239652365,
+            "river_m": 18.111696427014298,
+            "sea_m": 18.111696427014298
+          },
+          "light": {
+            "river_m": 20.087302738775573,
+            "sea_m": 20.087302738775573
+          },
+          "conditions": [
+            {
+              "name": "Full load, departure",
+              "draught_m": 3.5561434607245244,
+              "river_m": 18.11052320594214,
+              "sea_m": 18.11052320594214,
+              "river_ok": null
+            },
+            {
+              "name": "Full load, arrival",
+              "draught_m": 3.548246181854552,
+              "river_m": 18.118420484812113,
+              "sea_m": 18.118420484812113,
+              "river_ok": null
+            },
+            {
+              "name": "Ballast, departure",
+              "draught_m": 2.543006492673177,
+              "river_m": 19.123660173993486,
+              "sea_m": 19.123660173993486,
+              "river_ok": null
+            },
+            {
+              "name": "Ballast, arrival",
+              "draught_m": 2.53516968244381,
+              "river_m": 19.131496984222853,
+              "sea_m": 19.131496984222853,
+              "river_ok": null
+            }
+          ]
+        },
         "boil_off": {
           "evaluated": true,
           "heat_leak_kw": 106.17163985353027,
@@ -16842,6 +16887,51 @@
             "id": "name-check-boil-off-within-gas-use",
             "args": {}
           }
+        },
+        "air_drafts": {
+          "river_top_m": 21.666666666666664,
+          "sea_top_m": 21.666666666666664,
+          "limit_m": null,
+          "vent_mast_lowerable": false,
+          "laden": {
+            "draught_m": 3.572361492313559,
+            "river_m": 18.094305174353106,
+            "sea_m": 18.094305174353106
+          },
+          "light": {
+            "river_m": 20.08478892080703,
+            "sea_m": 20.08478892080703
+          },
+          "conditions": [
+            {
+              "name": "Full load, departure",
+              "draught_m": 3.573370577729749,
+              "river_m": 18.093296088936917,
+              "sea_m": 18.093296088936917,
+              "river_ok": null
+            },
+            {
+              "name": "Full load, arrival",
+              "draught_m": 3.565475920435637,
+              "river_m": 18.101190746231026,
+              "sea_m": 18.101190746231026,
+              "river_ok": null
+            },
+            {
+              "name": "Ballast, departure",
+              "draught_m": 2.5520087281889237,
+              "river_m": 19.11465793847774,
+              "sea_m": 19.11465793847774,
+              "river_ok": null
+            },
+            {
+              "name": "Ballast, arrival",
+              "draught_m": 2.5441734130853035,
+              "river_m": 19.12249325358136,
+              "sea_m": 19.12249325358136,
+              "river_ok": null
+            }
+          ]
         },
         "boil_off": {
           "evaluated": true,
@@ -27920,6 +28010,51 @@
             "id": "name-check-boil-off-within-gas-use",
             "args": {}
           }
+        },
+        "air_drafts": {
+          "river_top_m": 25.616666666666667,
+          "sea_top_m": 25.616666666666667,
+          "limit_m": null,
+          "vent_mast_lowerable": false,
+          "laden": {
+            "draught_m": 4.311376313749372,
+            "river_m": 21.305290352917297,
+            "sea_m": 21.305290352917297
+          },
+          "light": {
+            "river_m": 23.67810106366151,
+            "sea_m": 23.67810106366151
+          },
+          "conditions": [
+            {
+              "name": "Full load, departure",
+              "draught_m": 4.298172532868657,
+              "river_m": 21.318494133798012,
+              "sea_m": 21.318494133798012,
+              "river_ok": null
+            },
+            {
+              "name": "Full load, arrival",
+              "draught_m": 4.289416848677527,
+              "river_m": 21.32724981798914,
+              "sea_m": 21.32724981798914,
+              "river_ok": null
+            },
+            {
+              "name": "Ballast, departure",
+              "draught_m": 2.9084672750986664,
+              "river_m": 22.708199391568,
+              "sea_m": 22.708199391568,
+              "river_ok": null
+            },
+            {
+              "name": "Ballast, arrival",
+              "draught_m": 2.8998114156483346,
+              "river_m": 22.716855251018334,
+              "sea_m": 22.716855251018334,
+              "river_ok": null
+            }
+          ]
         },
         "boil_off": {
           "evaluated": true,

@@ -1032,6 +1032,52 @@ describe("OVD web smoke tests", () => {
     }
   });
 
+  it("shows the river and sea air draft of each condition and the limit outcome; a lowerable vent mast changes the river column only (issue #888)", async () => {
+    const b = await start();
+    await b.url(`${origin}/ovd/app`);
+    await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
+    await (await b.$("button=I understand")).click();
+    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await openDesign(b, FIXTURE);
+    const tab = (label) => b.$(`//button[@role="tab" and normalize-space()="${label}"]`);
+    await (await tab("Stability & Propulsion")).click();
+    await (await tab("Intact stability")).click();
+    // The table's two columns, as text, and the engine's figures for the same conditions.
+    const read = () =>
+      b.execute(async () => {
+        const cells = (id) => [...document.querySelectorAll(`[data-testid=${id}]`)].map((c) => c.textContent.trim());
+        const air = (await window.__ovdPlatform.evaluate()).options[0].outcome.results.air_drafts;
+        return { river: cells("air-river"), sea: cells("air-sea"), limit: cells("air-limit"), air };
+      });
+    await until(b, "the air draft columns", async () => (await read()).river.length > 0);
+    const before = await read();
+    const fixed = (rows, key) => rows.map((c) => c[key].toFixed(2));
+    assert.deepEqual(before.river, fixed(before.air.conditions, "river_m"));
+    assert.deepEqual(before.sea, fixed(before.air.conditions, "sea_m"));
+    assert.equal(before.limit.length, 0, "no limit is typed, so no limit column");
+    // A lowerable mast lowers the river air drafts and leaves the sea ones.
+    // The edit goes through the input field, as the user makes it: a call to the platform alone would
+    // not tell the app, which would not draw the table again.
+    await until(b, "the vent mast field", async () => (await b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]')).isExisting());
+    await (await b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]')).click();
+    await until(b, "the river column changes", async () => (await read()).river.join() !== before.river.join());
+    const lowered = await read();
+    assert.deepEqual(lowered.sea, before.sea);
+    assert.deepEqual(lowered.river, fixed(lowered.air.conditions, "river_m"));
+    // A typed limit adds the outcome column, one cell for each condition.
+    // The limit is shown as "none" until a number is typed: clear that box with a real click (`openDesign`
+    // turns the script's own `click()` on inputs off), then type the number.
+    const none = await b.$('.field[data-input="air_draft_limit_m"] label.none input[type=checkbox]');
+    await none.scrollIntoView();
+    if (await none.isSelected()) await none.click();
+    await until(b, "the limit box", async () => (await b.$('.field[data-input="air_draft_limit_m"] input[type=text]')).isExisting());
+    await (await b.$('.field[data-input="air_draft_limit_m"] input[type=text]')).setValue("60");
+    await until(b, "the limit column", async () => (await read()).limit.length > 0);
+    const limited = await read();
+    assert.equal(limited.limit.length, limited.air.conditions.length);
+    assert.ok(limited.air.conditions.every((c) => c.river_ok === true));
+  });
+
   it("still loads when browser storage is blocked", async () => {
     // Blocking cookies and site data makes `localStorage` throw.
     const b = await start({ prefs: { "profile.default_content_setting_values.cookies": 2 } });
