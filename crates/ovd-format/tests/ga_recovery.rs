@@ -1377,7 +1377,9 @@ fn a_failing_design_carries_a_note_in_each_view_and_still_passes_the_standard() 
             let v = views(&r);
             for (name, doc) in v.all() {
                 let notes = notes_of(doc);
-                let fail_notes: Vec<&String> = notes.iter().skip(4).collect();
+                // the cargo detail sheet has six notes before the failed-checks note (issue #844)
+                let before = if name == "cargo-detail" { 6 } else { 4 };
+                let fail_notes: Vec<&String> = notes.iter().skip(before).collect();
                 assert!(
                     !fail_notes.is_empty(),
                     "{file} {name}: a note for the failed checks"

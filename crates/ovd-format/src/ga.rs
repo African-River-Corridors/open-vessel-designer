@@ -36,6 +36,8 @@ macro_rules! label {
 
 mod arrangement;
 
+mod cargo_detail;
+
 mod damage;
 
 mod tug;
@@ -50,16 +52,22 @@ pub struct GaViews {
     pub side_elevation: Value,
     pub plan: Value,
     pub midship_section: Value,
+    /// The cargo detail sheet of one Type C tank (issue #844): an Option with Type C tanks has it,
+    /// any other Option has none.
+    pub cargo_detail: Option<Value>,
 }
 
 impl GaViews {
-    /// The views in order, with the file-name stem of each.
-    pub fn all(&self) -> [(&'static str, &Value); 3] {
-        [
+    /// The views in order, with the file-name stem of each. An Option with Type C tanks has a
+    /// fourth, `cargo-detail`.
+    pub fn all(&self) -> Vec<(&'static str, &Value)> {
+        let mut views = vec![
             ("side-elevation", &self.side_elevation),
             ("plan", &self.plan),
             ("midship-section", &self.midship_section),
-        ]
+        ];
+        views.extend(self.cargo_detail.as_ref().map(|d| ("cargo-detail", d)));
+        views
     }
 }
 
@@ -2702,10 +2710,15 @@ fn midship_section(h: &Hull, n: u32) -> Canvas {
 
 /// The window that holds a canvas, with a little room all round and the scale bar's room below.
 fn window_of(c: &Canvas) -> [f64; 4] {
+    window_with_bar(c, BAR_ROOM_MM)
+}
+
+/// As [`window_of`], with `bar_mm` of room under the drawing for a scale bar (none: 4 mm).
+fn window_with_bar(c: &Canvas, bar_mm: f64) -> [f64; 4] {
     let room = 3.0 * c.k;
     [
         c.min[0] - room,
-        c.min[1] - BAR_ROOM_MM.max(4.0) * c.k,
+        c.min[1] - bar_mm.max(4.0) * c.k,
         c.max[0] + room,
         c.max[1] + room,
     ]
@@ -2951,6 +2964,59 @@ fn document(
     )
 }
 
+/// The sheet of a drawing document: the layers, the title block, the notes strip and the viewports.
+fn sheet_document(notes: Vec<String>, fields: Value, strip: f64, viewports: Vec<Value>) -> Value {
+    let layers: Vec<Value> = [
+        "OUTLINE",
+        "OBJECT",
+        "HIDDEN",
+        "CENTRE",
+        "DIMENSIONS",
+        "ANNO",
+        "TEXT",
+        "WATER",
+        "HATCH",
+        "ZONE",
+        "EQUIP",
+    ]
+    .iter()
+    .map(|n| json!({"name": n}))
+    .collect();
+    json!({
+        "standard_version": "1.0",
+        "sheet": {"size": "A3", "orientation": "landscape"},
+        "layers": layers,
+        "status": "concept",
+        "title_block": {"template": "iso7200", "fields": fields},
+        "strips": [{"id": "notes", "edge": "bottom", "size_mm": strip, "content": "notes"}],
+        "notes": notes,
+        "viewports": viewports,
+    })
+}
+
+/// One viewport of a sheet: its frame on paper (x, y, width, height), the window of model space it
+/// shows, its scale and its entities.
+fn viewport(
+    id: &str,
+    frame: (f64, f64, f64, f64),
+    window: [f64; 4],
+    n: u32,
+    entities: Vec<Value>,
+    scale_bar: bool,
+) -> Value {
+    let mut v = json!({
+        "id": id,
+        "frame": {"x_mm": frame.0, "y_mm": frame.1, "width_mm": frame.2, "height_mm": frame.3},
+        "window": {"xmin_m": window[0], "ymin_m": window[1], "xmax_m": window[2], "ymax_m": window[3]},
+        "scale": n,
+        "entities": entities,
+    });
+    if scale_bar {
+        v["scale_bar"] = json!({});
+    }
+    v
+}
+
 /// Lay one canvas out on an A3 sheet with its notes and title block fields, at the largest scale at
 /// which it fits, no larger than 1:`from`. Gives the document and the ratio it was drawn at.
 fn place(
@@ -2966,45 +3032,59 @@ fn place(
         if !fits(window, n, strip) {
             continue;
         }
-        let (fx, fy, fw, fh) = frame(strip);
-        let layers: Vec<Value> = [
-            "OUTLINE",
-            "OBJECT",
-            "HIDDEN",
-            "CENTRE",
-            "DIMENSIONS",
-            "ANNO",
-            "TEXT",
-            "WATER",
-            "HATCH",
-            "ZONE",
-            "EQUIP",
-        ]
-        .iter()
-        .map(|n| json!({"name": n}))
-        .collect();
-        return Ok((
-            json!({
-                "standard_version": "1.0",
-                "sheet": {"size": "A3", "orientation": "landscape"},
-                "layers": layers,
-                "status": "concept",
-                "title_block": {"template": "iso7200", "fields": fields},
-                "strips": [{"id": "notes", "edge": "bottom", "size_mm": strip, "content": "notes"}],
-                "notes": notes,
-                "viewports": [{
-                    "id": "main",
-                    "frame": {"x_mm": fx, "y_mm": fy, "width_mm": fw, "height_mm": fh},
-                    "window": {"xmin_m": window[0], "ymin_m": window[1], "xmax_m": window[2], "ymax_m": window[3]},
-                    "scale": n,
-                    "scale_bar": {},
-                    "entities": canvas.entities,
-                }],
-            }),
+        let views = vec![viewport(
+            "main",
+            frame(strip),
+            window,
             n,
-        ));
+            canvas.entities,
+            true,
+        )];
+        return Ok((sheet_document(notes, fields, strip, views), n));
     }
     Err("the hull does not fit any scale of the standard on an A3 sheet".to_string())
+}
+
+/// The gap on paper between the two viewports of a sheet, in millimetres.
+const PAIR_GAP_MM: f64 = 2.0;
+
+/// Lay two canvases one above the other on one A3 sheet at one scale: the largest at which both fit,
+/// no larger than 1:`from`. The first stands above the second. The scale bar is under the second
+/// only: the scale is one. The extra height is shared between the two frames. Gives the document and
+/// the ratio.
+fn place_pair(
+    notes: Vec<String>,
+    fields: Value,
+    from: u32,
+    build: &dyn Fn(u32) -> [Canvas; 2],
+) -> Result<(Value, u32), String> {
+    let strip = strip_mm(notes.len());
+    let (fx, fy, fw, fh) = frame(strip);
+    for n in RATIOS.into_iter().filter(|n| *n >= from) {
+        let [top, bottom] = build(n);
+        let (wt, wb) = (window_with_bar(&top, 0.0), window_of(&bottom));
+        let k = 1000.0 / f64::from(n);
+        let width = |w: [f64; 4]| (w[2] - w[0]) * k;
+        let height = |w: [f64; 4]| (w[3] - w[1]) * k;
+        let spare = fh - PAIR_GAP_MM - height(wt) - height(wb);
+        if spare < -1e-9 || width(wt) > fw + 1e-9 || width(wb) > fw + 1e-9 {
+            continue;
+        }
+        let (ht, hb) = (height(wt) + spare / 2.0, height(wb) + spare / 2.0);
+        let views = vec![
+            viewport("elevation", (fx, fy, fw, ht), wt, n, top.entities, false),
+            viewport(
+                "section",
+                (fx, fy + ht + PAIR_GAP_MM, fw, hb),
+                wb,
+                n,
+                bottom.entities,
+                true,
+            ),
+        ];
+        return Ok((sheet_document(notes, fields, strip, views), n));
+    }
+    Err("the two views do not fit any scale of the standard on an A3 sheet".to_string())
 }
 
 /// The three views of an Option's results (the `simulate` result object).
@@ -3042,10 +3122,15 @@ pub fn ga_views_for(results: &Value, option: Option<&str>) -> Result<GaViews, St
         RATIOS[0],
         3,
     )?;
+    let cargo_detail = match hull.containment {
+        Containment::Tanks { .. } => Some(cargo_detail::cargo_detail_sheet(&hull, results)?),
+        Containment::Hold { .. } | Containment::Liquid { .. } => None,
+    };
     Ok(GaViews {
         side_elevation: elevation,
         plan: plan_view,
         midship_section: section,
+        cargo_detail,
     })
 }
 

@@ -161,7 +161,7 @@ fn renamed(fixture_name: &str, name: &str, test: &str) -> PathBuf {
 }
 
 #[test]
-fn a_wide_option_name_gets_its_three_views() {
+fn a_wide_option_name_gets_its_views_and_the_cargo_detail() {
     // Issue #660: an Option named "140 x 29 x 9m LNG" had no drawings (clause 14.6).
     let file = renamed(
         "gas_igc_2g_self_propelled.vdesign",
@@ -176,8 +176,9 @@ fn a_wide_option_name_gets_its_three_views() {
         file.to_str().unwrap(),
     ]);
     assert!(ok, "{stderr}");
-    assert_eq!(stdout.lines().count(), 15, "{stdout}");
-    for view in ["side-elevation", "plan", "midship-section"] {
+    // five files for each of the three hull views and the cargo detail sheet of the Type C tanks
+    assert_eq!(stdout.lines().count(), 20, "{stdout}");
+    for view in ["side-elevation", "plan", "midship-section", "cargo-detail"] {
         assert!(
             out.join(format!("140-x-29-x-9m-lng-{view}.pdf")).is_file(),
             "{view}"

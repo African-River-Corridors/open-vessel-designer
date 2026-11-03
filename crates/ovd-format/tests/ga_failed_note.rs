@@ -97,10 +97,12 @@ fn check_strip(what: &str, document: &Value, failed: usize) {
         );
     }
     // the notes are the title, what the vessel is, the Rule Sets, the scope and the one
-    // failed-checks note
+    // failed-checks note; the cargo detail sheet has the title, the pressures, the temperature,
+    // material and volume, the support estimate, the Rule Sets and the scope (issue #844)
+    let base = if what == "cargo-detail" { 6 } else { 4 };
     assert_eq!(
         lines.len(),
-        4 + usize::from(failed > 0),
+        base + usize::from(failed > 0),
         "{what}: {lines:?}"
     );
 }

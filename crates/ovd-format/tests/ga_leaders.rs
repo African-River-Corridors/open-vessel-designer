@@ -259,14 +259,22 @@ fn segment_to_box(s: ([f64; 2], [f64; 2]), r: [f64; 4]) -> f64 {
 #[test]
 fn every_label_text_lies_inside_the_frame_clear_of_the_centring_marks() {
     for (name, norm) in views() {
-        let f = &norm["viewports"][0]["frame"];
-        let g = |k: &str| f[k].as_f64().unwrap();
-        let frame = [
-            g("x_mm"),
-            g("y_mm"),
-            g("x_mm") + g("width_mm"),
-            g("y_mm") + g("height_mm"),
+        // a sheet with two views (the cargo detail) is checked against the frames taken together
+        let mut frame = [
+            f64::INFINITY,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            f64::NEG_INFINITY,
         ];
+        for viewport in norm["viewports"].as_array().unwrap() {
+            let g = |k: &str| viewport["frame"][k].as_f64().unwrap();
+            frame = [
+                frame[0].min(g("x_mm")),
+                frame[1].min(g("y_mm")),
+                frame[2].max(g("x_mm") + g("width_mm")),
+                frame[3].max(g("y_mm") + g("height_mm")),
+            ];
+        }
         let marks: Vec<([f64; 2], [f64; 2])> = norm["entities"]
             .as_array()
             .unwrap()
