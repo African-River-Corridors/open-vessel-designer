@@ -64,7 +64,7 @@ def test_the_case_files_are_what_the_oracle_writes():
 def test_every_boundary_case_moves_one_number_across_one_limit():
     """Label: property"""
     docs = yaml.safe_load((EVAL / "vent_mutants.yaml").read_text(encoding="utf-8"))["mutants"]
-    assert len(docs) == 48
+    assert len(docs) == 56
     parents = {c["id"]: c for c in write_cases.VENT_BASES}
     for d in docs:
         m = d["mutant"]
@@ -79,5 +79,18 @@ def test_every_boundary_case_moves_one_number_across_one_limit():
             assert abs(e["margin"]) < 1e-9
     # Every row has a case exactly on the limit (meets) and one float step under it (fails).
     seen = {(d["mutant"]["criterion"], d["mutant"]["magnitude"], d["mutant"]["side"]) for d in docs}
-    for rule in (oracle.DECK, oracle.WORKING, oracle.DISTANCE):
+    for rule in (oracle.DECK, oracle.WORKING, oracle.DISTANCE, oracle.ADN_HEIGHT, oracle.ADN_DISTANCE):
         assert (rule, "exact", "pass") in seen and (rule, "ulp", "fail") in seen
+
+
+def test_the_adn_limits_by_hand():
+    """Label: sourced - ADN 2025 9.3.1.22.3 (printed p. 523): the outlets of the pressure relief valves not
+    less than 2.00 m above the deck and not less than 6.00 m from the accommodation. River-only service."""
+    i = case(service_area="river-only", vent_distance_to_accommodation_m=6.0)
+    v = oracle.verdicts(i)
+    assert set(v) == {oracle.ADN_HEIGHT, oracle.ADN_DISTANCE}
+    assert v[oracle.ADN_HEIGHT]["limit"] == 2.0 and v[oracle.ADN_DISTANCE]["limit"] == 6.0
+    assert v[oracle.ADN_DISTANCE]["verdict"] == "pass"
+    assert oracle.verdicts({**i, "vent_distance_to_accommodation_m": 5.99})[oracle.ADN_DISTANCE]["verdict"] == "fail"
+    assert oracle.verdicts({**i, "vent_exit_above_deck_m": 2.0})[oracle.ADN_HEIGHT]["verdict"] == "pass"
+    assert oracle.verdicts({**i, "vent_exit_above_deck_m": 1.99})[oracle.ADN_HEIGHT]["verdict"] == "fail"

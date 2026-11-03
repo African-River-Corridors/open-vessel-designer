@@ -1155,7 +1155,8 @@ pub fn box_trace(
 /// `measured` keys: `blind_distance_light_m`, `blind_distance_laden_m`, `speed_deep_water_kmh`,
 /// `design_speed_kn`, `diameter_over_max`, `immersion_over_limit`, `blade_load_over_limit`. A gas
 /// Option's cargo vent mast (issue #849) comes from `vent_exit_above_deck_m`,
-/// `vent_exit_above_working_area_m` and `vent_distance_to_openings_m`, all three or none.
+/// `vent_exit_above_working_area_m` and `vent_distance_to_openings_m`, all three or none; with them,
+/// `vent_distance_to_accommodation_m` (issue #850, ADN 9.3.1.22.3; 0 when left out).
 pub fn stern_trace(
     inputs: &serde_json::Map<String, Value>,
     measured_values: &serde_json::Map<String, Value>,
@@ -1226,7 +1227,7 @@ pub fn stern_trace(
             exit_above_working_area_m: working,
             governs: ovd_core::vent_mast::Governs::Deck,
             distance_to_openings_m: openings,
-            distance_to_accommodation_m: 0.0,
+            distance_to_accommodation_m: number("vent_distance_to_accommodation_m").unwrap_or(0.0),
             target_distance_m: 0.0,
             distance_met: true,
             lowerable: false,
