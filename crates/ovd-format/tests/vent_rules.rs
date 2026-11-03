@@ -53,7 +53,7 @@ fn a_new_coastal_gas_option_meets_the_three_vent_rows_with_the_mast_the_engine_p
     assert!(
         results["rule_trace"]["rule_sets"]
             .to_string()
-            .contains("igc-2g@3.2.0"),
+            .contains("igc-2g@3.3.0"),
         "{}",
         results["rule_trace"]["rule_sets"]
     );
