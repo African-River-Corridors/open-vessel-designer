@@ -157,6 +157,9 @@ impl Measured {
             "cabin_volume_m3" => n(row("cabin")?.area_each_m2 * crate::rooms::HEADROOM_M),
             "communal_area_m2" => n(row("communal")?.area_m2),
             "communal_area_per_person_m2" => n(row("communal")?.area_m2 / f64::from(r.berths)),
+            "washbasins_per_cabin" => {
+                n(f64::from(row("washbasin")?.count) / f64::from(row("cabin")?.count))
+            }
             "toilet_area_m2" => n(row("toilet")?.area_each_m2),
             "persons_per_fixture" => {
                 let fixture = match m.args.iter().find(|(k, _)| k == "fixture") {

@@ -946,7 +946,7 @@
     },
     {
       "id": "es-trin/15.02(6)/headroom",
-      "title": "Headroom in the accommodation at least 2.00 m",
+      "title": "Drift check, not a design check (the rooms table is sized to this limit): headroom in the accommodation at least 2.00 m",
       "origin": "regulation",
       "source": {
         "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
@@ -979,7 +979,7 @@
     },
     {
       "id": "es-trin/15.02(8)/communal-per-person",
-      "title": "Free floor area of the communal living quarters at least 2 m2 per person (furniture other than tables and chairs not counted)",
+      "title": "Drift check, not a design check (the rooms table is sized to this limit): free floor area of the communal living quarters at least 2 m2 per person (furniture other than tables and chairs not counted)",
       "origin": "regulation",
       "source": {
         "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
@@ -1012,7 +1012,7 @@
     },
     {
       "id": "es-trin/15.02(8)/communal-total",
-      "title": "Free floor area of the communal living quarters at least 8 m2 in all (furniture other than tables and chairs not counted)",
+      "title": "Drift check, not a design check (the rooms table is sized to this limit): free floor area of the communal living quarters at least 8 m2 in all (furniture other than tables and chairs not counted)",
       "origin": "regulation",
       "source": {
         "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
@@ -1045,7 +1045,7 @@
     },
     {
       "id": "es-trin/15.02(9)/cabin-volume",
-      "title": "Cubic capacity of a sleeping cabin at least 7 m3",
+      "title": "Drift check, not a design check (the rooms table is sized to this limit): cubic capacity of a sleeping cabin at least 7 m3",
       "origin": "regulation",
       "source": {
         "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
@@ -1078,7 +1078,7 @@
     },
     {
       "id": "es-trin/15.03(1)(a)/toilets",
-      "title": "One toilet per six crew members at least (the text also allows one per accommodation unit; every berth is counted as a person served)",
+      "title": "Drift check, not a design check (the rooms table is sized to this limit): one toilet per six crew members at least (the text also allows one per accommodation unit; every berth is counted as a person served)",
       "origin": "regulation",
       "source": {
         "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
@@ -1114,7 +1114,7 @@
     },
     {
       "id": "es-trin/15.03(1)(b)/washbasins",
-      "title": "One washbasin per four crew members at least (the text also allows one per accommodation unit; every berth is counted as a person served)",
+      "title": "Drift check, not a design check (the rooms table is sized to this limit): one washbasin per four crew members at least (the text also allows one per accommodation unit; every berth is counted as a person served)",
       "origin": "regulation",
       "source": {
         "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
@@ -1150,7 +1150,7 @@
     },
     {
       "id": "es-trin/15.03(1)(c)/showers",
-      "title": "One shower or bath per six crew members at least (the text also allows one per accommodation unit; every berth is counted as a person served)",
+      "title": "Drift check, not a design check (the rooms table is sized to this limit): one shower or bath per six crew members at least (the text also allows one per accommodation unit; every berth is counted as a person served)",
       "origin": "regulation",
       "source": {
         "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",
@@ -1186,7 +1186,7 @@
     },
     {
       "id": "es-trin/15.03(3)/toilet-floor",
-      "title": "Floor space of a toilet compartment at least 1 m2 (the width and length minimums of the paragraph are not checked)",
+      "title": "Drift check, not a design check (the rooms table is sized to this limit): floor space of a toilet compartment at least 1 m2 (the width and length minimums of the paragraph are not checked)",
       "origin": "regulation",
       "source": {
         "document": "ES-TRIN, European standard laying down technical requirements for inland navigation vessels",

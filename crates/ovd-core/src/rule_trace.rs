@@ -480,6 +480,15 @@ pub static MEASURES: &[MeasureDef] = &[
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {
+        id: "rooms.washbasins_per_cabin",
+        unit: "washbasins",
+        object: ObjectType::Option,
+        value: ValueKind::Number,
+        args: &[],
+        method: "The washbasins of the rooms table over its single sleeping cabins: the washbasins each cabin has, with none in a private bathroom",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
         id: "rooms.toilet_area_m2",
         unit: "m2",
         object: ObjectType::Option,

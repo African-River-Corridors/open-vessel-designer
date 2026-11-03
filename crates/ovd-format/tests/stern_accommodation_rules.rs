@@ -57,6 +57,11 @@ const NEW_ROWS: &[(&str, &str, &str)] = &[
     ("mlc-2006", "1.0.0", "mlc/A3.1.11(c)/toilets"),
     ("mlc-2006", "1.0.0", "mlc/A3.1.11(c)/washbasins"),
     ("mlc-2006", "1.0.0", "mlc/A3.1.11(c)/showers"),
+    (
+        "mlc-2006",
+        "1.0.0",
+        "mlc/A3.1.11(d)/sleeping-room-washbasin",
+    ),
     ("es-trin-2025", "2.1.0", "es-trin/15.02(6)/headroom"),
     (
         "es-trin-2025",
@@ -225,7 +230,7 @@ fn es_trin_15_limits_are_the_printed_numbers() {
 }
 
 #[test]
-fn a_deckhouse_option_meets_the_es_trin_rooms_and_a_coastal_one_misses_two_mlc_floors() {
+fn a_deckhouse_option_meets_the_es_trin_rooms_and_a_coastal_one_misses_three_mlc_rows() {
     // The rooms table is sized to ES-TRIN 15, so the ES-TRIN rows pass. MLC A3.1.6(a) asks 2.03 m of
     // headroom (the rooms use 2.00 m) and A3.1.9(f) at least 4.5 m2 a single cabin under 3,000 GT
     // (the rooms give 3.5 m2): a hull that reaches sea fails both until the rooms apply MLC.
@@ -247,6 +252,10 @@ fn a_deckhouse_option_meets_the_es_trin_rooms_and_a_coastal_one_misses_two_mlc_f
         assert_eq!(found.len(), 1, "{id}");
         assert_eq!(found[0]["outcome"], "pass", "{id}: {:?}", found[0]);
     }
+    // 11(d): the rooms hold one washbasin per four berths, not one per sleeping room.
+    let basin = rows(&r, "mlc/A3.1.11(d)/sleeping-room-washbasin");
+    assert_eq!(basin[0]["outcome"], "fail");
+    assert!(basin[0]["value"].as_f64().unwrap() < 1.0);
     let head = rows(&r, "mlc/A3.1.6(a)/headroom");
     assert_eq!(head[0]["outcome"], "fail");
     assert_eq!(head[0]["value"], json!(2.0));

@@ -19,7 +19,11 @@
     }
   ],
   "status": "draft",
-  "applies_when": {},
+  "applies_when": {
+    "service_area": [
+      "coastal-and-river"
+    ]
+  },
   "includes": [],
   "known_conflicts": [],
   "tables": [
@@ -126,7 +130,7 @@
     },
     {
       "id": "mlc/A3.1.9(f)/cabin-area",
-      "title": "Floor area of a single-berth seafarers' sleeping room at least 4.5 m2 under 3,000 gross tonnage, 5.5 m2 from 3,000 to under 10,000, 7 m2 from 10,000 (the room of a ship's officer, 9(k), and the reduced areas of 9(g) are not modelled)",
+      "title": "Floor area of a single-berth seafarers' sleeping room at least 4.5 m2 under 3,000 gross tonnage, 5.5 m2 from 3,000 to under 10,000, 7 m2 from 10,000. Not modelled: the flag State may exempt a ship under 200 GT from the floor-area rule (A3.1.20), may exempt a ship under 3,000 GT from the one-room-per-seafarer rule (9(a)) and may allow a reduced area (9(g)); the room of a ship's officer (9(k)) is not checked",
       "origin": "regulation",
       "source": {
         "document": "Maritime Labour Convention, 2006, as amended (consolidated text including the 2022 amendments to the Code)",
@@ -258,6 +262,39 @@
       "limit": {
         "value": 6.0,
         "unit": "persons"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "mlc/A3.1.11(d)/sleeping-room-washbasin",
+      "title": "A washbasin with hot and cold running fresh water in each sleeping room of a ship other than a passenger ship, unless one is in a private bathroom (the rooms table has one washbasin per four berths, so this fails until each cabin has its own)",
+      "origin": "regulation",
+      "source": {
+        "document": "Maritime Labour Convention, 2006, as amended (consolidated text including the 2022 amendments to the Code)",
+        "edition": "ILO consolidated text including the Amendments of 2014, 2016, 2018 and 2022 to the Code",
+        "locator": "A3.1.11(d)",
+        "page": "mlc-2006-amended-2022.pdf, Standard A3.1, printed p. 48",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-02",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "limit",
+      "measure": {
+        "id": "rooms.washbasins_per_cabin"
+      },
+      "compare": "ge",
+      "limit": {
+        "value": 1.0,
+        "unit": "washbasins"
       },
       "tolerance": 0,
       "consequence": "block",
