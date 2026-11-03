@@ -183,6 +183,60 @@ fn every_space_mesh_of_every_fixture_is_closed_and_holds_the_space_volume() {
 /// (issue #690, spec 0009 "Performance budget"); the `propulsor` layer since issue #692. Label:
 /// snapshot - what `option_meshes` printed.
 const TRIANGLES: &[(&str, &str, &str, u32)] = &[
+    (
+        "gas_deckhouse_self_propelled.vdesign",
+        "Deckhouse",
+        "bulkhead",
+        32,
+    ),
+    (
+        "gas_deckhouse_self_propelled.vdesign",
+        "Deckhouse",
+        "deck",
+        2,
+    ),
+    (
+        "gas_deckhouse_self_propelled.vdesign",
+        "Deckhouse",
+        "deck_item",
+        36,
+    ),
+    (
+        "gas_deckhouse_self_propelled.vdesign",
+        "Deckhouse",
+        "dome",
+        384,
+    ),
+    (
+        "gas_deckhouse_self_propelled.vdesign",
+        "Deckhouse",
+        "hull",
+        38,
+    ),
+    (
+        "gas_deckhouse_self_propelled.vdesign",
+        "Deckhouse",
+        "propulsor",
+        1752,
+    ),
+    (
+        "gas_deckhouse_self_propelled.vdesign",
+        "Deckhouse",
+        "space",
+        9506,
+    ),
+    (
+        "gas_deckhouse_self_propelled.vdesign",
+        "Deckhouse",
+        "waterline",
+        16,
+    ),
+    (
+        "gas_deckhouse_self_propelled.vdesign",
+        "Deckhouse",
+        "weather_shield",
+        60,
+    ),
     ("gas-140x29-coastal-lng.vdesign", "A basis", "bulkhead", 36),
     ("gas-140x29-coastal-lng.vdesign", "A basis", "deck", 2),
     ("gas-140x29-coastal-lng.vdesign", "A basis", "deck_item", 60),

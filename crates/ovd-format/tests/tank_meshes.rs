@@ -619,8 +619,9 @@ fn a_tank_moved_outboard_into_the_side_shell_fails_the_check() {
 
 #[test]
 fn a_tank_that_crosses_the_deck_outside_its_own_opening_fails_the_check() {
-    // The footprint condition can fail on its own: a tank that stands through the deck, moved 0.5 m
-    // forward (less than the gap to the next tank and the bow void), crosses the deck outside the
+    // The footprint condition can fail on its own: a tank that stands through the deck, moved just past
+    // its opening (a little more than half a metre forward, less than the gap to the next tank for a
+    // tank that stands near its ends), crosses the deck outside the
     // opening the results give it, and nothing below the deck.
     let mut moved = 0;
     for c in cases() {
@@ -629,10 +630,19 @@ fn a_tank_that_crosses_the_deck_outside_its_own_opening_fails_the_check() {
             if crossing_points(tank, &a.hull).is_empty() {
                 continue;
             }
-            let faults = faults_of(&a, i, (0.5, 0.0, 0.0));
+            // 0.5 m forward past the farthest point of the deck opening: a tank that stands deep
+            // through the deck (a deckhouse Option's) crosses it well inside its ends, by the
+            // shortening of the head at the deck height.
+            let (_, _, foot) = &a.tanks[i];
+            let farthest = crossing_points(tank, &a.hull)
+                .iter()
+                .map(|p| p[0])
+                .fold(f64::NEG_INFINITY, f64::max);
+            let dx = (foot.x1 - farthest).max(0.0) + 0.5;
+            let faults = faults_of(&a, i, (dx, 0.0, 0.0));
             assert!(
                 faults.iter().any(|f| f.starts_with("crosses the hull")),
-                "{}: {name} moved 0.5 m forward passed: {faults:?}",
+                "{}: {name} moved {dx} m forward passed: {faults:?}",
                 c.at
             );
             moved += 1;
