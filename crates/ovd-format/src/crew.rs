@@ -442,6 +442,13 @@ pub fn crew_json(
                 .cloned()
                 .collect::<Vec<_>>(),
         );
+        // The officers' berths (deck officers and engineers of the selected set): the rooms size
+        // these to MLC A3.1.9(k) and (m) (issue #892).
+        block["officers"] = json!(if chosen == "uk-msn-1868" {
+            uk_deck.max(crew.watches.deck_officers) + uk_eng
+        } else {
+            crew.deck_officers + crew.engineers
+        });
         block["deck_officers"] = json!(crew.deck_officers);
         block["engineers"] = json!(crew.engineers);
         block["ratings"] = json!(crew.ratings);

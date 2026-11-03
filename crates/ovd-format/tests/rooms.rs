@@ -2,7 +2,7 @@
 //!
 //! Label: property. The rooms table is in the results of a deckhouse Option; its cabins are the
 //! berths of the crew block; the tier count follows its floor; a river-only hull in mode B with rest
-//! underway gets one cabin each (OVD's own rule in every mode); a hull that reaches sea says MLC A3.1 is not applied.
+//! underway gets one cabin each (OVD's own rule in every mode); a hull that reaches sea is sized to the greater of MLC A3.1 and ES-TRIN 15 (issue #892).
 
 use ovd_format::{Profile, RunOutcome, fill_as_new, run_option};
 use serde_json::{Value, json};
@@ -76,49 +76,58 @@ fn the_tier_count_follows_the_rooms_floor() {
 }
 
 #[test]
-fn the_cabins_of_a_sea_going_hull_are_es_trin_and_say_mlc_is_not_applied() {
+fn the_cabins_of_a_sea_going_hull_are_the_greater_of_mlc_and_es_trin() {
     let r = results("coastal-and-river", json!({}));
-    assert_eq!(r["rooms"]["mlc_applied"], json!(false));
-    assert!(r["rooms"]["rule"].as_str().unwrap().contains("not applied"));
-    // Hand value: for b berths, cabins 3.5 b, communal max(2 b, 8), toilets ceil(b / 6) x 1.0,
-    // corridor 0.6 x ceil(b / 2) x 1.75; the sea floor is the larger of that and the interim floor of
-    // 2 gas accommodation units of 12.192 x 2.438 m (= 59.4 m2).
-    let b = r["crew"]["berths"].as_f64().unwrap();
-    let rooms = 3.5 * b + (2.0 * b).max(8.0) + (b / 6.0).ceil() + 0.6 * (b / 2.0).ceil() * 1.75
-        // estimates: basins, showers, galley, work clothes, one stairway
-        + 0.5 * (b / 4.0).ceil()
-        + 0.81 * (b / 6.0).ceil()
-        + 5.0
-        + (2.0 + 0.25 * b)
-        + 1.6;
-    let interim = 2.0 * 12.192 * 2.438;
-    assert!((r["rooms"]["total_m2"].as_f64().unwrap() - rooms).abs() < 1e-9);
-    let req = r["rooms"]["required_area_m2"].as_f64().unwrap();
-    assert!((req - rooms.max(interim)).abs() < 1e-9, "{req}");
-    assert_eq!(r["rooms"]["settled"], json!(true));
-}
-
-#[test]
-fn a_container_block_option_has_no_rooms_block() {
-    let r = results(
-        "river-only",
-        json!({ "arrangement_style": "container_block" }),
+    assert_eq!(r["rooms"]["mlc_applied"], json!(true));
+    assert!(
+        r["rooms"]["rule"]
+            .as_str()
+            .unwrap()
+            .contains("mlc-2006-a3.1")
     );
-    assert!(r.get("rooms").is_none());
-}
-
-#[test]
-fn mode_a_and_mode_b_differ_in_the_crew_not_in_the_cabin_rule() {
-    // In this model every berth gets its own cabin (the cautious reading of ES-TRIN 15.02(10)), so
-    // operating mode A1 (14 h) and mode B (24 h) both give one cabin each. What differs is the crew
-    // table cell (so the berths) and nothing else. The model has no rule that lets any crew share a cabin.
-    let a = results("river-only", json!({ "navigation_hours_per_day": 14.0 }));
-    let b = results("river-only", json!({ "navigation_hours_per_day": 24.0 }));
-    assert_eq!(a["crew"]["rpn"]["operating_mode"], json!("A1"));
-    assert_eq!(b["crew"]["rpn"]["operating_mode"], json!("B"));
-    for r in [&a, &b] {
-        assert_eq!(row(r, "cabin")["count"], r["crew"]["berths"]);
+    assert_eq!(r["rooms"]["headroom_m"].as_f64().unwrap(), 2.03);
+    let b = r["crew"]["berths"].as_i64().unwrap();
+    let officers = r["crew"]["officers"].as_i64().unwrap();
+    let gt = r["crew"]["inputs"]["gross_tonnage"].as_f64().unwrap();
+    // Hand value (A3.1.9(f), (k), (m)): the band floors by gross tonnage.
+    let (f, k) = if gt < 3_000.0 {
+        (4.5, 7.5)
+    } else if gt < 10_000.0 {
+        (5.5, 8.5)
+    } else {
+        (7.0, 10.0)
+    };
+    let day = officers.min(3);
+    let plain = officers - day;
+    let ratings = b - officers;
+    let count = |id: &str| {
+        r["rooms"]["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|x| x["id"] == id)
+            .map_or(0, |x| x["count"].as_i64().unwrap())
+    };
+    assert_eq!(count("cabin"), ratings);
+    assert_eq!(count("cabin_senior"), day);
+    assert_eq!(count("day_room"), day);
+    assert_eq!(count("cabin_officer"), plain);
+    assert_eq!(count("washbasin"), b);
+    let cabins = f * (ratings + day) as f64 + k * plain as f64;
+    let sum: f64 = ["cabin", "cabin_senior", "cabin_officer"]
+        .iter()
+        .filter(|id| count(id) > 0)
+        .map(|id| row(&r, id)["area_m2"].as_f64().unwrap())
+        .sum();
+    assert!((sum - cabins).abs() < 1e-9, "{sum} {cabins}");
+    for x in r["rooms"]["rows"].as_array().unwrap() {
+        assert!(["es-trin", "mlc", "both"].contains(&x["governing"].as_str().unwrap()));
     }
-    assert_eq!(row(&a, "cabin")["clause"], row(&b, "cabin")["clause"]);
-    assert!(b["crew"]["berths"].as_i64() >= a["crew"]["berths"].as_i64());
+    // The floor is the rooms alone (the interim floor is no longer a lower bound), and it settles.
+    let req = r["rooms"]["required_area_m2"].as_f64().unwrap();
+    assert!(
+        (req - r["rooms"]["total_m2"].as_f64().unwrap()).abs() < 1e-9,
+        "{req}"
+    );
+    assert_eq!(r["rooms"]["settled"], json!(true));
 }

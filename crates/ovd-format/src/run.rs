@@ -843,12 +843,43 @@ fn crew_block_of(
 const ROOMS_PASSES: usize = 4;
 
 /// What the deckhouse rooms are sized from, from a crew block: the berths, whether the Service Area
-/// reaches sea and whether the inland operating mode is B. `None` when the block gives no berths.
-fn rooms_facts_of(crew: &Value) -> Option<(i64, bool, bool)> {
+/// reaches sea, whether the inland operating mode is B, the officers' berths, the seafarers carried
+/// and the gross tonnage (issue #892). `None` when the block gives no berths.
+#[derive(Clone, Copy, PartialEq)]
+struct RoomsFacts {
+    berths: i64,
+    sea: bool,
+    mode_b: bool,
+    officers: i64,
+    seafarers: i64,
+    gt: f64,
+}
+
+impl RoomsFacts {
+    /// What the sizing of the rooms reads: the same key means the same rooms. The gross tonnage
+    /// counts only through its MLC band, and only at sea.
+    fn key(&self) -> (i64, i64, i64, usize) {
+        let band = if self.sea {
+            ovd_core::rooms::gt_band(self.gt.max(0.0).floor() as u32)
+        } else {
+            0
+        };
+        (self.berths, self.officers, self.seafarers, band)
+    }
+}
+
+fn rooms_facts_of(crew: &Value) -> Option<RoomsFacts> {
     let berths = crew["berths"].as_i64()?;
     let sea = crew["inputs"]["service_area"].as_str() == Some("coastal-and-river");
     let mode_b = crew["rpn"]["operating_mode"].as_str() == Some("B");
-    Some((berths, sea, mode_b))
+    Some(RoomsFacts {
+        berths,
+        sea,
+        mode_b,
+        officers: crew["officers"].as_i64().unwrap_or(0),
+        seafarers: crew["crew"].as_i64().unwrap_or(0),
+        gt: crew["inputs"]["gross_tonnage"].as_f64().unwrap_or(0.0),
+    })
 }
 
 /// Issue #780 (spec 0011 D5): run the Option, and on a deckhouse stern size its rooms from the berths
@@ -867,9 +898,14 @@ fn settle_rooms(
         return (outcome, measured, true);
     }
     let mut last: Option<(Outcome, crate::simulate::Measured)> = None;
-    let settled = iterate_berths(ROOMS_PASSES, |used| {
-        if let Some(b) = used {
-            params.insert("crew_berths".to_string(), json!(b));
+    // The facts the crew model last gave: the next pass sizes the rooms from them.
+    let mut facts: Option<RoomsFacts> = None;
+    let settled = iterate_berths(ROOMS_PASSES, |_used| {
+        if let Some(f) = facts {
+            params.insert("crew_berths".to_string(), json!(f.berths));
+            params.insert("crew_officers".to_string(), json!(f.officers));
+            params.insert("crew_seafarers".to_string(), json!(f.seafarers));
+            params.insert("crew_gt".to_string(), json!(f.gt));
         }
         let (outcome, mut measured) = simulate_params_measured(params, rules);
         let mut wanted = None;
@@ -878,11 +914,12 @@ fn settle_rooms(
         {
             measured.gross_tonnage = gross_tonnage_of(option, &measured);
             if let Some(crew) = crew_block_of(option, library, v, &measured)
-                && let Some((berths, sea, mode_b)) = rooms_facts_of(&crew)
+                && let Some(f) = rooms_facts_of(&crew)
             {
-                params.insert("crew_reaches_sea".to_string(), json!(sea));
-                params.insert("crew_mode_b".to_string(), json!(mode_b));
-                wanted = Some(berths);
+                params.insert("crew_reaches_sea".to_string(), json!(f.sea));
+                params.insert("crew_mode_b".to_string(), json!(f.mode_b));
+                facts = Some(f);
+                wanted = Some(f.key());
             }
         }
         last = Some((outcome, measured));
@@ -896,7 +933,10 @@ fn settle_rooms(
 /// berths `used` (none on the first pass) and gives the berths the crew model then wants, or none when
 /// it gives none. True when a pass wants the berths it ran with (or none are wanted); false when
 /// `max` further passes still want a change.
-pub(crate) fn iterate_berths(max: usize, mut pass: impl FnMut(Option<i64>) -> Option<i64>) -> bool {
+pub(crate) fn iterate_berths<T: Copy + PartialEq>(
+    max: usize,
+    mut pass: impl FnMut(Option<T>) -> Option<T>,
+) -> bool {
     let mut used = None;
     for n in 0..=max {
         let Some(wanted) = pass(used) else {
@@ -938,6 +978,7 @@ fn rooms_block_of(measured: &crate::simulate::Measured, crew: Option<&Value>) ->
                 "area_m2": crate::eval::num(x.area_m2),
                 "clause": x.clause,
                 "basis": x.basis,
+                "governing": x.governing,
                 "note": x.note,
             })
         })
@@ -951,8 +992,9 @@ fn rooms_block_of(measured: &crate::simulate::Measured, crew: Option<&Value>) ->
         "required_area_basis": d.required_area_basis,
         "tiers": d.tiers,
         "tier_area_m2": crate::eval::num(d.tier_area_m2),
-        "rule": if r.reaches_sea { "es-trin-2025-ch15 (MLC 2006 A3.1 not applied)" } else { "es-trin-2025-ch15" },
+        "rule": if r.reaches_sea { "mlc-2006-a3.1 and es-trin-2025-ch15 (the greater, per room)" } else { "es-trin-2025-ch15" },
         "mlc_applied": r.mlc_applied,
+        "headroom_m": crate::eval::num(r.headroom_m),
         "rule_note": r.rule_note,
         "settled": crew_berths == Some(i64::from(r.berths)),
         "status": "estimate",
@@ -1310,6 +1352,6 @@ mod rooms_passes_tests {
 
     #[test]
     fn a_crew_that_gives_no_berths_stops_at_once() {
-        assert!(iterate_berths(ROOMS_PASSES, |_| None));
+        assert!(iterate_berths::<i64>(ROOMS_PASSES, |_| None));
     }
 }
