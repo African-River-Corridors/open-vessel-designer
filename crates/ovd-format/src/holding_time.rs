@@ -12,7 +12,10 @@ use ovd_core::holding_profile::{Leg, has_gas_consumer, leg_credit_kg_h, total_da
 use ovd_core::holding_time::{Error, HeatLeak, Inputs, LegInput, Rule, Withdrawal, run};
 use serde_json::{Value, json};
 
-const BASIS: &str = "Homogeneous closed-tank model of methane (one saturation state, no thermal stratification: the real pressure can rise faster), stepped hourly from the loading limit at the start pressure (IGC Code 15.1.3.1). The heat leak is recomputed each step at the IGC Code 7.2 air ambient (45 C) over the whole tank surface. The gas use credited on a passage leg is the least gas use of the powering model across its service conditions, at the service speed; a typed passage speed and the lightest draught are not yet used (issues #871, #875). Domes, saddles and pipes are not in the heat leak. Methane stands in for the LNG composition.";
+const BASIS: &str = "Homogeneous closed-tank model of methane (one saturation state, no thermal stratification: the real pressure can rise faster), stepped hourly from the loading limit at the start pressure (IGC Code 15.1.3.1). The heat leak is recomputed each step at the IGC Code 7.2 air ambient (45 C) over the whole tank surface. The gas use credited on a passage leg is the least gas use of the powering model across its service conditions, at its service speed. The leg records its passage speed (the typed one, else the design service speed, as the profile input resolves it), but the credit is not yet worked out at that speed and at the lightest draught of the leg: that link to the powering model belongs to issues #871 and #875. The series is kept every 6 h plus the end of each leg and the last point. Domes, saddles and pipes are not in the heat leak. Methane stands in for the LNG composition.";
+
+/// The series keeps a point every this many hours (h).
+const SERIES_EVERY_H: f64 = 6.0;
 
 fn input_row(option: &DesignOption, name: &str) -> Value {
     match option.input(name) {
@@ -150,18 +153,32 @@ pub(crate) fn add_holding_time(option: &DesignOption, v: &mut Value) {
         }
     };
     let n_f = |x: f64| crate::eval::num(x);
+    // The series is decimated: every 6 h, the end of each leg and the last point (the relief
+    // setting when it is reached). The stepping itself is hourly.
+    let leg_ends: Vec<f64> = out.legs.iter().map(|l| l.end_time_h).collect();
+    let last = out.points.len() - 1;
     let series: Vec<Value> = out
         .points
         .iter()
-        .map(|p| json!([n_f(p.time_h), n_f(p.pressure_gauge_mpa), n_f(p.fill)]))
+        .enumerate()
+        .filter(|(i, p)| {
+            *i == 0
+                || *i == last
+                || (p.time_h / SERIES_EVERY_H).fract() < 1.0e-9
+                || leg_ends.iter().any(|e| (e - p.time_h).abs() < 1.0e-6)
+        })
+        .map(|(_, p)| json!([n_f(p.time_h), n_f(p.pressure_gauge_mpa), n_f(p.fill)]))
         .collect();
     let leg_rows: Vec<Value> = legs
         .iter()
         .zip(&out.legs)
         .zip(&credits)
         .map(|((l, r), c)| {
+            let speed = ovd_core::holding_profile::passage_speed_kn(l, design_speed);
             json!({
                 "state": l.state.key(),
+                "passage_speed_kn": speed.map_or(Value::Null, |(k, _)| n_f(k)),
+                "passage_speed_is_default": speed.map(|(_, d)| d),
                 "days": n_f(l.days),
                 "gas_use_credit_kg_h": n_f(*c),
                 "end_time_h": n_f(r.end_time_h),

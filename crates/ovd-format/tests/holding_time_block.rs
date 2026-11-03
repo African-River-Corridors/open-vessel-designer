@@ -56,7 +56,7 @@ fn the_block_round_trips_through_json() {
         assert_eq!(row["ambient_air_c"], 45.0);
         assert_eq!(row["legs"].as_array().unwrap().len(), 2);
         let n = block["series"].as_array().unwrap().len();
-        assert!(n > 100, "an hourly series, {n} points");
+        assert!(n > 100 && n < 400, "a decimated series, {n} points");
         assert!(
             block["inputs"]
                 .as_array()
