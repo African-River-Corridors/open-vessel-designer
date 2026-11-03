@@ -304,13 +304,16 @@ const TRIANGLES: &[(&str, &str, &str, u32)] = &[
     ("gas-140x29-coastal-lng.vdesign", "C deep", "space", 9418),
     ("gas-140x29-coastal-lng.vdesign", "C deep", "waterline", 16),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "bulkhead", 28),
-    ("lrg-gas-89.vdesign", "LRG Gas 89", "deck", 0),
+    // Issue #850: the example is read with the ADN stack; its deck holds 2 triangles.
+    ("lrg-gas-89.vdesign", "LRG Gas 89", "deck", 2),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "deck_item", 72),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "dome", 768),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "hull", 26),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "propulsor", 2340),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "space", 18506),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "waterline", 9),
+    // Issue #850: the example is read with the ADN stack and now has a weather shield.
+    ("lrg-gas-89.vdesign", "LRG Gas 89", "weather_shield", 60),
     (
         "crude_integral_tanks_coastal.vdesign",
         "Option 1",

@@ -722,6 +722,9 @@ fn fully_refrigerated_lpg_takes_the_igc_minimum_of_its_own_tank() {
     let mut last = 0.0;
     for length in [60.0, 85.0, 110.0] {
         let mut s = new_session("LPG_butane", "fully_refrigerated");
+        // Issue #850: IGC 4.23.1.2 is in the coastal-and-river stack; a river-only gas Option takes ADN 9.3.1.
+        s.set_input("Option 1", "service_area", json!("coastal-and-river"))
+            .unwrap();
         s.set_input("Option 1", "length_overall_m", json!(length))
             .unwrap();
         assert_eq!(

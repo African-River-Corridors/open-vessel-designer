@@ -113,7 +113,15 @@ fn the_schema_lists_the_two_new_inputs_and_not_the_ruleset() {
     );
     assert_eq!(
         sets["default_stack"]["stacks"]["river-only"]["gas"],
-        json!(["igc-2g", "is2008-a", "lr-inland-gas", "es-trin-2025", "ovd"])
+        // Issue #850: a river-only gas stack takes ADN 9.3.1 in place of the IGC Code.
+        json!([
+            "adn-gas",
+            "igc-tank-clearance",
+            "is2008-a",
+            "lr-inland-gas",
+            "es-trin-2025",
+            "ovd"
+        ])
     );
     assert_eq!(
         sets["default_stack"]["stacks"]["coastal-and-river"]["other"],
@@ -160,7 +168,14 @@ fn a_file_saved_before_gets_the_default_stack_marked_default_with_one_warning_an
         let sets = o.input("rule_sets").unwrap();
         assert_eq!(sets.source, Source::Default, "{file}");
         let want: &[&str] = if gas {
-            &["igc-2g", "is2008-a", "lr-inland-gas", "ovd"]
+            // Issue #850: a gas file that stores no Rule Sets and no Service Area is read with the ADN stack.
+            &[
+                "adn-gas",
+                "igc-tank-clearance",
+                "is2008-a",
+                "lr-inland-gas",
+                "ovd",
+            ]
         } else {
             &["is2008-a", "ovd"]
         };
@@ -189,7 +204,12 @@ fn a_file_saved_before_gets_the_default_stack_marked_default_with_one_warning_an
             .collect();
         assert_eq!(notes.len(), 1, "{file}: {:?}", checked.report.warnings);
         assert!(notes[0].contains("`service_area`"), "{}", notes[0]);
-        assert!(notes[0].contains("results are unchanged"), "{}", notes[0]);
+        if gas {
+            // Issue #850: a river-only gas file is read with the ADN stack, so its results move.
+            assert!(notes[0].contains("results hash move"), "{}", notes[0]);
+        } else {
+            assert!(notes[0].contains("results are unchanged"), "{}", notes[0]);
+        }
         // The results hash is the one the file stored.
         let (_, opened) = DesignSession::open(&text, Profile::built_in()).unwrap();
         assert_eq!(opened.hash_status[0].1, HashStatus::Matches, "{file}");
@@ -228,7 +248,14 @@ fn a_new_option_takes_the_default_stack_and_the_saved_file_is_version_4_and_vali
         .collect();
     assert_eq!(
         ids,
-        ["igc-2g", "is2008-a", "lr-inland-gas", "es-trin-2025", "ovd"]
+        [
+            "adn-gas",
+            "igc-tank-clearance",
+            "is2008-a",
+            "lr-inland-gas",
+            "es-trin-2025",
+            "ovd"
+        ]
     );
 }
 
@@ -416,14 +443,28 @@ fn a_default_stack_follows_the_cargo_in_a_session_and_a_typed_one_stays() {
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     assert_eq!(
         ids(&s),
-        ["igc-2g", "is2008-a", "lr-inland-gas", "es-trin-2025", "ovd"]
+        [
+            "adn-gas",
+            "igc-tank-clearance",
+            "is2008-a",
+            "lr-inland-gas",
+            "es-trin-2025",
+            "ovd"
+        ]
     );
     // A set the designer added stays when the Cargo changes, after the default sets, which follow
     // the Cargo.
     s.add_rule_set("Option 1", "lr-inland-gas@1.0.0").unwrap();
     assert_eq!(
         ids(&s),
-        ["igc-2g", "is2008-a", "lr-inland-gas", "es-trin-2025", "ovd"]
+        [
+            "adn-gas",
+            "igc-tank-clearance",
+            "is2008-a",
+            "lr-inland-gas",
+            "es-trin-2025",
+            "ovd"
+        ]
     );
     s.set_input("Option 1", "cargo", json!("bauxite")).unwrap();
     assert_eq!(
@@ -481,7 +522,12 @@ fn the_profile_holds_the_default_stack_of_each_service_area_and_cargo() {
             p.default_stack(area, false).unwrap(),
         );
         // Both areas have the ES-TRIN set; only the coastal area has the ICLL one (issue #428).
-        assert_eq!(gas[..3], ["igc-2g", "is2008-a", "lr-inland-gas"]);
+        if area == "river-only" {
+            // Issue #850: ADN 9.3.1 in place of the IGC Code, with the two IGC 2.4.1.2 rows.
+            assert_eq!(gas[..3], ["adn-gas", "igc-tank-clearance", "is2008-a"]);
+        } else {
+            assert_eq!(gas[..3], ["igc-2g", "is2008-a", "lr-inland-gas"]);
+        }
         assert_eq!(other[..1], ["is2008-a"]);
         for stack in [&gas, &other] {
             assert!(stack.contains(&"es-trin-2025".to_string()));
@@ -527,7 +573,14 @@ fn changing_the_service_area_resets_the_default_sets_and_keeps_the_typed_ones() 
     let names = |s: &DesignSession| ids_of(s).into_iter().map(|(i, _)| i).collect::<Vec<_>>();
     assert_eq!(
         names(&s),
-        ["igc-2g", "is2008-a", "lr-inland-gas", "es-trin-2025", "ovd"]
+        [
+            "adn-gas",
+            "igc-tank-clearance",
+            "is2008-a",
+            "lr-inland-gas",
+            "es-trin-2025",
+            "ovd"
+        ]
     );
     // A set the designer adds is typed; the Service Area change resets the default ones.
     s.add_rule_set("Option 1", "lr-inland-gas@1.0.0").unwrap();
@@ -552,7 +605,8 @@ fn changing_the_service_area_resets_the_default_sets_and_keeps_the_typed_ones() 
     let list = ids_of(&s);
     assert_eq!(list.iter().filter(|(i, _)| i == "lr-inland-gas").count(), 1);
     // The typed entry takes the place of the default one with its id.
-    assert_eq!(list[2], ("lr-inland-gas".to_string(), "typed".to_string()));
+    // (Issue #850: after `adn-gas`, `igc-tank-clearance` and `is2008-a`.)
+    assert_eq!(list[3], ("lr-inland-gas".to_string(), "typed".to_string()));
     // With nothing typed, the stack is marked default again.
     s.remove_rule_set("Option 1", "lr-inland-gas").unwrap();
     s.set_input("Option 1", "service_area", json!("river-only"))
@@ -564,6 +618,9 @@ fn changing_the_service_area_resets_the_default_sets_and_keeps_the_typed_ones() 
 fn the_ovd_set_and_a_set_an_included_set_requires_cannot_be_removed() {
     let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
+    // Issue #850: `igc-2g` is in the coastal-and-river gas stack; the river-only one takes ADN 9.3.1.
+    s.set_input("Option 1", "service_area", json!("coastal-and-river"))
+        .unwrap();
     let e = s.remove_rule_set("Option 1", "ovd").unwrap_err();
     assert!(e.contains("cannot be removed"), "{e}");
     // igc-2g includes is2008-a.
@@ -579,7 +636,15 @@ fn the_ovd_set_and_a_set_an_included_set_requires_cannot_be_removed() {
             .iter()
             .map(|(i, _)| i.as_str())
             .collect::<Vec<_>>(),
-        ["lr-inland-gas", "es-trin-2025", "ovd"]
+        [
+            "lr-inland-gas",
+            "es-trin-2025",
+            "icll-freeboard",
+            "solas-v22",
+            "abs-barges",
+            "abs-steel-barges",
+            "ovd"
+        ]
     );
 }
 

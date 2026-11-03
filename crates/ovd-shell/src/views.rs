@@ -224,6 +224,8 @@ pub(crate) mod tests {
                 "length_overall_m": { "value": 110.0, "source": "typed" },
                 "beam_m": { "value": 11.4, "source": "typed" },
                 "moulded_depth_m": { "value": 6.0, "source": "typed" },
+                // Issue #850: the IGC damage cases are in the coastal-and-river gas stack.
+                "service_area": { "value": "coastal-and-river", "source": "typed" },
                 "loading_conditions": { "value": "is_code_2008", "source": "typed" }
             } }]
         });

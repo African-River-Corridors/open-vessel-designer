@@ -13,6 +13,8 @@ fn new_gas_results(extra: Value) -> Value {
         "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
         "length_overall_m": { "value": 110.0, "source": "typed" },
         "beam_m": { "value": 11.4, "source": "typed" },
+        // Issue #850: the IGC rows are in the coastal-and-river stack; a river-only gas Option takes ADN 9.3.1.
+        "service_area": { "value": "coastal-and-river", "source": "typed" },
         "moulded_depth_m": { "value": 6.0, "source": "typed" },
         "loading_conditions": { "value": "is_code_2008", "source": "typed" }
     });

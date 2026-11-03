@@ -78,7 +78,8 @@ fn gas_cargo_defaults_to_type_c_tanks_with_its_rule_sets_and_fill_ratio() {
     );
     let (sets, source) = used(inputs.clone(), "rule_sets");
     assert_eq!(source, Source::Default);
-    assert_eq!(sets[0]["id"], "igc-2g");
+    // Issue #850: the river-only gas stack takes ADN 9.3.1 in place of the IGC Code.
+    assert_eq!(sets[0]["id"], "adn-gas");
     assert_eq!(
         used(inputs.clone(), "service_area"),
         (json!("river-only"), Source::Default)

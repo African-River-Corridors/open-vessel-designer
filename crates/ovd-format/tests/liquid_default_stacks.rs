@@ -245,7 +245,14 @@ fn a_gas_and_a_dry_bulk_option_keep_their_stacks() {
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     assert_eq!(
         ids(&s),
-        ["igc-2g", "is2008-a", "lr-inland-gas", "es-trin-2025", "ovd"]
+        [
+            "adn-gas",
+            "igc-tank-clearance",
+            "is2008-a",
+            "lr-inland-gas",
+            "es-trin-2025",
+            "ovd"
+        ]
     );
     s.set_input("Option 1", "cargo", json!("bauxite")).unwrap();
     assert_eq!(ids(&s), ["is2008-a", "es-trin-2025", "ovd"]);

@@ -315,8 +315,10 @@ fn every_part_with_a_source_in_the_results_has_its_box() {
             .count() as u64;
         assert_eq!(count, n, "{}", c.at);
     }
+    // Issue #850: the version 2 example `lrg-gas-89` is read with the ADN stack and sizes 4 tanks, not 8, so the
+    // sweep holds 8 tanks, not 12.
     assert!(
-        tanks >= 12 && domes >= 12 && shields >= 2,
+        tanks >= 8 && domes >= 8 && shields >= 2,
         "{tanks} {domes} {shields}"
     );
 }
@@ -360,7 +362,9 @@ fn each_tank_mesh_is_closed_and_holds_the_closed_form_volume_at_the_outer_diamet
             checked += 1;
         }
     }
-    assert!(checked >= 12, "{checked}");
+    // Issue #850: the version 2 example `lrg-gas-89` is read with the ADN stack and sizes 4 tanks, not 8, so the
+    // sweep holds 8 tanks, not 12.
+    assert!(checked >= 8, "{checked}");
 }
 
 type Tri = [[f64; 3]; 3];
@@ -590,7 +594,9 @@ fn no_tank_crosses_another_tank_a_ballast_space_or_the_hull_but_its_deck_opening
             c.at
         );
     }
-    assert!(tanks >= 12, "{tanks} tanks");
+    // Issue #850: the version 2 example `lrg-gas-89` is read with the ADN stack and sizes 4 tanks, not 8, so the
+    // sweep holds 8 tanks, not 12.
+    assert!(tanks >= 8, "{tanks} tanks");
     assert!(through_deck > 0, "a fixture's tanks stand through the deck");
 }
 
@@ -614,7 +620,9 @@ fn a_tank_moved_outboard_into_the_side_shell_fails_the_check() {
             moved += 1;
         }
     }
-    assert!(moved >= 12, "{moved}");
+    // Issue #850: the version 2 example `lrg-gas-89` is read with the ADN stack and sizes 4 tanks, not 8, so the
+    // sweep holds 8 tanks, not 12.
+    assert!(moved >= 8, "{moved}");
 }
 
 #[test]
@@ -670,7 +678,9 @@ fn a_tank_moved_into_the_bottom_shell_fails_the_check() {
             moved += 1;
         }
     }
-    assert!(moved >= 12, "{moved}");
+    // Issue #850: the version 2 example `lrg-gas-89` is read with the ADN stack and sizes 4 tanks, not 8, so the
+    // sweep holds 8 tanks, not 12.
+    assert!(moved >= 8, "{moved}");
 }
 
 #[test]
