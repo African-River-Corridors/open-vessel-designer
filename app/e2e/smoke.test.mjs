@@ -296,7 +296,7 @@ describe("OVD app smoke tests", () => {
     assert.equal((await browser.$$("[data-testid=stern-crew] svg")).length, 0, "no drawing until #783");
     await browser.pause(300);
     assert.ok((await overflow()) <= 0, "the stern view of a container block scrolls");
-    await open(path.join(FIXTURES, "gas_deckhouse_self_propelled.vdesign"), "gas_deckhouse_self_propelled.vdesign");
+    await open(path.resolve(here, "fixtures/gas_deckhouse_self_propelled.vdesign"), "gas_deckhouse_self_propelled.vdesign");
     await show("Drawings", "Stern & crew");
     await until("the deckhouse view", async () => (await browser.$$("[data-testid=stern-outfit-warning]")).length === 1);
     assert.equal(await figure("style"), "Deckhouse");
