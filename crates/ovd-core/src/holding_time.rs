@@ -11,7 +11,8 @@
 //!   is V / m, solved together on the saturation table ([`state_from_u_v`]).
 //!
 //! `h_out` is the saturated vapour enthalpy when vapour is burned, or the saturated liquid enthalpy
-//! when liquid goes to a forced vaporiser. Both are read at the state at the start of the step.
+//! when liquid goes to a forced vaporiser. The step is second order (predictor and corrector): the heat
+//! leak and `h_out` are the means of their values at the start state and at a first estimate of the end.
 //!
 //! The withdrawal is capped at the vapour available (x m) and is floored: it stops when the pressure
 //! is at the start pressure, and a step that would take the pressure below it takes only as much as
@@ -279,6 +280,38 @@ fn advance(
 /// A step that leaves the dome from a state with a quality below this is a tank filling with liquid.
 const LIQUID_FULL_QUALITY: f64 = 0.5;
 
+/// One second-order step (predictor and corrector, Heun): a first estimate of the end state with the
+/// heat leak and the outgoing enthalpy of the start state, then the step again with the mean of the
+/// start and estimated end values of each. `take_kg` is the mass taken in the step.
+fn step(
+    tank: &Tank,
+    volume_m3: f64,
+    tau_s: f64,
+    take_kg: f64,
+    heat: &HeatLeak,
+    withdrawal: Withdrawal,
+) -> Result<Tank, OutOfTable> {
+    let h_out = |t_c: f64| match withdrawal {
+        Withdrawal::Vapour => vapour_enthalpy_kj_per_kg(t_c),
+        Withdrawal::Liquid => liquid_enthalpy_kj_per_kg(t_c),
+    };
+    let (q0, h0) = (
+        heat.kw(tank.state.temperature_c),
+        h_out(tank.state.temperature_c)?,
+    );
+    let first = advance(tank, volume_m3, tau_s, q0, take_kg, h0)?;
+    let t1 = first.state.temperature_c;
+    let (q1, h1) = (heat.kw(t1), h_out(t1)?);
+    advance(
+        tank,
+        volume_m3,
+        tau_s,
+        0.5 * (q0 + q1),
+        take_kg,
+        0.5 * (h0 + h1),
+    )
+}
+
 fn is_pos(x: f64) -> bool {
     x.is_finite() && x > 0.0
 }
@@ -350,12 +383,6 @@ pub fn run(inp: &Inputs) -> Result<Outcome, Error> {
         while leg_end_s - time_s > 1.0e-6 {
             let dt = inp.step_s.min(leg_end_s - time_s);
             let p_now = pressure_abs(&tank.state)?;
-            let q = inp.heat_leak.kw(tank.state.temperature_c);
-            let t_now = tank.state.temperature_c;
-            let h_out = match inp.withdrawal {
-                Withdrawal::Vapour => vapour_enthalpy_kj_per_kg(t_now)?,
-                Withdrawal::Liquid => liquid_enthalpy_kj_per_kg(t_now)?,
-            };
             // The withdrawal asked for, capped at the vapour available, and none at or below the
             // start pressure.
             let asked = leg.withdrawal_kg_s * dt;
@@ -372,7 +399,7 @@ pub fn run(inp: &Inputs) -> Result<Outcome, Error> {
             if asked > 0.0 && above_floor && take < asked {
                 capped = true;
             }
-            let mut next = match advance(&tank, v, dt, q, take, h_out) {
+            let mut next = match step(&tank, v, dt, take, &inp.heat_leak, inp.withdrawal) {
                 Ok(n) => n,
                 // The state left the dome: the liquid filled the tank (the vapour was the smaller
                 // part of the mass at the start of the step), or the table ended.
@@ -388,7 +415,7 @@ pub fn run(inp: &Inputs) -> Result<Outcome, Error> {
                 let (mut lo, mut hi) = (0.0, take);
                 for _ in 0..80 {
                     let mid = 0.5 * (lo + hi);
-                    let n = advance(&tank, v, dt, q, mid, h_out)?;
+                    let n = step(&tank, v, dt, mid, &inp.heat_leak, inp.withdrawal)?;
                     if pressure_abs(&n.state)? < p_start {
                         hi = mid;
                     } else {
@@ -396,7 +423,7 @@ pub fn run(inp: &Inputs) -> Result<Outcome, Error> {
                     }
                 }
                 take = lo;
-                next = advance(&tank, v, dt, q, take, h_out)?;
+                next = step(&tank, v, dt, take, &inp.heat_leak, inp.withdrawal)?;
                 held = true;
             }
             if pressure_abs(&next.state)? >= p_relief {
@@ -406,7 +433,7 @@ pub fn run(inp: &Inputs) -> Result<Outcome, Error> {
                 let (mut lo, mut hi) = (0.0, dt);
                 for _ in 0..80 {
                     let mid = 0.5 * (lo + hi);
-                    let n = advance(&tank, v, mid, q, rate * mid, h_out)?;
+                    let n = step(&tank, v, mid, rate * mid, &inp.heat_leak, inp.withdrawal)?;
                     if pressure_abs(&n.state)? >= p_relief {
                         hi = mid;
                     } else {
@@ -414,7 +441,7 @@ pub fn run(inp: &Inputs) -> Result<Outcome, Error> {
                     }
                 }
                 let tau = 0.5 * (lo + hi);
-                let at = advance(&tank, v, tau, q, rate * tau, h_out)?;
+                let at = step(&tank, v, tau, rate * tau, &inp.heat_leak, inp.withdrawal)?;
                 withdrawn += rate * tau;
                 time_s += tau;
                 points.push(Point {

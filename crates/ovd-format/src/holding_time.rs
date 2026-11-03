@@ -7,12 +7,16 @@
 //! ADN and IGF rows wait for the Rule rows of the solve ticket.
 
 use crate::vdesign::DesignOption;
+use libm::round;
 use ovd_core::gas_fuel::INSULATION_CONDUCTIVITY_W_PER_MK;
 use ovd_core::holding_profile::{Leg, has_gas_consumer, leg_credit_kg_h, total_days};
 use ovd_core::holding_time::{Error, HeatLeak, Inputs, LegInput, Rule, Withdrawal, run};
 use serde_json::{Value, json};
 
-const BASIS: &str = "Homogeneous closed-tank model of methane (one saturation state, no thermal stratification: the real pressure can rise faster), stepped hourly from the loading limit at the start pressure (IGC Code 15.1.3.1). The heat leak is recomputed each step at the IGC Code 7.2 air ambient (45 C) over the whole tank surface. The gas use credited on a passage leg is the least gas use of the powering model across its service conditions, at its service speed. The leg records its passage speed (the typed one, else the design service speed, as the profile input resolves it), but the credit is not yet worked out at that speed and at the lightest draught of the leg: that link to the powering model belongs to issues #871 and #875. The series is kept every 6 h plus the end of each leg and the last point. Domes, saddles and pipes are not in the heat leak. Methane stands in for the LNG composition.";
+const BASIS: &str = "Homogeneous closed-tank model of methane (one saturation state, no thermal stratification: the real pressure can rise faster), stepped every 10 minutes (second order) from the loading limit at the start pressure (IGC Code 15.1.3.1). The heat leak is recomputed each step at the IGC Code 7.2 air ambient (45 C) over the whole tank surface. The gas use credited on a passage leg is the least gas use of the powering model across its service conditions, at its service speed. The leg records its passage speed (the typed one, else the design service speed, as the profile input resolves it), but the credit is not yet worked out at that speed and at the lightest draught of the leg: that link to the powering model belongs to issues #871 and #875. The series is kept every 6 h plus the end of each leg and the last point. Domes, saddles and pipes are not in the heat leak. Methane stands in for the LNG composition.";
+
+/// The step of the stepping (s).
+const STEP_S: f64 = 600.0;
 
 /// The series keeps a point every this many hours (h).
 const SERIES_EVERY_H: f64 = 6.0;
@@ -123,7 +127,7 @@ pub(crate) fn add_holding_time(option: &DesignOption, v: &mut Value) {
         ),
         withdrawal: Withdrawal::Vapour,
         legs: &leg_inputs,
-        step_s: 3600.0,
+        step_s: STEP_S,
     });
     let out = match result {
         Ok(o) => o,
@@ -164,7 +168,7 @@ pub(crate) fn add_holding_time(option: &DesignOption, v: &mut Value) {
         .filter(|(i, p)| {
             *i == 0
                 || *i == last
-                || (p.time_h / SERIES_EVERY_H).fract() < 1.0e-9
+                || ((p.time_h / SERIES_EVERY_H) - round(p.time_h / SERIES_EVERY_H)).abs() < 1.0e-9
                 || leg_ends.iter().any(|e| (e - p.time_h).abs() < 1.0e-6)
         })
         .map(|(_, p)| json!([n_f(p.time_h), n_f(p.pressure_gauge_mpa), n_f(p.fill)]))
