@@ -48,15 +48,16 @@ async function inSettings(act) {
  * draws the form afresh (each field is keyed on the open), so mark the fields first and wait until
  * none of the marked ones is left (issue #470: a click on the old form was lost).
  */
-async function open(file, expectName) {
+async function open(file, expectName, timeout = 15000) {
   await browser.execute(() => document.querySelectorAll(".field[data-input]").forEach((e) => e.setAttribute("data-before-open", "")));
   answer("open.txt", file);
   await (await browser.$("button=Open")).click();
-  await until(`${expectName} to open`, async () => (await fileLabel()).includes(expectName));
+  await until(`${expectName} to open`, async () => (await fileLabel()).includes(expectName), timeout);
   await until("the form of the opened file", () =>
     browser.execute(() => document.querySelector(".field[data-input]") !== null && document.querySelector("[data-before-open]") === null),
+    timeout,
   );
-  await until("outputs", async () => (await browser.$("[data-testid=outputs]")).isExisting());
+  await until("outputs", async () => (await browser.$("[data-testid=outputs]")).isExisting(), timeout);
 }
 
 /** Untick "none" on a number input, and wait until its box is there to type in. */
@@ -383,9 +384,12 @@ describe("OVD app smoke tests", () => {
   /**
    * A gas Design checked in the IS Code 2008 conditions on the built-in Rule Sets, whose IGC damage cases
    * the engine computes (the fixtures hold older Rule Sets, which do not). Written to a file and filled by
-   * the native CLI, as a hand-written file lacks inputs.
+   * the native CLI, as a hand-written file lacks inputs. The IGC damage cases and their drawing are in the
+   * coastal-and-river stack; a river-only gas Design takes ADN 9.3.1 in place of the IGC Code (issue #850),
+   * whose cases the view lists without a drawing.
    */
-  function gasDamageDesign() {
+  const SLOW_OPEN_MS = 60000;
+  function gasDamageDesign(area = "coastal-and-river") {
     const inputs = {
       cargo: { value: "LNG", source: "typed" },
       hull_form: { value: "raked_box", source: "typed" },
@@ -394,9 +398,10 @@ describe("OVD app smoke tests", () => {
       beam_m: { value: 11.4, source: "typed" },
       moulded_depth_m: { value: 6.0, source: "typed" },
       loading_conditions: { value: "is_code_2008", source: "typed" },
+      service_area: { value: area, source: "typed" },
     };
-    const bare = path.join(WORK, "gas-damage-bare.vdesign");
-    const filled = path.join(WORK, "gas-damage.vdesign");
+    const bare = path.join(WORK, `gas-damage-${area}-bare.vdesign`);
+    const filled = path.join(WORK, `gas-damage-${area}.vdesign`);
     fs.writeFileSync(bare, JSON.stringify({ format: "vdesign", format_version: 3, engine_version: "0.2.4", units: "SI", options: [{ name: "Option 1", inputs }] }));
     fs.rmSync(filled, { force: true });
     execFileSync(process.env.OVD_CLI, ["fill", "--as-new", bare, filled], { stdio: "ignore" });
@@ -404,9 +409,11 @@ describe("OVD app smoke tests", () => {
   }
 
   it("shows the damage cases, the governing case of each condition and the damage drawing of a gas Design (issue #886)", async () => {
-    await open(gasDamageDesign(), "gas-damage.vdesign");
+    // The coastal-and-river design computes the IGC damage cases and the stern arrangement: several seconds in
+    // a debug build, so the open and the drawing get more than the usual 15 s (issue #850).
+    await open(gasDamageDesign(), "gas-damage-coastal-and-river.vdesign", SLOW_OPEN_MS);
     await show("Stability & Propulsion", "Damage stability");
-    await until("the damage drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1);
+    await until("the damage drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1, SLOW_OPEN_MS);
     const rows = await browser.$$("[data-testid=damage-case-row]");
     assert.ok(rows.length >= 10, `${rows.length} damage cases`);
     // One governing case in the condition shown, and it is the first failing case, as the trace has it.
@@ -435,6 +442,13 @@ describe("OVD app smoke tests", () => {
     await shot("886-gas-damage");
   });
 
+  it("lists the ADN damage cases of a river-only gas Design, which has no damage drawing yet (issues #850, #886)", async () => {
+    await open(gasDamageDesign("river-only"), "gas-damage-river-only.vdesign");
+    await show("Stability & Propulsion", "Damage stability");
+    await until("the case table", async () => (await browser.$$("[data-testid=damage-case-row]")).length >= 1);
+    assert.equal((await browser.$$("[data-testid=damage-drawing] svg")).length, 0);
+  });
+
   it("shows the damage cases of a liquid hull, and says there is no drawing for it (issue #886)", async () => {
     const fixture = "crude_integral_tanks_self_propelled.vdesign";
     await open(path.join(FIXTURES, fixture), fixture);
@@ -457,7 +471,7 @@ describe("OVD app smoke tests", () => {
   for (const [what, file] of [["a gas Design with damage cases", () => gasDamageDesign()], ["a liquid hull with a long case table", () => path.join(FIXTURES, "crude_integral_tanks_coastal.vdesign")]]) {
     it(`the Damage stability view does not scroll the panel, with the side panels shown or hidden (${what}) (issue #886)`, async () => {
       const f = file();
-      await open(f, path.basename(f));
+      await open(f, path.basename(f), SLOW_OPEN_MS);
       try {
         for (const hidden of [false, true]) {
           await setPanel("Input", !hidden);

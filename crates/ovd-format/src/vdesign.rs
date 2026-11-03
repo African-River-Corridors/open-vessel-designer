@@ -4710,6 +4710,9 @@ fn read_option(
             // freeboard sets (issue #428).
             Some(crate::trace::legacy_rule_sets(
                 containment.as_ref().and_then(Value::as_str),
+                value_of(&inputs, "service_area")
+                    .as_ref()
+                    .and_then(Value::as_str),
             ))
         } else {
             legacy_value(spec.name, containment.as_ref().and_then(Value::as_str))
@@ -4817,6 +4820,39 @@ fn read_option(
              so a gas hull's air drafts and results hash move",
         );
         report.migration_note(of_option(name, text), &vent);
+    }
+    // Issue #850: a river-only gas file that stores no Rule Sets is read with the ADN 9.3.1 gas stack, whose
+    // hull limits size the tank beside IGC 2.4.1.2, so its results move; it gets its own note, not the
+    // "results are unchanged" one.
+    let stored_value = |n: &str| {
+        inputs
+            .iter()
+            .find(|(k, _)| k == n)
+            .and_then(|(_, i)| i.value.as_str().map(String::from))
+    };
+    if legacy_added.contains(&"rule_sets")
+        && stored_value("cargo_containment").as_deref() == Some("type_c_tanks")
+        && stored_value("service_area").as_deref() == Some("river-only")
+    {
+        let moved: Vec<&str> = legacy_added
+            .iter()
+            .copied()
+            .filter(|n| matches!(*n, "rule_sets" | "service_area"))
+            .collect();
+        legacy_added.retain(|n| !moved.contains(n));
+        let list = moved
+            .iter()
+            .map(|n| format!("`{n}`"))
+            .collect::<Vec<_>>()
+            .join(" and ");
+        let text = text!(
+            "msg-legacy-adn-stack",
+            "this file has no {inputs}; a gas file for river-only service is now read with the ADN 2025 \
+             9.3.1 stack (`adn-gas`, with the two IGC 2.4.1.2 tank distance rows), whose hull limits \
+             size the tank, so its results and results hash move",
+            inputs = list
+        );
+        report.migration_note(of_option(name, text), &moved);
     }
     // Issue #739: a file saved before format version 4 has no `structure` block. It reads the spec
     // defaults, with one note of its own.

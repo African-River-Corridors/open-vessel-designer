@@ -135,7 +135,7 @@ fn an_atb_and_a_towed_barge_vessel_class_can_be_picked() {
 fn a_file_saved_before_has_no_tug_and_keeps_its_hash() {
     for name in [
         "fixtures/dry_bulk_box_hold.vdesign",
-        "legacy/v2_gas_lpg_before_313.vdesign",
+        "legacy/v2_gas_lpg_before_313_igc_stack.vdesign",
     ] {
         let path = format!("{}/tests/{name}", env!("CARGO_MANIFEST_DIR"));
         let (s, opened) =

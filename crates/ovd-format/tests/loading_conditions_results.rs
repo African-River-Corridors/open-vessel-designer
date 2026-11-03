@@ -167,7 +167,7 @@ fn legacy_conditions_add_no_field() {
 fn a_file_saved_before_keeps_the_legacy_conditions_and_its_hash() {
     // (`v1_adn_g_self_propelled` is left out: its saved hash is of a retired ruleset, so it
     // differs by design; see tests/legacy_v1.rs.)
-    for name in ["v2_gas_lpg_before_313", "v1_dry_bulk_box_hold"] {
+    for name in ["v2_gas_lpg_before_313_igc_stack", "v1_dry_bulk_box_hold"] {
         let path = format!("{}/tests/legacy/{name}.vdesign", env!("CARGO_MANIFEST_DIR"));
         let (s, opened) =
             DesignSession::open(&std::fs::read_to_string(path).unwrap(), Profile::built_in())

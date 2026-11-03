@@ -162,7 +162,7 @@ fn an_lng_design_has_no_loading_inputs_and_does_not_move() {
 #[test]
 fn a_file_saved_before_keeps_its_results() {
     let path = format!(
-        "{}/tests/legacy/v2_gas_lpg_before_313.vdesign",
+        "{}/tests/legacy/v2_gas_lpg_before_313_igc_stack.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
     let text = std::fs::read_to_string(path).unwrap();

@@ -68,11 +68,35 @@ pub fn default_stack_ids(containment: Option<&str>) -> Vec<&'static str> {
     }
 }
 
+/// The stack of ids an Option with no stored `rule_sets` takes: [`default_stack_ids`], except that a
+/// river-only gas Option takes ADN 2025 9.3.1 as its design Rule Set, with the two IGC 2.4.1.2 tank
+/// distance rows beside it (issue #850).
+pub fn unstored_stack_ids(
+    containment: Option<&str>,
+    service_area: Option<&str>,
+) -> Vec<&'static str> {
+    if containment == Some("type_c_tanks")
+        && service_area.unwrap_or(DEFAULT_SERVICE_AREA) == "river-only"
+    {
+        vec![
+            "adn-gas",
+            "igc-tank-clearance",
+            "is2008-a",
+            "lr-inland-gas",
+            "ovd",
+        ]
+    } else {
+        default_stack_ids(containment)
+    }
+}
+
 /// The `rule_sets` a file saved before the input existed is read with: the stack the engine checked
-/// every Option against then (issue #274), whatever the profile's default stacks are now.
-pub fn legacy_rule_sets(containment: Option<&str>) -> Value {
+/// every Option against then (issue #274), whatever the profile's default stacks are now. Issue #850:
+/// a river-only gas file (a file with no Service Area is read as river-only) is read with the ADN gas
+/// stack, as the maintainer decided; a file that stores its Rule Sets keeps them.
+pub fn legacy_rule_sets(containment: Option<&str>, service_area: Option<&str>) -> Value {
     let library = crate::rule_set::built_in();
-    let sets: Vec<Value> = default_stack_ids(containment)
+    let sets: Vec<Value> = unstored_stack_ids(containment, service_area)
         .into_iter()
         .filter_map(|id| {
             // The IS Code and IGC sets held every light condition to the angle of max GZ until
@@ -341,10 +365,11 @@ pub fn stack_for<'a>(
             }
         }
         None => {
-            for id in default_stack_ids(
+            for id in unstored_stack_ids(
                 option
                     .input("cargo_containment")
                     .and_then(|i| i.value.as_str()),
+                option.input("service_area").and_then(|i| i.value.as_str()),
             ) {
                 if let Some(set) = library.latest(id) {
                     chosen.push((set.id.clone(), set.version.clone()));
@@ -1130,7 +1155,8 @@ pub fn box_trace(
 /// `measured` keys: `blind_distance_light_m`, `blind_distance_laden_m`, `speed_deep_water_kmh`,
 /// `design_speed_kn`, `diameter_over_max`, `immersion_over_limit`, `blade_load_over_limit`. A gas
 /// Option's cargo vent mast (issue #849) comes from `vent_exit_above_deck_m`,
-/// `vent_exit_above_working_area_m` and `vent_distance_to_openings_m`, all three or none.
+/// `vent_exit_above_working_area_m` and `vent_distance_to_openings_m`, all three or none; with them,
+/// `vent_distance_to_accommodation_m` (issue #850, ADN 9.3.1.22.3; left out, its row has no value).
 pub fn stern_trace(
     inputs: &serde_json::Map<String, Value>,
     measured_values: &serde_json::Map<String, Value>,
@@ -1201,7 +1227,9 @@ pub fn stern_trace(
             exit_above_working_area_m: working,
             governs: ovd_core::vent_mast::Governs::Deck,
             distance_to_openings_m: openings,
-            distance_to_accommodation_m: 0.0,
+            // A case that gives none has no such Measure (NaN): the ADN row is not evaluated, never a failure.
+            distance_to_accommodation_m: number("vent_distance_to_accommodation_m")
+                .unwrap_or(f64::NAN),
             target_distance_m: 0.0,
             distance_met: true,
             lowerable: false,

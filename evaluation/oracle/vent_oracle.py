@@ -1,4 +1,4 @@
-"""An independent oracle for the IGC cargo vent exit Rules (issue #849).
+"""An independent oracle for the cargo vent exit Rules: the IGC Code (issue #849) and ADN 9.3.1.22.3 (issue #850).
 
 It never calls the engine and shares no code with it (standard library only). It works out each limit and
 verdict from the text of the IGC Code, resolution MSC.370(93), 8.2.10.3, 8.2.10.4 and 8.2.11.1, not from the
@@ -10,10 +10,15 @@ Rule Set data:
   air intake, outlet or opening to accommodation spaces, service spaces and control stations, or other
   non-hazardous areas. (For ships under 90 m in length, smaller distances may be permitted: not applied.)
 
+ADN 2025 (ECE/TRANS/351) 9.3.1.22.3, printed p. 523, applies on the Service Area `river-only`: the exhaust outlets of
+the pressure relief valves are not less than 2.00 m above the deck, at a distance of not less than 6.00 m from the
+accommodation and from the service spaces outside the cargo area. (The reduction of the height when nothing is
+within 1.00 m of the outlet is not applied.)
+
 A case (`kind: vent`) gives the beam and the three numbers a run reads from its results: the exit height above
 the deck, the exit height above the working area, and the distance to the nearest opening. The boundary cases
-move one number to each side of its limit by 0.005 m, exactly onto it (meets), and one float step under it (fails). The Rules apply to the Service Area `coastal-and-river` only; the
-cases are all on it.
+move one number to each side of its limit by 0.005 m, exactly onto it (meets), and one float step under it (fails). The IGC Rules apply to the Service Area `coastal-and-river`, the ADN Rules to
+`river-only`; a river-only case also gives the distance to the accommodation.
 
     python3 evaluation/oracle/vent_oracle.py CASE.yaml      # print the verdicts of one case
 """
@@ -26,10 +31,13 @@ from pathlib import Path
 DECK = "igc/8.2.10.3/vent-exit-height"
 WORKING = "igc/8.2.10.4/vent-exit-above-working-areas"
 DISTANCE = "igc/8.2.11.1/vent-exit-distance"
+ADN_HEIGHT = "adn/9.3.1.22.3/relief-valve-outlet-height"
+ADN_DISTANCE = "adn/9.3.1.22.3/relief-valve-outlet-distance"
 
 #: The measured values, by the Rule they are read for, and the input that holds each.
 MOVES = {DECK: "vent_exit_above_deck_m", WORKING: "vent_exit_above_working_area_m",
-         DISTANCE: "vent_distance_to_openings_m"}
+         DISTANCE: "vent_distance_to_openings_m", ADN_HEIGHT: "vent_exit_above_deck_m",
+         ADN_DISTANCE: "vent_distance_to_accommodation_m"}
 
 #: Step from the limit in metres: (big, small). Smaller than the 0.01 m step of a rule mutant of a constant
 #: limit, so a mutant lies across a case.
@@ -47,6 +55,12 @@ def verdicts(i: dict) -> dict:
     """The expected verdict of every Rule that applies to the case, by rule id."""
     b = i["beam_m"]
     out = {}
+    if i["service_area"] == "river-only":
+        out[ADN_HEIGHT] = _entry("ADN 9.3.1.22.3", "relief valve outlet above the deck",
+                                 i["vent_exit_above_deck_m"], 2.0)
+        out[ADN_DISTANCE] = _entry("ADN 9.3.1.22.3", "relief valve outlet from the accommodation",
+                                   i["vent_distance_to_accommodation_m"], 6.0)
+        return out
     out[DECK] = _entry("IGC 8.2.10.3", "cargo vent exit above the weather deck",
                        i["vent_exit_above_deck_m"], max(b / 3.0, 6.0))
     out[WORKING] = _entry("IGC 8.2.10.4", "cargo vent exit above working areas and walkways",
@@ -67,7 +81,8 @@ def boundary_case(base: dict, rule_id: str, side: str, magnitude: str) -> dict:
     big, small = STEPS["m"]
     name = MOVES[rule_id]
     # The limit as the text works it out, not rounded for the file.
-    limit = {DECK: max(i["beam_m"] / 3.0, 6.0), WORKING: 6.0, DISTANCE: min(i["beam_m"], 25.0)}[rule_id]
+    limit = {DECK: max(i["beam_m"] / 3.0, 6.0), WORKING: 6.0, DISTANCE: min(i["beam_m"], 25.0),
+             ADN_HEIGHT: 2.0, ADN_DISTANCE: 6.0}[rule_id]
     if magnitude == "exact":
         target = limit
     elif magnitude == "ulp":

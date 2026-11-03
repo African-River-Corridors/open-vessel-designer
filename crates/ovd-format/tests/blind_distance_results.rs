@@ -100,7 +100,7 @@ fn the_margin_method_and_a_file_saved_before_keep_todays_check() {
         "{c}"
     );
     for name in [
-        "legacy/v2_gas_lpg_before_313.vdesign",
+        "legacy/v2_gas_lpg_before_313_igc_stack.vdesign",
         "fixtures/gas_igc_2g_self_propelled.vdesign",
     ] {
         let path = format!("{}/tests/{name}", env!("CARGO_MANIFEST_DIR"));

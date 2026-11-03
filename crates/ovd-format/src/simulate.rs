@@ -1182,7 +1182,43 @@ fn tank_report(
 pub use ovd_core::measured::Measured;
 
 fn simulate(p: &Map<String, Value>) -> R<Value> {
-    simulate_measured(p, &mut Measured::default(), &RunRules::default())
+    simulate_measured(p, &mut Measured::default(), &unstored_rules(p))
+}
+
+/// The Rule Sets `simulate` takes when it is given none (issue #850): for a gas hull whose Service Area is
+/// explicitly river-only, the stack of a gas Option that stores none (`trace::unstored_stack_ids`: ADN 9.3.1
+/// as the design Rule Set, with the two IGC 2.4.1.2 tank distance rows) at the highest built-in versions, as a
+/// new Option stores them. It leaves out `es-trin-2025`, which a new Option also stores: its freeboard Rule
+/// reads the Option's inputs, which `simulate` is not given (it has no Option), and would fail every
+/// candidate. The ADN hull limits size the tank in `run`, so `simulate` sizes it the same way. Every other
+/// hull has no Rule Sets here, as before.
+///
+/// A Service Area LEFT OUT stays "not river-only" here, as it always did, so the Python API's results
+/// (pinned to the original Python) do not move. That differs from `run` and the profile, where a missing
+/// Service Area is read as river-only (`trace::DEFAULT_SERVICE_AREA`, `unstored_stack_ids`): `run` always
+/// gives the Service Area, so the difference shows only to a caller of `simulate` that leaves it out.
+/// A gas file with no stored Rule Sets is read by `run` with the older set versions
+/// (`trace::legacy_rule_sets`); `simulate` has no file, so it takes the latest.
+fn unstored_rules(p: &Map<String, Value>) -> RunRules {
+    if p.get("vessel").and_then(Value::as_str) != Some("gas_barge")
+        || p.get("service_area").and_then(Value::as_str) != Some("river-only")
+    {
+        return RunRules::default();
+    }
+    let library = crate::rule_set::built_in();
+    let pairs: Vec<(&str, &str)> =
+        crate::trace::unstored_stack_ids(Some("type_c_tanks"), Some("river-only"))
+            .into_iter()
+            .filter_map(|id| library.latest(id))
+            .map(|set| (set.id.as_str(), set.version.as_str()))
+            .collect();
+    match library.select(&pairs) {
+        Ok(selection) => RunRules {
+            sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
+            inputs: ga::RuleInputs::default(),
+        },
+        Err(_) => RunRules::default(),
+    }
 }
 
 /// The Rule Sets of a run and the Option's inputs, which the gas arrangement search reads (spec

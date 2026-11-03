@@ -113,7 +113,7 @@ fn no_block_without_a_specified_propulsor_or_in_a_file_saved_before() {
         .unwrap();
     assert!(results(&s).get("powering").is_none());
     for name in [
-        "legacy/v2_gas_lpg_before_313.vdesign",
+        "legacy/v2_gas_lpg_before_313_igc_stack.vdesign",
         "fixtures/gas_igc_2g_self_propelled.vdesign",
     ] {
         let path = format!("{}/tests/{name}", env!("CARGO_MANIFEST_DIR"));

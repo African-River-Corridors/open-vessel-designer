@@ -110,4 +110,6 @@ def vent_case_trace(i: dict, *, rule_sets: tuple[str, ...] = (), select: tuple[s
     }
     measured = {k: float(i[k]) for k in ("vent_exit_above_deck_m", "vent_exit_above_working_area_m",
                                          "vent_distance_to_openings_m")}
+    if "vent_distance_to_accommodation_m" in i:      # issue #850: a river-only case reads ADN 9.3.1.22.3
+        measured["vent_distance_to_accommodation_m"] = float(i["vent_distance_to_accommodation_m"])
     return stern_trace(inputs, measured, rule_sets=rule_sets, select=select)

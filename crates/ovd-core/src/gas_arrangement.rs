@@ -697,6 +697,28 @@ pub fn gas_stability_check(c: &gs::Condition, warns: bool) -> Check {
 /// The Rule that fails the angle of max GZ of every condition in the IS Code Rule Sets of 1.0.0.
 const ANGLE_RULE: &str = "is2008/A.2.2.3/angle-max-gz";
 
+/// The Rule that sizes the double-hull space of a gas hull: ADN 9.3.1.11.2 (a), at least 0.80 m (issue #850).
+pub const ADN_DOUBLE_SIDE_RULE: &str = "adn/9.3.1.11.2(a)/double-hull-width";
+/// The Rule that sizes the double bottom of a gas hull: ADN 9.3.1.11.2 (a), at least 0.60 m (issue #850).
+pub const ADN_DOUBLE_BOTTOM_RULE: &str = "adn/9.3.1.11.2(a)/double-bottom-height";
+
+/// The constant lower limit of an evaluated Rule that sizes the hull, read from the stack, m; 0 when
+/// no selected set holds the Rule. The arrangement takes the limit from the Rule, so the stack's
+/// version decides the size (issue #850).
+pub fn sizing_limit(rules: &[RuleSet], id: &str) -> f64 {
+    rules
+        .iter()
+        .filter_map(|s| s.rule(id))
+        .find_map(|r| match (&r.limit, r.compare) {
+            (
+                Some(crate::rules::Limit::Constant { value, .. }),
+                Some(crate::rules::Compare::Ge),
+            ) if r.evaluated && r.sizes => Some(*value),
+            _ => None,
+        })
+        .unwrap_or(0.0)
+}
+
 /// Whether the angle of max GZ alone in a light condition with no ballast is a warning for these
 /// Rule Sets (issue #498). It is when the Rule Sets say so: the IS Code Rule that holds the angle
 /// names the kind of loading condition it applies to. A stack whose Rule applies to every
@@ -1157,6 +1179,9 @@ impl Search<'_> {
         inp.dome_diameter_by_rule = self.o.tank_dome_diameter_by_rule;
         inp.dome_height_by_rule = self.o.tank_dome_height_by_rule;
         inp.wing_tank_gap_m = self.o.wing_tank_gap_m;
+        // Issue #850: the hull limits of ADN 9.3.1.11.2 (a), when the stack holds them.
+        inp.double_side_min_m = sizing_limit(&self.o.rules, ADN_DOUBLE_SIDE_RULE);
+        inp.double_bottom_min_m = sizing_limit(&self.o.rules, ADN_DOUBLE_BOTTOM_RULE);
         inp.wing_tank_height_ratio = self.o.wing_tank_height_ratio;
         inp.weather_shield_thickness_mm = self.o.weather_shield_thickness_mm;
         inp.weather_shield_clearance_m = self.o.weather_shield_clearance_m;

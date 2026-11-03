@@ -358,6 +358,10 @@ VENT_BASES = [
     vent_base("vent_beam_30", "Gas barge of 30 m beam, coastal and river service, vent exit inside every limit",
               "B/3 is 10 m and governs the height of 8.2.10.3; the distance asked is 25 m, not B.", beam_m=30.0,
               vent_exit_above_deck_m=11.0, vent_distance_to_openings_m=40.0),
+    # Issue #850: ADN 9.3.1.22.3 on a river-only hull: 2.00 m above the deck, 6.00 m from the accommodation.
+    vent_base("vent_adn_river", "Gas barge on river-only service, relief valve outlet inside every ADN limit",
+              "ADN 9.3.1.22.3: the outlet at least 2.00 m above the deck and at least 6.00 m from the accommodation.",
+              service_area="river-only", vent_exit_above_deck_m=3.0, vent_distance_to_accommodation_m=10.0),
 ]
 
 
@@ -447,6 +451,24 @@ def vent_document(c: dict) -> dict:
     """A cargo vent exit case (`kind: vent`): the inputs, and the oracle's verdict for each Rule."""
     expected = {k: {kk: vv for kk, vv in v.items() if kk != "compare"}
                 for k, v in vent_oracle.verdicts(c["inputs"]).items()}
+    if c["inputs"]["service_area"] == "river-only":
+        return {
+            "id": c["id"], "title": c["title"], "kind": "vent",
+            "inputs": dict(c["inputs"]),
+            "expected": expected,
+            "provenance": {
+                "verdict_basis": "derived",
+                "inputs_basis": "chosen for this corpus (not from a publication)",
+                "source": "evaluation/oracle/vent_oracle.py (the text of ADN 9.3.1.22.3)",
+                "edition": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by "
+                           "Inland Waterways (ECE/TRANS/351), applicable from 1 January 2025",
+                "locator": "ADN 9.3.1.22.3 (adn.pdf, printed p. 523)",
+                "licence": "inputs and oracle: this repository (see LICENSE); the limits are quoted from the text",
+                "confidence": "high for the verdicts (the oracle states each limit as the text prints it); the case is "
+                              "not an external published example",
+                "note": c["note"],
+            },
+        }
     return {
         "id": c["id"], "title": c["title"], "kind": "vent",
         "inputs": dict(c["inputs"]),

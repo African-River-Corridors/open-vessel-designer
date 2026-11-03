@@ -409,7 +409,24 @@ fn new_gas_results(cargo: &str, carriage: &str) -> Value {
         Vec::<String>::new(),
         "{cargo} {carriage}"
     );
-    let design = filled.design.unwrap();
+    let mut design = filled.design.unwrap();
+    // Issue #850: a river-only gas Option takes ADN 9.3.1 in place of the IGC Code. This test is about
+    // the IGC Rules on the defaults, so the Option stores the IGC stack the default was before.
+    let lib = ovd_format::rule_set::built_in();
+    let stack: Vec<serde_json::Value> = ["igc-2g", "is2008-a", "lr-inland-gas", "es-trin-2025", "ovd"]
+        .iter()
+        .map(|id| {
+            let set = lib.latest(id).unwrap();
+            serde_json::json!({ "id": set.id, "version": set.version, "hash": set.hash, "source": "typed" })
+        })
+        .collect();
+    design.options[0]
+        .inputs
+        .iter_mut()
+        .find(|(n, _)| n == "rule_sets")
+        .unwrap()
+        .1
+        .value = serde_json::Value::Array(stack);
     match ovd_format::run_option(&design.options[0]) {
         ovd_format::RunOutcome::Results { results, .. } => results,
         other => panic!("{cargo} {carriage}: {other:?}"),

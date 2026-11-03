@@ -488,8 +488,9 @@ mod tests {
         // condition the file lacks (issue #292): it is read as fully pressurised. One more for the
         // block coefficient the file stores (issue #448): it is no longer an input. One more for the
         // structure block of the Hull the file lacks (issue #739). One more for the cargo vent mast
-        // inputs the file lacks (issue #822).
-        assert_eq!(notes.len(), 9, "{notes:?}");
+        // inputs the file lacks (issue #822). One more for the ADN stack a river-only gas file is read with
+        // (issue #850).
+        assert_eq!(notes.len(), 10, "{notes:?}");
         assert!(
             notes[0]
                 .as_str()
@@ -536,15 +537,20 @@ mod tests {
                 .contains("cargo vent mast inputs"),
             "{notes:?}"
         );
+        // Issue #850: the ADN stack a river-only gas file is read with has a note of its own.
+        assert!(
+            notes[7].as_str().unwrap().contains("ADN 2025 9.3.1 stack"),
+            "{notes:?}"
+        );
         // Issue #739: the structure block's own note comes before the note of the fixed values.
         assert!(
-            notes[7]
+            notes[8]
                 .as_str()
                 .unwrap()
                 .contains("before the structure block of the Hull"),
             "{notes:?}"
         );
-        let last = notes[8].as_str().unwrap();
+        let last = notes[9].as_str().unwrap();
         assert!(
             last.contains("has no `")
                 && last.contains("`bow_rake_length_m`")
@@ -585,14 +591,14 @@ mod tests {
         };
         let before = notes(&state);
         // Six as above, one for the stored block coefficient (issue #448), one for the structure
-        // block (issue #739) and one for the vent mast inputs (issue #822).
-        assert_eq!(before.len(), 9);
+        // block (issue #739), one for the vent mast inputs (issue #822) and one for the ADN stack (issue #850).
+        assert_eq!(before.len(), 10);
         state.duplicate_option("Option 1").unwrap();
         assert_eq!(notes(&state), before, "a copy brings no notes of its own");
 
         state.rename_option("Option 1", "Laden case").unwrap();
         let after = notes(&state);
-        assert_eq!(after.len(), 9);
+        assert_eq!(after.len(), 10);
         for (old, new) in before.iter().zip(&after) {
             let old = old.as_str().unwrap();
             let new = new.as_str().unwrap();

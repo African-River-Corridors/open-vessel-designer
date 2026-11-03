@@ -119,7 +119,7 @@ fn the_schema_lists_every_new_input_with_its_group_and_default_status() {
 
 #[test]
 fn a_version_2_file_gets_the_legacy_values_with_one_warning_and_keeps_its_results() {
-    let text = legacy("v2_gas_lpg_before_313");
+    let text = legacy("v2_gas_lpg_before_313_igc_stack");
     let checked = check(&text, &Profile::built_in());
     assert!(
         checked.report.errors.is_empty(),
@@ -256,8 +256,11 @@ fn the_propulsor_type_decides_which_inputs_are_held() {
 fn saving_writes_the_current_version_and_the_saved_file_validates() {
     // Version 3 brought these inputs; version 4 (issue #739) the structure block.
     const { assert!(FORMAT_VERSION >= 3) };
-    let (s, _) =
-        DesignSession::open(&legacy("v2_gas_lpg_before_313"), Profile::built_in()).unwrap();
+    let (s, _) = DesignSession::open(
+        &legacy("v2_gas_lpg_before_313_igc_stack"),
+        Profile::built_in(),
+    )
+    .unwrap();
     let text = s.save().unwrap();
     let saved: Value = serde_json::from_str(&text).unwrap();
     assert_eq!(saved["format_version"], FORMAT_VERSION);
@@ -316,8 +319,11 @@ fn the_stern_block_api_takes_power_source_as_the_name_of_propulsion() {
 fn an_old_file_reads_no_gas_combustion_unit_and_holds_it_only_on_a_gas_power_source() {
     // Issue #775: the input is shown only for a gas-fuelled power source. The old file's power
     // source is battery electric, so it holds none; switched to gas it reads false (the fixed value).
-    let (mut s, _) =
-        DesignSession::open(&legacy("v2_gas_lpg_before_313"), Profile::built_in()).unwrap();
+    let (mut s, _) = DesignSession::open(
+        &legacy("v2_gas_lpg_before_313_igc_stack"),
+        Profile::built_in(),
+    )
+    .unwrap();
     let name = s.design().options[0].name.clone();
     assert!(s.design().options[0].input("gas_combustion_unit").is_none());
     s.set_input(&name, "power_source", json!("gas_fuelled"))

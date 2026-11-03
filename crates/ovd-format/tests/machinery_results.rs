@@ -101,7 +101,7 @@ fn an_unspecified_propulsor_keeps_todays_stern_block() {
 #[test]
 fn a_file_saved_before_keeps_todays_stern_block_and_its_hash() {
     for name in [
-        "legacy/v2_gas_lpg_before_313.vdesign",
+        "legacy/v2_gas_lpg_before_313_igc_stack.vdesign",
         "fixtures/gas_igc_2g_self_propelled.vdesign",
     ] {
         let path = format!("{}/tests/{name}", env!("CARGO_MANIFEST_DIR"));

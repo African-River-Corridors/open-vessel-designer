@@ -355,8 +355,12 @@ impl Measured {
             }
             "vent.exit_above_deck"
             | "vent.exit_above_working_area"
-            | "vent.distance_to_openings"
-            | "vent.distance_to_accommodation" => self.vent_mast.is_some(),
+            | "vent.distance_to_openings" => self.vent_mast.is_some(),
+            // Issue #850: a mast whose distance to the accommodation is not given (NaN) has no such value.
+            "vent.distance_to_accommodation" => self
+                .vent_mast
+                .as_ref()
+                .is_some_and(|v| !v.distance_to_accommodation_m.is_nan()),
             // The Rule on a hull with no damage computed is `not evaluated` with the reason (`missing`).
             "stability.damage"
             | "stability.damage_marpol"
@@ -655,6 +659,8 @@ impl Measured {
                 "vc" => number(t.vc_m3),
                 "side_gap" => number(t.side_gap_m),
                 "bottom_gap" => number(t.bottom_gap_m),
+                "double_side_width" => number(t.double_side_width_m),
+                "double_bottom_height" => number(t.double_bottom_height_m),
                 "insulation" => number(t.insulation_m),
                 // The thinner wall; the first of equal, as Python's `min`.
                 "wall_thickness" => number(if t.head_wall_mm < t.cylinder_wall_mm {

@@ -50,7 +50,7 @@ fn a_new_option_has_a_trim_per_condition_and_without_the_block_none() {
 #[test]
 fn a_file_saved_before_has_no_trim_fields() {
     let path = format!(
-        "{}/tests/legacy/v2_gas_lpg_before_313.vdesign",
+        "{}/tests/legacy/v2_gas_lpg_before_313_igc_stack.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
     let (s, opened) =

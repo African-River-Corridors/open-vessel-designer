@@ -2544,4 +2544,372 @@ mutants:
     locator: IGC 8.2.10.3, 8.2.10.4, 8.2.11.1 (MSC.370-93.pdf, annex p. 112)
     licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts'
     confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_adn_river__adn_9.3.1.22.3_relief-valve-outlet-height__pass_big
+  title: Gas barge on river-only service, relief valve outlet inside every ADN limit, adn/9.3.1.22.3/relief-valve-outlet-height
+    just inside its limit (big step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: river-only
+    vent_exit_above_deck_m: 2.005
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 20.0
+    vent_distance_to_accommodation_m: 10.0
+  expected:
+    adn/9.3.1.22.3/relief-valve-outlet-height:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet above the deck
+      unit: m
+      verdict: pass
+      value: 2.005
+      limit: 2.0
+      margin: 0.005
+    adn/9.3.1.22.3/relief-valve-outlet-distance:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet from the accommodation
+      unit: m
+      verdict: pass
+      value: 10.0
+      limit: 6.0
+      margin: 4.0
+  mutant:
+    parent: vent_adn_river
+    criterion: adn/9.3.1.22.3/relief-valve-outlet-height
+    side: pass
+    magnitude: big
+    moved: vent_exit_above_deck_m
+    target_value: 2.005
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by
+      Inland Waterways (ECE/TRANS/351), applicable from 1 January 2025
+    locator: ADN 9.3.1.22.3 (adn.pdf, printed p. 523)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the text'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_adn_river__adn_9.3.1.22.3_relief-valve-outlet-height__fail_big
+  title: Gas barge on river-only service, relief valve outlet inside every ADN limit, adn/9.3.1.22.3/relief-valve-outlet-height
+    just across its limit (big step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: river-only
+    vent_exit_above_deck_m: 1.995
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 20.0
+    vent_distance_to_accommodation_m: 10.0
+  expected:
+    adn/9.3.1.22.3/relief-valve-outlet-height:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet above the deck
+      unit: m
+      verdict: fail
+      value: 1.995
+      limit: 2.0
+      margin: -0.005
+    adn/9.3.1.22.3/relief-valve-outlet-distance:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet from the accommodation
+      unit: m
+      verdict: pass
+      value: 10.0
+      limit: 6.0
+      margin: 4.0
+  mutant:
+    parent: vent_adn_river
+    criterion: adn/9.3.1.22.3/relief-valve-outlet-height
+    side: fail
+    magnitude: big
+    moved: vent_exit_above_deck_m
+    target_value: 1.995
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by
+      Inland Waterways (ECE/TRANS/351), applicable from 1 January 2025
+    locator: ADN 9.3.1.22.3 (adn.pdf, printed p. 523)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the text'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_adn_river__adn_9.3.1.22.3_relief-valve-outlet-height__pass_exact
+  title: Gas barge on river-only service, relief valve outlet inside every ADN limit, adn/9.3.1.22.3/relief-valve-outlet-height
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: river-only
+    vent_exit_above_deck_m: 2.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 20.0
+    vent_distance_to_accommodation_m: 10.0
+  expected:
+    adn/9.3.1.22.3/relief-valve-outlet-height:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet above the deck
+      unit: m
+      verdict: pass
+      value: 2.0
+      limit: 2.0
+      margin: 0.0
+    adn/9.3.1.22.3/relief-valve-outlet-distance:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet from the accommodation
+      unit: m
+      verdict: pass
+      value: 10.0
+      limit: 6.0
+      margin: 4.0
+  mutant:
+    parent: vent_adn_river
+    criterion: adn/9.3.1.22.3/relief-valve-outlet-height
+    side: pass
+    magnitude: exact
+    moved: vent_exit_above_deck_m
+    target_value: 2.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by
+      Inland Waterways (ECE/TRANS/351), applicable from 1 January 2025
+    locator: ADN 9.3.1.22.3 (adn.pdf, printed p. 523)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the text'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_adn_river__adn_9.3.1.22.3_relief-valve-outlet-height__fail_ulp
+  title: Gas barge on river-only service, relief valve outlet inside every ADN limit, adn/9.3.1.22.3/relief-valve-outlet-height
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: river-only
+    vent_exit_above_deck_m: 1.9999999999999998
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 20.0
+    vent_distance_to_accommodation_m: 10.0
+  expected:
+    adn/9.3.1.22.3/relief-valve-outlet-height:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet above the deck
+      unit: m
+      verdict: fail
+      value: 2.0
+      limit: 2.0
+      margin: -2.220446049e-16
+    adn/9.3.1.22.3/relief-valve-outlet-distance:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet from the accommodation
+      unit: m
+      verdict: pass
+      value: 10.0
+      limit: 6.0
+      margin: 4.0
+  mutant:
+    parent: vent_adn_river
+    criterion: adn/9.3.1.22.3/relief-valve-outlet-height
+    side: fail
+    magnitude: ulp
+    moved: vent_exit_above_deck_m
+    target_value: 2.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by
+      Inland Waterways (ECE/TRANS/351), applicable from 1 January 2025
+    locator: ADN 9.3.1.22.3 (adn.pdf, printed p. 523)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the text'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_adn_river__adn_9.3.1.22.3_relief-valve-outlet-distance__pass_big
+  title: Gas barge on river-only service, relief valve outlet inside every ADN limit, adn/9.3.1.22.3/relief-valve-outlet-distance
+    just inside its limit (big step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: river-only
+    vent_exit_above_deck_m: 3.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 20.0
+    vent_distance_to_accommodation_m: 6.005
+  expected:
+    adn/9.3.1.22.3/relief-valve-outlet-height:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet above the deck
+      unit: m
+      verdict: pass
+      value: 3.0
+      limit: 2.0
+      margin: 1.0
+    adn/9.3.1.22.3/relief-valve-outlet-distance:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet from the accommodation
+      unit: m
+      verdict: pass
+      value: 6.005
+      limit: 6.0
+      margin: 0.005
+  mutant:
+    parent: vent_adn_river
+    criterion: adn/9.3.1.22.3/relief-valve-outlet-distance
+    side: pass
+    magnitude: big
+    moved: vent_distance_to_accommodation_m
+    target_value: 6.005
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by
+      Inland Waterways (ECE/TRANS/351), applicable from 1 January 2025
+    locator: ADN 9.3.1.22.3 (adn.pdf, printed p. 523)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the text'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_adn_river__adn_9.3.1.22.3_relief-valve-outlet-distance__fail_big
+  title: Gas barge on river-only service, relief valve outlet inside every ADN limit, adn/9.3.1.22.3/relief-valve-outlet-distance
+    just across its limit (big step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: river-only
+    vent_exit_above_deck_m: 3.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 20.0
+    vent_distance_to_accommodation_m: 5.995
+  expected:
+    adn/9.3.1.22.3/relief-valve-outlet-height:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet above the deck
+      unit: m
+      verdict: pass
+      value: 3.0
+      limit: 2.0
+      margin: 1.0
+    adn/9.3.1.22.3/relief-valve-outlet-distance:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet from the accommodation
+      unit: m
+      verdict: fail
+      value: 5.995
+      limit: 6.0
+      margin: -0.005
+  mutant:
+    parent: vent_adn_river
+    criterion: adn/9.3.1.22.3/relief-valve-outlet-distance
+    side: fail
+    magnitude: big
+    moved: vent_distance_to_accommodation_m
+    target_value: 5.995
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by
+      Inland Waterways (ECE/TRANS/351), applicable from 1 January 2025
+    locator: ADN 9.3.1.22.3 (adn.pdf, printed p. 523)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the text'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_adn_river__adn_9.3.1.22.3_relief-valve-outlet-distance__pass_exact
+  title: Gas barge on river-only service, relief valve outlet inside every ADN limit, adn/9.3.1.22.3/relief-valve-outlet-distance
+    just inside its limit (exact step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: river-only
+    vent_exit_above_deck_m: 3.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 20.0
+    vent_distance_to_accommodation_m: 6.0
+  expected:
+    adn/9.3.1.22.3/relief-valve-outlet-height:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet above the deck
+      unit: m
+      verdict: pass
+      value: 3.0
+      limit: 2.0
+      margin: 1.0
+    adn/9.3.1.22.3/relief-valve-outlet-distance:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet from the accommodation
+      unit: m
+      verdict: pass
+      value: 6.0
+      limit: 6.0
+      margin: 0.0
+  mutant:
+    parent: vent_adn_river
+    criterion: adn/9.3.1.22.3/relief-valve-outlet-distance
+    side: pass
+    magnitude: exact
+    moved: vent_distance_to_accommodation_m
+    target_value: 6.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by
+      Inland Waterways (ECE/TRANS/351), applicable from 1 January 2025
+    locator: ADN 9.3.1.22.3 (adn.pdf, printed p. 523)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the text'
+    confidence: high for the verdicts; a mutant is not an external published example
+- id: vent_adn_river__adn_9.3.1.22.3_relief-valve-outlet-distance__fail_ulp
+  title: Gas barge on river-only service, relief valve outlet inside every ADN limit, adn/9.3.1.22.3/relief-valve-outlet-distance
+    just across its limit (ulp step)
+  kind: vent
+  inputs:
+    length_overall_m: 100.0
+    beam_m: 14.0
+    depth_m: 4.5
+    service_area: river-only
+    vent_exit_above_deck_m: 3.0
+    vent_exit_above_working_area_m: 7.0
+    vent_distance_to_openings_m: 20.0
+    vent_distance_to_accommodation_m: 5.999999999999999
+  expected:
+    adn/9.3.1.22.3/relief-valve-outlet-height:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet above the deck
+      unit: m
+      verdict: pass
+      value: 3.0
+      limit: 2.0
+      margin: 1.0
+    adn/9.3.1.22.3/relief-valve-outlet-distance:
+      rule: ADN 9.3.1.22.3
+      what: relief valve outlet from the accommodation
+      unit: m
+      verdict: fail
+      value: 6.0
+      limit: 6.0
+      margin: -8.881784197e-16
+  mutant:
+    parent: vent_adn_river
+    criterion: adn/9.3.1.22.3/relief-valve-outlet-distance
+    side: fail
+    magnitude: ulp
+    moved: vent_distance_to_accommodation_m
+    target_value: 6.0
+    grid: false
+  provenance:
+    verdict_basis: derived
+    source: evaluation/oracle/vent_oracle.py from the parent case
+    edition: ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by
+      Inland Waterways (ECE/TRANS/351), applicable from 1 January 2025
+    locator: ADN 9.3.1.22.3 (adn.pdf, printed p. 523)
+    licence: 'inputs and oracle: this repository (see LICENSE); the limits are quoted from the text'
+    confidence: high for the verdicts; a mutant is not an external published example
 skipped: []

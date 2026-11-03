@@ -91,7 +91,7 @@ fn a_file_saved_before_has_no_stern_fields_and_keeps_its_hash() {
     // The version 1 file's ruleset changed in version 2, so its stored hash differs by design
     // (`aft_block_inputs.rs`); it still gets no stern field.
     for (name, hash_kept) in [
-        ("legacy/v2_gas_lpg_before_313.vdesign", true),
+        ("legacy/v2_gas_lpg_before_313_igc_stack.vdesign", true),
         ("fixtures/gas_igc_2g_self_propelled.vdesign", true),
         ("legacy/v1_adn_g_self_propelled.vdesign", false),
     ] {

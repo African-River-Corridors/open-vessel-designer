@@ -570,9 +570,10 @@ fn faults_of(a: &Arrangement, i: usize, (dx, dy, dz): (f64, f64, f64)) -> Vec<St
 
 #[test]
 fn no_tank_crosses_another_tank_a_ballast_space_or_the_hull_but_its_deck_opening() {
-    let (mut tanks, mut through_deck) = (0, 0);
+    let (mut tanks, mut through_deck, mut side_by_side) = (0, 0, false);
     for c in cases() {
         let Some(a) = arrangement(&c) else { continue };
+        side_by_side |= c.results["geometry"]["n_tanks_wide"].as_u64().unwrap_or(1) >= 2;
         for (i, (name, tank, foot)) in a.tanks.iter().enumerate() {
             let faults = faults_of(&a, i, (0.0, 0.0, 0.0));
             assert!(faults.is_empty(), "{}: {name} {faults:?}", c.at);
@@ -591,6 +592,8 @@ fn no_tank_crosses_another_tank_a_ballast_space_or_the_hull_but_its_deck_opening
         );
     }
     assert!(tanks >= 12, "{tanks} tanks");
+    // Tanks side by side stay in the sweep, so a tank crossing its neighbour is still tested.
+    assert!(side_by_side, "a design with two tanks across");
     assert!(through_deck > 0, "a fixture's tanks stand through the deck");
 }
 

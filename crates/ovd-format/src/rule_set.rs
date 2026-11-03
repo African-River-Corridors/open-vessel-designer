@@ -54,6 +54,11 @@ const BUILT_IN: &[(&str, &str)] = &[
         "rules/adn-gas/1.0.0.json",
         include_str!("../rules/adn-gas/1.0.0.json"),
     ),
+    // Issue #850: the hull limits of 9.3.1.11.2 (a) and the relief valve outlet of 9.3.1.22.3 evaluated.
+    (
+        "rules/adn-gas/2.0.0.json",
+        include_str!("../rules/adn-gas/2.0.0.json"),
+    ),
     (
         "rules/es-trin-2025/1.0.0.json",
         include_str!("../rules/es-trin-2025/1.0.0.json"),

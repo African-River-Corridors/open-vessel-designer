@@ -89,7 +89,7 @@ fn the_old_basis_gives_285_mpa_and_a_thinner_wall_for_s690ql1_only() {
 
 #[test]
 fn a_file_without_the_basis_keeps_the_old_stress_and_its_results() {
-    let file = "v2_gas_lpg_before_313";
+    let file = "v2_gas_lpg_before_313_igc_stack";
     let text = legacy(file);
     let raw: Value = serde_json::from_str(&text).unwrap();
     let inputs = &raw["options"][0]["inputs"];

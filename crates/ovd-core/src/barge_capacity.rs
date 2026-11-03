@@ -262,6 +262,13 @@ pub struct BargeCapacityInputs {
     // --- Gas branch (IGC/IGF) ---
     pub vessel_type: String,
     pub side_clearance_override_m: Option<f64>,
+    /// The least width of the double-hull space, m (issue #850): the ADN 9.3.1.11.2 (a) limit, when
+    /// the Rule Set stack holds it. The tank clearance is then at least this and the gap between the
+    /// wing tank and the tank. 0: no such limit.
+    pub double_side_min_m: f64,
+    /// The least height of the double bottom, m (issue #850): the ADN 9.3.1.11.2 (a) limit, when the
+    /// Rule Set stack holds it. 0: no such limit, the IGC 2.4.1.2 bottom distance alone.
+    pub double_bottom_min_m: f64,
     /// `None`: auto, the fewest tanks across that keeps each tank's OD within the cap.
     pub n_tanks_wide: Option<i64>,
     pub n_tanks_long: i64,
@@ -392,6 +399,8 @@ impl BargeCapacityInputs {
             bulk_end_bulkhead_m: 0.50,
             vessel_type: "IGC_2G".to_string(),
             side_clearance_override_m: None,
+            double_side_min_m: 0.0,
+            double_bottom_min_m: 0.0,
             n_tanks_wide: None,
             n_tanks_long: DEFAULT_TANKS_IN_LINE,
             max_tank_od_m: DEFAULT_MAX_TANK_OD_M,
@@ -463,6 +472,11 @@ pub struct TankRuleValues {
     /// The clear height from the moulded base to the outer face of the insulation, m: the double
     /// bottom plus the support height.
     pub bottom_gap_m: f64,
+    /// The width of the double-hull space: the wing tank, from the moulded side to its longitudinal
+    /// bulkhead, m (issue #850). The clear side gap less the gap between the wing tank and the tank.
+    pub double_side_width_m: f64,
+    /// The height of the double bottom, m (issue #850): the bottom gap less the support height.
+    pub double_bottom_height_m: f64,
     /// The insulation thickness, m.
     pub insulation_m: f64,
     pub cylinder_wall_mm: f64,
@@ -879,7 +893,19 @@ fn gas_volumetric(
         if let Some(over) = inp.side_clearance_override_m {
             cs = over;
         }
+        // Issue #850: ADN 9.3.1.11.2 (a), the double-hull space at least this wide: the tank clearance
+        // is then at least that and the gap beside the wing tank. Where IGC 2.4.1.2 asks for more, it
+        // governs and the width is what is left.
+        if inp.double_side_min_m > 0.0 && cs - inp.wing_tank_gap_m < inp.double_side_min_m {
+            cs = inp.double_side_min_m + inp.wing_tank_gap_m;
+        }
         db = py_max(0.0, cb - inp.tank_support_height);
+        // Issue #850: ADN 9.3.1.11.2 (a), the double bottom at least this high; the tank clearance
+        // below it is that height plus the support. Where IGC 2.4.1.2 asks for more, it governs.
+        if inp.double_bottom_min_m > db {
+            db = inp.double_bottom_min_m;
+            cb = db + inp.tank_support_height;
+        }
         // AUTO tank arrangement: cs is only known inside this loop.
         let n_wide = match inp.n_tanks_wide {
             Some(n) => n,
@@ -962,6 +988,8 @@ fn gas_volumetric(
                 vc_m3: tanks.total_tank_volume / (count as f64) + dome_volume_m3(dome.0, dome.1),
                 side_gap_m: cs,
                 bottom_gap_m: db + inp.tank_support_height,
+                double_side_width_m: py_max(0.0, cs - inp.wing_tank_gap_m),
+                double_bottom_height_m: db,
                 insulation_m: ins_m,
                 cylinder_wall_mm: tanks.cylinder_wall_thickness,
                 head_wall_mm: tanks.head_wall_thickness,

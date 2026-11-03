@@ -63,11 +63,12 @@ STERN_INPUTS = {"length_overall_m", "beam_m", "depth_m", "bow_thruster", "propul
                 "blind_distance_light_m", "blind_distance_laden_m", "speed_deep_water_kmh", "design_speed_kn",
                 "propeller_diameter_m", "propeller_d_max_m", "propeller_ducted", "aft_draught_light_m",
                 "blade_load_kw_m2"}
-#: The set a vent (`kind: vent`) case selects (issue #849): the cargo vent exit Rules of the IGC Code.
-VENT_SELECT = ("igc-2g@3.2.0",)
+#: The set a vent (`kind: vent`) case selects (issue #849): the cargo vent exit Rules of the IGC Code (coastal) and ADN 9.3.1.22.3 (river-only, issue #850).
+VENT_SELECT = ("igc-2g@3.2.0", "adn-gas@2.0.0")
 #: The case inputs of a vent case; a case that gives any other is a model gap.
 VENT_INPUTS = {"length_overall_m", "beam_m", "depth_m", "service_area", "vent_exit_above_deck_m",
-               "vent_exit_above_working_area_m", "vent_distance_to_openings_m"}
+               "vent_exit_above_working_area_m", "vent_distance_to_openings_m",
+               "vent_distance_to_accommodation_m"}
 BUCKETS = ("model-gap", "known-limitation", "code-bug", "rule-suspect", "needs-expert")
 #: The trace inputs a box case gives; a case that needs any other input is a model gap.
 BOX_INPUTS = {"form", "vdesign", "length_m", "beam_m", "depth_m", "draught_m", "kg_m",

@@ -304,13 +304,18 @@ const TRIANGLES: &[(&str, &str, &str, u32)] = &[
     ("gas-140x29-coastal-lng.vdesign", "C deep", "space", 9418),
     ("gas-140x29-coastal-lng.vdesign", "C deep", "waterline", 16),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "bulkhead", 28),
-    ("lrg-gas-89.vdesign", "LRG Gas 89", "deck", 0),
+    // Issue #850: the example is read with the ADN stack and sizes one tank across, its outer diameter proud
+    // of the deck, so its deck holds 2 triangles (the deck opening) where it held none.
+    ("lrg-gas-89.vdesign", "LRG Gas 89", "deck", 2),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "deck_item", 72),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "dome", 768),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "hull", 26),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "propulsor", 2340),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "space", 18506),
     ("lrg-gas-89.vdesign", "LRG Gas 89", "waterline", 9),
+    // Issue #850: with one tank across and its outer diameter proud of the deck, the example now has a weather
+    // shield over it.
+    ("lrg-gas-89.vdesign", "LRG Gas 89", "weather_shield", 60),
     (
         "crude_integral_tanks_coastal.vdesign",
         "Option 1",
@@ -448,6 +453,36 @@ const TRIANGLES: &[(&str, &str, &str, u32)] = &[
     ("dry_bulk_sloped_hopper.vdesign", "Option 1", "hull", 26),
     ("dry_bulk_sloped_hopper.vdesign", "Option 1", "space", 290),
     ("dry_bulk_sloped_hopper.vdesign", "Option 1", "waterline", 6),
+    // Issue #850: a river-only gas design with two tanks across (100 x 20 m), so tanks side by side stay in the sweep.
+    ("gas_adn_river_two_wide.vdesign", "Option 1", "bulkhead", 36),
+    ("gas_adn_river_two_wide.vdesign", "Option 1", "deck", 2),
+    (
+        "gas_adn_river_two_wide.vdesign",
+        "Option 1",
+        "deck_item",
+        60,
+    ),
+    ("gas_adn_river_two_wide.vdesign", "Option 1", "dome", 384),
+    ("gas_adn_river_two_wide.vdesign", "Option 1", "hull", 38),
+    (
+        "gas_adn_river_two_wide.vdesign",
+        "Option 1",
+        "propulsor",
+        1752,
+    ),
+    ("gas_adn_river_two_wide.vdesign", "Option 1", "space", 9546),
+    (
+        "gas_adn_river_two_wide.vdesign",
+        "Option 1",
+        "waterline",
+        16,
+    ),
+    (
+        "gas_adn_river_two_wide.vdesign",
+        "Option 1",
+        "weather_shield",
+        60,
+    ),
     ("gas_igc_2g_exact.vdesign", "Option 1", "bulkhead", 20),
     ("gas_igc_2g_exact.vdesign", "Option 1", "deck", 0),
     ("gas_igc_2g_exact.vdesign", "Option 1", "dome", 192),
