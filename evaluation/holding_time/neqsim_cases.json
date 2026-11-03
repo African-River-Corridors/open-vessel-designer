@@ -1,0 +1,440 @@
+{
+ "cases": [
+  {
+   "end_temperature_c": -134.2172,
+   "fill_fraction": 0.9,
+   "half_step_holding_time_h": 102.364,
+   "halving_the_step_changes_holding_time_percent": 0.0009769,
+   "heat_leak_kw": 10.0,
+   "holding_time_diff_vs_nist_table_percent": -0.01465,
+   "holding_time_h": 102.363,
+   "id": "A_fill090_q10",
+   "nist_table_holding_time_h": 102.378,
+   "relief_mpa_gauge": 0.5,
+   "start_mass_kg": 38033.2,
+   "start_temperature_c": -161.4861,
+   "step_s": 3600.0,
+   "trajectory_h_bar_abs_c": [
+    [
+     0.0,
+     1.01325,
+     -161.4861
+    ],
+    [
+     6.0,
+     1.15609,
+     -159.86
+    ],
+    [
+     12.0,
+     1.313449,
+     -158.2381
+    ],
+    [
+     18.0,
+     1.486172,
+     -156.6206
+    ],
+    [
+     24.0,
+     1.67511,
+     -155.0075
+    ],
+    [
+     30.0,
+     1.881108,
+     -153.3989
+    ],
+    [
+     36.0,
+     2.105012,
+     -151.7949
+    ],
+    [
+     42.0,
+     2.347662,
+     -150.1956
+    ],
+    [
+     48.0,
+     2.609892,
+     -148.6011
+    ],
+    [
+     54.0,
+     2.892527,
+     -147.0114
+    ],
+    [
+     60.0,
+     3.196385,
+     -145.4266
+    ],
+    [
+     66.0,
+     3.522269,
+     -143.8467
+    ],
+    [
+     72.0,
+     3.870974,
+     -142.2718
+    ],
+    [
+     78.0,
+     4.243281,
+     -140.702
+    ],
+    [
+     84.0,
+     4.639954,
+     -139.1374
+    ],
+    [
+     90.0,
+     5.061745,
+     -137.5779
+    ],
+    [
+     96.0,
+     5.509388,
+     -136.0237
+    ],
+    [
+     102.0,
+     5.983601,
+     -134.4748
+    ],
+    [
+     102.363,
+     6.01325,
+     -134.2172
+    ]
+   ],
+   "volume_m3": 100.0,
+   "withdrawal_capped_by_vapour": false,
+   "withdrawal_kg_s_vapour": 0.0
+  },
+  {
+   "end_temperature_c": -134.3679,
+   "fill_fraction": 0.8,
+   "half_step_holding_time_h": 91.9542,
+   "halving_the_step_changes_holding_time_percent": 0.0002175,
+   "heat_leak_kw": 10.0,
+   "holding_time_diff_vs_nist_table_percent": -0.01348,
+   "holding_time_h": 91.954,
+   "id": "B_fill080_q10",
+   "nist_table_holding_time_h": 91.9664,
+   "relief_mpa_gauge": 0.5,
+   "start_mass_kg": 33827.46,
+   "start_temperature_c": -161.4861,
+   "step_s": 3600.0,
+   "trajectory_h_bar_abs_c": [
+    [
+     0.0,
+     1.01325,
+     -161.4861
+    ],
+    [
+     6.0,
+     1.173866,
+     -159.6686
+    ],
+    [
+     12.0,
+     1.352651,
+     -157.8573
+    ],
+    [
+     18.0,
+     1.550756,
+     -156.0525
+    ],
+    [
+     24.0,
+     1.769325,
+     -154.2542
+    ],
+    [
+     30.0,
+     2.009496,
+     -152.4626
+    ],
+    [
+     36.0,
+     2.272397,
+     -150.6779
+    ],
+    [
+     42.0,
+     2.559141,
+     -148.9
+    ],
+    [
+     48.0,
+     2.870824,
+     -147.1292
+    ],
+    [
+     54.0,
+     3.208524,
+     -145.3656
+    ],
+    [
+     60.0,
+     3.573296,
+     -143.6092
+    ],
+    [
+     66.0,
+     3.966173,
+     -141.8602
+    ],
+    [
+     72.0,
+     4.38816,
+     -140.1186
+    ],
+    [
+     78.0,
+     4.840236,
+     -138.3845
+    ],
+    [
+     84.0,
+     5.323354,
+     -136.658
+    ],
+    [
+     90.0,
+     5.838433,
+     -134.9392
+    ],
+    [
+     91.954,
+     6.01325,
+     -134.3679
+    ]
+   ],
+   "volume_m3": 100.0,
+   "withdrawal_capped_by_vapour": false,
+   "withdrawal_kg_s_vapour": 0.0
+  },
+  {
+   "end_temperature_c": -133.9597,
+   "fill_fraction": 0.9,
+   "half_step_holding_time_h": 51.1815,
+   "halving_the_step_changes_holding_time_percent": 0.001563,
+   "heat_leak_kw": 20.0,
+   "holding_time_diff_vs_nist_table_percent": -0.01504,
+   "holding_time_h": 51.1807,
+   "id": "C_fill090_q20",
+   "nist_table_holding_time_h": 51.1884,
+   "relief_mpa_gauge": 0.5,
+   "start_mass_kg": 38033.2,
+   "start_temperature_c": -161.4861,
+   "step_s": 3600.0,
+   "trajectory_h_bar_abs_c": [
+    [
+     0.0,
+     1.01325,
+     -161.4861
+    ],
+    [
+     6.0,
+     1.313449,
+     -158.2381
+    ],
+    [
+     12.0,
+     1.67511,
+     -155.0075
+    ],
+    [
+     18.0,
+     2.105012,
+     -151.7949
+    ],
+    [
+     24.0,
+     2.609892,
+     -148.6011
+    ],
+    [
+     30.0,
+     3.196385,
+     -145.4266
+    ],
+    [
+     36.0,
+     3.870974,
+     -142.2718
+    ],
+    [
+     42.0,
+     4.639954,
+     -139.1374
+    ],
+    [
+     48.0,
+     5.509388,
+     -136.0237
+    ],
+    [
+     51.1807,
+     6.01325,
+     -133.9597
+    ]
+   ],
+   "volume_m3": 100.0,
+   "withdrawal_capped_by_vapour": false,
+   "withdrawal_kg_s_vapour": 0.0
+  },
+  {
+   "end_temperature_c": -134.2004,
+   "fill_fraction": 0.9,
+   "half_step_holding_time_h": 112.29,
+   "halving_the_step_changes_holding_time_percent": 0.04366,
+   "heat_leak_kw": 10.0,
+   "holding_time_diff_vs_nist_table_percent": -0.01158,
+   "holding_time_h": 112.241,
+   "id": "D_fill090_q10_withdrawal",
+   "nist_table_holding_time_h": 112.254,
+   "relief_mpa_gauge": 0.5,
+   "start_mass_kg": 38033.2,
+   "start_temperature_c": -161.4861,
+   "step_s": 3600.0,
+   "trajectory_h_bar_abs_c": [
+    [
+     0.0,
+     1.01325,
+     -161.4861
+    ],
+    [
+     6.0,
+     1.143409,
+     -159.9979
+    ],
+    [
+     12.0,
+     1.283128,
+     -158.5386
+    ],
+    [
+     18.0,
+     1.435408,
+     -157.0804
+    ],
+    [
+     24.0,
+     1.600932,
+     -155.6234
+    ],
+    [
+     30.0,
+     1.780388,
+     -154.1678
+    ],
+    [
+     36.0,
+     1.974471,
+     -152.7135
+    ],
+    [
+     42.0,
+     2.183879,
+     -151.2606
+    ],
+    [
+     48.0,
+     2.409311,
+     -149.8092
+    ],
+    [
+     54.0,
+     2.651471,
+     -148.3594
+    ],
+    [
+     60.0,
+     2.911061,
+     -146.9113
+    ],
+    [
+     66.0,
+     3.188783,
+     -145.4648
+    ],
+    [
+     72.0,
+     3.48534,
+     -144.0201
+    ],
+    [
+     78.0,
+     3.801431,
+     -142.5773
+    ],
+    [
+     84.0,
+     4.137753,
+     -141.1363
+    ],
+    [
+     90.0,
+     4.494999,
+     -139.6973
+    ],
+    [
+     96.0,
+     4.873857,
+     -138.2603
+    ],
+    [
+     102.0,
+     5.275011,
+     -136.8254
+    ],
+    [
+     108.0,
+     5.699139,
+     -135.3927
+    ],
+    [
+     112.241,
+     6.01325,
+     -134.2004
+    ]
+   ],
+   "volume_m3": 100.0,
+   "withdrawal_capped_by_vapour": false,
+   "withdrawal_kg_s_vapour": 0.002
+  }
+ ],
+ "content_sha256": "95b7ee769f5ab703578cb441b7ae8cc0c38d4b32f13e1ce8916f4ba496e5c474",
+ "environment": {
+  "java": "openjdk version \"17.0.19\" 2026-04-21",
+  "python": "3.14.6"
+ },
+ "equation_of_state": "GERG-2008 (NeqSim SystemGERG2008Eos), pure methane",
+ "model": "closed tank, homogeneous, start saturated at 101.325 kPa absolute, vapour withdrawn at saturated vapour enthalpy",
+ "neqsim_version": "3.27.0",
+ "purpose": "Reference cases for the Type C holding time. They check saturation properties and the energy-balance stepping only. Every case shares the homogeneous assumption (one saturation state, no stratification) and the heat leak with the model under test.",
+ "spread_neqsim_vs_nist_table": {
+  "energy_offset_kj_kg": {
+   "anchor": "saturated liquid at -160 C",
+   "enthalpy": 910.8046,
+   "internal": 910.8047
+  },
+  "max_abs_difference_liquid_density_percent": 0.01476,
+  "max_abs_difference_liquid_enthalpy_kj_kg": 0.0271,
+  "max_abs_difference_liquid_internal_energy_kj_kg": 0.02484,
+  "max_abs_difference_pressure_percent": 0.02781,
+  "max_abs_difference_vapour_density_percent": 0.02587,
+  "max_abs_difference_vapour_enthalpy_kj_kg": 0.1566,
+  "max_abs_difference_vapour_internal_energy_kj_kg": 0.1347,
+  "rows_from_c": -162,
+  "rows_to_c": -133
+ },
+ "step_s": 3600.0
+}
