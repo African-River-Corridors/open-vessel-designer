@@ -195,13 +195,17 @@ impl AppState {
     }
 
     /// The evaluation as JSON for the front end: the session's own, with the hull views (SVG) added
-    /// to the outcome of each Option that was computed.
+    /// to the outcome of each Option that was computed, and the damage case drawings (SVG) of each
+    /// Option whose results hold damage cases.
     pub fn evaluate_json(&self) -> Value {
         let evaluation = self.session.evaluate();
         let mut json = evaluation.to_json();
         for (i, option) in evaluation.options.iter().enumerate() {
             if let Some(outcome @ RunOutcome::Results { .. }) = &option.outcome {
                 json["options"][i]["outcome"]["views"] = views::hull_views(outcome, &option.name);
+                if let Some(damage) = views::damage_views(outcome, &option.name) {
+                    json["options"][i]["outcome"]["damage_views"] = damage;
+                }
             }
         }
         json
@@ -703,6 +707,28 @@ mod tests {
         // the rest of the evaluation is the session's own
         assert_eq!(eval["options"][0]["name"], "Option 1");
         assert!(outcome["results"]["dims"].is_object());
+    }
+
+    #[test]
+    fn the_evaluation_carries_the_damage_svg_for_damage_results_and_none_otherwise() {
+        let state = AppState::new_design().unwrap();
+        let eval = state.evaluate_json();
+        assert!(eval["options"][0]["outcome"].get("damage_views").is_none());
+
+        let text = views::tests::gas_damage_design_text();
+        let state = AppState::open(std::path::Path::new("damage.vdesign"), &text).unwrap();
+        let eval = state.evaluate_json();
+        let outcome = &eval["options"][0]["outcome"];
+        assert_eq!(outcome["status"], "results");
+        let sheets = outcome["damage_views"]["sheets"].as_array().unwrap();
+        assert_eq!(
+            sheets.len(),
+            outcome["results"]["damage"]["governing"]
+                .as_array()
+                .unwrap()
+                .len()
+        );
+        assert!(sheets[0]["svg"].as_str().unwrap().contains("<svg"));
     }
 
     #[test]

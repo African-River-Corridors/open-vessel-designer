@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { Evaluation, HullViews, OptionEvaluation } from "./api";
+    import type { DamageViews, Evaluation, HullViews, OptionEvaluation } from "./api";
   import StaleWhy from "./StaleWhy.svelte";
   import PrincipalStrip from "./PrincipalStrip.svelte";
   import HullView from "./HullView.svelte";
@@ -8,8 +8,10 @@
   import Convoy from "./views/Convoy.svelte";
   import Model3D from "./views/Model3D.svelte";
   import Stability from "./views/Stability.svelte";
+  import Damage from "./views/Damage.svelte";
   import RuleChecks, { type RuleTrace } from "./views/RuleChecks.svelte";
   import CapitalBudget from "./views/CapitalBudget.svelte";
+  import type { DamageResults } from "./damage";
   import { say, t, type TextIds } from "./i18n.svelte";
 
   // The hull views are SVG drawn in Rust to the Drawing Format Standard (ADR 0009, spec 0003); the
@@ -43,6 +45,7 @@
       views: [
         { id: "stability", label: "app-view-stability" },
         { id: "ballast", label: "app-view-ballast" },
+        { id: "damage", label: "app-view-damage" },
         { id: "speed-power", label: "app-view-speed-power" },
         { id: "rules", label: "app-view-rules" },
       ],
@@ -58,7 +61,7 @@
   ];
   const HULL = ["side", "plan", "midship"];
   /** Views that show results of the Option, and so can be out of date. */
-  const FROM_RESULTS = [...HULL, "convoy", "model3d", "stability", "ballast", "speed-power", "rules", "capital"];
+  const FROM_RESULTS = [...HULL, "convoy", "model3d", "stability", "ballast", "damage", "speed-power", "rules", "capital"];
   type HullKey = "side" | "plan" | "midship";
 
   let groupId = $state(GROUPS[0].id);
@@ -86,6 +89,12 @@
     if (outcome?.status === "results") return outcome.views ?? null;
     const prior = lastGood[active]?.outcome;
     return outcome?.status === "not_run" && prior?.status === "results" ? (prior.views ?? null) : null;
+  });
+  /** The damage drawings of the shown results, with the views. */
+  let damageViews = $derived.by((): DamageViews | null => {
+    if (outcome?.status === "results") return outcome.damage_views ?? null;
+    const prior = lastGood[active]?.outcome;
+    return outcome?.status === "not_run" && prior?.status === "results" ? (prior.damage_views ?? null) : null;
   });
   const drawing = (key: HullKey): string | null => views?.[key] ?? null;
   let message = $derived(outcome && (outcome.status === "not_available" || outcome.status === "failed") ? say(outcome.message, null, outcome.msg) : null);
@@ -188,6 +197,17 @@
         <p class="note">{t("app-no-results-show")}</p>
       {:else}
         <Ballast {ids} loading={(results as { loading_conditions?: never }).loading_conditions} />
+      {/if}
+    {:else if current === "damage"}
+      {#if message}
+        <p class="note">{message}</p>
+      {:else if !results}
+        <p class="note">{t("app-no-results-show")}</p>
+      {:else}
+        <!-- New results build a new view, with the first set and condition shown. -->
+        {#key JSON.stringify([active, outcome?.status === "results" ? outcome.results_hash : null])}
+          <Damage results={results as DamageResults} {ids} drawings={damageViews} />
+        {/key}
       {/if}
     {:else if current === "rules"}
       {#if message}

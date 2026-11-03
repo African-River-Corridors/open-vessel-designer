@@ -6,7 +6,7 @@
 
 use ovd_draw::render::svg::{SvgOptions, to_svg};
 use ovd_draw::{NoFiles, RunResult, run_value};
-use ovd_format::{RunOutcome, ga_views_named};
+use ovd_format::{NO_DAMAGE_DRAWING, RunOutcome, damage_drawings_named, ga_views_named};
 use serde_json::{Value, json};
 
 /// The three views of a computed Option as SVG (`side`, `plan`, `midship`), or the reason there are
@@ -21,6 +21,49 @@ pub fn hull_views(outcome: &RunOutcome, option: &str) -> Value {
         ("plan", &views.plan),
         ("midship", &views.midship_section),
     ])
+}
+
+/// The damage case drawings of a computed Option as SVG, for the Damage stability view: `sheets`, one per
+/// governing case, each with its `condition` and `case` as the results name them, and `message` when a
+/// sheet is left out. `None` for an Option whose results hold no drawable damage cases, so the front end
+/// is sent nothing then. The font is not embedded: the front end loads it once.
+pub fn damage_views(outcome: &RunOutcome, option: &str) -> Option<Value> {
+    let sheets = match damage_drawings_named(outcome, Some(option)) {
+        Ok(s) => s,
+        Err(message) if message == NO_DAMAGE_DRAWING => return None,
+        Err(message) => return Some(json!({ "sheets": [], "message": message })),
+    };
+    let results = match outcome {
+        RunOutcome::Results { results, .. } => results,
+        _ => return None,
+    };
+    let governing = results["damage"]["governing"]
+        .as_array()
+        .map_or(&[][..], Vec::as_slice);
+    let mut out = Vec::new();
+    let mut refused = Vec::new();
+    for (i, (stem, document)) in sheets.iter().enumerate() {
+        match run_value(document, &NoFiles) {
+            RunResult::Ok(norm) => out.push(json!({
+                "stem": stem,
+                "condition": governing.get(i).map_or(Value::Null, |g| g["condition"].clone()),
+                "case": governing.get(i).map_or(Value::Null, |g| g["case"].clone()),
+                "svg": to_svg(&norm, &SvgOptions { embed_font: false }),
+            })),
+            RunResult::Errors(clauses) => {
+                let list: Vec<String> = clauses.into_iter().collect();
+                refused.push(format!("{stem} (clause {})", list.join(", ")));
+            }
+        }
+    }
+    let mut v = json!({ "sheets": out });
+    if !refused.is_empty() {
+        v["message"] = Value::String(format!(
+            "These damage drawings break the Drawing Format Standard: {}. This is a fault in OVD, not in the Design.",
+            refused.join("; ")
+        ));
+    }
+    Some(v)
 }
 
 /// The SVG of each view the standard accepts. A view it refuses does not hide the others (issue
@@ -55,9 +98,9 @@ fn hull_views_of(documents: &[(&str, &Value)]) -> Value {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
-    use ovd_format::{CONVOY_NO_VIEWS, Profile, check, run_design};
+    use ovd_format::{CONVOY_NO_VIEWS, Profile, check, fill_as_new, run_design, run_option};
     use std::path::Path;
 
     fn outcome(fixture: &str) -> RunOutcome {
@@ -167,6 +210,109 @@ mod tests {
             !message.contains("side") && !message.contains("midship"),
             "{message}"
         );
+    }
+
+    /// The text of a filled Design for a gas hull checked in the IS Code 2008 conditions on the
+    /// default Rule Sets, which evaluate the IGC damage cases.
+    pub(crate) fn gas_damage_design_text() -> String {
+        let file = json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": {
+                "cargo": { "value": "LNG", "source": "typed" },
+                "hull_form": { "value": "raked_box", "source": "typed" },
+                "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+                "length_overall_m": { "value": 110.0, "source": "typed" },
+                "beam_m": { "value": 11.4, "source": "typed" },
+                "moulded_depth_m": { "value": 6.0, "source": "typed" },
+                "loading_conditions": { "value": "is_code_2008", "source": "typed" }
+            } }]
+        });
+        let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+        filled.design.unwrap().to_text()
+    }
+
+    fn damage_outcome() -> RunOutcome {
+        let filled = fill_as_new(&gas_damage_design_text(), &Profile::built_in());
+        run_option(&filled.design.unwrap().options[0])
+    }
+
+    #[test]
+    fn a_run_with_damage_cases_sends_one_damage_svg_per_governing_case() {
+        let o = damage_outcome();
+        let RunOutcome::Results { results, .. } = &o else {
+            panic!("no results")
+        };
+        let governing = results["damage"]["governing"].as_array().unwrap();
+        let v = damage_views(&o, "Option 1").expect("damage views");
+        assert!(v.get("message").is_none(), "{v}");
+        let sheets = v["sheets"].as_array().unwrap();
+        assert_eq!(sheets.len(), governing.len());
+        for (sheet, g) in sheets.iter().zip(governing) {
+            let svg = sheet["svg"].as_str().unwrap();
+            assert!(svg.starts_with("<?xml"));
+            assert!(svg.contains("viewBox=\"0 0 420 297\""));
+            assert!(!svg.contains("base64"), "the font is loaded once");
+            assert_eq!(sheet["condition"], g["condition"]);
+            assert_eq!(sheet["case"], g["case"]);
+        }
+    }
+
+    #[test]
+    fn a_run_without_damage_cases_sends_no_damage_svg() {
+        // legacy gas conditions, a liquid hull (its damage is a list, not drawn) and a dry hull
+        for fixture in [
+            "gas_igc_2g_exact.vdesign",
+            "crude_integral_tanks_self_propelled.vdesign",
+            "dry_bulk_box_hold.vdesign",
+        ] {
+            assert!(
+                damage_views(&outcome(fixture), "Option 1").is_none(),
+                "{fixture}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_governing_case_of_each_condition_is_the_trace_row_the_view_reads() {
+        // The view marks the engine's governing case of each condition. It must be a row of the trace,
+        // with the verdict the results hold, and the worst case of its condition.
+        let o = damage_outcome();
+        let RunOutcome::Results { results, .. } = &o else {
+            panic!("no results")
+        };
+        let rows = results["rule_trace"]["rows"].as_array().unwrap();
+        let damage_rows: Vec<&Value> = rows
+            .iter()
+            .filter(|r| r["rule"] == "igc/2.7/damage-survival")
+            .collect();
+        let cases = results["damage"]["cases"].as_array().unwrap();
+        assert_eq!(damage_rows.len(), cases.len(), "one row per case");
+        for g in results["damage"]["governing"].as_array().unwrap() {
+            let object = format!(
+                "{}: {}",
+                g["condition"].as_str().unwrap(),
+                g["case"].as_str().unwrap()
+            );
+            let row = damage_rows
+                .iter()
+                .find(|r| r["object"] == object.as_str())
+                .unwrap_or_else(|| panic!("no trace row for {object}"));
+            assert_eq!(row["outcome"] == "pass", g["ok"] == true, "{object}");
+            // The governing case is the worst of its condition: a failing case beats a passing one and,
+            // among those, the least maximum righting lever wins (a tie keeps the earlier case).
+            let mut worst: Option<&Value> = None;
+            for c in cases.iter().filter(|c| c["condition"] == g["condition"]) {
+                let worse = worst.is_none_or(|w| {
+                    (w["ok"] == true && c["ok"] == false)
+                        || (w["ok"] == c["ok"]
+                            && c["max_gz_m"].as_f64().unwrap() < w["max_gz_m"].as_f64().unwrap())
+                });
+                if worse {
+                    worst = Some(c);
+                }
+            }
+            assert_eq!(worst.unwrap()["name"], g["case"], "{object}");
+        }
     }
 
     #[test]

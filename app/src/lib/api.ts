@@ -122,8 +122,16 @@ export interface Message {
 /** The hull views of a computed Option, drawn in Rust to the Drawing Format Standard, as SVG text. */
 /** A view the standard refuses is left out, and `message` says why; the others still show (issue #660). */
 export type HullViews = { side?: string; plan?: string; midship?: string; message?: string };
+/** The damage case drawings of an Option whose results hold drawable damage cases: one sheet per governing case, each with the condition and case it shows (issue #886). */
+export interface DamageSheet {
+  stem: string;
+  condition: string | null;
+  case: string | null;
+  svg: string;
+}
+export type DamageViews = { sheets: DamageSheet[]; message?: string };
 export type Outcome =
-  | { status: "results"; results: Record<string, unknown>; results_hash: string; views?: HullViews }
+  | { status: "results"; results: Record<string, unknown>; results_hash: string; views?: HullViews; damage_views?: DamageViews }
   | { status: "not_available" | "failed"; message: string; msg?: EngineMsg | null }
   | { status: "not_run" };
 export interface OptionEvaluation {
