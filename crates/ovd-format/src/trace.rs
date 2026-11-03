@@ -68,11 +68,26 @@ pub fn default_stack_ids(containment: Option<&str>) -> Vec<&'static str> {
     }
 }
 
+/// The stack of ids an Option with no stored `rule_sets` takes: [`default_stack_ids`], except that a
+/// river-only gas Option takes ADN 2025 9.3.1 as its design Rule Set, with the two IGC 2.4.1.2 tank
+/// distance rows beside it (issue #850).
+pub fn unstored_stack_ids(containment: Option<&str>, service_area: Option<&str>) -> Vec<&'static str> {
+    if containment == Some("type_c_tanks")
+        && service_area.unwrap_or(DEFAULT_SERVICE_AREA) == "river-only"
+    {
+        vec!["adn-gas", "igc-tank-clearance", "is2008-a", "lr-inland-gas", "ovd"]
+    } else {
+        default_stack_ids(containment)
+    }
+}
+
 /// The `rule_sets` a file saved before the input existed is read with: the stack the engine checked
-/// every Option against then (issue #274), whatever the profile's default stacks are now.
-pub fn legacy_rule_sets(containment: Option<&str>) -> Value {
+/// every Option against then (issue #274), whatever the profile's default stacks are now. Issue #850:
+/// a river-only gas file (a file with no Service Area is read as river-only) is read with the ADN gas
+/// stack, as the maintainer decided; a file that stores its Rule Sets keeps them.
+pub fn legacy_rule_sets(containment: Option<&str>, service_area: Option<&str>) -> Value {
     let library = crate::rule_set::built_in();
-    let sets: Vec<Value> = default_stack_ids(containment)
+    let sets: Vec<Value> = unstored_stack_ids(containment, service_area)
         .into_iter()
         .filter_map(|id| {
             // The IS Code and IGC sets held every light condition to the angle of max GZ until
@@ -341,9 +356,12 @@ pub fn stack_for<'a>(
             }
         }
         None => {
-            for id in default_stack_ids(
+            for id in unstored_stack_ids(
                 option
                     .input("cargo_containment")
+                    .and_then(|i| i.value.as_str()),
+                option
+                    .input("service_area")
                     .and_then(|i| i.value.as_str()),
             ) {
                 if let Some(set) = library.latest(id) {

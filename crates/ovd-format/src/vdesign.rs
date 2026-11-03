@@ -4710,6 +4710,9 @@ fn read_option(
             // freeboard sets (issue #428).
             Some(crate::trace::legacy_rule_sets(
                 containment.as_ref().and_then(Value::as_str),
+                value_of(&inputs, "service_area")
+                    .as_ref()
+                    .and_then(Value::as_str),
             ))
         } else {
             legacy_value(spec.name, containment.as_ref().and_then(Value::as_str))

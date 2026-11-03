@@ -415,6 +415,14 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
         .as_object_mut()
         .unwrap()
         .remove("results_hash");
+    // Issue #850: a gas file that stores no Rule Sets is read with the ADN stack, whose hull limits size
+    // the tank beside IGC 2.4.1.2; `simulate` has none. This comparison is about `run` and `simulate`
+    // giving the same answer under the IGC stack, so the file stores that stack (the one it was read
+    // with before), and keeps it.
+    saved["options"][0]["inputs"]["rule_sets"] = json!({
+        "value": ovd_format::trace::legacy_rule_sets(Some("type_c_tanks"), Some("coastal-and-river")),
+        "source": "default"
+    });
     write_json(&file, &saved);
     // `--steel-list`: the whole results, as `simulate` answers them (issue #745).
     let out = ovd(&[

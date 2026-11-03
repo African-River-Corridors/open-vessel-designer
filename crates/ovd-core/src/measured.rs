@@ -655,6 +655,8 @@ impl Measured {
                 "vc" => number(t.vc_m3),
                 "side_gap" => number(t.side_gap_m),
                 "bottom_gap" => number(t.bottom_gap_m),
+                "double_side_width" => number(t.double_side_width_m),
+                "double_bottom_height" => number(t.double_bottom_height_m),
                 "insulation" => number(t.insulation_m),
                 // The thinner wall; the first of equal, as Python's `min`.
                 "wall_thickness" => number(if t.head_wall_mm < t.cylinder_wall_mm {
