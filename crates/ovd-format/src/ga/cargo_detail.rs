@@ -15,6 +15,13 @@ use super::*;
 /// share of the tank diameter. Drawing proportions: the results have no saddle width (issue #752).
 const SUPPORT_WIDTH_OF_LENGTH: f64 = 0.2;
 const SUPPORT_WIDTH_OF_DIAMETER: f64 = 0.3;
+/// The width of the TYPE box of the title block, less its padding (iso7200: 25 mm, 1 mm each side).
+const TYPE_BOX_MM: f64 = 23.0;
+/// The pitch of the stack of leader labels above the elevation, in millimetres: the text height and a
+/// gap of 1.5 mm.
+const TOP_STEP_MM: f64 = 5.0;
+/// The paper distance of the length dimension below the support block, in millimetres.
+const LENGTH_DIM_MM: f64 = 8.0;
 
 /// The tank as the sheet draws it, read from the results.
 struct Tank {
@@ -161,6 +168,7 @@ fn elevation(t: &Tank, n: u32) -> Canvas {
     c.tank_outline("OUTLINE", (0.0, l, 0.0, r_o), t.head_ratio);
     c.tank_outline("OBJECT", (0.0, l, 0.0, r_s), t.head_ratio);
     // the support block under the shell
+    // the width and the place of the block are a drawing proportion, not saddle data
     let half = SUPPORT_WIDTH_OF_LENGTH * l / 2.0;
     c.polyline(
         "OBJECT",
@@ -177,28 +185,18 @@ fn elevation(t: &Tank, n: u32) -> Canvas {
     let overshoot = 4.0 * c.k;
     c.centre_line([-tip - overshoot, 0.0], [l + tip + overshoot, 0.0]);
     // the length overall, under the support block
-    let drop = (r_o + t.support) / c.k + DIM_OFFSET_MM;
+    let drop = (r_o + t.support) / c.k + LENGTH_DIM_MM;
     let length_dimension = c.try_dim_horizontal([-tip, 0.0], [l + tip, 0.0], -drop);
-    let mut labels: Vec<(String, [f64; 2])> = vec![
-        (text_cylinder_wall(t), [0.3 * l, r_s]),
-        (text_steel_diameter(t), [0.62 * l, -r_s]),
-        (text_outer_diameter(t), [0.8 * l, -r_o]),
-        (text_insulation(t), [0.12 * l, (r_o + r_s) / 2.0]),
-        (text_support(t), [xm + half, -r_o - t.support / 2.0]),
+    // The wall, the insulation and the dome are leaders that rise from the top of the tank to a
+    // stack of labels above it: a leader to a label level with its target would run along the outline.
+    // The leftmost target has the highest label, so no two leaders cross.
+    let mut top: Vec<(String, [f64; 2])> = vec![
+        (text_insulation(t), [0.62 * l, (r_o + r_s) / 2.0]),
+        (text_cylinder_wall(t), [0.76 * l, r_s]),
     ];
-    if !length_dimension {
-        labels.push((
-            label!(
-                "draw-cd-length",
-                "OVERALL LENGTH {length}",
-                length = metres(t.overall_length)
-            ),
-            [l + tip, 0.0],
-        ));
-    }
     if let Some(w) = t.head_wall_mm {
         let a = core::f64::consts::FRAC_PI_4;
-        labels.push((
+        top.push((
             label!(
                 "draw-cd-head-wall",
                 "HEAD WALL {thickness}",
@@ -208,10 +206,31 @@ fn elevation(t: &Tank, n: u32) -> Canvas {
         ));
     }
     if let (Some(apex), Some((rise, _))) = (apex, t.dome) {
-        labels.push((text_dome(rise), [xm, apex]));
+        top.insert(0, (text_dome(rise), [xm, apex]));
+    }
+    let mut bottom: Vec<(String, [f64; 2])> = vec![
+        (text_steel_diameter(t), [0.62 * l, -r_s]),
+        (text_outer_diameter(t), [0.8 * l, -r_o]),
+        (text_support(t), [xm + half, -r_o - t.support / 2.0]),
+    ];
+    if !length_dimension {
+        bottom.push((
+            label!(
+                "draw-cd-length",
+                "OVERALL LENGTH {length}",
+                length = metres(t.overall_length)
+            ),
+            [l + tip, 0.0],
+        ));
     }
     let column = c.max[0] + 6.0 * c.k;
-    c.label_column(column, &mut labels);
+    let first = r_o + 2.0 * c.k;
+    let count = top.len();
+    for (i, (text, target)) in top.iter().enumerate() {
+        let level = first + (count - 1 - i) as f64 * TOP_STEP_MM * c.k;
+        c.leader(text, *target, [column, level]);
+    }
+    c.label_column(column, &mut bottom);
     c
 }
 
@@ -286,7 +305,7 @@ pub(super) fn cargo_detail_sheet(h: &Hull, results: &Value) -> Result<Value, Str
     let condition = match t.temperature {
         Some(temp) => label!(
             "draw-note-tank-temperature",
-            "DESIGN TEMPERATURE {temperature} C. MATERIAL {material}.",
+            "DESIGN TEMPERATURE {temperature} DEG C. MATERIAL {material}.",
             temperature = fixed(temp, 0),
             material = t.material.clone()
         ),
@@ -298,7 +317,7 @@ pub(super) fn cargo_detail_sheet(h: &Hull, results: &Value) -> Result<Value, Str
     };
     let volume = label!(
         "draw-note-tank-volume",
-        "VOLUME AT FILLING LIMIT, PER TANK: {volume} M3 (DERIVED: {per_tank} M3 X {fill} FILL).",
+        "VOLUME AT FILLING LIMIT, PER TANK: {volume} M3 (DERIVED: {per_tank} X {fill}).",
         volume = fixed(t.filled_m3(), 1),
         per_tank = fixed(t.per_tank_m3, 1),
         fill = fixed(t.fill_ratio, 2)
@@ -313,7 +332,7 @@ pub(super) fn cargo_detail_sheet(h: &Hull, results: &Value) -> Result<Value, Str
     }
     notes.push(label!(
         "draw-note-support-estimate",
-        "SUPPORT BLOCK IS AN ESTIMATE: THE RUN HAS NO SADDLE GEOMETRY."
+        "SUPPORT BLOCK: THE HEIGHT IS THE RUN'S, ITS WIDTH AND POSITION ARE A DRAWING PROPORTION. ESTIMATE, NOT SADDLE DATA."
     ));
     if let Some(sets) = rule_sets_note(&h.rule_sets) {
         notes.push(sets);
@@ -325,6 +344,15 @@ pub(super) fn cargo_detail_sheet(h: &Hull, results: &Value) -> Result<Value, Str
     notes.extend(failed_notes(&h.failed_checks));
     let mut fields = title_fields(h, &title, "CD", 1, &plain_capitals(&h.vessel))?;
     fields["sheet_count"] = json!(1);
+    // The TYPE box of the title block reads the sheet's own title. Its cell is 25 mm wide at text
+    // height 3.5 and a text is never cut (clause 14.6): when the whole title does not fit, the
+    // last word of it, which names the kind of sheet, stands in the box.
+    let kind = if fits_mm(&title, 3.5, TYPE_BOX_MM) {
+        title.clone()
+    } else {
+        title.rsplit(' ').next().unwrap_or(&title).to_string()
+    };
+    fields["document_type"] = json!(kind);
     place_pair(notes, fields, RATIOS[0], &|n| {
         [elevation(&t, n), section(&t, n)]
     })

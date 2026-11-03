@@ -933,6 +933,22 @@ fn the_dxf_of_every_view_reads_back_to_the_same_entities_at_the_stated_scale() {
                     back.viewports[id].n, viewport.scale,
                     "{file} {option} {view}: the viewport holds the stated scale"
                 );
+                let f = &back.viewports[id].frame;
+                let (g, w) = (
+                    [f.x, f.y, f.w, f.h],
+                    [
+                        viewport.frame.x,
+                        viewport.frame.y,
+                        viewport.frame.w,
+                        viewport.frame.h,
+                    ],
+                );
+                for (got, want) in g.iter().zip(w) {
+                    assert!(
+                        (got - want).abs() < 5e-7,
+                        "{file} {option} {view} {id}: the viewport holds its frame: {g:?} against {w:?}"
+                    );
+                }
             }
         }
     }

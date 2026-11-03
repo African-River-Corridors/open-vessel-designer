@@ -3046,7 +3046,7 @@ fn place(
 }
 
 /// The gap on paper between the two viewports of a sheet, in millimetres.
-const PAIR_GAP_MM: f64 = 2.0;
+const PAIR_GAP_MM: f64 = 1.0;
 
 /// Lay two canvases one above the other on one A3 sheet at one scale: the largest at which both fit,
 /// no larger than 1:`from`. The first stands above the second. The scale bar is under the second
@@ -3070,12 +3070,18 @@ fn place_pair(
         if spare < -1e-9 || width(wt) > fw + 1e-9 || width(wb) > fw + 1e-9 {
             continue;
         }
-        let (ht, hb) = (height(wt) + spare / 2.0, height(wb) + spare / 2.0);
+        // frames in whole hundredths of a millimetre, rounded down so that they still fit, as a
+        // DXF reader gives a frame back to six decimals
+        let hundredths = |v: f64| (v * 100.0).floor() / 100.0;
+        let (ht, hb) = (
+            hundredths(height(wt) + spare / 2.0),
+            hundredths(height(wb) + spare / 2.0),
+        );
         let views = vec![
             viewport("elevation", (fx, fy, fw, ht), wt, n, top.entities, false),
             viewport(
                 "section",
-                (fx, fy + ht + PAIR_GAP_MM, fw, hb),
+                (fx, hundredths(fy + ht + PAIR_GAP_MM), fw, hb),
                 wb,
                 n,
                 bottom.entities,

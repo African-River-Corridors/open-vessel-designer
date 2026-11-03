@@ -71,6 +71,8 @@ fn a_type_c_option_has_a_cargo_detail_sheet_that_the_standard_accepts() {
     let document = sheet(&results);
     assert!(matches!(run_value(&document, &NoFiles), RunResult::Ok(_)));
     assert_eq!(document["title_block"]["fields"]["title"], "CARGO DETAIL");
+    // the TYPE box (25 mm) holds the last word of the title: the whole of it is too wide for the cell
+    assert_eq!(document["title_block"]["fields"]["document_type"], "DETAIL");
 }
 
 #[test]
@@ -180,7 +182,7 @@ fn the_notes_carry_the_pressures_the_temperature_the_material_and_the_derived_vo
         num(&tank["internal_pressure_mpa"])
     )));
     if let Some(temperature) = tank["design_temperature_c"].as_f64() {
-        assert!(all.contains(&format!("DESIGN TEMPERATURE {temperature:.0} C")));
+        assert!(all.contains(&format!("DESIGN TEMPERATURE {temperature:.0} DEG C")));
     }
     assert!(all.contains(&format!(
         "MATERIAL {}",
@@ -189,7 +191,7 @@ fn the_notes_carry_the_pressures_the_temperature_the_material_and_the_derived_vo
     let per_tank = num(&results["arrangement"]["per_tank_m3"]);
     let fill = num(&results["arrangement"]["fill_ratio"]);
     assert!(all.contains(&format!(
-        "VOLUME AT FILLING LIMIT, PER TANK: {:.1} M3 (DERIVED: {:.1} M3 X {:.2} FILL)",
+        "VOLUME AT FILLING LIMIT, PER TANK: {:.1} M3 (DERIVED: {:.1} X {:.2})",
         per_tank * fill,
         per_tank,
         fill
