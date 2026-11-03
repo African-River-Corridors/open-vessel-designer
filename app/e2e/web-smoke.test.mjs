@@ -1056,18 +1056,26 @@ describe("OVD web smoke tests", () => {
     assert.deepEqual(before.sea, fixed(before.air.conditions, "sea_m"));
     assert.equal(before.limit.length, 0, "no limit is typed, so no limit column");
     // A lowerable mast lowers the river air drafts and leaves the sea ones.
-    await b.execute(async () => {
-      const p = window.__ovdPlatform;
-      await p.setInput((await p.snapshot()).active_option, "vent_mast_lowerable", true);
-    });
+    // The edit goes through the input field, as the user makes it: a call to the platform alone would
+    // not tell the app, which would not draw the table again.
+    await until(b, "the vent mast field", async () => (await b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]')).isExisting());
+    await (await b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]')).click();
     await until(b, "the river column changes", async () => (await read()).river.join() !== before.river.join());
     const lowered = await read();
     assert.deepEqual(lowered.sea, before.sea);
     assert.deepEqual(lowered.river, fixed(lowered.air.conditions, "river_m"));
     // A typed limit adds the outcome column, one cell for each condition.
-    await b.execute(async () => {
-      const p = window.__ovdPlatform;
-      await p.setInput((await p.snapshot()).active_option, "air_draft_limit_m", 60);
+    await b.execute(() => {
+      const field = document.querySelector('.field[data-input="air_draft_limit_m"]');
+      // The limit may be shown as "none": clear that box first, then type the number.
+      const none = field.querySelector("label.none input[type=checkbox]");
+      if (none && none.checked) none.click();
+    });
+    await until(b, "the limit box", async () => (await b.$('.field[data-input="air_draft_limit_m"] input[type=text]')).isExisting());
+    await b.execute(() => {
+      const box = document.querySelector('.field[data-input="air_draft_limit_m"] input[type=text]');
+      box.value = "60";
+      box.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await until(b, "the limit column", async () => (await read()).limit.length > 0);
     const limited = await read();

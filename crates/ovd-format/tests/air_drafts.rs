@@ -51,6 +51,17 @@ fn the_sea_air_draft_of_each_condition_is_the_sea_top_less_its_draught() {
         let draught = f(&c["draught_m"]);
         assert!((f(&c["sea_m"]) - (sea_top - draught)).abs() < 1e-9, "{c}");
     }
+    // The tops again, from values the block does not derive from them: the sea top is the engine's
+    // own light-condition sea air draft plus the light draught, and the river top is a condition's
+    // own river air draft (from the stability block) plus its draught.
+    let light_draught = f(&r["results"]["light_draught_m"]);
+    assert!((sea_top - (f(&a["light"]["sea_m"]) + light_draught)).abs() < 1e-9);
+    let river_top = f(&a["river_top_m"]);
+    for s in r["stability"]["conditions"].as_array().unwrap() {
+        let top = f(&s["air_draft_m"]) + f(&s["draught_m"]);
+        assert!((top - river_top).abs() < 1e-9, "{}", s["name"]);
+    }
+    assert!((river_top - (f(&a["light"]["river_m"]) + light_draught)).abs() < 1e-9);
     // the laden figures follow the laden draught of the results
     let t = f(&r["results"]["draught_m"]);
     assert!((f(&a["laden"]["draught_m"]) - t).abs() < 1e-12);
@@ -163,4 +174,35 @@ fn the_side_elevation_labels_read_back_the_runs_air_drafts() {
     assert!(texts.contains(&light), "{light} in {texts:?}");
     // the sea figure of a lowerable mast is above the river one on both labels
     assert!(f(&a["laden"]["sea_m"]) > f(&a["laden"]["river_m"]));
+    // and the sea top is drawn: a chain line at its height, above the river top line
+    let at = |top: f64| {
+        elevation["viewports"][0]["entities"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|e| {
+                e["type"] == "line"
+                    && e["layer"] == "ZONE"
+                    && e["line_type"] == "chain_double_dashed"
+                    && (f(&e["from_m"][1]) - top).abs() < 1e-9
+            })
+    };
+    assert!(at(f(&a["sea_top_m"])), "the sea top line");
+    assert!(f(&a["sea_top_m"]) > f(&a["river_top_m"]) + 0.1);
+    // a mast that stays up: the sea top line is drawn only where the sea top stands above the river top
+    let up = run(false, None);
+    let drafts = &up["air_drafts"];
+    let above = f(&drafts["sea_top_m"]) > f(&drafts["river_top_m"]) + 1e-9;
+    let up_views = ovd_format::ga_views(&up).expect("views");
+    let chains = up_views.side_elevation["viewports"][0]["entities"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["line_type"] == "chain_double_dashed" && e["layer"] == "ZONE")
+        .count();
+    assert_eq!(
+        chains,
+        usize::from(above),
+        "the sea top line follows the two tops"
+    );
 }

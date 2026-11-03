@@ -361,7 +361,7 @@ pub use arc_rules::load::canonical_json;
 /// (`structure_geometry`) stay outside, like the meshes: `ovd run --json` stores them only on request
 /// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
 /// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
-/// moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too: each is a hashed top less a hashed draught.
+/// moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results.
 pub const UNHASHED_KEYS: [&str; 18] = [
     "drawing",
     "stability_marks",

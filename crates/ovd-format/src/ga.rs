@@ -2150,7 +2150,8 @@ fn side_elevation(h: &Hull, n: u32) -> Canvas {
                         river = metres(a.laden.0),
                         sea = metres(a.laden.1)
                     ),
-                    [h.loa, top],
+                    // each label points at its own waterline at the bow, where its air draft starts
+                    [h.x_at_height(h.draught), h.draught],
                 ));
                 if let (Some((river, sea)), Some(t)) = (a.light, h.light_draught) {
                     labels.push((

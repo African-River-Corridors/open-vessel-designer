@@ -3429,11 +3429,12 @@ struct AirTops {
 
 /// Issue #888: the `air_drafts` block of the results. Each air draft is its top less the condition's
 /// draught: the river one is the `air_draft_m` of the condition, the sea one is new. The block is
-/// outside the results hash (`UNHASHED_KEYS`): every number in it is the difference of two hashed
-/// ones (the tops are the hashed air drafts plus their draughts), so it is a reading of the results and
-/// no input to them, and adding it moved no saved hash. `laden` is the laden draught `t` of the results;
-/// `light` carries the engine's own light-condition air drafts (river, sea). `conditions` follows the
-/// `stability` block's conditions, with the limit outcome of the river air draft.
+/// outside the results hash (`UNHASHED_KEYS`) so that no saved hash moves. The river top is already in
+/// the hash through the hashed air drafts and draughts; the sea top (wheelhouse raised, the vent exit
+/// always) is not otherwise in the results, so this block is where a reader finds it. `laden` is the
+/// laden draught `t` of the results; `light` carries the engine's own light-condition air drafts
+/// (river, sea). `conditions` follows the `stability` block's conditions, with the limit outcome of
+/// the river air draft.
 fn air_drafts_block(
     tops: &AirTops,
     laden_draught: f64,
