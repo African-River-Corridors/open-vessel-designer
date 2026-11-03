@@ -299,7 +299,13 @@ describe("OVD app smoke tests", () => {
     await open(path.resolve(here, "fixtures/gas_deckhouse_self_propelled.vdesign"), "gas_deckhouse_self_propelled.vdesign");
     await show("Drawings", "Stern & crew");
     await until("the deckhouse view", async () => (await browser.$$("[data-testid=stern-outfit-warning]")).length === 1);
+    // The warning is the engine's, found by its Message Id in the run: the view has no text of its own for it.
+    const warning = await browser.$("[data-testid=stern-outfit-warning]");
+    assert.equal(await warning.getAttribute("data-warning-id"), "warn-aft-deckhouse-no-outfit");
+    assert.match(await warning.getText(), /no outfit mass/);
     assert.equal(await figure("style"), "Deckhouse");
+    assert.match(await figure("rule-set"), /liberia-man-001/);
+    for (const row of ["crew", "minimum", "berths"]) assert.match(await figure(row), /^\d+$/, `${row} of the deckhouse Option`);
     assert.match(await figure("tiers"), /^\d+$/);
     assert.match(await figure("wheelhouse"), /^(Fixed|Elevating)/);
     assert.match(await figure("vent-deck"), /\d/);

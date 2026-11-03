@@ -1,6 +1,6 @@
 <script lang="ts">
   import { num, say, t, type TextIds } from "../i18n.svelte";
-  import { sternCrewFigures } from "../sternCrew";
+  import { OUTFIT_WARNING_ID, sternCrewFigures } from "../sternCrew";
 
   // The stern of a self-propelled Option and its crew, as the engine gives them (`stern_arrangement`,
   // `crew`, the vent mast keys and `stern_block_mass.gas_fuel_system` of the results, issue #887). The
@@ -30,9 +30,9 @@
         </tr>
       </tbody>
     </table>
-    {#if f.style === "deckhouse"}
-      <!-- The warning shows on every deckhouse Option; its English stays if the run sends none. -->
-      <p class="warn" data-testid="stern-outfit-warning">{f.outfitWarning ? say(f.outfitWarning, ids) : t("app-stern-outfit-warning")}</p>
+    {#if f.outfitWarning}
+      <!-- The engine's own warning, found by its Message Id; there is no fallback text, so a run that lacks it shows nothing. -->
+      <p class="warn" data-testid="stern-outfit-warning" data-warning-id={OUTFIT_WARNING_ID}>{say(f.outfitWarning, ids)}</p>
     {/if}
 
     <h4>{t("app-stern-crew")}</h4>

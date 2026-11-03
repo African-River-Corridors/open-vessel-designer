@@ -3570,7 +3570,7 @@
           "style": "container_block",
           "tiers": null,
           "wheelhouse": "elevating",
-          "wheelhouse_basis": "input"
+          "wheelhouse_basis": "lift_input"
         },
         "stern_block_mass": {
           "total_t": 513.7969035703804,
@@ -14677,7 +14677,7 @@
           "style": "container_block",
           "tiers": null,
           "wheelhouse": "elevating",
-          "wheelhouse_basis": "input"
+          "wheelhouse_basis": "lift_input"
         },
         "stern_block_mass": {
           "total_t": 513.7969035703804,
@@ -25806,7 +25806,7 @@
           "style": "container_block",
           "tiers": null,
           "wheelhouse": "elevating",
-          "wheelhouse_basis": "input"
+          "wheelhouse_basis": "lift_input"
         },
         "stern_block_mass": {
           "total_t": 582.4165430995258,

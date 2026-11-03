@@ -967,23 +967,43 @@ fn stern_arrangement_of(
     option: &DesignOption,
     measured: &crate::simulate::Measured,
 ) -> Option<Value> {
-    let aft = measured.vessel.as_ref()?.result.aft_arrangement.as_ref()?;
+    let vessel = measured.vessel.as_ref()?;
+    let aft = vessel.result.aft_arrangement.as_ref()?;
+    // The effective inputs the engine ran with: the lift (zeroed by a fixed container-block
+    // wheelhouse, and by a deckhouse with no air-draft limit) and the limit.
+    let lift = vessel
+        .capacity
+        .aft
+        .as_ref()
+        .map_or(vessel.capacity.aft_design.wheelhouse_max_lift_m, |a| {
+            a.wheelhouse_max_lift_m
+        });
+    let limit_set = vessel.capacity.air_draft_limit_m.is_some();
     Some(match &aft.deckhouse {
-        // D4: fixed on the deckhouse, unless an air-draft limit is set.
+        // D4: fixed on the deckhouse, unless an air-draft limit is set and the wheelhouse can lift.
         Some(d) => json!({
             "style": "deckhouse",
             "tiers": d.tiers,
             "wheelhouse": if d.wheelhouse_elevating { "elevating" } else { "fixed" },
-            "wheelhouse_basis": if d.wheelhouse_elevating { "air_draft_limit" } else { "no_air_draft_limit" },
+            "wheelhouse_basis": if d.wheelhouse_elevating {
+                "air_draft_limit"
+            } else if limit_set && lift <= 0.0 {
+                "no_lift"
+            } else {
+                "no_air_draft_limit"
+            },
         }),
         None => json!({
             "style": "container_block",
             "tiers": Value::Null,
-            "wheelhouse": option
-                .input("wheelhouse_type")
-                .and_then(|i| i.value.as_str())
-                .unwrap_or("elevating"),
-            "wheelhouse_basis": "input",
+            "wheelhouse": if lift > 0.0 { "elevating" } else { "fixed" },
+            "wheelhouse_basis": if lift > 0.0 {
+                "lift_input"
+            } else if option.input("wheelhouse_type").and_then(|i| i.value.as_str()) == Some("fixed") {
+                "fixed_input"
+            } else {
+                "no_lift"
+            },
         }),
     })
 }
