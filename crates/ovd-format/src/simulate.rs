@@ -1185,24 +1185,32 @@ fn simulate(p: &Map<String, Value>) -> R<Value> {
     simulate_measured(p, &mut Measured::default(), &unstored_rules(p))
 }
 
-/// The Rule Sets `simulate` takes when it is given none (issue #850): for a river-only gas hull, the stack
-/// `run` reads for an Option that stores none (`trace::unstored_stack_ids`: ADN 9.3.1 as the design Rule
-/// Set, with the two IGC 2.4.1.2 tank distance rows), at the highest built-in versions. The ADN hull limits
-/// size the tank in `run`, so `simulate` must size it the same way. Every other hull has no Rule Sets here,
-/// as before.
+/// The Rule Sets `simulate` takes when it is given none (issue #850): for a gas hull whose Service Area is
+/// river-only, the stack `run` reads for
+/// a file that stores none (`trace::legacy_rule_sets`: ADN 9.3.1 as the design Rule Set, with the two IGC
+/// 2.4.1.2 tank distance rows, and the versions of the sets a file saved before is read with). The ADN hull
+/// limits size the tank in `run`, so `simulate` must size it the same way. Every other hull has no Rule
+/// Sets here, as before. A Service Area left out stays "not river-only" here, as it always did, so the
+/// Python API's results (pinned to the original Python) do not move; `run` always gives the Service Area
+/// (a file with none is read as river-only), so the two agree on every file.
 fn unstored_rules(p: &Map<String, Value>) -> RunRules {
-    let river_gas = p.get("vessel").and_then(Value::as_str) == Some("gas_barge")
-        && p.get("service_area").and_then(Value::as_str) == Some("river-only");
-    if !river_gas {
+    if p.get("vessel").and_then(Value::as_str) != Some("gas_barge") {
+        return RunRules::default();
+    }
+    let area = p.get("service_area").and_then(Value::as_str);
+    if area != Some("river-only") {
         return RunRules::default();
     }
     let library = crate::rule_set::built_in();
-    let pairs: Vec<(&str, &str)> =
-        crate::trace::unstored_stack_ids(Some("type_c_tanks"), Some("river-only"))
-            .into_iter()
-            .filter_map(|id| library.latest(id))
-            .map(|set| (set.id.as_str(), set.version.as_str()))
-            .collect();
+    let entries = crate::trace::legacy_rule_sets(Some("type_c_tanks"), area);
+    let pairs: Vec<(&str, &str)> = entries
+        .as_array()
+        .map(|a| {
+            a.iter()
+                .filter_map(|e| Some((e["id"].as_str()?, e["version"].as_str()?)))
+                .collect()
+        })
+        .unwrap_or_default();
     match library.select(&pairs) {
         Ok(selection) => RunRules {
             sets: selection.sets.iter().map(|s| (*s).clone()).collect(),

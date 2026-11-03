@@ -315,10 +315,8 @@ fn every_part_with_a_source_in_the_results_has_its_box() {
             .count() as u64;
         assert_eq!(count, n, "{}", c.at);
     }
-    // Issue #850: the version 2 example `lrg-gas-89` is read with the ADN stack and sizes 4 tanks, not 8, so the
-    // sweep holds 8 tanks, not 12.
     assert!(
-        tanks >= 8 && domes >= 8 && shields >= 2,
+        tanks >= 12 && domes >= 12 && shields >= 2,
         "{tanks} {domes} {shields}"
     );
 }
@@ -362,9 +360,7 @@ fn each_tank_mesh_is_closed_and_holds_the_closed_form_volume_at_the_outer_diamet
             checked += 1;
         }
     }
-    // Issue #850: the version 2 example `lrg-gas-89` is read with the ADN stack and sizes 4 tanks, not 8, so the
-    // sweep holds 8 tanks, not 12.
-    assert!(checked >= 8, "{checked}");
+    assert!(checked >= 12, "{checked}");
 }
 
 type Tri = [[f64; 3]; 3];
@@ -574,9 +570,10 @@ fn faults_of(a: &Arrangement, i: usize, (dx, dy, dz): (f64, f64, f64)) -> Vec<St
 
 #[test]
 fn no_tank_crosses_another_tank_a_ballast_space_or_the_hull_but_its_deck_opening() {
-    let (mut tanks, mut through_deck) = (0, 0);
+    let (mut tanks, mut through_deck, mut side_by_side) = (0, 0, false);
     for c in cases() {
         let Some(a) = arrangement(&c) else { continue };
+        side_by_side |= c.results["geometry"]["n_tanks_wide"].as_u64().unwrap_or(1) >= 2;
         for (i, (name, tank, foot)) in a.tanks.iter().enumerate() {
             let faults = faults_of(&a, i, (0.0, 0.0, 0.0));
             assert!(faults.is_empty(), "{}: {name} {faults:?}", c.at);
@@ -594,9 +591,9 @@ fn no_tank_crosses_another_tank_a_ballast_space_or_the_hull_but_its_deck_opening
             c.at
         );
     }
-    // Issue #850: the version 2 example `lrg-gas-89` is read with the ADN stack and sizes 4 tanks, not 8, so the
-    // sweep holds 8 tanks, not 12.
-    assert!(tanks >= 8, "{tanks} tanks");
+    assert!(tanks >= 12, "{tanks} tanks");
+    // Tanks side by side stay in the sweep, so a tank crossing its neighbour is still tested.
+    assert!(side_by_side, "a design with two tanks across");
     assert!(through_deck > 0, "a fixture's tanks stand through the deck");
 }
 
@@ -620,9 +617,7 @@ fn a_tank_moved_outboard_into_the_side_shell_fails_the_check() {
             moved += 1;
         }
     }
-    // Issue #850: the version 2 example `lrg-gas-89` is read with the ADN stack and sizes 4 tanks, not 8, so the
-    // sweep holds 8 tanks, not 12.
-    assert!(moved >= 8, "{moved}");
+    assert!(moved >= 12, "{moved}");
 }
 
 #[test]
@@ -678,9 +673,7 @@ fn a_tank_moved_into_the_bottom_shell_fails_the_check() {
             moved += 1;
         }
     }
-    // Issue #850: the version 2 example `lrg-gas-89` is read with the ADN stack and sizes 4 tanks, not 8, so the
-    // sweep holds 8 tanks, not 12.
-    assert!(moved >= 8, "{moved}");
+    assert!(moved >= 12, "{moved}");
 }
 
 #[test]

@@ -123,7 +123,10 @@ fn the_schema_lists_every_new_input_with_its_group_condition_and_default_status(
 
 #[test]
 fn a_version_2_file_keeps_its_hull_and_its_results_with_one_warning() {
-    for file in ["v2_gas_lpg_before_313", "v2_gas_lng_before_292"] {
+    for file in [
+        "v2_gas_lpg_before_313_igc_stack",
+        "v2_gas_lng_before_292_igc_stack",
+    ] {
         let text = legacy(file);
         let checked = check(&text, &Profile::built_in());
         assert!(

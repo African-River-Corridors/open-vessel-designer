@@ -441,7 +441,7 @@ fn a_typed_wall_thickness_is_an_override_and_a_typed_stress_replaces_the_materia
 #[test]
 fn an_lpg_file_that_names_no_carriage_condition_is_read_as_fully_pressurised_with_a_warning() {
     {
-        let file = "v2_gas_lpg_before_292";
+        let file = "v2_gas_lpg_before_292_igc_stack";
         let text = legacy(file);
         let checked = check(&text, &Profile::built_in());
         assert!(
@@ -479,7 +479,7 @@ fn an_lpg_file_that_names_no_carriage_condition_is_read_as_fully_pressurised_wit
 
 #[test]
 fn an_lng_file_from_before_has_no_carriage_condition_and_keeps_its_results() {
-    let text = legacy("v2_gas_lng_before_292");
+    let text = legacy("v2_gas_lng_before_292_igc_stack");
     let checked = check(&text, &Profile::built_in());
     assert!(
         checked.report.errors.is_empty(),
@@ -507,8 +507,11 @@ fn an_lng_file_from_before_has_no_carriage_condition_and_keeps_its_results() {
 #[test]
 fn a_saved_file_that_stores_25_mm_keeps_it_and_a_new_design_gets_the_formula() {
     // The file stores 25 mm as used (ADR 0007); the formula would give another thickness.
-    let (s, _) =
-        DesignSession::open(&legacy("v2_gas_lpg_before_292"), Profile::built_in()).unwrap();
+    let (s, _) = DesignSession::open(
+        &legacy("v2_gas_lpg_before_292_igc_stack"),
+        Profile::built_in(),
+    )
+    .unwrap();
     let r = results_of(&s);
     assert_eq!(r["drawing"]["tank"]["wall_thickness_source"], "override");
     assert_eq!(r["drawing"]["tank"]["cylinder_wall_thickness_mm"], 25.0);

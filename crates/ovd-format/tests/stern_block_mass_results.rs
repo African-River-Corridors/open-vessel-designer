@@ -46,7 +46,7 @@ fn a_new_self_propelled_option_carries_the_block_and_shows_it() {
 #[test]
 fn a_file_saved_before_has_no_block_mass_and_keeps_its_hash() {
     let path = format!(
-        "{}/tests/legacy/v2_gas_lpg_before_313.vdesign",
+        "{}/tests/legacy/v2_gas_lpg_before_313_igc_stack.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
     let (s, opened) =

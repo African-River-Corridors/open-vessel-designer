@@ -56,7 +56,8 @@ fn adn_sizes_the_wing_when_igc_asks_for_less() {
     // 0.80 + 0.6 gap = 1.40 m of clear side gap, a wing of exactly 0.80 m.
     assert!((adn.side_clearance_m.unwrap() - 1.4).abs() < 1e-12);
     let t = adn.tank_rules.as_ref().unwrap();
-    assert_eq!(t.double_side_width_m, 0.8);
+    // The measured clearance less the gap: 0.8 up to a rounding step (the Rule carries a tolerance of 1e-9).
+    assert!((t.double_side_width_m - 0.8).abs() < 1e-12);
     assert!((t.side_gap_m - 1.4).abs() < 1e-12);
     // The wider side takes tank diameter: the tank is narrower than without the limit.
     assert!(adn.tank_outer_diameter_m.unwrap() <= plain.tank_outer_diameter_m.unwrap() + 1e-9);

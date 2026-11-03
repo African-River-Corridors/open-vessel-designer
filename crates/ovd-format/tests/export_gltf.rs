@@ -328,10 +328,8 @@ fn every_tank_and_deck_item_is_a_named_node_with_its_material() {
             }
         }
     }
-    // Issue #850: the version 2 example `lrg-gas-89` is read with the ADN stack and sizes 4 tanks, not 8, so the
-    // sweep holds 8 tanks, not 12.
     assert!(
-        tanks >= 8 && items >= 12,
+        tanks >= 12 && items >= 12,
         "{tanks} tanks, {items} other parts"
     );
 }

@@ -72,7 +72,7 @@ fn a_typed_dome_is_an_override() {
 #[test]
 fn a_saved_file_keeps_its_2_m_dome_and_its_results() {
     let path = format!(
-        "{}/tests/legacy/v2_gas_lpg_before_313.vdesign",
+        "{}/tests/legacy/v2_gas_lpg_before_313_igc_stack.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
     let text = std::fs::read_to_string(path).unwrap();

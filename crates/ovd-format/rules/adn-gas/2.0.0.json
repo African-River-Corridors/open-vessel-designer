@@ -572,7 +572,7 @@
         "value": 0.8,
         "unit": "m"
       },
-      "tolerance": 0,
+      "tolerance": 1e-09,
       "consequence": "block",
       "sizes": true,
       "evaluated": true,
@@ -2157,7 +2157,7 @@
     },
     {
       "id": "adn/9.3.1.22.3/relief-valve-outlet-distance",
-      "title": "Pressure relief valve outlets: at least 6.00 m from the accommodation and from the service spaces outside the cargo area",
+      "title": "Pressure relief valve outlets: at least 6.00 m from the accommodation; the service spaces outside the cargo area are not measured separately",
       "origin": "regulation",
       "source": {
         "document": "ADN 2025, European Agreement concerning the International Carriage of Dangerous Goods by Inland Waterways",

@@ -10,7 +10,8 @@
 //! in the evaluation harness (`evaluation/cases/vent_*.yaml`); the sizing of each term is in
 //! `crates/ovd-core/tests/adn_hull_limits.rs`.
 
-use ovd_format::{Profile, RunOutcome, check, fill, fill_as_new, run_option};
+use ovd_format::rule_set::Library;
+use ovd_format::{Profile, RunOutcome, check, fill, fill_as_new, run_option, run_option_with};
 use serde_json::{Value, json};
 
 fn file_of(service_area: Option<&str>) -> Value {
@@ -231,4 +232,91 @@ fn a_hand_written_file_with_no_service_area_is_valid_as_it_was() {
     assert!(!checked.report.errors.is_empty());
     let filled = fill(&text, &Profile::built_in());
     assert_eq!(filled.report.errors, Vec::<String>::new());
+}
+
+/// The side and bottom clear gaps (m) of a river-only 70 x 10 x 5 m LNG Option, run with `adn-gas` as
+/// given: the built-in 2.0.0, or a copy at 2.1.0 whose wing limit is `wing` and double bottom limit `bottom`.
+fn gaps_with_limits(limits: Option<(f64, f64)>) -> (f64, f64) {
+    let mut file = file_of(Some("river-only"));
+    file["options"][0]["inputs"]["length_overall_m"]["value"] = json!(70.0);
+    file["options"][0]["inputs"]["beam_m"]["value"] = json!(10.0);
+    file["options"][0]["inputs"]["moulded_depth_m"]["value"] = json!(5.0);
+    let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+    let design = filled.design.unwrap();
+    let mut library = Library::built_in();
+    let mut extra = Vec::new();
+    if let Some((wing, bottom)) = limits {
+        let mut set: Value =
+            serde_json::from_str(include_str!("../rules/adn-gas/2.0.0.json")).unwrap();
+        set["version"] = json!("2.1.0");
+        for r in set["rules"].as_array_mut().unwrap() {
+            match r["id"].as_str().unwrap() {
+                "adn/9.3.1.11.2(a)/double-hull-width" => r["limit"]["value"] = json!(wing),
+                "adn/9.3.1.11.2(a)/double-bottom-height" => r["limit"]["value"] = json!(bottom),
+                _ => {}
+            }
+        }
+        library.add_text(&set.to_string()).unwrap();
+        extra.push(("adn-gas".to_string(), "2.1.0".to_string()));
+    }
+    match run_option_with(&design.options[0], &library, &extra) {
+        RunOutcome::Results { results, .. } => (
+            results["geometry"]["side_clearance_m"].as_f64().unwrap(),
+            results["geometry"]["bottom_clearance_m"].as_f64().unwrap(),
+        ),
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn the_arrangement_reads_its_limits_from_the_rows_of_the_stack() {
+    // The built-in limits: 0.80 m of wing and 0.60 m of double bottom govern this hull, so the clear side
+    // gap is 0.80 + the 0.6 m wing gap = 1.40 m and the clear bottom height 0.60 + the 0.5 m support = 1.10 m.
+    let (side, bottom) = gaps_with_limits(None);
+    assert!(
+        (side - 1.4).abs() < 1e-9 && (bottom - 1.1).abs() < 1e-9,
+        "{side} {bottom}"
+    );
+    // A stack whose rows say 1.0 m of wing and 0.90 m of double bottom: 1.0 + 0.6 = 1.6 m and 0.9 + 0.5 = 1.4 m.
+    let (side, bottom) = gaps_with_limits(Some((1.0, 0.9)));
+    assert!(
+        (side - 1.6).abs() < 1e-9 && (bottom - 1.4).abs() < 1e-9,
+        "{side} {bottom}"
+    );
+}
+
+#[test]
+fn a_harness_case_with_no_distance_to_the_accommodation_does_not_fail_the_adn_row() {
+    // `stern_trace` is how the evaluation harness gives the mast's numbers. With none for the accommodation
+    // the ADN distance row has no value: it is not applicable, never a failure (it was a 0 m distance).
+    let inputs = json!({
+        "cargo": "LNG", "hull_form": "raked_box", "formation": { "kind": "pushed_barge" },
+        "length_overall_m": 100.0, "beam_m": 14.0, "moulded_depth_m": 4.5, "service_area": "river-only"
+    });
+    let run = |measured: Value| {
+        let t = ovd_format::trace::stern_trace(
+            inputs.as_object().unwrap(),
+            measured.as_object().unwrap(),
+            &Library::built_in(),
+            &[("adn-gas", "2.0.0")],
+        )
+        .unwrap();
+        t["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|r| r["rule"] == "adn/9.3.1.22.3/relief-valve-outlet-distance")
+            .unwrap()["outcome"]
+            .as_str()
+            .unwrap()
+            .to_string()
+    };
+    let three = json!({ "vent_exit_above_deck_m": 3.0, "vent_exit_above_working_area_m": 7.0,
+                        "vent_distance_to_openings_m": 20.0 });
+    assert_eq!(run(three.clone()), "not applicable");
+    let mut with = three;
+    with["vent_distance_to_accommodation_m"] = json!(6.0);
+    assert_eq!(run(with.clone()), "pass");
+    with["vent_distance_to_accommodation_m"] = json!(5.99);
+    assert_eq!(run(with), "fail");
 }

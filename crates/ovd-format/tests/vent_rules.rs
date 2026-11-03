@@ -63,12 +63,16 @@ fn a_new_coastal_gas_option_meets_the_three_vent_rows_with_the_mast_the_engine_p
 }
 
 #[test]
-fn the_vent_rows_do_not_apply_on_a_river_only_option() {
+fn the_vent_rows_are_not_in_the_trace_of_a_river_only_option() {
     let results = results_of("river-only");
+    // Issue #850: the default river-only gas stack takes ADN 9.3.1 in place of `igc-2g`, so these IGC rows
+    // are absent from its trace (they were `not applicable` while `igc-2g` was in it).
+    assert!(
+        !results["rule_trace"]["rule_sets"]
+            .to_string()
+            .contains("igc-2g")
+    );
     for id in ROWS {
-        // Issue #850: the default river-only gas stack takes ADN 9.3.1 in place of `igc-2g`, so these IGC
-        // rows are not in its trace at all (they were `not applicable` while `igc-2g` was in it).
-        let o = outcomes(&results, id);
-        assert!(o.iter().all(|x| x == "not applicable"), "{id}: {o:?}");
+        assert!(outcomes(&results, id).is_empty(), "{id} has a row");
     }
 }

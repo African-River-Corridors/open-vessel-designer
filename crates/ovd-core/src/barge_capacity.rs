@@ -865,7 +865,6 @@ fn gas_volumetric(
     let mut cs = 0.0;
     let mut cb = 0.0;
     let mut db = 0.0;
-    let mut wing_at_floor = false;
     // IGC 2.4.2: d is measured plate to plate, from the moulded line to the moulded line,
     // excluding insulation. So the insulation lies inside d and the clear gap needed from the
     // engine's datum (the outer face of the insulation, which the tank OD includes) is d less it.
@@ -897,9 +896,7 @@ fn gas_volumetric(
         // Issue #850: ADN 9.3.1.11.2 (a), the double-hull space at least this wide: the tank clearance
         // is then at least that and the gap beside the wing tank. Where IGC 2.4.1.2 asks for more, it
         // governs and the width is what is left.
-        wing_at_floor =
-            inp.double_side_min_m > 0.0 && cs - inp.wing_tank_gap_m < inp.double_side_min_m;
-        if wing_at_floor {
+        if inp.double_side_min_m > 0.0 && cs - inp.wing_tank_gap_m < inp.double_side_min_m {
             cs = inp.double_side_min_m + inp.wing_tank_gap_m;
         }
         db = py_max(0.0, cb - inp.tank_support_height);
@@ -991,13 +988,7 @@ fn gas_volumetric(
                 vc_m3: tanks.total_tank_volume / (count as f64) + dome_volume_m3(dome.0, dome.1),
                 side_gap_m: cs,
                 bottom_gap_m: db + inp.tank_support_height,
-                // At its ADN floor the width is the floor itself, not the clearance less the gap, which
-                // can differ from it by a rounding step.
-                double_side_width_m: if wing_at_floor {
-                    inp.double_side_min_m
-                } else {
-                    py_max(0.0, cs - inp.wing_tank_gap_m)
-                },
+                double_side_width_m: py_max(0.0, cs - inp.wing_tank_gap_m),
                 double_bottom_height_m: db,
                 insulation_m: ins_m,
                 cylinder_wall_mm: tanks.cylinder_wall_thickness,

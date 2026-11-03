@@ -80,7 +80,7 @@ fn the_sea_going_accelerations_give_a_thicker_wall_and_none_a_thinner_one() {
 #[test]
 fn a_file_saved_before_keeps_the_vapour_pressure_only_and_its_results() {
     let path = format!(
-        "{}/tests/legacy/v2_gas_lpg_before_313.vdesign",
+        "{}/tests/legacy/v2_gas_lpg_before_313_igc_stack.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
     let text = std::fs::read_to_string(path).unwrap();

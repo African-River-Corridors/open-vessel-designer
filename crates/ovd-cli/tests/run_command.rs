@@ -398,17 +398,11 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
             "draught_limit_m": 4.4
         }),
     );
-    // The file is a version 2 file, read with the stack of the time, in which every light condition
-    // keeps the angle of max GZ. `simulate` has no Rule Sets: the angle of max GZ alone in a light
-    // condition with no ballast is a warning (issue #498). The IS Code and IGC Rule Sets of that
-    // kind make `run` answer the same.
-    let rules = |set: &str| {
-        format!(
-            "{}/../ovd-format/rules/{set}.json",
-            env!("CARGO_MANIFEST_DIR")
-        )
-    };
-    let is_code = rules("is2008-a/2.0.0");
+    // The file is a version 2 file with no Rule Sets and no Service Area. `run` reads it with the ADN 9.3.1
+    // gas stack (issue #850) at the versions of the sets of its time: `is2008-a` 1.0.0, in which every light
+    // condition keeps the angle of max GZ, where `is2008-a` 2.0.0 and no Rule Sets make it a warning
+    // (issue #498; the one-wide arrangement of this hull is feasible or not by it). `simulate`, given the
+    // river-only Service Area, takes the same stack through the same function, so the two answer the same.
     // The stack differs from the one the hash was stored with, so the stored hash is dropped.
     let mut saved: Value = serde_json::from_str(&std::fs::read_to_string(&file).unwrap()).unwrap();
     saved["options"][0]
@@ -417,14 +411,7 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
         .remove("results_hash");
     write_json(&file, &saved);
     // `--steel-list`: the whole results, as `simulate` answers them (issue #745).
-    let out = ovd(&[
-        "run",
-        "--json",
-        "--steel-list",
-        "--rule-set",
-        &is_code,
-        p(&file),
-    ]);
+    let out = ovd(&["run", "--json", "--steel-list", p(&file)]);
     assert!(out.status.success(), "{}", stderr(&out));
     let v: Value = serde_json::from_str(&stdout(&out)).unwrap();
     // `run` adds the capital budget (`cost`) to what `simulate` answers; the rest is the same.
@@ -482,18 +469,19 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
     // 3-1-1/3.1): lightship_t was 1569.7907856537108. Re-pinned again (issue #745, the plate model's
     // ordered weight): lightship_t was 1537.517376832394.
     let r = &results["results"];
-    // Re-pinned again (issue #850, the ADN hull limits size the tank on a river-only stack): cargo_t was
+    // Re-pinned again (issue #850, the file is read with the ADN stack and the IS Code set of its time,
+    // which holds the one-wide arrangement to the angle of max GZ of every light condition): cargo_t was
     // 2077.917858761847.
     assert_close(
         r["cargo_t"].as_f64().unwrap(),
-        1815.3019802248543,
+        1016.0613411011808,
         "cargo_t",
     );
     assert_close(
         r["lightship_t"].as_f64().unwrap(),
         // Re-pinned again (spec 0011 D17); was 1506.0673218519578. Re-pinned again (issue #850, the ADN
-        // hull limits size the tank on a river-only stack); was 1521.630185591528.
-        1505.4984725541242,
+        // stack and the IS Code set of the file's time); was 1521.630185591528.
+        1422.197110094723,
         "lightship_t",
     );
     // Re-pinned (issue #264); was "tank volume" (stepped IGC_2G) and "draught — Draught limit" (issue #237).

@@ -210,9 +210,20 @@ fn a_file_saved_before_gets_the_default_stack_marked_default_with_one_warning_an
         } else {
             assert!(notes[0].contains("results are unchanged"), "{}", notes[0]);
         }
-        // The results hash is the one the file stored.
         let (_, opened) = DesignSession::open(&text, Profile::built_in()).unwrap();
-        assert_eq!(opened.hash_status[0].1, HashStatus::Matches, "{file}");
+        if gas {
+            // Issue #850: what a real old gas file shows. It is read with the ADN stack, whose hull limits
+            // size the tank, so the hash it stored no longer matches (the maintainer decided these files
+            // move). The `*_igc_stack` copies of the legacy gas files store the old stack and keep it.
+            assert!(
+                matches!(opened.hash_status[0].1, HashStatus::Differs { .. }),
+                "{file}: {:?}",
+                opened.hash_status[0].1
+            );
+        } else {
+            // The results hash is the one the file stored.
+            assert_eq!(opened.hash_status[0].1, HashStatus::Matches, "{file}");
+        }
     }
 }
 
