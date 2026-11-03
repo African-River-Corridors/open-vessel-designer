@@ -383,9 +383,11 @@ describe("OVD app smoke tests", () => {
   /**
    * A gas Design checked in the IS Code 2008 conditions on the built-in Rule Sets, whose IGC damage cases
    * the engine computes (the fixtures hold older Rule Sets, which do not). Written to a file and filled by
-   * the native CLI, as a hand-written file lacks inputs.
+   * the native CLI, as a hand-written file lacks inputs. The IGC damage cases and their drawing are in the
+   * coastal-and-river stack; a river-only gas Design takes ADN 9.3.1 in place of the IGC Code (issue #850),
+   * whose cases the view lists without a drawing.
    */
-  function gasDamageDesign() {
+  function gasDamageDesign(area = "coastal-and-river") {
     const inputs = {
       cargo: { value: "LNG", source: "typed" },
       hull_form: { value: "raked_box", source: "typed" },
@@ -394,9 +396,10 @@ describe("OVD app smoke tests", () => {
       beam_m: { value: 11.4, source: "typed" },
       moulded_depth_m: { value: 6.0, source: "typed" },
       loading_conditions: { value: "is_code_2008", source: "typed" },
+      service_area: { value: area, source: "typed" },
     };
-    const bare = path.join(WORK, "gas-damage-bare.vdesign");
-    const filled = path.join(WORK, "gas-damage.vdesign");
+    const bare = path.join(WORK, `gas-damage-${area}-bare.vdesign`);
+    const filled = path.join(WORK, `gas-damage-${area}.vdesign`);
     fs.writeFileSync(bare, JSON.stringify({ format: "vdesign", format_version: 3, engine_version: "0.2.4", units: "SI", options: [{ name: "Option 1", inputs }] }));
     fs.rmSync(filled, { force: true });
     execFileSync(process.env.OVD_CLI, ["fill", "--as-new", bare, filled], { stdio: "ignore" });
@@ -404,7 +407,7 @@ describe("OVD app smoke tests", () => {
   }
 
   it("shows the damage cases, the governing case of each condition and the damage drawing of a gas Design (issue #886)", async () => {
-    await open(gasDamageDesign(), "gas-damage.vdesign");
+    await open(gasDamageDesign(), "gas-damage-coastal-and-river.vdesign");
     await show("Stability & Propulsion", "Damage stability");
     await until("the damage drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1);
     const rows = await browser.$$("[data-testid=damage-case-row]");
@@ -433,6 +436,13 @@ describe("OVD app smoke tests", () => {
     await (await browser.$$("[data-testid=damage-condition]"))[1].click();
     await until("the other drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1);
     await shot("886-gas-damage");
+  });
+
+  it("lists the ADN damage cases of a river-only gas Design, which has no damage drawing yet (issues #850, #886)", async () => {
+    await open(gasDamageDesign("river-only"), "gas-damage-river-only.vdesign");
+    await show("Stability & Propulsion", "Damage stability");
+    await until("the case table", async () => (await browser.$$("[data-testid=damage-case-row]")).length >= 1);
+    assert.equal((await browser.$$("[data-testid=damage-drawing] svg")).length, 0);
   });
 
   it("shows the damage cases of a liquid hull, and says there is no drawing for it (issue #886)", async () => {
