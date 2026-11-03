@@ -71,11 +71,20 @@ pub fn default_stack_ids(containment: Option<&str>) -> Vec<&'static str> {
 /// The stack of ids an Option with no stored `rule_sets` takes: [`default_stack_ids`], except that a
 /// river-only gas Option takes ADN 2025 9.3.1 as its design Rule Set, with the two IGC 2.4.1.2 tank
 /// distance rows beside it (issue #850).
-pub fn unstored_stack_ids(containment: Option<&str>, service_area: Option<&str>) -> Vec<&'static str> {
+pub fn unstored_stack_ids(
+    containment: Option<&str>,
+    service_area: Option<&str>,
+) -> Vec<&'static str> {
     if containment == Some("type_c_tanks")
         && service_area.unwrap_or(DEFAULT_SERVICE_AREA) == "river-only"
     {
-        vec!["adn-gas", "igc-tank-clearance", "is2008-a", "lr-inland-gas", "ovd"]
+        vec![
+            "adn-gas",
+            "igc-tank-clearance",
+            "is2008-a",
+            "lr-inland-gas",
+            "ovd",
+        ]
     } else {
         default_stack_ids(containment)
     }
@@ -360,9 +369,7 @@ pub fn stack_for<'a>(
                 option
                     .input("cargo_containment")
                     .and_then(|i| i.value.as_str()),
-                option
-                    .input("service_area")
-                    .and_then(|i| i.value.as_str()),
+                option.input("service_area").and_then(|i| i.value.as_str()),
             ) {
                 if let Some(set) = library.latest(id) {
                     chosen.push((set.id.clone(), set.version.clone()));

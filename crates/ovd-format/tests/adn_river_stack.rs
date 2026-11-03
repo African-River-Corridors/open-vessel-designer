@@ -112,11 +112,16 @@ fn a_coastal_and_river_gas_option_keeps_igc_and_has_no_adn_rows() {
         assert!(!has_set(&results, id), "{id}");
     }
     assert!(rows(&results, "adn/").is_empty());
-    assert!(rows(&results, "igc/2.4.1.2/").iter().all(|r| r.get("note").is_none()));
+    assert!(
+        rows(&results, "igc/2.4.1.2/")
+            .iter()
+            .all(|r| r.get("note").is_none())
+    );
 }
 
 #[test]
-fn the_adn_hull_rows_and_the_relief_valve_rows_are_evaluated_and_pass_on_the_hull_the_engine_sized() {
+fn the_adn_hull_rows_and_the_relief_valve_rows_are_evaluated_and_pass_on_the_hull_the_engine_sized()
+{
     let results = results_of(&file_of(Some("river-only")), true);
     let want = [
         ("adn/9.3.1.11.2(a)/double-hull-width", 0.8),
@@ -142,13 +147,19 @@ fn the_adn_hull_rows_and_the_relief_valve_rows_are_evaluated_and_pass_on_the_hul
     let side = rows(&results, "igc/2.4.1.2/side-clearance")[0]["value"]
         .as_f64()
         .unwrap();
-    assert!((wing - (side - 0.6)).abs() < 1e-9 || wing == 0.8, "{wing} {side}");
+    assert!(
+        (wing - (side - 0.6)).abs() < 1e-9 || wing == 0.8,
+        "{wing} {side}"
+    );
 }
 
 #[test]
 fn a_file_that_stores_its_rule_sets_keeps_them() {
     // A river-only Option that stores the IGC stack keeps it: no ADN row, no note.
-    let filled = fill_as_new(&file_of(Some("river-only")).to_string(), &Profile::built_in());
+    let filled = fill_as_new(
+        &file_of(Some("river-only")).to_string(),
+        &Profile::built_in(),
+    );
     let mut design = filled.design.unwrap();
     let option = &mut design.options[0];
     let igc_stack = json!([
@@ -181,7 +192,11 @@ fn a_file_that_stores_its_rule_sets_keeps_them() {
             assert!(has_set(&results, "igc-2g"));
             assert!(!has_set(&results, "adn-gas"));
             assert!(rows(&results, "adn/").is_empty());
-            assert!(rows(&results, "igc/2.4.1.2/").iter().all(|r| r.get("note").is_none()));
+            assert!(
+                rows(&results, "igc/2.4.1.2/")
+                    .iter()
+                    .all(|r| r.get("note").is_none())
+            );
         }
         other => panic!("{other:?}"),
     }
@@ -194,7 +209,11 @@ fn an_old_gas_file_with_no_service_area_and_no_rule_sets_is_read_with_the_adn_st
     assert!(has_set(&results, "adn-gas") && has_set(&results, "igc-tank-clearance"));
     assert!(!has_set(&results, "igc-2g"));
     // The legacy IS Code version it was read with is kept.
-    assert!(sets(&results).contains(&"is2008-a@1.0.0".to_string()), "{:?}", sets(&results));
+    assert!(
+        sets(&results).contains(&"is2008-a@1.0.0".to_string()),
+        "{:?}",
+        sets(&results)
+    );
 }
 
 #[test]

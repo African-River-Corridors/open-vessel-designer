@@ -710,11 +710,10 @@ pub fn sizing_limit(rules: &[RuleSet], id: &str) -> f64 {
         .iter()
         .filter_map(|s| s.rule(id))
         .find_map(|r| match (&r.limit, r.compare) {
-            (Some(crate::rules::Limit::Constant { value, .. }), Some(crate::rules::Compare::Ge))
-                if r.evaluated && r.sizes =>
-            {
-                Some(*value)
-            }
+            (
+                Some(crate::rules::Limit::Constant { value, .. }),
+                Some(crate::rules::Compare::Ge),
+            ) if r.evaluated && r.sizes => Some(*value),
             _ => None,
         })
         .unwrap_or(0.0)

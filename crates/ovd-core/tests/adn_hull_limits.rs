@@ -49,7 +49,10 @@ fn adn_sizes_the_wing_when_igc_asks_for_less() {
     let plain = run(90.0, 14.8, |_| {});
     let adn = run(90.0, 14.8, |i| i.double_side_min_m = 0.8);
     let igc = plain.side_clearance_m.unwrap();
-    assert!(igc < 0.8 + 0.6, "the IGC clearance {igc} m is under the ADN one");
+    assert!(
+        igc < 0.8 + 0.6,
+        "the IGC clearance {igc} m is under the ADN one"
+    );
     // 0.80 + 0.6 gap = 1.40 m of clear side gap, a wing of exactly 0.80 m.
     assert!((adn.side_clearance_m.unwrap() - 1.4).abs() < 1e-12);
     let t = adn.tank_rules.as_ref().unwrap();
@@ -70,7 +73,11 @@ fn igc_sizes_the_clearance_when_it_asks_for_more_than_adn() {
     let t = r.tank_rules.as_ref().unwrap();
     let want = d_of(t.vc_m3);
     assert!(want > 0.8, "Vc {} gives d {want}", t.vc_m3);
-    assert!((t.side_gap_m - want).abs() < 1e-6, "{} vs {want}", t.side_gap_m);
+    assert!(
+        (t.side_gap_m - want).abs() < 1e-6,
+        "{} vs {want}",
+        t.side_gap_m
+    );
     // The width is what is left: the clearance with no gap, above the ADN limit.
     assert!((t.double_side_width_m - t.side_gap_m).abs() < 1e-12);
     assert!(t.double_side_width_m > 0.8);
@@ -82,7 +89,11 @@ fn adn_sizes_the_double_bottom_when_igc_asks_for_less() {
     let adn = run(90.0, 14.8, |i| i.double_bottom_min_m = 0.6);
     // IGC: max(14.8 / 15, d) - 0.350 clear; the double bottom is that less the 0.5 m support.
     let pt = plain.tank_rules.as_ref().unwrap();
-    assert!(pt.double_bottom_height_m < 0.6, "{}", pt.double_bottom_height_m);
+    assert!(
+        pt.double_bottom_height_m < 0.6,
+        "{}",
+        pt.double_bottom_height_m
+    );
     let t = adn.tank_rules.as_ref().unwrap();
     assert_eq!(t.double_bottom_height_m, 0.6);
     assert!((t.bottom_gap_m - 1.1).abs() < 1e-12);
@@ -98,7 +109,11 @@ fn igc_sizes_the_double_bottom_when_it_asks_for_more_than_adn() {
     let t = r.tank_rules.as_ref().unwrap();
     // The greater of B/15 = 1.6 m (at most 2 m) and d(Vc), with no insulation.
     let want = (24.0_f64 / 15.0).min(2.0).max(d_of(t.vc_m3));
-    assert!((t.bottom_gap_m - want).abs() < 1e-6, "{} vs {want}", t.bottom_gap_m);
+    assert!(
+        (t.bottom_gap_m - want).abs() < 1e-6,
+        "{} vs {want}",
+        t.bottom_gap_m
+    );
     assert!((t.double_bottom_height_m - (want - 0.5)).abs() < 1e-6);
     assert!(t.double_bottom_height_m > 0.6);
 }

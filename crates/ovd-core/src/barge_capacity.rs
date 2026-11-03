@@ -897,7 +897,8 @@ fn gas_volumetric(
         // Issue #850: ADN 9.3.1.11.2 (a), the double-hull space at least this wide: the tank clearance
         // is then at least that and the gap beside the wing tank. Where IGC 2.4.1.2 asks for more, it
         // governs and the width is what is left.
-        wing_at_floor = inp.double_side_min_m > 0.0 && cs - inp.wing_tank_gap_m < inp.double_side_min_m;
+        wing_at_floor =
+            inp.double_side_min_m > 0.0 && cs - inp.wing_tank_gap_m < inp.double_side_min_m;
         if wing_at_floor {
             cs = inp.double_side_min_m + inp.wing_tank_gap_m;
         }
