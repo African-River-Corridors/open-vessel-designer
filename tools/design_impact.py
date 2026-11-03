@@ -509,6 +509,10 @@ def cases() -> dict[str, dict]:
         "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, ruleset="IGC_2G")
     out["sweep gas passes all checks IGC_2G_EXACT 80x14"] = _inputs(
         "LPG_propane", "type_c_tanks", "self_propelled", 80.0, 14.0, 4.5, ruleset="IGC_2G_EXACT")
+    # Issue #850: a coastal-and-river gas hull keeps the IGC stack, so it must not move when the river-only
+    # stack takes ADN 9.3.1.
+    out["sweep gas coastal-and-river 110x11.4"] = _inputs(
+        "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, service_area="coastal-and-river")
     # Wide hulls, where the tank outer diameter cap sets the tank (12 m until issue #175, 16 m now).
     for ruleset in ("IGC_2G", "IGC_2G_EXACT"):
         out[f"sweep gas wide hull {ruleset} 110x24"] = _inputs(

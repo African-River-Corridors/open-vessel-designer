@@ -395,14 +395,23 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
             "optimise_depth": false,
             "propulsive_efficiency": 0.45,
             "max_speed_kn": 10.0,
-            "draught_limit_m": 4.4
+            "draught_limit_m": 4.4,
+            // Issue #850: this test is about the IGC stack (the explicit `--rule-set` files below); a
+            // river-only gas file is read with the ADN stack, tested on its own below.
+            "service_area": "coastal-and-river"
         }),
     );
-    // The file is a version 2 file with no Rule Sets and no Service Area. `run` reads it with the ADN 9.3.1
-    // gas stack (issue #850) at the versions of the sets of its time: `is2008-a` 1.0.0, in which every light
-    // condition keeps the angle of max GZ, where `is2008-a` 2.0.0 and no Rule Sets make it a warning
-    // (issue #498; the one-wide arrangement of this hull is feasible or not by it). `simulate`, given the
-    // river-only Service Area, takes the same stack through the same function, so the two answer the same.
+    // The file is a version 2 file, read with the stack of the time, in which every light condition
+    // keeps the angle of max GZ. `simulate` has no Rule Sets: the angle of max GZ alone in a light
+    // condition with no ballast is a warning (issue #498). The IS Code and IGC Rule Sets of that
+    // kind make `run` answer the same.
+    let rules = |set: &str| {
+        format!(
+            "{}/../ovd-format/rules/{set}.json",
+            env!("CARGO_MANIFEST_DIR")
+        )
+    };
+    let (is_code, igc) = (rules("is2008-a/2.0.0"), rules("igc-2g/2.0.0"));
     // The stack differs from the one the hash was stored with, so the stored hash is dropped.
     let mut saved: Value = serde_json::from_str(&std::fs::read_to_string(&file).unwrap()).unwrap();
     saved["options"][0]
@@ -411,7 +420,16 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
         .remove("results_hash");
     write_json(&file, &saved);
     // `--steel-list`: the whole results, as `simulate` answers them (issue #745).
-    let out = ovd(&["run", "--json", "--steel-list", p(&file)]);
+    let out = ovd(&[
+        "run",
+        "--json",
+        "--steel-list",
+        "--rule-set",
+        &is_code,
+        "--rule-set",
+        &igc,
+        p(&file),
+    ]);
     assert!(out.status.success(), "{}", stderr(&out));
     let v: Value = serde_json::from_str(&stdout(&out)).unwrap();
     // `run` adds the capital budget (`cost`) to what `simulate` answers; the rest is the same.
@@ -447,7 +465,7 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
         "optimise_depth": false, "eta_d": 0.45, "speed_max_kn": 10.0,
         "aft_end_space_m": 0.6, "fwd_end_space_m": 0.5,
         "opening_setback_basis": "tank_end",
-        "service_area": "river-only",
+        "service_area": "coastal-and-river",
         "entrance_distance_m": 2.0, "engine_room_vent_inlet_distance_m": 2.0,
         "funnel_outlet_distance_m": 2.0
     }));
@@ -469,19 +487,11 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
     // 3-1-1/3.1): lightship_t was 1569.7907856537108. Re-pinned again (issue #745, the plate model's
     // ordered weight): lightship_t was 1537.517376832394.
     let r = &results["results"];
-    // Re-pinned again (issue #850, the file is read with the ADN stack and the IS Code set of its time,
-    // which holds the one-wide arrangement to the angle of max GZ of every light condition): cargo_t was
-    // 2077.917858761847.
-    assert_close(
-        r["cargo_t"].as_f64().unwrap(),
-        1016.0613411011808,
-        "cargo_t",
-    );
+    assert_close(r["cargo_t"].as_f64().unwrap(), 2077.917858761847, "cargo_t");
     assert_close(
         r["lightship_t"].as_f64().unwrap(),
-        // Re-pinned again (spec 0011 D17); was 1506.0673218519578. Re-pinned again (issue #850, the ADN
-        // stack and the IS Code set of the file's time); was 1521.630185591528.
-        1422.197110094723,
+        // Re-pinned again (spec 0011 D17); was 1506.0673218519578.
+        1521.630185591528,
         "lightship_t",
     );
     // Re-pinned (issue #264); was "tank volume" (stepped IGC_2G) and "draught — Draught limit" (issue #237).
@@ -489,6 +499,97 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
     // The summary of a gas Option lists the failed stability checks, if any, by name.
     let s = ovd(&["run", p(&file)]);
     assert!(stdout(&s).contains("Checks: "), "{}", stdout(&s));
+}
+
+/// Issue #850: the same hull on a river-only Service Area, on the stack a new river-only gas Option stores
+/// (ADN 9.3.1 as the design Rule Set, the two IGC 2.4.1.2 rows beside it, at the highest versions). `run`
+/// and `simulate` size the tank alike. The numbers differ from the IGC test above for one cause: the ADN
+/// 9.3.1.11.2 (a) floors (a wing of 0.80 m, so at least 1.40 m of clear side gap with the 0.6 m wing gap,
+/// and a double bottom of 0.60 m) size the hull, where IGC 2.4.1.2 alone asked for less.
+#[test]
+fn json_results_are_what_simulate_answers_for_a_river_only_gas_hull_on_the_adn_stack() {
+    let dir = temp_dir("simulate-gas-adn");
+    let file = filled(
+        &dir,
+        "gas-adn",
+        json!({
+            "cargo": "LPG_propane",
+            "hull_form": "raked_box",
+            "formation": { "kind": "self_propelled" },
+            "length_overall_m": 90.0,
+            "beam_m": 14.8,
+            "moulded_depth_m": 6.5,
+            "cargo_containment": "type_c_tanks",
+            "block_coefficient": 0.85,
+            "min_freeboard_m": 0.3,
+            "ruleset": "IGC_2G",
+            "fill_ratio": 0.95,
+            "max_tank_od_m": 16.0,
+            "optimise_depth": false,
+            "propulsive_efficiency": 0.45,
+            "max_speed_kn": 10.0,
+            "draught_limit_m": 4.4,
+            "service_area": "river-only"
+        }),
+    );
+    // The file stores the stack a new Option takes, without `es-trin-2025` (its freeboard Rule reads inputs that
+    // `simulate` is not given), so it is read as written; a version 2 file with none is read with the older set
+    // versions.
+    let mut saved: Value = serde_json::from_str(&std::fs::read_to_string(&file).unwrap()).unwrap();
+    let option = saved["options"][0].as_object_mut().unwrap();
+    option.remove("results_hash");
+    let mut stack = ovd_format::trace::default_rule_sets(
+        &ovd_format::Profile::built_in(),
+        "river-only",
+        Some("type_c_tanks"),
+    );
+    stack
+        .as_array_mut()
+        .unwrap()
+        .retain(|e| e["id"] != "es-trin-2025");
+    option["inputs"]["rule_sets"] = json!({ "value": stack, "source": "default" });
+    write_json(&file, &saved);
+    let out = ovd(&["run", "--json", "--steel-list", p(&file)]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    let v: Value = serde_json::from_str(&stdout(&out)).unwrap();
+    let mut results = v["options"][0]["results"].clone();
+    for key in [
+        "cost",
+        "rule_trace",
+        "calibration",
+        "gross_tonnage",
+        "spaces",
+    ] {
+        assert!(!results[key].is_null(), "{key}");
+        results.as_object_mut().unwrap().remove(key);
+    }
+    results["drawing"].as_object_mut().unwrap().remove("tank");
+    let mut expected = simulate_answer(json!({
+        "vessel": "gas_barge", "cargo": "LPG_propane", "loa_m": 90.0, "beam_m": 14.8,
+        "depth_m": 6.5, "cb": 0.85, "freeboard_min_m": 0.3, "draught_limit_m": 4.4,
+        "self_propelled": true, "ruleset": "IGC_2G", "fill_ratio": 0.95, "max_tank_od_m": 16.0,
+        "optimise_depth": false, "eta_d": 0.45, "speed_max_kn": 10.0,
+        "aft_end_space_m": 0.6, "fwd_end_space_m": 0.5,
+        "opening_setback_basis": "tank_end",
+        "service_area": "river-only",
+        "entrance_distance_m": 2.0, "engine_room_vent_inlet_distance_m": 2.0,
+        "funnel_outlet_distance_m": 2.0
+    }));
+    expected["drawing"].as_object_mut().unwrap().remove("tank");
+    assert_eq!(results, expected);
+    // Pinned (issue #850): what the code prints with the ADN floors; the IGC test above has 2077.917858761847
+    // and 1521.630185591528 for the same hull.
+    let r = &results["results"];
+    assert_close(
+        r["cargo_t"].as_f64().unwrap(),
+        1815.3019802248543,
+        "cargo_t",
+    );
+    assert_close(
+        r["lightship_t"].as_f64().unwrap(),
+        1505.4984725541242,
+        "lightship_t",
+    );
 }
 
 #[test]
