@@ -1,6 +1,6 @@
 //! Issue #850: the Rule Set `igc-tank-clearance` 1.0.0 holds the two IGC 2.4.1.2 rows (the tank side and
-//! bottom distance) with the content `igc-2g` gives them. On a stack that takes it and not `igc-2g`, the
-//! trace says the rows size the tank, because ADN 9.3.1.11.2 (a) gives no distance from the tank to the hull.
+//! bottom distance) with the content `igc-2g` gives them. On a stack that takes it with `adn-gas` and not `igc-2g`, the
+//! trace says the rows size the tank, because the double-hull branch of ADN 9.3.1.11.2 (a) gives no distance from the tank to the hull.
 //!
 //! Label: sourced - IGC Code, resolution MSC.370(93), 2.4.1.1, 2.4.1.2 and 2.4.2 (annex pp. 20-21): the
 //! side distance is d(Vc) and the bottom distance the greater of B/15 (at most 2 m) and d(Vc), each
@@ -86,6 +86,7 @@ fn igc_rows(results: &Value) -> Vec<&Value> {
 #[test]
 fn without_igc_2g_the_two_rows_are_the_only_igc_rows_and_carry_the_note() {
     let results = results_with(&[
+        ("adn-gas", "1.0.0"),
         ("igc-tank-clearance", "1.0.0"),
         ("is2008-a", "2.0.0"),
         ("lr-inland-gas", "2.0.0"),
@@ -98,8 +99,23 @@ fn without_igc_2g_the_two_rows_are_the_only_igc_rows_and_carry_the_note() {
         assert_eq!(r["outcome"], "pass");
         assert_eq!(r["sizes"], true);
         let note = r["note"].as_str().unwrap();
-        assert!(note.contains("sizes the tank") && note.contains("9.3.1.11.2 (a)"));
+        assert!(
+            note.contains("sizes the tank")
+                && note.contains("double-hull branch of ADN 9.3.1.11.2 (a)")
+        );
     }
+}
+
+#[test]
+fn without_adn_gas_the_rows_carry_no_note() {
+    let results = results_with(&[
+        ("igc-tank-clearance", "1.0.0"),
+        ("is2008-a", "2.0.0"),
+        ("lr-inland-gas", "2.0.0"),
+        ("ovd", "3.1.0"),
+    ]);
+    assert!(!igc_rows(&results).is_empty());
+    assert!(igc_rows(&results).iter().all(|r| r.get("note").is_none()));
 }
 
 #[test]

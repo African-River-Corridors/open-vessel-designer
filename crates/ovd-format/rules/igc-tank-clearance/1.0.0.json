@@ -2,7 +2,7 @@
   "$schema": "../rule-set.schema.json",
   "id": "igc-tank-clearance",
   "family": "igc",
-  "title": "IGC Code 2.4.1.2: the side and bottom distance of a Type C tank from the outer shell, kept as the tank-clearance sizing rows of a Rule Set stack that takes ADN 9.3.1 as its design Rule Set, because ADN 9.3.1.11.2 (a) gives no distance from the tank to the hull",
+  "title": "IGC Code 2.4.1.2: the side and bottom distance of a Type C tank from the outer shell, kept as the tank-clearance sizing rows of a Rule Set stack that takes ADN 9.3.1 as its design Rule Set, because the double-hull branch of ADN 9.3.1.11.2 (a) gives no distance from the tank to the hull",
   "version": "1.0.0",
   "edition": {
     "document": "IGC Code, resolution MSC.370(93)",
