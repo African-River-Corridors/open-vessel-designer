@@ -57,10 +57,14 @@ const outputs = (b) => b.$("[data-testid=outputs]");
  */
 async function ready(b) {
   const area = () => b.$('.field[data-input="service_area"] select');
-  await until(b, "the starter Design or its results", async () => (await outputs(b)).isExisting() || (await area()).isExisting());
+  await until(b, "the starter Design or its results", async () => (await (await outputs(b)).isExisting()) || (await (await area()).isExisting()));
   const select = await area();
   if ((await select.isExisting()) && (await b.execute((el) => el.value === "__unset__", select))) {
     await select.selectByAttribute("value", "river-only");
+    // Choosing it is an edit, so the Design is unsaved; the tests that open a file next accept the discard prompt.
+    await b.execute(() => {
+      window.confirm = () => true;
+    });
   }
   await until(b, "results", async () => (await outputs(b)).isExisting());
 }
