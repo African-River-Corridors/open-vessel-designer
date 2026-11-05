@@ -1,6 +1,6 @@
 # A barge form factor method, checked against barge towing-tank data
 
-Status: **accepted**, 2026-10-30. Issue #735, after ADR 0023 (#723). The maintainer approved
+Status: **accepted**, 2026-10-30. Amended by ADR 0025: saved Designs open, but reproducing their old results is no longer a goal. Issue #735, after ADR 0023 (#723). The maintainer approved
 `barge_form_factor` as the default for new Designs (see "Default").
 
 ## Context

@@ -13,9 +13,10 @@ We are in a build process. We calibrate as we go. Rebuilding old designs is not 
 
 ## Decision
 
-1. **An example or fixture that fails today's Rules is a bug in the example.** Fix the design (change
-   the inputs until it passes). Do not pin the Rule Set stack
-   to an older version to keep it passing.
+1. **An example or fixture that fails today's Rules is a bug in the example.** Fix the design as a designer
+   would, and say in the pull request what changed and why. Do not pin the Rule Set stack to an older
+   version to keep it passing. If the failure shows an engine or Rule Set error, fix that under its own
+   issue and name it; never tune the inputs only to make a check pass.
 2. **Examples and reference designs track today's Rules.** `examples/`, the website examples and the
    fixtures that stand for a design are regenerated on the current built-in Rule Sets, with the
    Rule Sets they store at their latest version.
@@ -29,12 +30,26 @@ We are in a build process. We calibrate as we go. Rebuilding old designs is not 
    process: a released file is never edited, and a change is a new version
    (`crates/ovd-format/rules/RELEASED.json`).
 
+## Earlier ADRs
+
+Four accepted ADRs say that old files reproduce their results. On that point this ADR changes them.
+Read each with this one.
+
+- ADR 0007 (file format, "a file saved before gets the values that reproduce today's stern block"):
+  format migration stays. Reproducing the old results is no longer a goal.
+- ADR 0013 (Rule Sets, released versions kept "so an old file reproduces exactly"): a released
+  Rule Set file never changes, and that stays. The reason is the audit trail, not reproduction.
+  Amended by this ADR.
+- ADR 0017 (stern, "Old files do not move"): old files open. They may move. Amended by this ADR.
+- ADR 0024 (barge form factor, "Saved Designs reproduce"): saved Designs open. Their results may move.
+  Amended by this ADR.
+
 ## Follow-up (not changed here)
 
 Code that still keeps old results. Each is a separate issue, and each one that goes needs its own
 design-impact table.
 
-- `trace::legacy_rule_sets` and `trace::legacy_version`: a gas file with no stored Rule Sets is read
+- `trace::legacy_rule_sets` and `trace::legacy_version` (the clean-up is a named follow-up): a gas file with no stored Rule Sets is read
   with the older `is2008-a` 1.0.0 and `igc-2g` 1.1.0 versions.
 - The "a file saved before reads X" defaults: about 110 comments and branches in
   `crates/ovd-format/src` (for example in `vdesign.rs`, `objects.rs`, `crew.rs`, `cost.rs`) keep the
@@ -47,6 +62,9 @@ design-impact table.
 ## Consequences
 
 - A reviewer can ask of any example: does it pass today's Rules? If not, fix the example.
+- A moved design with no cause in the pull request body is a defect.
+- The format-migration fixtures in `crates/ovd-format/tests/legacy/` are not in scope: they prove an
+  old file opens, not that it passes.
 - A pull request that regenerates examples needs no migration shim to keep old numbers.
 - Calibration still decides which numbers are right. This ADR says only that old numbers are not
   kept for their own sake.

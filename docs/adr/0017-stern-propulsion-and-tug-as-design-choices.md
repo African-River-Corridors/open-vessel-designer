@@ -1,5 +1,7 @@
 # Stern, propulsion and tug are design choices on a parametric stern
 
+Status: Amended by ADR 0025 (examples and reference designs follow today's rules): reproducing the old results of a saved file is no longer a goal.
+
 Today a self-propelled hull gets one stern block: azimuth thrusters, deck containers and a lifting
 wheelhouse. Its size comes from layout values, never from power, and it has no mass. One propulsive
 efficiency (0.45) serves every vessel. A pushed convoy has no results, and a tug exists only as three
