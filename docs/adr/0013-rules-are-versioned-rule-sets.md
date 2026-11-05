@@ -1,5 +1,7 @@
 # Rules are versioned Rule Sets: cited data over coded Measures
 
+Status: Amended by ADR 0025 (examples and reference designs follow today's rules): reproducing the old results of a saved file is no longer a goal.
+
 Engineering rules are spread through the core as constants and branches (#176). A stability limit is a
 `const`, a tank clearance is a `match` on a ship-type string, and the citation of a class rule sits inside
 a message. Nothing lists which rules a Design was checked against. A rule set that was only half built
