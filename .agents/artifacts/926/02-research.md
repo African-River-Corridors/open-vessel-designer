@@ -12,7 +12,7 @@ repos:
 
 ## Summary
 
-The engine already works the IGC 4.23.1.2 minimum per tank when `tank_design_pressure_mpa` is `null` (#577). Today only fully refrigerated LPG defaults to `null`; LNG defaults to 0.40 MPa on every Service Area. The profile's default tables are keyed on three fixed keys (containment, cargo, LPG carriage condition); the Service Area is not one of them, and the loader rejects any other `by` list. The session refills table defaults when a table key changes, so adding the Service Area as a key would make a defaulted pressure follow a change of Service Area.
+The engine already works the IGC 4.23.1.2 minimum per tank when `tank_design_pressure_mpa` is `null` (#577). Today only fully refrigerated LPG defaults to `null`; LNG defaults to 0.40 MPa on every Service Area. The profile's default tables are keyed on three fixed keys (containment, cargo, LPG carriage condition); the Service Area is not one of them, and the loader rejects any other `by` list. A separate mechanism, `default_by_service_area`, keys an input on the Service Area alone, and does refill on a change of Service Area; it takes one key only. The session refills table defaults when a table key changes, so adding the Service Area as a key would make a defaulted pressure follow a change of Service Area.
 
 The IGC row is `warn` today (#927 makes it `block`). A `note` consequence reports a failed test as `warn` and never blocks. `ovd` is at 3.1.0; 3.2.0 is free on `main`.
 
@@ -31,6 +31,8 @@ The IGC row is `warn` today (#927 makes it `block`). A `note` consequence report
 - `tank_design_pressure_mpa` (`builtin_profile.json:346`): rows by Cargo and carriage; LNG 0.4 `sourced` (owners' spec sheets, 4 bar); fully refrigerated LPG `null` with an IGC basis (`:378-383`).
 - `TABLE_KEYS = ["cargo_containment", "cargo", "lpg_carriage_condition"]` (`vdesign.rs:224`); the loader requires `by == TABLE_KEYS` (`profile.rs:68-73`); 11 inputs use tables; `table_combinations` (`vdesign.rs:232`) enumerates every combination for the coverage check.
 - Session: when a table key changes, every input still on `Source::Default` among `TABLE_DEFAULTS` is dropped and refilled (`session.rs:1190-1208`).
+- **A per-Service-Area mechanism exists: `default_by_service_area`.** It is a keyed default (`KEYED_DEFAULTS`, `vdesign.rs:64-82`): one input, one key, one value per key value. Today `slop_share`, `arrangement_style`, `navigation_hours_per_day` and `manning_rule_set` use it (`builtin_profile.json:655,1368,1381,1386`). When the Service Area changes, `drop_dependent_defaults` drops every keyed input still on `Source::Default` keyed on it, and the next fill gives the new value (`session.rs:1174-1189`). So those defaults do refill.
+- Its limit: one key per input. An input is either a table default or a keyed default, not both (`session.rs:286-300`). The pressure default depends on the Cargo and carriage (LNG 0.40, pressurised LPG by its own row, refrigerated LPG `null`) as well as the Service Area, so a single-key `default_by_service_area` cannot hold it.
 - `Source` has `Typed`, `Default`, `Class`, `Reference` (`vdesign.rs:3712-3731`). No "rule" source; the basis text of the hit carries how a value was chosen (`profile.rs` `TableHit`).
 
 ### 3. The Rules

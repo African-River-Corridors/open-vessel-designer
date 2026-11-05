@@ -35,10 +35,11 @@ Out: making the IGC row block (#927); solving pressure with insulation (#875); t
 ### Q1. How does the default follow the Service Area?
 
 - **A. Add `service_area` as a fourth table key (chosen).** `TABLE_KEYS` gains `service_area`; the pressure table gets a first row `when: { service_area: coastal-and-river, cargo_containment: type_c_tanks }` → `null`, and the existing rows serve river-only. The session's refill (`session.rs:1190-1208`) then moves a defaulted pressure when the Service Area changes, with no new code path. #875 (C6, a floor by Service Area) needs the same key.
-- B. A code rule in `fill`: coastal + defaulted pressure → `null`. Small, but a default chosen outside the profile, invisible to a profile author, and the session would not refill it.
-- C. Engine-side: on coastal, treat a defaulted 0.40 as "IGC minimum". The file then says 0.40 while the engine uses Po: the file lies.
+- B. Use the existing `default_by_service_area` (`vdesign.rs:64-82`), which already refills on a change of Service Area (`session.rs:1174-1189`). It takes one key per input, so it cannot also follow the Cargo and carriage (LNG 0.40, pressurised LPG, refrigerated LPG `null`) on river-only. Making it two-key, or chaining it into the table, is a second mechanism doing the table's job.
+- C. A code rule in `fill`: coastal + defaulted pressure → `null`. A default chosen outside the profile, which the session would not refill.
+- D. Engine-side: on coastal, treat a defaulted 0.40 as "IGC minimum". The file then says 0.40 while the engine uses Po: the file lies.
 
-Cost of A: the other 10 tables change their `by` list (mechanical; their rows do not name `service_area`, so they match any). The loader accepts an old three-key `by` list as "any Service Area", so a user profile still loads.
+A adds the key to the mechanism that already handles a multi-key default; the existing session code refills it on a change of Service Area once it is a table key. Cost of A: the other 10 tables change their `by` list (mechanical; their rows do not name `service_area`, so they match any). The loader accepts an old three-key `by` list as "any Service Area", so a user profile still loads.
 
 ### Q2. Where does the river-only reference row live?
 
