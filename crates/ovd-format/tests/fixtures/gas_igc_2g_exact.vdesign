@@ -534,6 +534,10 @@
           "value": false,
           "source": "default"
         },
+        "deckhouse_openings": {
+          "value": null,
+          "source": "default"
+        },
         "deckhouse_side_opening_distance_m": {
           "value": 5.0,
           "source": "default"

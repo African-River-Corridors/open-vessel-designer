@@ -109,9 +109,14 @@ impl Kind {
         }
     }
     pub fn from_key(key: &str) -> Option<Kind> {
-        [Kind::Entrance, Kind::Window, Kind::AirInlet, Kind::AirIntake]
-            .into_iter()
-            .find(|k| k.key() == key)
+        [
+            Kind::Entrance,
+            Kind::Window,
+            Kind::AirInlet,
+            Kind::AirIntake,
+        ]
+        .into_iter()
+        .find(|k| k.key() == key)
     }
 }
 
@@ -411,4 +416,15 @@ pub fn frame_of(
         )),
         l_icll_m: l,
     })
+}
+
+/// The openings of a vessel's deckhouse stern, placed or typed (the typed list is in the design of
+/// the stern block); `None` for a vessel with no deckhouse.
+pub fn place_for_vessel(v: &crate::vessel_model::VesselModelInputs) -> Option<Placement> {
+    let aft = v.result.aft_arrangement.as_ref()?;
+    let frame = frame_of(aft, &v.hull, v.capacity.depth)?;
+    Some(place(
+        &frame,
+        v.capacity.aft_design.deckhouse_openings.as_deref(),
+    ))
 }

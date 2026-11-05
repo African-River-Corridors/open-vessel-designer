@@ -1553,14 +1553,10 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
         structure: structure_block(p)?,
     });
     // Issue #912: the openings of a deckhouse stern, placed (or typed), for the Measures and the results.
-    measured.openings = measured.vessel.as_ref().and_then(|v| {
-        let aft = v.result.aft_arrangement.as_ref()?;
-        let frame = ovd_core::deckhouse_openings::frame_of(aft, &v.hull, v.capacity.depth)?;
-        Some(ovd_core::deckhouse_openings::place(
-            &frame,
-            v.capacity.aft_design.deckhouse_openings.as_deref(),
-        ))
-    });
+    measured.openings = measured
+        .vessel
+        .as_ref()
+        .and_then(ovd_core::deckhouse_openings::place_for_vessel);
     // Issue #448: Cb and the hydrostatics at the laden level draught; the reported draught is the
     // one at mid-length of the free-trim float when the hull has LCG data (a dry bulk hull with
     // its stern block mass), with the deadweight at the middle of the hold zone.
@@ -3482,6 +3478,8 @@ fn simulate_gas(
                     (s, plane)
                 }),
                 checks: Vec::new(),
+                // Issue #912: the openings of a deckhouse stern.
+                openings: ovd_core::deckhouse_openings::place_for_vessel(&vessel_inputs),
                 vessel: Some(vessel_inputs.clone()),
                 ..Measured::default()
             },

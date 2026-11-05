@@ -55,7 +55,9 @@ fn row_error(row: &Value) -> Option<&'static str> {
             _ => true,
         };
         if !ok {
-            return Some("has a value of the wrong kind (openable and gas_tight are true or false, tier a whole number from 0)");
+            return Some(
+                "has a value of the wrong kind (openable and gas_tight are true or false, tier a whole number from 0)",
+            );
         }
     }
     None
@@ -83,7 +85,8 @@ pub fn openings_of(v: &Value) -> Result<Option<Vec<Opening>>, Text> {
             let kind = Kind::from_key(o["kind"].as_str().expect("a text")).expect("a kind");
             let face = Face::from_key(o["face"].as_str().expect("a text")).expect("a face");
             let space = Space::from_key(o["space"].as_str().expect("a text")).expect("a space");
-            let flag = |k: &str, default: bool| o.get(k).and_then(Value::as_bool).unwrap_or(default);
+            let flag =
+                |k: &str, default: bool| o.get(k).and_then(Value::as_bool).unwrap_or(default);
             Ok(Opening {
                 id: o
                     .get("name")

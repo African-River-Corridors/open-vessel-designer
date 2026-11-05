@@ -206,6 +206,7 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         "sightline_method",
         "wheelhouse_type",
         "arrangement_style",
+        "deckhouse_openings",
         "tank_head_type",
         "tank_liquid_pressure",
         "tank_allowable_stress_basis",

@@ -606,6 +606,8 @@ input-price-base-date = Price base date
 
 input-deckhouse-front-opening = Entrance, air inlet or opening on the deckhouse front
 
+input-deckhouse-openings = Deckhouse openings
+
 input-deckhouse-side-opening-distance-m = Distance of the first side opening from the deckhouse front
 
 input-entrance-distance-m = Distance of the nearest entrance or openable window from the cargo area

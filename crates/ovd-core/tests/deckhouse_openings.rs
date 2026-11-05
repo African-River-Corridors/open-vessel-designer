@@ -157,14 +157,18 @@ fn the_wheelhouse_side_doors_may_stand_in_the_zone_when_marked_gas_tight() {
         assert_eq!(d.opening.face, Face::Side);
         assert!((d.distance_from_front_m - 3.0).abs() < 1e-9);
         assert!(d.in_zone, "3.0 m from the front is inside a 5.0 m zone");
-        assert!(d.opening.gas_tight, "IGC 3.2.4.2: designed for rapid gas-tightening");
+        assert!(
+            d.opening.gas_tight,
+            "IGC 3.2.4.2: designed for rapid gas-tightening"
+        );
     }
     let q = place(&frame(6.0, 70.0), None);
-    assert!(q
-        .openings
-        .iter()
-        .filter(|o| o.opening.space == Space::Wheelhouse && o.opening.kind == Kind::Entrance)
-        .all(|o| !o.in_zone));
+    assert!(
+        q.openings
+            .iter()
+            .filter(|o| o.opening.space == Space::Wheelhouse && o.opening.kind == Kind::Entrance)
+            .all(|o| !o.in_zone)
+    );
 }
 
 #[test]
@@ -179,7 +183,8 @@ fn a_typed_list_stands_in_for_the_whole_default_layout() {
 }
 
 #[test]
-fn the_default_layout_has_an_accommodation_entrance_for_each_tier_and_a_position_for_each_opening() {
+fn the_default_layout_has_an_accommodation_entrance_for_each_tier_and_a_position_for_each_opening()
+{
     let p = place(&frame(20.0, 140.0), None);
     let tiers: Vec<i64> = p
         .openings

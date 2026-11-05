@@ -583,6 +583,9 @@ pub static MEASURES: &[MeasureDef] = &[
         value: ValueKind::Bool,
         args: &[],
         method: "The fire division of a front that faces the cargo area; the model places none, and the SOLAS II-2 text is not in the rule sources (a named gap)",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
         id: "deckhouse.icll_length",
         unit: "m",
         object: ObjectType::Option,

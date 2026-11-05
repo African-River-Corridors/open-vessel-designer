@@ -52,10 +52,19 @@ fn each_opening_has_a_position_a_face_a_kind_and_a_space() {
             assert!(o[k].as_f64().is_some_and(f64::is_finite), "{k}: {o}");
         }
         assert!(["front", "side", "aft"].contains(&o["face"].as_str().unwrap()));
-        assert!(["entrance", "window", "air_inlet", "air_intake"].contains(&o["kind"].as_str().unwrap()));
         assert!(
-            ["accommodation", "service", "machinery", "control_station", "wheelhouse"]
-                .contains(&o["space"].as_str().unwrap())
+            ["entrance", "window", "air_inlet", "air_intake"]
+                .contains(&o["kind"].as_str().unwrap())
+        );
+        assert!(
+            [
+                "accommodation",
+                "service",
+                "machinery",
+                "control_station",
+                "wheelhouse"
+            ]
+            .contains(&o["space"].as_str().unwrap())
         );
         assert!(o["faces_cargo_area"].is_boolean() && o["in_zone"].is_boolean());
     }
@@ -75,7 +84,10 @@ fn the_openings_are_outside_the_results_hash() {
     let (typed, h2) = results_with("coastal-and-river", json!({ "deckhouse_openings": [] }));
     assert_eq!(h1, h2);
     assert_eq!(results_hash(&default), results_hash(&typed));
-    assert_eq!(typed["stern_arrangement"]["openings_source"], json!("typed"));
+    assert_eq!(
+        typed["stern_arrangement"]["openings_source"],
+        json!("typed")
+    );
     assert!(openings(&typed).is_empty());
     assert_ne!(openings(&default).len(), 0);
 }
