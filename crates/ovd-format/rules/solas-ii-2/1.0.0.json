@@ -1,0 +1,78 @@
+{
+  "$schema": "../rule-set.schema.json",
+  "id": "solas-ii-2",
+  "family": "solas",
+  "title": "SOLAS Chapter II-2 (fire protection): two named gaps for the stern, not coded",
+  "version": "1.0.0",
+  "edition": {
+    "document": "SOLAS 1974 as amended, Chapter II-2 (consolidated text)",
+    "edition": "not in the rule sources",
+    "in_force": "n/a"
+  },
+  "sources": [],
+  "status": "draft",
+  "applies_when": {},
+  "includes": [],
+  "known_conflicts": [],
+  "tables": [],
+  "rules": [
+    {
+      "id": "solas/II-2.13.4.2.1/two-escapes-cat-a",
+      "title": "Two means of escape from a machinery space of Category A (named gap: the paragraph is cited by number from the ticket, and its text has not been read)",
+      "origin": "regulation",
+      "source": {
+        "document": "SOLAS 1974 as amended, Chapter II-2 (consolidated text)",
+        "edition": "not in the rule sources: the library holds no consolidated Chapter II-2 (the 2000 text in MSC.99(73) uses the numbering replaced in 2006)",
+        "locator": "II-2.13.4.2.1",
+        "page": "none: the paragraph text has not been read",
+        "access": ""
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-05",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "machinery.escape_routes"
+      },
+      "tolerance": 0,
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "Not coded: the consolidated SOLAS Chapter II-2 text is not in the rule sources, so the requirement is not read and no limit is given. The model places no escape routes. Named for a reviewer; add the text to the library to codify it",
+      "finding": null,
+      "since": "1.0.0"
+    },
+    {
+      "id": "solas/II-2.9.2.4.2.5/a60-front",
+      "title": "A-60 class division on a front that faces the cargo area (named gap: the paragraph is cited by number from the ticket, and its text has not been read)",
+      "origin": "regulation",
+      "source": {
+        "document": "SOLAS 1974 as amended, Chapter II-2 (consolidated text)",
+        "edition": "not in the rule sources: the library holds no consolidated Chapter II-2 (the 2000 text in MSC.99(73) uses the numbering replaced in 2006)",
+        "locator": "II-2.9.2.4.2.5",
+        "page": "none: the paragraph text has not been read",
+        "access": ""
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-05",
+        "review": "#781"
+      },
+      "verified": false,
+      "kind": "note",
+      "measure": {
+        "id": "arrangement.cargo_facing_fronts"
+      },
+      "tolerance": 0,
+      "consequence": "note",
+      "sizes": false,
+      "evaluated": false,
+      "gap": "Not coded: the consolidated SOLAS Chapter II-2 text is not in the rule sources, so the requirement is not read and no limit is given. The model places no fire divisions. Named for a reviewer; add the text to the library to codify it",
+      "finding": null,
+      "since": "1.0.0"
+    }
+  ]
+}

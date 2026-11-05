@@ -151,14 +151,36 @@ impl Measured {
                 .ok_or_else(|| format!("the rooms table has no `{id}` row"))
         };
         let n = |x: f64| Ok(MeasureValue::Number(x));
+        // The sleeping cabins of the table: ratings, the senior officers with a day room, the other
+        // officers (issue #892). A cabin Rule reads the smallest, so it holds for every cabin.
+        let cabins = || {
+            let rows: Vec<&crate::rooms::Room> = r
+                .rows
+                .iter()
+                .filter(|x| matches!(x.id, "cabin" | "cabin_senior" | "cabin_officer"))
+                .collect();
+            if rows.is_empty() {
+                Err("the rooms table has no cabin row".to_string())
+            } else {
+                Ok(rows)
+            }
+        };
+        let smallest_cabin = || {
+            cabins().map(|c| {
+                c.iter()
+                    .map(|x| x.area_each_m2)
+                    .fold(f64::INFINITY, f64::min)
+            })
+        };
         match name {
-            "headroom_m" => n(crate::rooms::HEADROOM_M),
-            "cabin_area_m2" => n(row("cabin")?.area_each_m2),
-            "cabin_volume_m3" => n(row("cabin")?.area_each_m2 * crate::rooms::HEADROOM_M),
+            "headroom_m" => n(r.headroom_m),
+            "cabin_area_m2" => n(smallest_cabin()?),
+            "cabin_volume_m3" => n(smallest_cabin()? * r.headroom_m),
             "communal_area_m2" => n(row("communal")?.area_m2),
             "communal_area_per_person_m2" => n(row("communal")?.area_m2 / f64::from(r.berths)),
             "washbasins_per_cabin" => {
-                n(f64::from(row("washbasin")?.count) / f64::from(row("cabin")?.count))
+                let cabin_count: u32 = cabins()?.iter().map(|x| x.count).sum();
+                n(f64::from(row("washbasin")?.count) / f64::from(cabin_count))
             }
             "toilet_area_m2" => n(row("toilet")?.area_each_m2),
             "persons_per_fixture" => {
@@ -475,6 +497,8 @@ impl Measured {
             | "arrangement.airlock"
             | "arrangement.airlock_door_spacing_m"
             | "arrangement.sleeping_rooms_above_load_line"
+            | "machinery.escape_routes"
+            | "arrangement.cargo_facing_fronts"
             | "formation.separate_vessels"
             | "formation.notch_wing_walls" => false,
             _ => true,

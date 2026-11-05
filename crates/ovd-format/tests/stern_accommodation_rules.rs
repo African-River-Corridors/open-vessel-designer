@@ -51,6 +51,12 @@ const NEW_ROWS: &[(&str, &str, &str)] = &[
     ("igc-2g", "3.3.0", "igc/3.6.1/airlock-door-spacing-min"),
     ("igc-2g", "3.3.0", "igc/3.6.1/airlock-door-spacing-max"),
     ("solas-v22", "1.1.0", "solas/V.22.1.3/conning-arc"),
+    (
+        "solas-ii-2",
+        "1.0.0",
+        "solas/II-2.13.4.2.1/two-escapes-cat-a",
+    ),
+    ("solas-ii-2", "1.0.0", "solas/II-2.9.2.4.2.5/a60-front"),
     ("mlc-2006", "1.0.0", "mlc/A3.1.6(a)/headroom"),
     ("mlc-2006", "1.0.0", "mlc/A3.1.6(c)/sleeping-room-location"),
     ("mlc-2006", "1.0.0", "mlc/A3.1.9(f)/cabin-area"),
@@ -230,10 +236,14 @@ fn es_trin_15_limits_are_the_printed_numbers() {
 }
 
 #[test]
-fn a_deckhouse_option_meets_the_es_trin_rooms_and_a_coastal_one_misses_three_mlc_rows() {
-    // The rooms table is sized to ES-TRIN 15, so the ES-TRIN rows pass. MLC A3.1.6(a) asks 2.03 m of
-    // headroom (the rooms use 2.00 m) and A3.1.9(f) at least 4.5 m2 a single cabin under 3,000 GT
-    // (the rooms give 3.5 m2): a hull that reaches sea fails both until the rooms apply MLC.
+fn a_coastal_deckhouse_option_meets_the_es_trin_and_mlc_rooms_rows() {
+    // Label: sourced - the limits are the printed ones (MLC A3.1.6(a) 203 cm, 9(f) 4.5 / 5.5 / 7 m2 by
+    // gross tonnage, 11(c) six persons, 11(d) a washbasin in each sleeping room; ES-TRIN 15).
+    // Since issue #892 (PR #906) the rooms of a hull that reaches sea are the greater of MLC A3.1 and
+    // ES-TRIN 15: headroom 2.03 m (not 2.00 m), a cabin floor from the MLC band (not 3.5 m2), and a
+    // washbasin in every sleeping room. So every MLC and ES-TRIN rooms row passes here.
+    // Hand working for the cabin: 110 x 11.4 m is over 3,000 GT, so the 9(f) limit is 5.5 m2 or 7 m2;
+    // the rooms give at least that, and never the 3.5 m2 of ES-TRIN alone.
     let r = results("coastal-and-river", "deckhouse");
     for id in [
         "es-trin/15.02(6)/headroom",
@@ -244,26 +254,61 @@ fn a_deckhouse_option_meets_the_es_trin_rooms_and_a_coastal_one_misses_three_mlc
         "es-trin/15.03(1)(b)/washbasins",
         "es-trin/15.03(1)(c)/showers",
         "es-trin/15.03(3)/toilet-floor",
+        "mlc/A3.1.6(a)/headroom",
+        "mlc/A3.1.9(f)/cabin-area",
         "mlc/A3.1.11(c)/toilets",
         "mlc/A3.1.11(c)/washbasins",
         "mlc/A3.1.11(c)/showers",
+        "mlc/A3.1.11(d)/sleeping-room-washbasin",
     ] {
         let found = rows(&r, id);
         assert_eq!(found.len(), 1, "{id}");
         assert_eq!(found[0]["outcome"], "pass", "{id}: {:?}", found[0]);
     }
-    // 11(d): the rooms hold one washbasin per four berths, not one per sleeping room.
-    let basin = rows(&r, "mlc/A3.1.11(d)/sleeping-room-washbasin");
-    assert_eq!(basin[0]["outcome"], "fail");
-    assert!(basin[0]["value"].as_f64().unwrap() < 1.0);
     let head = rows(&r, "mlc/A3.1.6(a)/headroom");
-    assert_eq!(head[0]["outcome"], "fail");
-    assert_eq!(head[0]["value"], json!(2.0));
+    assert_eq!(head[0]["value"], json!(2.03));
     assert_eq!(head[0]["limit"], json!(2.03));
     let area = rows(&r, "mlc/A3.1.9(f)/cabin-area");
-    assert_eq!(area[0]["outcome"], "fail");
-    assert_eq!(area[0]["value"], json!(3.5));
-    assert_eq!(area[0]["limit"], json!(4.5));
+    let (value, limit) = (
+        area[0]["value"].as_f64().unwrap(),
+        area[0]["limit"].as_f64().unwrap(),
+    );
+    assert!([4.5, 5.5, 7.0].contains(&limit), "{limit}");
+    assert!(value >= limit && value > 3.5, "{value} vs {limit}");
+    let basin = rows(&r, "mlc/A3.1.11(d)/sleeping-room-washbasin");
+    assert!(basin[0]["value"].as_f64().unwrap() >= 1.0);
+}
+
+#[test]
+fn the_two_solas_ii_2_paragraphs_are_named_gaps_and_never_pass() {
+    // Decision of 2026-11-05 (issue #781): the consolidated SOLAS II-2 text is not in the rule sources,
+    // so 13.4.2.1 (two escapes from a Category A machinery space) and 9.2.4.2.5 (A-60 fronts facing
+    // cargo) are reported as `not evaluated` with the gap named, not coded.
+    let lib = Library::built_in();
+    let set = lib
+        .find("solas-v22", "1.1.0")
+        .map(|_| ())
+        .and(lib.find("solas-ii-2", "1.0.0"));
+    let set = set.unwrap();
+    let ids = [
+        "solas/II-2.13.4.2.1/two-escapes-cat-a",
+        "solas/II-2.9.2.4.2.5/a60-front",
+    ];
+    let r = results("coastal-and-river", "deckhouse");
+    for id in ids {
+        let rule = set.rule(id).unwrap();
+        assert!(!rule.evaluated && rule.verified.is_none(), "{id}");
+        assert!(
+            rule.gap
+                .as_deref()
+                .unwrap()
+                .contains("not in the rule sources"),
+            "{id}"
+        );
+        let found = rows(&r, id);
+        assert_eq!(found.len(), 1, "{id}");
+        assert_eq!(found[0]["outcome"], "not evaluated", "{id}: {:?}", found[0]);
+    }
 }
 
 #[test]

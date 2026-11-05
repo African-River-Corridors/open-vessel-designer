@@ -130,6 +130,7 @@ fn the_schema_lists_the_two_new_inputs_and_not_the_ruleset() {
             "es-trin-2025",
             "icll-freeboard",
             "solas-v22",
+            "solas-ii-2",
             "mlc-2006",
             "abs-barges",
             "abs-steel-barges",
@@ -653,6 +654,8 @@ fn the_ovd_set_and_a_set_an_included_set_requires_cannot_be_removed() {
             "es-trin-2025",
             "icll-freeboard",
             "solas-v22",
+            "solas-ii-2",
+            "mlc-2006",
             "abs-barges",
             "abs-steel-barges",
             "ovd"

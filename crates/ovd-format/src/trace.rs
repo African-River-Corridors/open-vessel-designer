@@ -561,6 +561,8 @@ impl MeasureSource for OptionMeasures<'_> {
             | "arrangement.airlock"
             | "arrangement.airlock_door_spacing_m"
             | "arrangement.sleeping_rooms_above_load_line"
+            | "machinery.escape_routes"
+            | "arrangement.cargo_facing_fronts"
             | "formation.separate_vessels"
             | "formation.notch_wing_walls" => true,
             // Issue #740: the scantling Rules of `abs-steel-barges` size the hull steel; each is a
