@@ -391,8 +391,10 @@ describe("OVD app smoke tests", () => {
    * coastal-and-river stack; a river-only gas Design takes ADN 9.3.1 in place of the IGC Code (issue #850),
    * whose cases the view lists without a drawing.
    */
-  // The wait for a slow open, in ms. CI sets OVD_E2E_SLOW_OPEN_MS (issue #922).
-  const SLOW_OPEN_MS = Number(process.env.OVD_E2E_SLOW_OPEN_MS || 60000);
+  // The wait for a slow open, in ms: under 3 times the slowest open measured on the CI release-profile build
+  // (6.2 s for the coastal-and-river gas Design, issue #922). It was 60 s for a debug build, which took 14 s.
+  // CI can set OVD_E2E_SLOW_OPEN_MS to try another limit.
+  const SLOW_OPEN_MS = Number(process.env.OVD_E2E_SLOW_OPEN_MS || 18000);
   function gasDamageDesign(area = "coastal-and-river") {
     const inputs = {
       cargo: { value: "LNG", source: "typed" },
@@ -413,8 +415,8 @@ describe("OVD app smoke tests", () => {
   }
 
   it("shows the damage cases, the governing case of each condition and the damage drawing of a gas Design (issue #886)", async () => {
-    // The coastal-and-river design computes the IGC damage cases and the stern arrangement: several seconds in
-    // a debug build, so the open and the drawing get more than the usual 15 s (issue #850).
+    // The coastal-and-river design computes the IGC damage cases and the stern arrangement: about 6 s on the CI build,
+    // so the open and the drawing get a little more than the usual 15 s (issues #850, #922).
     await open(gasDamageDesign(), "gas-damage-coastal-and-river.vdesign", SLOW_OPEN_MS);
     await show("Stability & Propulsion", "Damage stability");
     await until("the damage drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1, SLOW_OPEN_MS);
