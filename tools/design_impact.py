@@ -103,6 +103,11 @@ OPTIONAL_INPUT_CASES = (
     ("propulsive_efficiency", "bauxite", "box_hold", "self_propelled", 90.0, 14.0, 4.5,
      {"propulsive_efficiency": 0.55, "max_speed_kn": 9.0}),
     ("air_draft_limit_m", "bauxite", "box_hold", "pushed_barge", 90.0, 14.0, 4.5, {"air_draft_limit_m": 6.0}),
+    # Issue #912: a typed list of deckhouse openings stands in for the default layout.
+    ("deckhouse_openings", "bauxite", "box_hold", "self_propelled", 90.0, 14.0, 4.5,
+     {"arrangement_style": "deckhouse",
+      "deckhouse_openings": [{"kind": "entrance", "space": "accommodation", "face": "aft",
+                              "x_m": 0.0, "y_m": 0.0, "z_m": 5.5}]}),
     ("channel_current_kn", "bauxite", "box_hold", "pushed_barge", 90.0, 14.0, 4.5,
      {**_DEEP_CHANNEL, "channel_current_kn": 2.0}),
     ("channel_bank_slope", "bauxite", "box_hold", "pushed_barge", 90.0, 14.0, 4.5,

@@ -73,6 +73,9 @@ pub struct Measured {
     /// What the Vessel Model of the design is assembled from (issue #454); `None` when the run gave
     /// no capacity result. No Measure reads it.
     pub vessel: Option<crate::vessel_model::VesselModelInputs>,
+    /// The openings of a deckhouse stern, placed or typed (issue #912); `None` for a hull with no
+    /// deckhouse. The `opening.*` and `deckhouse.*` Measures read it.
+    pub openings: Option<crate::deckhouse_openings::Placement>,
     /// The assumed damages of MARPOL Annex I regulation 28 (issue #341), for a liquid bulk hull under that
     /// Rule Set; empty for every other design.
     pub marpol_damage: Vec<DamageVerdict>,
@@ -422,6 +425,10 @@ impl Measured {
             ObjectType::NormamDamageCase => {
                 self.normam_damage.iter().map(|d| d.name.clone()).collect()
             }
+            // Issue #912: each opening of the deckhouse, by its name.
+            ObjectType::Opening => self.openings.as_ref().map_or_else(Vec::new, |p| {
+                p.openings.iter().map(|o| o.opening.id.clone()).collect()
+            }),
         }
     }
 
@@ -466,6 +473,10 @@ impl Measured {
             | "cargo-tank.marpol_length_ratio"
             | "option.cargo_capacity_m3"
             | "option.slop_capacity_share" => self.liquid.is_some(),
+            // Issue #912: the openings of a deckhouse stern.
+            id if id.starts_with("opening.") || id.starts_with("deckhouse.") => {
+                self.openings.is_some()
+            }
             "option.deadweight" => self.deadweight_t.is_some(),
             "option.enclosed_volume" | "option.gross_tonnage_k1" | "option.gross_tonnage" => {
                 self.gross_tonnage.is_some()
@@ -761,6 +772,39 @@ impl Measured {
                 .find(|(n, _)| n == environment)
                 .map(|(_, kn)| MeasureValue::Number(kn * 1.852))
                 .ok_or_else(|| format!("the powering has no environment `{environment}`"));
+        }
+        // Issue #912: the openings of a deckhouse stern, one opening to an object.
+        if let Some(name) = m.id.strip_prefix("deckhouse.") {
+            let p = self
+                .openings
+                .as_ref()
+                .ok_or_else(|| "the Option has no deckhouse openings".to_string())?;
+            return match name {
+                "icll_length" => Ok(MeasureValue::Number(p.l_icll_m)),
+                "opening_zone" => Ok(MeasureValue::Number(p.zone_m)),
+                other => Err(format!("no value for Measure `deckhouse.{other}`")),
+            };
+        }
+        if let Some(name) = m.id.strip_prefix("opening.") {
+            let p = self
+                .openings
+                .as_ref()
+                .ok_or_else(|| "the Option has no deckhouse openings".to_string())?;
+            let o = p
+                .openings
+                .get(index)
+                .ok_or_else(|| format!("no opening {index}"))?;
+            return match name {
+                "distance_from_front" => Ok(MeasureValue::Number(o.distance_from_front_m)),
+                "faces_cargo_area" => Ok(MeasureValue::Bool(o.faces_cargo_area)),
+                "in_zone" => Ok(MeasureValue::Bool(o.in_zone)),
+                "openable" => Ok(MeasureValue::Bool(o.opening.openable)),
+                "gas_tight" => Ok(MeasureValue::Bool(o.opening.gas_tight)),
+                "kind" => Ok(MeasureValue::Text(o.opening.kind.key().to_string())),
+                "space" => Ok(MeasureValue::Text(o.opening.space.key().to_string())),
+                "face" => Ok(MeasureValue::Text(o.opening.face.key().to_string())),
+                other => Err(format!("no value for Measure `opening.{other}`")),
+            };
         }
         if let Some(name) = m.id.strip_prefix("separation.") {
             let (s, plane) = self

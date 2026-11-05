@@ -18,6 +18,7 @@ mod holding_time;
 mod liquid;
 mod objects;
 pub mod offsets;
+pub mod deckhouse_openings;
 pub mod openings;
 pub mod profile;
 pub mod rule_set;

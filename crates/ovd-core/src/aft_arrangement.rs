@@ -135,6 +135,9 @@ pub struct AftDesign {
     /// Issue #780: what the deckhouse rooms are sized from (the crew model's berths). `None`: the
     /// interim stand-in floor.
     pub rooms_basis: Option<crate::rooms::RoomsBasis>,
+    /// Issue #912: a typed list of deckhouse openings, which stands in for the default layout. `None`:
+    /// the engine places the default layout.
+    pub deckhouse_openings: Option<Vec<crate::deckhouse_openings::Opening>>,
 }
 
 impl Default for AftDesign {
@@ -159,6 +162,7 @@ impl Default for AftDesign {
             wheelhouse_max_lift_m: DEFAULT_WHEELHOUSE_MAX_LIFT_M,
             arrangement_style: ArrangementStyle::ContainerBlock,
             rooms_basis: None,
+            deckhouse_openings: None,
         }
     }
 }
