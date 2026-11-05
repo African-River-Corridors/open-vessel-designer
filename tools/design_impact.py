@@ -570,6 +570,11 @@ def cases() -> dict[str, dict]:
         "diesel_en590", "integral_tanks", "self_propelled", 90.0, 14.0, 4.5, service_area="coastal-and-river")
     out["sweep diesel carries nothing (draught limit)"] = _inputs(
         "diesel_en590", "integral_tanks", "pushed_barge", 90.0, 14.0, 4.5, draught_limit_m=0.3)
+    # Issue #929: a river-only gas deckhouse hull with the hours left out. Its crew, berths, rooms and
+    # lightship follow the river-only navigation hours default (24 h, RPN mode B; before, 14 h, A1).
+    out["sweep gas river-only deckhouse 140x29"] = _inputs(
+        "LNG", "type_c_tanks", "self_propelled", 140.0, 29.0, 12.0,
+        service_area="river-only", arrangement_style="deckhouse")
     # One case for each optional input.
     for name, cargo, containment, formation, loa, beam, depth, extra in OPTIONAL_INPUT_CASES:
         out[f"sweep optional {name}"] = _inputs(cargo, containment, formation, loa, beam, depth, **extra)

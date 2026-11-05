@@ -291,3 +291,49 @@ fn a_sea_hull_checks_the_tier_height_against_2_03_m_clear() {
             .all(|c| c["name"] != "deckhouse_clear_height")
     );
 }
+
+/// The 140 x 29 m coastal LNG example hull, as a river-only deckhouse Option.
+fn river_140x29(extra: Value) -> Value {
+    let mut inputs = json!({
+        "cargo": { "value": "LNG", "source": "typed" },
+        "hull_form": { "value": "raked_box", "source": "typed" },
+        "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+        "length_overall_m": { "value": 140.0, "source": "typed" },
+        "beam_m": { "value": 29.0, "source": "typed" },
+        "moulded_depth_m": { "value": 12.0, "source": "typed" },
+        "service_area": { "value": "river-only", "source": "typed" },
+        "arrangement_style": { "value": "deckhouse", "source": "typed" }
+    });
+    for (k, v) in extra.as_object().unwrap() {
+        inputs[k] = json!({ "value": v, "source": "typed" });
+    }
+    let text = json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": inputs }]
+    })
+    .to_string();
+    let d = fill_as_new(&text, &Profile::built_in()).design.unwrap();
+    match run_option(&d.options[0]) {
+        RunOutcome::Results { results, .. } => results,
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn a_river_only_option_with_untyped_hours_sails_round_the_clock_in_mode_b() {
+    // Issue #929. Label: snapshot (printed by the code, 140 x 29 m river-only deckhouse). The river-only
+    // default is 24 h, RPN operating mode B (before: 14 h, mode A1, crew 4, berths 7). Cabin policy is
+    // not part of this test (#894).
+    let r = river_140x29(json!({}));
+    assert_eq!(r["crew"]["inputs"]["navigation_hours_per_day"], json!(24.0));
+    assert_eq!(r["crew"]["rpn"]["operating_mode"], json!("B"));
+    // The manning minimum is 5 (was 4); with the owner's engineer that is 6 on board, plus 2 spare = 8 berths.
+    assert_eq!(r["crew"]["minimum"], json!(5));
+    assert_eq!(r["crew"]["crew"], json!(6));
+    assert_eq!(r["crew"]["berths"], json!(8));
+    // A typed 14 h still reads mode A1.
+    let a1 = river_140x29(json!({ "navigation_hours_per_day": 14.0 }));
+    assert_eq!(a1["crew"]["rpn"]["operating_mode"], json!("A1"));
+    assert_eq!(a1["crew"]["minimum"], json!(4));
+    assert_eq!(a1["crew"]["berths"], json!(7));
+}
