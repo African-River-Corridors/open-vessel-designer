@@ -242,6 +242,7 @@ pub(crate) fn run_gas_damage(
                 .map_or(0.0, |t| t.fill)
         };
         // (index into `out`, the flooding, the damaged mass and centre of gravity) of the governing case
+        let mut worst_extent: Option<((f64, f64), Option<(f64, f64)>)> = None;
         let mut worst: Option<(
             usize,
             Vec<ovd_core::damage_stability::FloodedVolume>,
@@ -321,6 +322,7 @@ pub(crate) fn run_gas_damage(
                 })).collect::<Vec<_>>(),
             }));
             if worse {
+                worst_extent = Some((case.x_m, case.y_m));
                 worst = Some((out.len(), f.flooded.clone(), m, gd));
             }
             out.push(ovd_core::measured::DamageVerdict {
@@ -367,7 +369,7 @@ pub(crate) fn run_gas_damage(
                     }),
                 })
                 .collect();
-            governing.push(json!({
+            let mut entry = json!({
                 "condition": c.condition.name,
                 "case": rows[i]["name"],
                 "ok": o.ok,
@@ -378,7 +380,15 @@ pub(crate) fn run_gas_damage(
                 "waterplane": { "heel_deg": num(o.heel_deg), "trim_deg": num(o.trim_deg), "c_m": num(o.waterplane_c_m) },
                 "flooded": geometry,
                 "gz_after_damage": gz,
-            }));
+            });
+            // Issue #928: where the damage is, for the damage drawing.
+            if let Some(((a, b), y)) = worst_extent {
+                entry["x_m"] = json!([num(a), num(b)]);
+                if let Some((y0, y1)) = y {
+                    entry["y_m"] = json!([num(y0), num(y1)]);
+                }
+            }
+            governing.push(entry);
         }
     }
     Ok((

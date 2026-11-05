@@ -31,15 +31,6 @@ fn stagger_fraction(nth: usize, n: usize) -> f64 {
     0.15 + 0.7 * nth as f64 / (n - 1) as f64
 }
 
-/// The longitudinal extent of the damage, from the case name the engine gives ("side (starboard) damage, 45.9
-/// to 55.9 m"). The results hold no separate number for it. `None` where the name has no such range.
-fn damage_zone(case: &str) -> Option<(f64, f64)> {
-    let (_, tail) = case.rsplit_once(", ")?;
-    let (a, b) = tail.strip_suffix(" m")?.split_once(" to ")?;
-    let (a, b) = (a.trim().parse::<f64>().ok()?, b.trim().parse::<f64>().ok()?);
-    (a < b).then_some((a, b))
-}
-
 /// One Flooded Volume as the drawing shows it.
 struct Flooded {
     name: String,
@@ -59,6 +50,14 @@ struct Governing {
     /// The damaged waterplane: heel, trim, height along its normal.
     waterplane: Option<(f64, f64, f64)>,
     flooded: Vec<Flooded>,
+    /// The longitudinal extent of the damage (`x_m`), and for a bottom damage the athwartships one (`y_m`).
+    x_m: Option<(f64, f64)>,
+    y_m: Option<(f64, f64)>,
+}
+
+/// A two-number extent of the results.
+fn pair(v: &Value) -> Option<(f64, f64)> {
+    Some((v[0].as_f64()?, v[1].as_f64()?))
 }
 
 fn read_governing(block: &Value) -> Result<(String, Vec<Governing>), String> {
@@ -123,6 +122,8 @@ fn read_governing(block: &Value) -> Result<(String, Vec<Governing>), String> {
                 _ => None,
             },
             flooded,
+            x_m: pair(&g["x_m"]),
+            y_m: pair(&g["y_m"]),
         });
     }
     Ok((set, out))
@@ -206,9 +207,13 @@ fn damage_canvas(h: &Hull, g: &Governing, n: u32) -> Canvas {
         let (a, b) = extents[i];
         labels[i].1[0] = a + (b - a) * (1.0 - stagger_fraction(rank, by_height.len()));
     }
-    if let Some((lo, hi)) = damage_zone(&g.case) {
-        // The longitudinal extent of the damage, below the plan.
+    // The extent of the damage, as the results give it: along the hull below the plan, and for a bottom damage
+    // across the hull too, at the aft end of the damage.
+    if let Some((lo, hi)) = g.x_m {
         c.try_dim_horizontal([lo, -half], [hi, -half], -DAMAGE_ZONE_OFFSET_MM);
+        if let Some((y0, y1)) = g.y_m {
+            c.try_dim_vertical([lo, -y1], [lo, -y0], -DAMAGE_ZONE_OFFSET_MM);
+        }
     }
     let x = damage_x(g);
     c.line("CENTRE", [x, -half], [x, half], Some("dashed"));

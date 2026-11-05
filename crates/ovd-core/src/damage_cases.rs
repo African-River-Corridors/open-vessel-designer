@@ -102,6 +102,10 @@ pub fn es_trin_longitudinal_extent_m(loa_m: f64) -> f64 {
 pub struct DamageCase {
     pub name: String,
     pub flooded: Vec<FloodedVolume>,
+    /// The longitudinal extent of the damage, m from the stern (aft, forward). Zero length where a case has none.
+    pub x_m: (f64, f64),
+    /// The athwartships extent of a bottom damage, m (to starboard positive); none for a side damage.
+    pub y_m: Option<(f64, f64)>,
 }
 
 /// The extents of a box damage with a side and a bottom set, the bottom set in two zones: MARPOL Annex I
@@ -471,6 +475,8 @@ pub fn adn_damage_cases_with(
                     .iter()
                     .map(|c| FloodedVolume::from_box(&c.name, c.x, c.y, c.z, permeability(c.kind)))
                     .collect(),
+                x_m: window,
+                y_m: None,
             });
         }
     }
@@ -640,7 +646,11 @@ pub fn box_damage_cases(
     };
     let mut cases: Vec<DamageCase> = Vec::new();
     let mut seen: Vec<(bool, Vec<String>)> = Vec::new();
-    let mut push = |side: bool, name: String, hit: Vec<&Compartment>| {
+    let mut push = |side: bool,
+                    name: String,
+                    x_m: (f64, f64),
+                    y_m: Option<(f64, f64)>,
+                    hit: Vec<&Compartment>| {
         if hit.is_empty() {
             return;
         }
@@ -653,6 +663,8 @@ pub fn box_damage_cases(
         cases.push(DamageCase {
             name,
             flooded: flooded_of(&hit),
+            x_m,
+            y_m,
         });
     };
     for (a, b) in windows(ext.side_long_m) {
@@ -663,6 +675,8 @@ pub fn box_damage_cases(
         push(
             true,
             format!("side damage (starboard), {a:.1} to {b:.1} m"),
+            (a, b),
+            None,
             hit,
         );
     }
@@ -701,6 +715,8 @@ pub fn box_damage_cases(
                 push(
                     false,
                     format!("bottom damage, {a:.1} to {b:.1} m, {y0:.1} to {y1:.1} m across"),
+                    (a, b),
+                    Some((y0, y1)),
                     hit,
                 );
             }

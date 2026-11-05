@@ -209,13 +209,40 @@ fn each_sheet_draws_the_governing_case_of_its_own_set() {
     }
 }
 
-/// The damage extent is drawn as a dimension below the plan where the case name gives one.
+/// Issue #928: each governing case carries its extent as fields (`x_m`, and `y_m` for a bottom damage that has
+/// a width), the drawing is made from them, and not from the case name.
 #[test]
-fn the_damage_extent_is_dimensioned() {
-    let r = gas_results(130.0, 16.0, 7.5, "river-only");
-    let (_, _, doc) = &all_sheets(&r)[0];
-    assert!(
-        entities(doc).iter().any(|e| e["type"] == "dimension"),
-        "no dimension for the damage extent"
-    );
+fn each_governing_case_carries_its_extent_and_the_sheet_dimensions_it() {
+    let (mut side, mut bottom, mut across) = (0, 0, 0);
+    for area in ["river-only", "coastal-and-river"] {
+        let r = gas_results(130.0, 16.0, 7.5, area);
+        let mut blocks: Vec<&Value> = vec![&r["damage"]];
+        blocks.extend(r["damage_by_rule"].as_object().unwrap().values());
+        for block in blocks.into_iter().filter(|b| b.is_object()) {
+            for g in block["governing"].as_array().unwrap() {
+                let name = g["case"].as_str().unwrap();
+                let x = g["x_m"]
+                    .as_array()
+                    .unwrap_or_else(|| panic!("{name}: no x_m"));
+                assert!(
+                    x[0].as_f64().unwrap() < x[1].as_f64().unwrap(),
+                    "{name}: {x:?}"
+                );
+                // a case that names a width across has `y_m`, and no other has
+                let wide = name.contains("m across");
+                assert_eq!(g.get("y_m").is_some(), wide, "{name}");
+                side += usize::from(name.starts_with("side"));
+                bottom += usize::from(name.starts_with("bottom"));
+                across += usize::from(wide);
+            }
+        }
+        for (_, stem, doc) in all_sheets(&r) {
+            assert!(
+                entities(&doc).iter().any(|e| e["type"] == "dimension"),
+                "{area} {stem}: no dimension for the damage extent"
+            );
+        }
+    }
+    assert!(side > 0 && bottom > 0, "side {side}, bottom {bottom}");
+    println!("governing cases: side {side}, bottom {bottom}, with a width {across}");
 }
