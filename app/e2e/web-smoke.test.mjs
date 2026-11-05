@@ -51,6 +51,19 @@ async function start(options = {}) {
 const until = (b, what, check, timeout = 30000) =>
   b.waitUntil(check, { timeout, interval: 100, timeoutMsg: `timed out waiting for: ${what}` });
 const outputs = (b) => b.$("[data-testid=outputs]");
+/**
+ * The starter Design has no Service Area (issue #925: it has no default), so it shows no results until one is
+ * chosen. Choose river-only when the field asks, then wait for the results.
+ */
+async function ready(b) {
+  const area = () => b.$('.field[data-input="service_area"] select');
+  await until(b, "the starter Design or its results", async () => (await outputs(b)).isExisting() || (await area()).isExisting());
+  const select = await area();
+  if ((await select.isExisting()) && (await b.execute((el) => el.value === "__unset__", select))) {
+    await select.selectByAttribute("value", "river-only");
+  }
+  await until(b, "results", async () => (await outputs(b)).isExisting());
+}
 /** Open Settings (app bar), do `act`, close it again. */
 async function inSettings(b, act) {
   await (await b.$("[data-testid=settings]")).click();
@@ -75,14 +88,14 @@ describe("OVD web smoke tests", () => {
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
     await until(b, "the notice to close", async () => !(await (await b.$("[data-testid=notice]")).isExisting()));
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     assert.ok((await (await outputs(b)).getText()).length > 0, "outputs have text");
     // The style sheet sets the label in capitals.
     assert.equal((await (await b.$("[data-testid=web-label]")).getText()).toLowerCase(), "web version");
     assert.equal(await (await b.$("a=Download the desktop app")).getAttribute("href"), "/ovd#install");
     // Reload: the notice was remembered.
     await b.url(`${origin}/ovd/app`);
-    await until(b, "results after reload", async () => (await outputs(b)).isExisting());
+    await ready(b);
     assert.equal(await (await b.$("[data-testid=notice]")).isExisting(), false, "notice not shown again");
   });
 
@@ -91,7 +104,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     // The starter Design: Cargo Containment is a default.
     const field = () => b.$('.field[data-input="cargo_containment"]');
     const badge = async () => (await (await field()).$(".badge")).getAttribute("class");
@@ -138,7 +151,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     // Headless Chrome cancels a file chooser at once. Stop the app opening it, then fill the input in.
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
@@ -148,7 +161,7 @@ describe("OVD web smoke tests", () => {
     await picker.waitForExist({ timeout: 5000 });
     await picker.setValue(FIXTURE);
     await until(b, "the file name", async () => (await b.$("header")).getText().then((t) => t.includes("gas_igc_2g_self_propelled.vdesign")));
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     const ours = await b.execute(async () => {
       const ev = await window.__ovdPlatform.evaluate();
       return ev.options.map((o) => [o.name, o.outcome.results_hash]);
@@ -195,7 +208,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     const r = await b.execute(async () => {
       const p = window.__ovdPlatform;
       const option = (await p.snapshot()).active_option;
@@ -219,7 +232,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
     });
@@ -248,7 +261,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
     });
@@ -288,7 +301,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
     });
@@ -346,7 +359,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
     });
@@ -397,7 +410,7 @@ describe("OVD web smoke tests", () => {
       await b.url(`${origin}/ovd/app`);
       await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
       await (await b.$("button=I understand")).click();
-      await until(b, "results", async () => (await outputs(b)).isExisting());
+      await ready(b);
       await b.execute(() => {
         HTMLInputElement.prototype.click = function () {};
       });
@@ -496,7 +509,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
     });
@@ -560,7 +573,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
     });
@@ -636,7 +649,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
     });
@@ -682,7 +695,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
     });
@@ -748,7 +761,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
       // Keep each download's bytes, so the saved file can be compared.
@@ -822,7 +835,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
     });
@@ -885,7 +898,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await b.execute(() => {
       HTMLInputElement.prototype.click = function () {};
     });
@@ -926,7 +939,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await openDesign(b, FIXTURE);
     for (const width of [1500, 1100, 800]) {
       await b.setWindowSize(width, 950);
@@ -971,7 +984,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await openDesign(b, FIXTURE);
     const consumables = await b.execute(async () => (await window.__ovdPlatform.evaluate()).options[0].outcome.results.loading_conditions.consumables_t);
     assert.ok(consumables > 0, "the gas fixture carries consumables");
@@ -1001,7 +1014,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await openDesign(b, FIXTURE);
     // Record every text the canvas writes, with where it writes it.
     await b.execute(() => {
@@ -1037,7 +1050,7 @@ describe("OVD web smoke tests", () => {
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     await openDesign(b, FIXTURE);
     const tab = (label) => b.$(`//button[@role="tab" and normalize-space()="${label}"]`);
     await (await tab("Stability & Propulsion")).click();
@@ -1094,7 +1107,7 @@ describe("OVD web smoke tests", () => {
     // With no memory of the notice it shows on every load.
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
-    await until(b, "results", async () => (await outputs(b)).isExisting());
+    await ready(b);
     assert.equal(await (await b.$("[data-testid=notice]")).isExisting(), false);
   });
 });

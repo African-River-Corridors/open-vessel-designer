@@ -9,6 +9,13 @@
 use ovd_format::{DesignSession, HashStatus, Profile, RunOutcome};
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 fn results(s: &DesignSession) -> Value {
     match s.evaluate().options[0].outcome.as_ref().expect("it ran") {
         RunOutcome::Results { results, .. } => results.clone(),
@@ -17,7 +24,7 @@ fn results(s: &DesignSession) -> Value {
 }
 
 fn session(cargo: &str, formation: &str) -> DesignSession {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     for (n, v) in [
         ("cargo", json!(cargo)),
         ("length_overall_m", json!(110.0)),
@@ -124,7 +131,7 @@ fn a_new_option_is_checked_in_the_is_code_conditions() {
     // Issue #426 part 3: the gas arrangement search uses the IS Code conditions, so they are the
     // default for a new Option, gas and dry bulk.
     for cargo in ["bauxite", "LNG"] {
-        let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+        let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
         s.set_input("Option 1", "cargo", json!(cargo)).unwrap();
         let r = results(&s);
         assert_eq!(roles(&r)[0], "full_load_departure", "{cargo}");
@@ -170,8 +177,7 @@ fn a_file_saved_before_keeps_the_legacy_conditions_and_its_hash() {
     for name in ["v2_gas_lpg_before_313_igc_stack", "v1_dry_bulk_box_hold"] {
         let path = format!("{}/tests/legacy/{name}.vdesign", env!("CARGO_MANIFEST_DIR"));
         let (s, opened) =
-            DesignSession::open(&std::fs::read_to_string(path).unwrap(), Profile::built_in())
-                .unwrap();
+            DesignSession::open(&read_with_area(path).unwrap(), Profile::built_in()).unwrap();
         if let Some((_, status)) = opened.hash_status.first() {
             assert!(!matches!(status, HashStatus::Differs { .. }), "{name}");
         }

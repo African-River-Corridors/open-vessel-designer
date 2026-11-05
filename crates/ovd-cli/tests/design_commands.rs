@@ -45,7 +45,7 @@ fn read_json(path: &Path) -> Value {
 /// `ovd new` into a file, then return the parsed Design.
 fn new_design(dir: &Path) -> (PathBuf, Value) {
     let file = dir.join("starter.vdesign");
-    let out = ovd(&["new", path_str(&file)]);
+    let out = ovd(&["new", "--service-area", "river-only", path_str(&file)]);
     assert!(out.status.success(), "ovd new: {}", stderr(&out));
     let design = read_json(&file);
     (file, design)
@@ -65,6 +65,7 @@ fn design_with(inputs: Value) -> Value {
 fn required_inputs() -> Value {
     json!({
         "cargo": "bauxite",
+        "service_area": "river-only",
         "hull_form": "raked_box",
         "length_overall_m": 76.5,
         "beam_m": 11.4,
@@ -81,9 +82,15 @@ fn validate_inputs(test: &str, inputs: Value) -> Output {
     let file = dir.join("d.vdesign");
     write_json(&file, &design_with(inputs));
     let filled = dir.join("filled.vdesign");
-    if ovd(&["fill", path_str(&file), path_str(&filled)])
-        .status
-        .success()
+    if ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        path_str(&file),
+        path_str(&filled),
+    ])
+    .status
+    .success()
     {
         ovd(&["validate", path_str(&filled)])
     } else {
@@ -134,7 +141,7 @@ fn new_does_not_overwrite_an_existing_file() {
     let dir = temp_dir("new-no-overwrite");
     let file = dir.join("keep.vdesign");
     std::fs::write(&file, "mine").unwrap();
-    let out = ovd(&["new", path_str(&file)]);
+    let out = ovd(&["new", "--service-area", "river-only", path_str(&file)]);
     assert!(!out.status.success());
     assert!(stderr(&out).contains("already exists"), "{}", stderr(&out));
     assert_eq!(std::fs::read_to_string(&file).unwrap(), "mine");
@@ -202,7 +209,13 @@ fn a_left_out_depth_is_the_cargo_ratio_times_the_beam_marked_default() {
     inputs.as_object_mut().unwrap().remove("moulded_depth_m");
     write_json(&file, &design_with(inputs));
     let filled = dir.join("f.vdesign");
-    let out = ovd(&["fill", path_str(&file), path_str(&filled)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        path_str(&file),
+        path_str(&filled),
+    ]);
     assert!(out.status.success(), "{}", stderr(&out));
     assert!(
         stderr(&out).contains("`moulded_depth_m` was not stored in the file; wrote in the Defaults Profile value 3.762, marked default"),
@@ -330,7 +343,14 @@ fn editing_the_defaults_profile_does_not_change_a_saved_files_inputs() {
 
     // A new Design made with the edited profile does take the new default.
     let fresh = dir.join("fresh.vdesign");
-    let out = ovd(&["new", "--profile", path_str(&edited), path_str(&fresh)]);
+    let out = ovd(&[
+        "new",
+        "--service-area",
+        "river-only",
+        "--profile",
+        path_str(&edited),
+        path_str(&fresh),
+    ]);
     assert!(out.status.success(), "{}", stderr(&out));
     assert_eq!(
         read_json(&fresh)["options"][0]["inputs"]["max_speed_kn"]["value"],
@@ -373,6 +393,7 @@ fn a_profile_with_a_gap_in_a_keyed_default_is_refused_by_validate_and_new() {
         &gas,
         &design_with(json!({
             "cargo": "LNG",
+            "service_area": "river-only",
             "hull_form": "raked_box",
             "length_overall_m": 76.5,
             "beam_m": 11.4,
@@ -384,7 +405,13 @@ fn a_profile_with_a_gap_in_a_keyed_default_is_refused_by_validate_and_new() {
     let out = ovd(&["validate", "--profile", path_str(&gap), path_str(&gas)]);
     assert!(!out.status.success(), "{}", stdout(&out));
     assert!(stderr(&out).contains(message), "{}", stderr(&out));
-    let out = ovd(&["new", "--profile", path_str(&gap)]);
+    let out = ovd(&[
+        "new",
+        "--service-area",
+        "river-only",
+        "--profile",
+        path_str(&gap),
+    ]);
     assert!(!out.status.success(), "{}", stdout(&out));
     assert!(stderr(&out).contains(message), "{}", stderr(&out));
 }
@@ -429,7 +456,13 @@ fn validate_inputs_shows_a_convoy_and_a_self_propelled_formation() {
         }),
     );
     let filled = dir.join("filled.vdesign");
-    let out = ovd(&["fill", path_str(&file), path_str(&filled)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        path_str(&file),
+        path_str(&filled),
+    ]);
     assert!(out.status.success(), "{}", stderr(&out));
     let out = ovd(&["validate", "--inputs", path_str(&filled)]);
     let text = stdout(&out);
@@ -696,7 +729,13 @@ fn fill_writes_left_out_inputs_in_and_a_profile_edit_then_changes_nothing() {
     let hand = dir.join("hand.vdesign");
     write_json(&hand, &design_with(required_inputs()));
     let filled = dir.join("filled.vdesign");
-    let out = ovd(&["fill", path_str(&hand), path_str(&filled)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        path_str(&hand),
+        path_str(&filled),
+    ]);
     assert!(out.status.success(), "{}", stderr(&out));
     assert!(
         stderr(&out).contains(
@@ -738,14 +777,20 @@ fn fill_prints_to_stdout_without_an_output_file_and_never_overwrites() {
     let dir = temp_dir("fill-stdout");
     let hand = dir.join("hand.vdesign");
     write_json(&hand, &design_with(required_inputs()));
-    let out = ovd(&["fill", path_str(&hand)]);
+    let out = ovd(&["fill", "--service-area", "river-only", path_str(&hand)]);
     assert!(out.status.success(), "{}", stderr(&out));
     let design: Value = serde_json::from_slice(&out.stdout).unwrap();
     assert_eq!(
         design["options"][0]["inputs"]["max_speed_kn"]["source"],
         "default"
     );
-    let out = ovd(&["fill", path_str(&hand), path_str(&hand)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        path_str(&hand),
+        path_str(&hand),
+    ]);
     assert!(!out.status.success());
     assert!(stderr(&out).contains("already exists"), "{}", stderr(&out));
     assert_eq!(read_json(&hand), design_with(required_inputs()));
@@ -759,7 +804,13 @@ fn fill_refuses_a_file_with_a_hard_error_and_writes_nothing() {
     inputs["beam_m"] = json!(1.0);
     write_json(&hand, &design_with(inputs));
     let filled = dir.join("filled.vdesign");
-    let out = ovd(&["fill", path_str(&hand), path_str(&filled)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        path_str(&hand),
+        path_str(&filled),
+    ]);
     assert_eq!(out.status.code(), Some(1), "{}", stderr(&out));
     assert!(
         stderr(&out).contains("error: Option 'A': `beam_m` = 1 leaves a hold width of -1 m"),
@@ -779,7 +830,14 @@ fn new_with_a_profile_whose_defaults_break_a_cross_check_fails_without_a_panic()
     let bad = dir.join("deep.profile.json");
     write_json(&bad, &profile);
     let file = dir.join("new.vdesign");
-    let out = ovd(&["new", "--profile", path_str(&bad), path_str(&file)]);
+    let out = ovd(&[
+        "new",
+        "--service-area",
+        "river-only",
+        "--profile",
+        path_str(&bad),
+        path_str(&file),
+    ]);
     assert_eq!(out.status.code(), Some(1), "{}", stderr(&out));
     let err = stderr(&out);
     assert!(!err.contains("panicked"), "{err}");
@@ -839,7 +897,7 @@ fn a_duplicate_key_fails_validate_run_and_fill_naming_the_key() {
         "{}",
         stderr(&out)
     );
-    let out = ovd(&["fill", path_str(&dup)]);
+    let out = ovd(&["fill", "--service-area", "river-only", path_str(&dup)]);
     assert!(!out.status.success());
     assert!(stdout(&out).is_empty());
 }
@@ -848,10 +906,19 @@ fn a_duplicate_key_fails_validate_run_and_fill_naming_the_key() {
 
 /// The version 1 file that names `ADN_G` and sets `adn_tank_cap_m3`, as version 1 wrote it.
 fn legacy_adn_file() -> String {
-    format!(
+    let raw = format!(
         "{}/../ovd-format/tests/legacy/v1_adn_g_self_propelled.vdesign",
         env!("CARGO_MANIFEST_DIR")
-    )
+    );
+    // Issue #925: the legacy file has no Service Area, which is now an error. These tests are about the
+    // version 1 migration, so they read a copy with a river-only Service Area set, as `ovd fill --service-area
+    // river-only` sets it.
+    let dir = temp_dir("legacy-adn");
+    let copy = dir.join("v1_adn_g_self_propelled.vdesign");
+    let text = ovd_format::with_service_area(&std::fs::read_to_string(raw).unwrap(), "river-only")
+        .unwrap();
+    std::fs::write(&copy, text).unwrap();
+    copy.to_str().unwrap().to_string()
 }
 
 #[test]
@@ -885,7 +952,13 @@ fn validate_opens_a_version_1_adn_g_file_as_igc_2g_and_warns() {
 fn fill_writes_a_version_1_adn_g_file_as_a_version_2_igc_2g_file_and_warns() {
     let dir = temp_dir("legacy-fill");
     let out_file = dir.join("out.vdesign");
-    let out = ovd(&["fill", &legacy_adn_file(), path_str(&out_file)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        &legacy_adn_file(),
+        path_str(&out_file),
+    ]);
     assert!(out.status.success(), "{}{}", stdout(&out), stderr(&out));
     let err = stderr(&out);
     assert!(
@@ -950,7 +1023,14 @@ fn schema_has_no_adn_g_and_no_tank_cap_but_the_diameter_cap_with_its_basis() {
 fn new_class_writes_an_option_defined_by_the_class_and_it_validates() {
     let dir = temp_dir("new-class");
     let file = dir.join("c.vdesign");
-    let out = ovd(&["new", "--class", "CEMT-VIa", path_str(&file)]);
+    let out = ovd(&[
+        "new",
+        "--service-area",
+        "river-only",
+        "--class",
+        "CEMT-VIa",
+        path_str(&file),
+    ]);
     assert!(out.status.success(), "{}", stderr(&out));
     let design = read_json(&file);
     assert_eq!(design["format_version"], 4);
@@ -1001,11 +1081,18 @@ fn new_class_accepts_an_old_id_and_refuses_a_class_that_cannot_define_a_vessel()
         "CEMT-Va"
     );
     for id in ["NO-SUCH-CLASS", "CN-V"] {
-        let bad = ovd(&["new", "--class", id, path_str(&dir.join("b.vdesign"))]);
+        let bad = ovd(&[
+            "new",
+            "--service-area",
+            "river-only",
+            "--class",
+            id,
+            path_str(&dir.join("b.vdesign")),
+        ]);
         assert!(!bad.status.success(), "{id}");
         assert!(!dir.join("b.vdesign").exists());
     }
-    let missing = ovd(&["new", "--class"]);
+    let missing = ovd(&["new", "--service-area", "river-only", "--class"]);
     assert!(!missing.status.success());
 }
 
@@ -1020,7 +1107,13 @@ fn fill_writes_the_dimensions_of_a_class_a_hand_written_design_names() {
     inputs["vessel_class"] = json!("CEMT-Va");
     write_json(&file, &design_with(inputs));
     let filled = dir.join("f.vdesign");
-    let out = ovd(&["fill", path_str(&file), path_str(&filled)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        path_str(&file),
+        path_str(&filled),
+    ]);
     assert!(out.status.success(), "{}", stderr(&out));
     let design = read_json(&filled);
     let i = &design["options"][0]["inputs"];
@@ -1071,7 +1164,13 @@ fn fill_keeps_the_old_tank_values_and_fill_as_new_takes_the_defaults_of_the_carg
         }),
     );
     let old = dir.join("old.vdesign");
-    let out = ovd(&["fill", path_str(&raw), path_str(&old)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        path_str(&raw),
+        path_str(&old),
+    ]);
     assert!(out.status.success(), "{}", stderr(&out));
     // An old file: the fixed values, and the note that it is read as fully pressurised.
     assert!(
@@ -1083,7 +1182,14 @@ fn fill_keeps_the_old_tank_values_and_fill_as_new_takes_the_defaults_of_the_carg
     assert_eq!(i["tank_design_pressure_mpa"]["value"], 0.5);
     assert_eq!(i["tank_wall_thickness_mm"]["value"], 25.0);
     let new = dir.join("new.vdesign");
-    let out = ovd(&["fill", "--as-new", path_str(&raw), path_str(&new)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        "--as-new",
+        path_str(&raw),
+        path_str(&new),
+    ]);
     assert!(out.status.success(), "{}", stderr(&out));
     let i = read_json(&new)["options"][0]["inputs"].clone();
     assert_eq!(
@@ -1138,4 +1244,65 @@ fn the_schema_gives_the_carriage_condition_and_the_default_tables_with_their_sta
             .unwrap()
             .contains("outside of the insulation")
     );
+}
+
+// ---- the Service Area is required (issue #925) --------------------------------------------------
+
+/// A hand-written bauxite barge with no Service Area, written to `dir`.
+fn no_service_area_file(dir: &std::path::Path) -> PathBuf {
+    let file = dir.join("bare.vdesign");
+    write_json(
+        &file,
+        &json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": {
+                "cargo": "bauxite", "hull_form": "raked_box",
+                "formation": { "kind": "pushed_barge" },
+                "length_overall_m": 76.5, "beam_m": 11.4, "moulded_depth_m": 3.5
+            }}]
+        }),
+    );
+    file
+}
+
+#[test]
+fn run_validate_and_fill_give_the_one_service_area_message() {
+    let dir = temp_dir("service-area-message");
+    let file = no_service_area_file(&dir);
+    let want = ovd_format::service_area_required().to_string();
+    for args in [
+        vec!["run", path_str(&file)],
+        vec!["validate", path_str(&file)],
+        vec!["fill", path_str(&file)],
+    ] {
+        let out = ovd(&args);
+        assert!(!out.status.success(), "{args:?}");
+        let text = format!("{}{}", stdout(&out), stderr(&out));
+        assert!(text.contains(&want), "{args:?}: {text}");
+    }
+}
+
+#[test]
+fn fill_with_a_service_area_then_run_succeeds() {
+    let dir = temp_dir("service-area-fill");
+    let file = no_service_area_file(&dir);
+    let filled = dir.join("filled.vdesign");
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "coastal-and-river",
+        path_str(&file),
+        path_str(&filled),
+    ]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    let saved = read_json(&filled);
+    let area = &saved["options"][0]["inputs"]["service_area"];
+    assert_eq!(area["value"], "coastal-and-river");
+    assert_eq!(area["source"], "typed");
+    let run = ovd(&["run", path_str(&filled)]);
+    assert!(run.status.success(), "{}{}", stdout(&run), stderr(&run));
+    // A value that is not a Service Area is refused, and nothing is written.
+    let bad = ovd(&["fill", "--service-area", "ocean-only", path_str(&file)]);
+    assert!(!bad.status.success());
+    assert!(stderr(&bad).contains("`river-only`"), "{}", stderr(&bad));
 }

@@ -8,7 +8,7 @@ use ovd_format::{DesignSession, Profile, RunOutcome, run_design};
 use serde_json::{Value, json};
 
 fn volume_at_depth(kind: &str, typed: &[(&str, f64)]) -> f64 {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("bauxite")).unwrap();
     s.set_formation("Option 1", kind, None, None).unwrap();
     s.set_input("Option 1", "loading_conditions", json!("legacy"))

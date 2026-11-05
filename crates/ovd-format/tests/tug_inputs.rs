@@ -8,6 +8,13 @@
 use ovd_format::{DesignSession, HashStatus, Profile, Source, input_schema};
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 fn input(s: &DesignSession, name: &str) -> Option<(Value, Source)> {
     s.design().options[0]
         .input(name)
@@ -15,7 +22,7 @@ fn input(s: &DesignSession, name: &str) -> Option<(Value, Source)> {
 }
 
 fn barge(kind: &str) -> DesignSession {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("bauxite")).unwrap();
     s.set_formation("Option 1", kind, None, None).unwrap();
     s
@@ -121,7 +128,7 @@ fn an_atb_and_a_towed_barge_vessel_class_can_be_picked() {
             .iter()
             .find(|c| c.formation == kind && c.pickable())
             .unwrap_or_else(|| panic!("no pickable {kind} class"));
-        let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+        let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
         s.set_input("Option 1", "cargo", json!("bauxite")).unwrap();
         s.set_input("Option 1", "vessel_class", json!(class.id))
             .unwrap();
@@ -139,8 +146,7 @@ fn a_file_saved_before_has_no_tug_and_keeps_its_hash() {
     ] {
         let path = format!("{}/tests/{name}", env!("CARGO_MANIFEST_DIR"));
         let (s, opened) =
-            DesignSession::open(&std::fs::read_to_string(path).unwrap(), Profile::built_in())
-                .unwrap();
+            DesignSession::open(&read_with_area(path).unwrap(), Profile::built_in()).unwrap();
         assert_eq!(opened.hash_status[0].1, HashStatus::Matches, "{name}");
         if let Some((v, _)) = input(&s, "tug_included") {
             assert_eq!(v, json!(false), "{name}");

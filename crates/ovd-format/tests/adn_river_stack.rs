@@ -1,8 +1,8 @@
 //! Issue #850: a river-only gas Option takes ADN 2025 9.3.1 (`adn-gas`) as its design Rule Set, in place
 //! of the IGC Code (`igc-2g`), with the two IGC 2.4.1.2 tank distance rows (`igc-tank-clearance`) and
 //! `lr-inland-gas` beside it. A coastal-and-river Option keeps `igc-2g`. A file that stores its Rule Sets
-//! keeps them; a gas file that stores none, with no Service Area or a river-only one, is read with the ADN
-//! stack.
+//! keeps them; a gas file that stores none, with a river-only Service Area, is read with the ADN stack. A file with
+//! no Service Area is an error (issue #925).
 //!
 //! Label: sourced - ADN 2025 (ECE/TRANS/351) 9.3.1.11.2 (a), printed p. 510: wing at least 0.80 m,
 //! double bottom at least 0.60 m; 9.3.1.22.3, printed p. 523: the relief valve outlets at least 2.00 m
@@ -204,9 +204,10 @@ fn a_file_that_stores_its_rule_sets_keeps_them() {
 }
 
 #[test]
-fn an_old_gas_file_with_no_service_area_and_no_rule_sets_is_read_with_the_adn_stack() {
-    // Neither input is stored: the Service Area reads river-only and the stack is the ADN one.
-    let results = results_of(&file_of(None), false);
+fn an_old_gas_file_with_a_river_only_service_area_and_no_rule_sets_is_read_with_the_adn_stack() {
+    // The Rule Sets are not stored: the Service Area is river-only (it is required, issue #925) and the stack
+    // is the ADN one.
+    let results = results_of(&file_of(Some("river-only")), false);
     assert!(has_set(&results, "adn-gas") && has_set(&results, "igc-tank-clearance"));
     assert!(!has_set(&results, "igc-2g"));
     // The legacy IS Code version it was read with is kept.
@@ -225,13 +226,16 @@ fn an_old_gas_file_that_names_a_coastal_service_area_and_no_rule_sets_keeps_the_
 }
 
 #[test]
-fn a_hand_written_file_with_no_service_area_is_valid_as_it_was() {
-    // `check` refuses a file that leaves out an input, as it did; `fill` writes them in.
+fn a_hand_written_file_with_no_service_area_is_an_error_not_a_river_only_file() {
+    // Issue #925: no default; `check` and `fill` both give the one message.
     let text = file_of(None).to_string();
-    let checked = check(&text, &Profile::built_in());
-    assert!(!checked.report.errors.is_empty());
-    let filled = fill(&text, &Profile::built_in());
-    assert_eq!(filled.report.errors, Vec::<String>::new());
+    let want = ovd_format::service_area_required().to_string();
+    for errors in [
+        check(&text, &Profile::built_in()).report.errors,
+        fill(&text, &Profile::built_in()).report.errors,
+    ] {
+        assert!(errors.iter().any(|e| e.contains(&want)), "{errors:?}");
+    }
 }
 
 /// The side and bottom clear gaps (m) of a river-only 70 x 10 x 5 m LNG Option, run with `adn-gas` as
@@ -290,7 +294,7 @@ fn a_harness_case_with_no_distance_to_the_accommodation_does_not_fail_the_adn_ro
     // `stern_trace` is how the evaluation harness gives the mast's numbers. With none for the accommodation
     // the ADN distance row has no value: it is not applicable, never a failure (it was a 0 m distance).
     let inputs = json!({
-        "cargo": "LNG", "hull_form": "raked_box", "formation": { "kind": "pushed_barge" },
+        "cargo": "LNG", "hull_form": "raked_box", "service_area": "river-only", "formation": { "kind": "pushed_barge" },
         "length_overall_m": 100.0, "beam_m": 14.0, "moulded_depth_m": 4.5, "service_area": "river-only"
     });
     let run = |measured: Value| {

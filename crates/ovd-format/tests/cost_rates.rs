@@ -139,7 +139,7 @@ fn every_cost_rate_is_an_input_in_the_cost_rates_group_with_the_example_file_def
 
 #[test]
 fn a_new_design_holds_the_example_rates_and_its_budget_uses_them() {
-    let s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     for (name, want) in example() {
         assert_eq!(
             s.design().options[0].input(name).unwrap().value.as_f64(),

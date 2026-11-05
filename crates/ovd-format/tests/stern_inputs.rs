@@ -11,6 +11,13 @@ use ovd_format::{
 };
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 /// The inputs #347 adds, in table order.
 const NEW: &[&str] = &[
     "stern_form",
@@ -35,7 +42,7 @@ const NEW: &[&str] = &[
 
 fn legacy(name: &str) -> String {
     let path = format!("{}/tests/legacy/{name}.vdesign", env!("CARGO_MANIFEST_DIR"));
-    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+    read_with_area(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
 fn hand(cargo: &str, formation: &str) -> String {
@@ -44,6 +51,7 @@ fn hand(cargo: &str, formation: &str) -> String {
         "defaults_profile": "built-in",
         "options": [{ "name": "Option 1", "inputs": {
             "cargo": { "value": cargo, "source": "typed" },
+            "service_area": { "value": "river-only", "source": "typed" },
             "hull_form": { "value": "raked_box", "source": "typed" },
             "formation": { "value": { "kind": formation }, "source": "typed" },
             "length_overall_m": { "value": 110.0, "source": "typed" },
@@ -225,7 +233,7 @@ fn a_pushed_barge_holds_none_of_them() {
 
 #[test]
 fn the_propulsor_type_decides_which_inputs_are_held() {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     s.set_formation("Option 1", "self_propelled", None, None)
         .unwrap();
@@ -281,7 +289,7 @@ fn saving_writes_the_current_version_and_the_saved_file_validates() {
 #[test]
 fn a_profile_default_that_claims_a_source_must_give_it() {
     let path = format!("{}/src/builtin_profile.json", env!("CARGO_MANIFEST_DIR"));
-    let mut p: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let mut p: Value = serde_json::from_str(&read_with_area(path).unwrap()).unwrap();
     p["inputs"]["bow_thruster"]
         .as_object_mut()
         .unwrap()

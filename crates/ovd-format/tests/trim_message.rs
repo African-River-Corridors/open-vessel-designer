@@ -11,6 +11,7 @@ fn results(loa: f64, beam: f64, depth: f64) -> Value {
         "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
         "options": [{ "name": "Option 1", "inputs": {
             "cargo": { "value": "bauxite", "source": "typed" },
+            "service_area": { "value": "river-only", "source": "typed" },
             "hull_form": { "value": "raked_box", "source": "typed" },
             "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
             "length_overall_m": { "value": loa, "source": "typed" },

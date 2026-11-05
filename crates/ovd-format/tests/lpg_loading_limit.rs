@@ -15,8 +15,15 @@ use ovd_format::vdesign::{LOADING_LIMIT_BASES, LPG_CARGOS};
 use ovd_format::{DesignSession, HashStatus, Profile, RunOutcome, Source, check};
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 fn new_design(cargo: &str, carriage: &str) -> DesignSession {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     for (name, value) in [
         ("cargo", json!(cargo)),
         ("length_overall_m", json!(110.0)),
@@ -149,7 +156,7 @@ fn the_old_basis_keeps_the_cargo_data_density_and_the_fill() {
 
 #[test]
 fn an_lng_design_has_no_loading_inputs_and_does_not_move() {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     s.set_input("Option 1", "length_overall_m", json!(110.0))
         .unwrap();
@@ -165,7 +172,7 @@ fn a_file_saved_before_keeps_its_results() {
         "{}/tests/legacy/v2_gas_lpg_before_313_igc_stack.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
-    let text = std::fs::read_to_string(path).unwrap();
+    let text = read_with_area(path).unwrap();
     let checked = check(&text, &Profile::built_in());
     let o = &checked.design.as_ref().unwrap().options[0];
     let basis = o.input("lpg_loading_limit_basis").unwrap();
@@ -185,7 +192,7 @@ fn simulate(params: &Value) -> Value {
 #[test]
 fn simulate_params_without_the_basis_keep_the_old_behaviour() {
     let base = json!({
-        "vessel": "gas_barge", "cargo": "LPG_propane", "loa_m": 110.0, "beam_m": 11.4, "depth_m": 6.0, "cb": 0.85,
+        "vessel": "gas_barge", "service_area": "river-only", "cargo": "LPG_propane", "loa_m": 110.0, "beam_m": 11.4, "depth_m": 6.0, "cb": 0.85,
         "lpg_carriage_condition": "fully_pressurised",
     });
     let old = simulate(&base);

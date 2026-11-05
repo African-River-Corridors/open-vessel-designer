@@ -1129,13 +1129,6 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
         applies_to: AppliesTo::All,
         value: "null",
     },
-    // Issue #274 (spec 0004): a file saved before holds no Service Area; every Option was checked
-    // as river-only.
-    LegacyFixedJson {
-        name: "service_area",
-        applies_to: AppliesTo::All,
-        value: "\"river-only\"",
-    },
     LegacyFixedJson {
         name: "bow_rake_rise_m",
         applies_to: AppliesTo::All,
@@ -1543,6 +1536,16 @@ pub const PROPELLER_DIAMETER_BASES: &[&str] = &["stern_form", "light_draught"];
 /// The Service Areas of an Option (spec 0004, "Service Area and default stacks"; ADR 0011).
 /// `ocean-only` is not offered.
 pub const SERVICE_AREAS: &[&str] = &["river-only", "coastal-and-river"];
+
+/// The one message for a design with no Service Area (issue #925). `run`, `report`, `validate`, `fill`,
+/// the app's open and `simulate` (so the Python API) all give this text, whatever the vessel type.
+/// There is no default: a wrong Service Area checks the wrong code family without a word.
+pub fn service_area_required() -> Text {
+    text!(
+        "msg-service-area-required",
+        "the Service Area is not set; it must be `river-only` or `coastal-and-river`. Set it with `ovd fill --service-area <river-only|coastal-and-river>` (in a `simulate` call, pass `service_area`), or choose it in the app"
+    )
+}
 
 /// How the cargo is pumped out of a liquid cargo tank (spec 0006 decision D4): one deepwell pump per
 /// tank, or a pump room below deck.
@@ -3658,7 +3661,7 @@ pub const INPUTS: &[InputSpec] = &[
         "service_area",
         "Service Area",
         InputKind::Choice(SERVICE_AREAS),
-        false,
+        true,
         Group::Rules,
     ),
     // Issue #779 (spec 0011 D3): after the Service Area, which sets its default (a new coastal Option
@@ -3876,6 +3879,43 @@ pub struct Checked {
     pub report: Report,
 }
 
+/// Set the Service Area (issue #925) in every Option of a `.vdesign` file's text that has none, as a typed
+/// input; an Option that has one keeps it. This is the fix the missing-Service-Area message names
+/// (`ovd fill --service-area`): the answer is the designer's, never a default. `area` must be one of
+/// [`SERVICE_AREAS`]. The text must be a JSON object with an `options` list; anything else is left for
+/// the file check to report, unchanged.
+pub fn with_service_area(text: &str, area: &str) -> Result<String, String> {
+    if !SERVICE_AREAS.contains(&area) {
+        return Err(format!(
+            "`{area}` is not a Service Area; it must be {}",
+            SERVICE_AREAS
+                .iter()
+                .map(|a| format!("`{a}`"))
+                .collect::<Vec<_>>()
+                .join(" or ")
+        ));
+    }
+    // A file with a repeated key is left as it is: re-writing it would hide the repeat, which the file
+    // check reports.
+    let Ok(mut file) = serde_json::from_str::<Value>(text) else {
+        return Ok(text.to_string());
+    };
+    if !duplicate_keys(text).is_empty() {
+        return Ok(text.to_string());
+    }
+    let Some(options) = file.get_mut("options").and_then(Value::as_array_mut) else {
+        return Ok(text.to_string());
+    };
+    for option in options {
+        if let Some(inputs) = option.get_mut("inputs").and_then(Value::as_object_mut) {
+            inputs
+                .entry("service_area")
+                .or_insert_with(|| json!({ "value": area, "source": "typed" }));
+        }
+    }
+    Ok(serde_json::to_string_pretty(&file).unwrap_or_else(|_| text.to_string()))
+}
+
 /// A starter Design: one Option with example required inputs (typed, for the designer to edit)
 /// and every other input from the profile, marked as defaults. Fails when the profile's defaults
 /// do not make a valid Design with the example inputs (for example a minimum freeboard deeper
@@ -3894,7 +3934,7 @@ pub fn new_design(profile: &Profile) -> Result<Design, String> {
         "Option 1",
         typed.as_object().expect("an object"),
         profile,
-        Missing::FillProfile,
+        Missing::Edit,
         &mut report,
     );
     if !report.is_ok() {
@@ -3942,6 +3982,10 @@ enum Missing {
     /// As `Fill`, for a Design being made or edited now (a new Option, a reset input), where the
     /// Defaults Profile gives every value, new inputs included.
     FillProfile,
+    /// As `FillProfile`, for a Design being edited in a session, which may have no Service Area yet:
+    /// the designer has not chosen it (issue #925). Nothing is written for it and no error is raised
+    /// here; the Option cannot run until it is set, and a run says so with the one message.
+    Edit,
 }
 
 /// Read and validate a `.vdesign` file's text, without running it. A file that leaves out an
@@ -3972,7 +4016,7 @@ pub fn fill_as_new(text: &str, profile: &Profile) -> Checked {
 /// when it is evaluated and works out the hash when it is saved (issue #448: a run of a gas Design
 /// on the hull's sections takes up to seconds, so each edit must not run it).
 pub(crate) fn fill_from_profile(text: &str, profile: &Profile) -> Checked {
-    let mut checked = read_text(text, profile, Missing::FillProfile);
+    let mut checked = read_text(text, profile, Missing::Edit);
     mark_filled(&mut checked, profile);
     checked
 }
@@ -4573,7 +4617,10 @@ fn read_option(
     let mut legacy_added: Vec<&'static str> = Vec::new();
     // A class named with no length, beam or Formation gives them; `fill` writes them in.
     let filled_from_class;
-    let raw = if matches!(missing, Missing::Fill | Missing::FillProfile) {
+    let raw = if matches!(
+        missing,
+        Missing::Fill | Missing::FillProfile | Missing::Edit
+    ) {
         filled_from_class = crate::class_input::prefill(raw);
         &filled_from_class
     } else {
@@ -4688,14 +4735,21 @@ fn read_option(
             continue;
         }
         if spec.required {
-            report.error_text(
-                at(text!(
+            // A Design being edited may have no Service Area yet (issue #925): it is left unset.
+            if spec.name == "service_area" && matches!(missing, Missing::Edit) {
+                continue;
+            }
+            // Issue #925: the Service Area has no default; one message names the two values and the fix.
+            let message = if spec.name == "service_area" {
+                service_area_required()
+            } else {
+                text!(
                     "msg-input-required",
                     "missing required input `{input}`",
                     input = Arg::input(spec.name)
-                )),
-                &[spec.name],
-            );
+                )
+            };
+            report.error_text(at(message), &[spec.name]);
             continue;
         }
         if !applies || crate::class_input::UNSET_WHEN_ABSENT.contains(&spec.name) {
@@ -4710,14 +4764,16 @@ fn read_option(
             // freeboard sets (issue #428).
             Some(crate::trace::legacy_rule_sets(
                 containment.as_ref().and_then(Value::as_str),
+                // `service_area` is a required input, read before this one: it is there.
                 value_of(&inputs, "service_area")
                     .as_ref()
-                    .and_then(Value::as_str),
+                    .and_then(Value::as_str)
+                    .unwrap_or_default(),
             ))
         } else {
             legacy_value(spec.name, containment.as_ref().and_then(Value::as_str))
         };
-        if !matches!(missing, Missing::FillProfile)
+        if !matches!(missing, Missing::FillProfile | Missing::Edit)
             && let Some(fixed) = legacy
         {
             legacy_added.push(spec.name);
@@ -4741,7 +4797,7 @@ fn read_option(
         };
         match missing {
             Missing::Refuse => left_out.push(spec.name),
-            Missing::Fill | Missing::FillProfile => report.warning_text(
+            Missing::Fill | Missing::FillProfile | Missing::Edit => report.warning_text(
                 at(text!(
                     "msg-input-filled",
                     "`{input}` was not stored in the file; wrote in the Defaults Profile value \
@@ -4936,15 +4992,12 @@ fn default_for(
     // Issues #274 and #275: the default stack of the Service Area and the Cargo Containment, from the
     // profile, at the highest built-in versions.
     if name == "rule_sets" {
-        let area = got("service_area");
-        return Ok(got("cargo_containment").map(|c| {
-            crate::trace::default_rule_sets(
-                profile,
-                area.as_deref()
-                    .unwrap_or(crate::trace::DEFAULT_SERVICE_AREA),
-                Some(c.as_str()),
-            )
-        }));
+        // Issue #925: no Service Area, no default stack; the missing Service Area is its own error.
+        let Some(area) = got("service_area") else {
+            return Ok(None);
+        };
+        return Ok(got("cargo_containment")
+            .map(|c| crate::trace::default_rule_sets(profile, &area, Some(c.as_str()))));
     }
     if TABLE_DEFAULTS.contains(&name) {
         return table_default_for(name, inputs, profile);

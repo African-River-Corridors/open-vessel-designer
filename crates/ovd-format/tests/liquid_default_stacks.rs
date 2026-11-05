@@ -35,7 +35,7 @@ const COASTAL: [&str; 11] = [
 ];
 
 fn crude_session(area: &str) -> DesignSession {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("crude_oil"))
         .unwrap();
     s.set_input("Option 1", "service_area", json!(area))
@@ -245,7 +245,7 @@ fn the_coastal_fixture_shows_the_marpol_and_icll_rows_besides_the_adn_ones() {
 
 #[test]
 fn a_gas_and_a_dry_bulk_option_keep_their_stacks() {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     assert_eq!(
         ids(&s),

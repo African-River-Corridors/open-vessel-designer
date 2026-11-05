@@ -389,6 +389,7 @@ fn the_steel_rule_covers_the_tabled_steels_and_names_the_one_that_is_by_approval
 fn new_gas_results(cargo: &str, carriage: &str) -> Value {
     let mut inputs = serde_json::json!({
         "cargo": { "value": cargo, "source": "typed" },
+        "service_area": { "value": "river-only", "source": "typed" },
         "hull_form": { "value": "raked_box", "source": "typed" },
         "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
         "length_overall_m": { "value": 110.0, "source": "typed" },

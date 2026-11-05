@@ -490,7 +490,8 @@ fn every_propulsor_part_is_a_named_gltf_node_with_the_propulsor_material() {
 }
 
 fn new_self_propelled(propulsor: &str, stern: &str) -> ovd_format::DesignSession {
-    let mut s = ovd_format::DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s =
+        ovd_format::DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     for (n, v) in [
         ("cargo", serde_json::json!("bauxite")),
         ("length_overall_m", serde_json::json!(110.0)),

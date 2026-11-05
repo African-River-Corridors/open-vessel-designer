@@ -425,8 +425,14 @@ One row per Rule per object, in selection order, then the set's rule order, then
 ### Service Area and default stacks
 
 - New input `service_area`: `river-only` or `coastal-and-river`. `ocean-only` is not offered (ADR 0011;
-  a new ADR is needed). Stored as used, marked typed or default. The Defaults Profile default is
-  `river-only` (confirmed by the maintainer, 2026-10-16).
+  a new ADR is needed). **Required, with no default** (maintainer, 2026-11-05, issue #925; before, the
+  Defaults Profile default was `river-only`, confirmed 2026-10-16). It picks the code family: river-only
+  means ADN, ES-TRIN and RPN; coastal-and-river means IGC, ICLL, SOLAS and MLC. A wrong default would check
+  the wrong code without a word. A Design with no Service Area is an error in `run`, `report`, `validate`,
+  `fill`, `simulate` (so the Python API) and the app, with one message that names the two values and the fix,
+  for every vessel type. `ovd fill --service-area <value>` (and `ovd new --service-area`) sets it, as typed,
+  in every Option that has none. The app shows the field with nothing chosen. A file saved before the input
+  existed is an error too: set it, then fill. Stored as typed.
 - New input `rule_sets`: the list of selected sets, each `{id, version, hash, source}` where `source` is
   `default` (from the Service Area) or `typed` (added by the user). The `ovd` set is always selected and
   cannot be removed. A set required by `includes` cannot be removed while the set that includes it is
@@ -446,7 +452,7 @@ One row per Rule per object, in selection order, then the set's rule order, then
   gas Option takes ADN 9.3.1 as its design Rule Set (the maintainer's decision of 2026-11-02). The wing
   width (at least 0.80 m) and double bottom (at least 0.60 m) of ADN 9.3.1.11.2 (a) size the hull, and
   the IGC 2.4.1.2 rows size the tank clearance. A file that stores its Rule Sets keeps them; a gas file
-  that stores none, and has no Service Area or a river-only one, is read with the ADN stack.
+  that stores none, and has a river-only Service Area, is read with the ADN stack.
 
 | Cargo | `river-only` and `coastal-and-river` (this spec) |
 |---|---|

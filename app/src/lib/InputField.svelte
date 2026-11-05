@@ -99,6 +99,9 @@
   }
   /** The value of the entry that shows a value not typed; no choice has it. */
   const HELD = "__not-typed__";
+  /** Issue #925: a required choice nothing is chosen for (the Service Area): no entry is pre-selected. */
+  const UNSET = "__unset__";
+  let unset = $derived(spec.required && (value === null || value === undefined));
   let notTyped = $derived(stored.source !== "typed" && (spec.choices ?? []).some((c) => c.value === String(value)));
   // Local display state, taken once: the field is drawn afresh (new key) when Rust changes a value.
   /* svelte-ignore state_referenced_locally */
@@ -116,7 +119,9 @@
 <div class="field" data-input={spec.name} title={help}>
   <div class="head">
     <span class="label">{label}</span>
-    <span class="badge {stored.source}"><span class="shape" aria-hidden="true">{SHAPES[stored.source] ?? ""} </span>{SOURCE_IDS[stored.source] ? t(SOURCE_IDS[stored.source]) : stored.source}</span>
+    {#if !(spec.required && value === null)}
+      <span class="badge {stored.source}"><span class="shape" aria-hidden="true">{SHAPES[stored.source] ?? ""} </span>{SOURCE_IDS[stored.source] ? t(SOURCE_IDS[stored.source]) : stored.source}</span>
+    {/if}
     {#if !spec.required && stored.source === "typed"}
       <button class="link" onclick={onReset} title={t("app-reset-title")}>{t("app-reset")}</button>
     {/if}
@@ -158,7 +163,10 @@
     <!-- Issue #670: a list fires no change when the user picks the entry already shown, so a value that
          is not typed is shown in an entry of its own, "Type C tanks (default)", that cannot be picked.
          Picking the real entry is then a change, and marks the field typed. -->
-    <select aria-label={label} class:invalid={hasError} value={notTyped ? HELD : String(value)} onchange={(e) => onEdit(e.currentTarget.value)}>
+    <select aria-label={label} class:invalid={hasError || unset} value={unset ? UNSET : notTyped ? HELD : String(value)} onchange={(e) => onEdit(e.currentTarget.value)}>
+      {#if unset}
+        <option value={UNSET} disabled>{t("app-choose-required")}</option>
+      {/if}
       {#if notTyped}
         <option value={HELD} disabled>{t("app-choice-not-typed", { value: choiceText(String(value)), source: SOURCE_IDS[stored.source] ? t(SOURCE_IDS[stored.source]) : stored.source })}</option>
       {/if}

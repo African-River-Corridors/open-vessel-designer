@@ -9,7 +9,7 @@ use ovd_format::{DesignSession, Profile, RunOutcome, UNHASHED_KEYS, results_hash
 use serde_json::{Value, json};
 
 fn session() -> DesignSession {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     s.set_input("Option 1", "length_overall_m", json!(110.0))
         .unwrap();

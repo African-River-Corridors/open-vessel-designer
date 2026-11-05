@@ -376,8 +376,27 @@ mod tests {
     use super::*;
     use ovd_format::{RunOutcome, check, new_design};
 
+    /// Issue #925: the starter has no Service Area, so a test that runs it sets one first.
+    fn started() -> AppState {
+        let mut state = AppState::new_design().unwrap();
+        state
+            .set_input("Option 1", "service_area", serde_json::json!("river-only"))
+            .unwrap();
+        state.dirty = false;
+        state
+    }
+
     fn starter_text() -> String {
         new_design(&Profile::built_in()).unwrap().to_text()
+    }
+
+    /// The starter with a river-only Service Area (issue #925), and its results hash.
+    fn starter_text_with_area() -> String {
+        let text = ovd_format::with_service_area(&starter_text(), "river-only").unwrap();
+        ovd_format::fill(&text, &Profile::built_in())
+            .design
+            .unwrap()
+            .to_text()
     }
 
     #[test]
@@ -391,7 +410,8 @@ mod tests {
 
     #[test]
     fn title_shows_file_option_and_the_unsaved_marker() {
-        let mut state = AppState::open(Path::new("/x/barge.vdesign"), &starter_text()).unwrap();
+        let mut state =
+            AppState::open(Path::new("/x/barge.vdesign"), &starter_text_with_area()).unwrap();
         assert_eq!(
             state.title(),
             "barge.vdesign \u{2014} Option 1 \u{2014} OVD"
@@ -410,7 +430,7 @@ mod tests {
 
     #[test]
     fn an_edit_marks_the_design_unsaved_and_a_refused_edit_does_not() {
-        let mut state = AppState::new_design().unwrap();
+        let mut state = started();
         assert!(
             state
                 .set_input("Option 1", "no_such_input", json!(1))
@@ -424,14 +444,14 @@ mod tests {
 
     #[test]
     fn active_option_must_exist() {
-        let mut state = AppState::new_design().unwrap();
+        let mut state = started();
         assert!(state.set_active_option("Option 9").is_err());
         assert_eq!(state.snapshot()["active_option"], "Option 1");
     }
 
     #[test]
     fn a_saved_file_passes_validate_and_reopens_unchanged() {
-        let mut state = AppState::new_design().unwrap();
+        let mut state = started();
         state.set_input("Option 1", "beam_m", json!(12.5)).unwrap();
         let text = state.save_text().unwrap();
         let checked = check(&text, &Profile::built_in());
@@ -448,7 +468,7 @@ mod tests {
 
     #[test]
     fn a_saved_file_carries_each_options_results_hash() {
-        let state = AppState::new_design().unwrap();
+        let state = started();
         let text = state.save_text().unwrap();
         let v: Value = serde_json::from_str(&text).unwrap();
         let hash = v["options"][0]["results_hash"].as_str().unwrap();
@@ -461,7 +481,7 @@ mod tests {
 
     #[test]
     fn opening_a_file_whose_results_hash_changed_names_the_options_affected() {
-        let mut v: Value = serde_json::from_str(&starter_text()).unwrap();
+        let mut v: Value = serde_json::from_str(&starter_text_with_area()).unwrap();
         v["options"][0]["results_hash"] = json!("0000000000000000deadbeef");
         let state = AppState::open(Path::new("old.vdesign"), &v.to_string()).unwrap();
         assert_eq!(state.snapshot()["hash_changed"], json!(["Option 1"]));
@@ -478,7 +498,10 @@ mod tests {
             env!("CARGO_MANIFEST_DIR"),
             "/../../crates/ovd-format/tests/legacy/v1_adn_g_self_propelled.vdesign"
         );
-        let text = std::fs::read_to_string(path).unwrap();
+        // Issue #925: the legacy file has no Service Area; these tests are about its migration notes.
+        let text =
+            ovd_format::with_service_area(&std::fs::read_to_string(path).unwrap(), "river-only")
+                .unwrap();
         let mut state = AppState::open(Path::new("old.vdesign"), &text).unwrap();
         let notes = state.snapshot()["migration_notes"].clone();
         let notes = notes.as_array().unwrap();
@@ -570,7 +593,7 @@ mod tests {
         let saved: Value = serde_json::from_str(&state.save_text().unwrap()).unwrap();
         assert_eq!(saved["format_version"], 4);
         // A file that needs no change has none.
-        let fresh = AppState::open(Path::new("a.vdesign"), &starter_text()).unwrap();
+        let fresh = AppState::open(Path::new("a.vdesign"), &starter_text_with_area()).unwrap();
         assert_eq!(fresh.snapshot()["migration_notes"], json!([]));
     }
 
@@ -581,7 +604,10 @@ mod tests {
             env!("CARGO_MANIFEST_DIR"),
             "/../../crates/ovd-format/tests/legacy/v1_adn_g_self_propelled.vdesign"
         );
-        let text = std::fs::read_to_string(path).unwrap();
+        // Issue #925: the legacy file has no Service Area; these tests are about its migration notes.
+        let text =
+            ovd_format::with_service_area(&std::fs::read_to_string(path).unwrap(), "river-only")
+                .unwrap();
         let mut state = AppState::open(Path::new("old.vdesign"), &text).unwrap();
         let notes = |state: &AppState| {
             state.snapshot()["migration_notes"]
@@ -636,7 +662,7 @@ mod tests {
 
     #[test]
     fn a_hash_warning_follows_a_rename_and_goes_with_a_delete() {
-        let mut state = AppState::new_design().unwrap();
+        let mut state = started();
         state.hash_changed = vec!["Option 1".into()];
         state.duplicate_option("Option 1").unwrap();
         state.rename_option("Option 1", "B").unwrap();
@@ -649,7 +675,7 @@ mod tests {
     fn a_class_pick_reaches_the_front_end_with_its_reference_deadweight() {
         // Issue #94: the class the vessel sits in and its reference deadweight are in the
         // evaluation, beside the outcome and not in the results.
-        let mut state = AppState::new_design().unwrap();
+        let mut state = started();
         assert!(state.evaluate_json()["options"][0]["vessel_class"].is_null());
         state
             .set_input("Option 1", "vessel_class", json!("CEMT-Va"))
@@ -667,7 +693,7 @@ mod tests {
 
     #[test]
     fn option_commands_keep_the_active_option_in_step() {
-        let mut state = AppState::new_design().unwrap();
+        let mut state = started();
         state.add_option().unwrap();
         assert_eq!(state.snapshot()["active_option"], "Option 2");
         state.rename_option("Option 2", "  Wide ").unwrap();
@@ -686,7 +712,7 @@ mod tests {
         let mut v: Value = serde_json::from_str(Profile::built_in_text()).unwrap();
         v["name"] = json!("loose");
         let text = serde_json::to_string(&v).unwrap();
-        let mut state = AppState::new_design().unwrap();
+        let mut state = started();
         state.load_profile(&text).unwrap();
         assert_eq!(state.snapshot()["profile"], "loose");
         state.use_built_in_profile().unwrap();
@@ -700,7 +726,7 @@ mod tests {
 
     #[test]
     fn the_evaluation_carries_the_three_hull_views_of_a_computed_option() {
-        let state = AppState::new_design().unwrap();
+        let state = started();
         let eval = state.evaluate_json();
         let outcome = &eval["options"][0]["outcome"];
         assert_eq!(outcome["status"], "results");
@@ -717,7 +743,7 @@ mod tests {
 
     #[test]
     fn the_evaluation_carries_the_damage_svg_for_damage_results_and_none_otherwise() {
-        let state = AppState::new_design().unwrap();
+        let state = started();
         let eval = state.evaluate_json();
         assert!(eval["options"][0]["outcome"].get("damage_views").is_none());
 
@@ -740,7 +766,7 @@ mod tests {
     #[test]
     fn an_option_renamed_to_a_wide_name_keeps_its_three_views() {
         // Issue #660: the Drawings tab of "140 x 29 x 9m LNG" showed a clause 14.6 message.
-        let mut state = AppState::new_design().unwrap();
+        let mut state = started();
         state
             .rename_option("Option 1", "140 x 29 x 9m LNG")
             .unwrap();
@@ -761,7 +787,7 @@ mod tests {
 
     #[test]
     fn a_name_too_wide_for_the_drawings_is_refused_when_it_is_given() {
-        let mut state = AppState::new_design().unwrap();
+        let mut state = started();
         let name = "A very long descriptive Option name that no title block can hold";
         let err = state.rename_option("Option 1", name).unwrap_err();
         assert!(
@@ -773,7 +799,7 @@ mod tests {
 
     #[test]
     fn an_option_with_a_hard_error_gets_no_views() {
-        let mut state = AppState::new_design().unwrap();
+        let mut state = started();
         state.set_input("Option 1", "beam_m", json!(-1.0)).unwrap();
         let eval = state.evaluate_json();
         assert_eq!(eval["options"][0]["outcome"]["status"], "not_run");

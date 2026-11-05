@@ -799,6 +799,7 @@ def _installed_power(c: dict, kappa: float) -> float:
         "propeller_diameter_m": float(c["diameter_m"]), "power_source": c["power_source"],
         "design_speed_kn": float(c["design_speed_kn"]), "installed_power_margin": 1.2,
         "propulsor_efficiency_factor": float(kappa), "speed_max_kn": 14.0,
+        "service_area": "river-only",   # issue #925: required; these are inland ships
     })
     return float(out["powering"]["installed_power_kw"])
 

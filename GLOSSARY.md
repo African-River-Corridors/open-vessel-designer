@@ -588,7 +588,7 @@ _Avoid_: metric, parameter
 
 **Service Area**:
 Where an Option is meant to operate: river only, or coastal and river. It sets the default Rule Sets of
-the Option.
+the Option. It is a required input with no default: a Design with none is an error (issue #925).
 _Avoid_: route, zone, trade
 
 **Rule Trace**:

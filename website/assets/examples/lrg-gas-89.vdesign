@@ -1,6 +1,6 @@
 {
   "format": "vdesign",
-  "format_version": 2,
+  "format_version": 4,
   "engine_version": "0.2.2",
   "units": "SI",
   "options": [
@@ -37,8 +37,56 @@
           "value": "type_c_tanks",
           "source": "typed"
         },
-        "block_coefficient": {
-          "value": 0.85,
+        "bow_rake_length_m": {
+          "value": null,
+          "source": "default"
+        },
+        "bow_rake_rise_m": {
+          "value": null,
+          "source": "default"
+        },
+        "bilge_radius_m": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "sheer_aft_m": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "sheer_fwd_m": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "camber_m": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "frame_spacing_m": {
+          "value": 3.66,
+          "source": "default"
+        },
+        "longitudinal_spacing_mm": {
+          "value": 700.0,
+          "source": "default"
+        },
+        "stock_plate_width_m": {
+          "value": 3.0,
+          "source": "default"
+        },
+        "stock_plate_length_m": {
+          "value": 12.0,
+          "source": "default"
+        },
+        "thickness_step_mm": {
+          "value": 0.5,
+          "source": "default"
+        },
+        "steel_grade": {
+          "value": "ordinary",
+          "source": "default"
+        },
+        "structural_wing_deck": {
+          "value": false,
           "source": "default"
         },
         "min_freeboard_m": {
@@ -49,8 +97,24 @@
           "value": 1.6,
           "source": "default"
         },
-        "ruleset": {
-          "value": "IGC_2G",
+        "bow_rake_max_length_m": {
+          "value": 10.0,
+          "source": "default"
+        },
+        "gross_tonnage": {
+          "value": null,
+          "source": "default"
+        },
+        "lpg_carriage_condition": {
+          "value": "fully_pressurised",
+          "source": "default"
+        },
+        "lpg_loading_limit_basis": {
+          "value": "igc_15_1_3",
+          "source": "default"
+        },
+        "lpg_loading_temperature_c": {
+          "value": 15.0,
           "source": "default"
         },
         "fill_ratio": {
@@ -59,6 +123,91 @@
         },
         "max_tank_od_m": {
           "value": 16.0,
+          "source": "default"
+        },
+        "tank_design_pressure_mpa": {
+          "value": 1.77,
+          "source": "default"
+        },
+        "tank_design_temperature_c": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "tank_material": {
+          "value": "S690QL1",
+          "source": "default"
+        },
+        "tank_head_type": {
+          "value": "ellipsoidal_2to1",
+          "source": "default"
+        },
+        "tank_liquid_pressure": {
+          "value": "static",
+          "source": "default"
+        },
+        "tank_allowable_stress_basis": {
+          "value": "igc_4_23_3_1",
+          "source": "default"
+        },
+        "tank_allowable_stress_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_insulation_type": {
+          "value": "none",
+          "source": "default"
+        },
+        "tank_insulation_thickness_mm": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_profile": {
+          "value": [
+            {
+              "state": "laden_passage",
+              "days": 20.0
+            },
+            {
+              "state": "idle",
+              "days": 10.0
+            }
+          ],
+          "source": "default"
+        },
+        "holding_preset": {
+          "value": "none",
+          "source": "default"
+        },
+        "holding_adn_min_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_igf_domestic_use_kg_h": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "holding_adn_journey_days": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_start_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fuel_service_pressure_mpa": {
+          "value": null,
+          "source": "default"
+        },
+        "holding_fill_ratio": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_structure_factor": {
+          "value": 1.12,
+          "source": "default"
+        },
+        "tanks_across": {
+          "value": null,
           "source": "default"
         },
         "tanks_in_line": {
@@ -85,6 +234,38 @@
           "value": 0.66,
           "source": "default"
         },
+        "min_side_space_m": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "weather_shield_thickness_mm": {
+          "value": 6.0,
+          "source": "default"
+        },
+        "weather_shield_clearance_m": {
+          "value": 1.5,
+          "source": "default"
+        },
+        "tank_forming_allowance_pct": {
+          "value": 5.0,
+          "source": "default"
+        },
+        "tank_dome_wall_thickness_mm": {
+          "value": 25.0,
+          "source": "default"
+        },
+        "aft_end_space_m": {
+          "value": 0.2,
+          "source": "default"
+        },
+        "fwd_end_space_m": {
+          "value": 0.2,
+          "source": "default"
+        },
+        "opening_setback_basis": {
+          "value": "cargo_area",
+          "source": "default"
+        },
         "tank_wall_thickness_mm": {
           "value": 25.0,
           "source": "default"
@@ -93,12 +274,152 @@
           "value": false,
           "source": "typed"
         },
-        "propulsive_efficiency": {
-          "value": 0.45,
+        "stern_form": {
+          "value": "transom",
+          "source": "default"
+        },
+        "stern_run_length_m": {
+          "value": null,
+          "source": "default"
+        },
+        "stern_transom_height_m": {
+          "value": null,
+          "source": "default"
+        },
+        "propulsor_type": {
+          "value": "azimuth_ducted",
+          "source": "default"
+        },
+        "propulsor_count": {
+          "value": 2.0,
+          "source": "default"
+        },
+        "propeller_diameter_m": {
+          "value": null,
+          "source": "default"
+        },
+        "propeller_diameter_basis": {
+          "value": "light_draught",
+          "source": "default"
+        },
+        "propulsor_efficiency_factor": {
+          "value": 0.8,
+          "source": "default"
+        },
+        "bollard_pull_factor": {
+          "value": 0.974,
+          "source": "default"
+        },
+        "power_source": {
+          "value": "gas_fuelled",
+          "source": "default"
+        },
+        "installed_power_kw": {
+          "value": null,
+          "source": "default"
+        },
+        "design_speed_kn": {
+          "value": 9.7,
+          "source": "default"
+        },
+        "installed_power_margin": {
+          "value": 1.2,
+          "source": "default"
+        },
+        "bow_thruster": {
+          "value": "channel_jet",
+          "source": "default"
+        },
+        "bow_thruster_power_kw": {
+          "value": null,
+          "source": "default"
+        },
+        "wheelhouse_type": {
+          "value": "elevating",
+          "source": "default"
+        },
+        "sightline_method": {
+          "value": "blind_distance",
+          "source": "default"
+        },
+        "stern_block_mass_included": {
+          "value": true,
+          "source": "default"
+        },
+        "gas_combustion_unit": {
+          "value": false,
+          "source": "default"
+        },
+        "resistance_method": {
+          "value": "barge_form_factor",
           "source": "default"
         },
         "max_speed_kn": {
           "value": 10.0,
+          "source": "default"
+        },
+        "thruster_envelope_m": {
+          "value": 2.6,
+          "source": "default"
+        },
+        "thruster_clearance_m": {
+          "value": 0.6,
+          "source": "default"
+        },
+        "thruster_room_length_m": {
+          "value": 3.5,
+          "source": "default"
+        },
+        "battery_unit_count": {
+          "value": 1.0,
+          "source": "default"
+        },
+        "accommodation_unit_count": {
+          "value": 2.0,
+          "source": "default"
+        },
+        "unit_height_m": {
+          "value": 2.896,
+          "source": "default"
+        },
+        "unit_side_gap_m": {
+          "value": 0.9,
+          "source": "default"
+        },
+        "unit_row_gap_m": {
+          "value": 0.8,
+          "source": "default"
+        },
+        "unit_foundation_m": {
+          "value": 0.3,
+          "source": "default"
+        },
+        "wheelhouse_length_m": {
+          "value": 3.6,
+          "source": "default"
+        },
+        "wheelhouse_width_m": {
+          "value": 6.4,
+          "source": "default"
+        },
+        "wheelhouse_height_m": {
+          "value": 3.4,
+          "source": "default"
+        },
+        "wheelhouse_gap_m": {
+          "value": 0.3,
+          "source": "default"
+        },
+        "wheelhouse_eye_height_m": {
+          "value": 1.65,
+          "source": "default"
+        },
+        "sightline_margin_m": {
+          "value": 0.5,
+          "source": "default"
+        },
+        "wheelhouse_max_lift_m": {
+          "value": 6.0,
           "source": "default"
         },
         "air_draft_limit_m": {
@@ -108,6 +429,22 @@
         "draught_limit_m": {
           "value": 2.8,
           "source": "typed"
+        },
+        "lock_length_m": {
+          "value": null,
+          "source": "default"
+        },
+        "lock_width_m": {
+          "value": null,
+          "source": "default"
+        },
+        "downflooding_angle_deg": {
+          "value": null,
+          "source": "default"
+        },
+        "downflooding_openings": {
+          "value": null,
+          "source": "default"
         },
         "channel_depth_m": {
           "value": null,
@@ -135,6 +472,50 @@
         },
         "squat_safety_margin_m": {
           "value": 0.15,
+          "source": "default"
+        },
+        "loading_conditions": {
+          "value": "is_code_2008",
+          "source": "default"
+        },
+        "may_sail_without_ballast": {
+          "value": false,
+          "source": "default"
+        },
+        "endurance_h": {
+          "value": 72.0,
+          "source": "default"
+        },
+        "fixed_stores_t": {
+          "value": 10.0,
+          "source": "default"
+        },
+        "ballast_plan": {
+          "value": "least_ballast",
+          "source": "default"
+        },
+        "ballast_departure_double_bottom_fill": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "ballast_departure_peak_fill": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "ballast_departure_wing_fill": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "ballast_arrival_double_bottom_fill": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "ballast_arrival_peak_fill": {
+          "value": 0.0,
+          "source": "default"
+        },
+        "ballast_arrival_wing_fill": {
+          "value": 0.0,
           "source": "default"
         },
         "hull_steel_rate": {
@@ -177,6 +558,22 @@
           "value": 1000.0,
           "source": "default"
         },
+        "genset_rate_per_kwe": {
+          "value": 500.0,
+          "source": "default"
+        },
+        "machinery_steel_rate": {
+          "value": 2500.0,
+          "source": "default"
+        },
+        "deckhouse_rate_per_m2": {
+          "value": 3000.0,
+          "source": "default"
+        },
+        "gas_fuel_system_rate_per_kw": {
+          "value": 200.0,
+          "source": "default"
+        },
         "wheelhouse_accom_lump": {
           "value": 450000.0,
           "source": "default"
@@ -191,6 +588,111 @@
         },
         "delivery_lump": {
           "value": 200000.0,
+          "source": "default"
+        },
+        "tank_internals_fraction": {
+          "value": 0.5,
+          "source": "default"
+        },
+        "currency": {
+          "value": "USD",
+          "source": "default"
+        },
+        "price_base_date": {
+          "value": null,
+          "source": "default"
+        },
+        "deckhouse_front_opening": {
+          "value": false,
+          "source": "default"
+        },
+        "deckhouse_side_opening_distance_m": {
+          "value": 5.0,
+          "source": "default"
+        },
+        "entrance_distance_m": {
+          "value": 5.0,
+          "source": "default"
+        },
+        "engine_room_vent_inlet_distance_m": {
+          "value": 5.0,
+          "source": "default"
+        },
+        "funnel_outlet_distance_m": {
+          "value": 2.0,
+          "source": "default"
+        },
+        "vent_stub_m": {
+          "value": 1.0,
+          "source": "default"
+        },
+        "vent_mast_lowerable": {
+          "value": false,
+          "source": "default"
+        },
+        "service_area": {
+          "value": "river-only",
+          "source": "typed"
+        },
+        "arrangement_style": {
+          "value": "container_block",
+          "source": "default"
+        },
+        "crew": {
+          "value": null,
+          "source": "default"
+        },
+        "manning_rule_set": {
+          "value": "ccnr-rpn-19",
+          "source": "default"
+        },
+        "navigation_hours_per_day": {
+          "value": 14.0,
+          "source": "default"
+        },
+        "unmanned_machinery_space": {
+          "value": true,
+          "source": "default"
+        },
+        "rule_sets": {
+          "value": [
+            {
+              "id": "adn-gas",
+              "version": "2.0.0",
+              "hash": "42d97e36931e600a0e3d87718f272eec8f8769c3ba9ba90e4ceb6dd1f82390c5",
+              "source": "default"
+            },
+            {
+              "id": "igc-tank-clearance",
+              "version": "1.0.0",
+              "hash": "e858b66356398fdf4cd7b4a2fd39c757e1f8877a9f858519a60aecae28915970",
+              "source": "default"
+            },
+            {
+              "id": "is2008-a",
+              "version": "2.0.0",
+              "hash": "c8fb5651866ea1f2e9d8197a866b320e3b6ab33e398e4d926b9158bc82e7d7a2",
+              "source": "default"
+            },
+            {
+              "id": "lr-inland-gas",
+              "version": "2.0.0",
+              "hash": "d48daf283c393b48dfd37441bac44b573718d44b1fc93d2d6291d77ee76e4564",
+              "source": "default"
+            },
+            {
+              "id": "es-trin-2025",
+              "version": "2.0.0",
+              "hash": "76f9756de763c47b277ff099cbf05a5872382bb6d9e91bf2a3f593909901bfe3",
+              "source": "default"
+            },
+            {
+              "id": "ovd",
+              "version": "3.1.0",
+              "hash": "1b96856904a54a828c90886fe5ccfc8680b730a9718bbf3532d875a8f2f76a71",
+              "source": "default"
+            }
+          ],
           "source": "default"
         }
       },

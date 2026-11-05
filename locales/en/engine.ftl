@@ -349,6 +349,7 @@ name-cargo-nothing-fits = Nothing fits: lengthen or widen the hull.
 
 ## crates/ovd-format/src/vdesign.rs
 
+msg-service-area-required = the Service Area is not set; it must be `river-only` or `coastal-and-river`. Set it with `ovd fill --service-area <river-only|coastal-and-river>` (in a `simulate` call, pass `service_area`), or choose it in the app
 msg-file-not-json = the file is not JSON: { $error }
 msg-file-the-file = the file
 msg-file-duplicate-key = `{ $key }` appears twice in { $place }; a key may appear once

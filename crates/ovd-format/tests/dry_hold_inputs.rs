@@ -10,12 +10,19 @@ use ovd_format::vdesign::{AppliesTo, INPUTS, LEGACY_FIXED_INPUTS};
 use ovd_format::{DesignSession, HashStatus, Profile, Source, check, fill};
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 fn raw_fixture(name: &str) -> String {
     let path = format!(
         "{}/tests/fixtures/{name}.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
-    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+    read_with_area(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
 /// A fixture as a file written before these inputs existed: the ten keys taken out. Its stored
@@ -180,7 +187,7 @@ fn a_version_1_dry_bulk_file_is_changed_the_same_way() {
         "{}/tests/legacy/v1_dry_bulk_box_hold.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
-    let text = std::fs::read_to_string(path).unwrap();
+    let text = read_with_area(path).unwrap();
     let raw: Value = serde_json::from_str(&text).unwrap();
     assert_eq!(raw["format_version"], 1);
     let checked = check(&text, &Profile::built_in());

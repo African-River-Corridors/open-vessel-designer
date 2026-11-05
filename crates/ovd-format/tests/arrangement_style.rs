@@ -10,12 +10,20 @@ use ovd_format::{
 };
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 fn hand(service_area: Option<&str>, extra: Value) -> String {
     let mut inputs = json!({
         "cargo": { "value": "LNG", "source": "typed" },
         "hull_form": { "value": "raked_box", "source": "typed" },
         "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
         "length_overall_m": { "value": 110.0, "source": "typed" },
+        "service_area": { "value": "river-only", "source": "typed" },
         "beam_m": { "value": 11.4, "source": "typed" },
         "moulded_depth_m": { "value": 6.0, "source": "typed" }
     });
@@ -89,7 +97,7 @@ fn a_file_saved_before_keeps_the_container_block_with_a_note() {
         "{}/tests/legacy/v2_gas_lpg_before_313.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
-    let text = std::fs::read_to_string(path).unwrap();
+    let text = read_with_area(path).unwrap();
     let checked = check(&text, &Profile::built_in());
     let d = checked.design.unwrap();
     let i = d.options[0].input("arrangement_style").unwrap();
@@ -117,7 +125,7 @@ fn a_pushed_barge_holds_no_arrangement_style() {
 
 #[test]
 fn a_session_gives_the_deckhouse_when_the_service_area_is_coastal() {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     s.set_formation("Option 1", "self_propelled", None, None)
         .unwrap();
@@ -229,7 +237,7 @@ fn a_coastal_file_saved_before_keeps_the_container_block_and_its_hashes() {
         "{}/../../examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
-    let mut file: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let mut file: Value = serde_json::from_str(&read_with_area(path).unwrap()).unwrap();
     let mut removed = 0;
     for o in file["options"].as_array_mut().unwrap() {
         let inputs = o["inputs"].as_object_mut().unwrap();
@@ -344,15 +352,14 @@ fn a_container_block_wheelhouse_follows_the_type_and_the_lift_inputs() {
 fn the_apps_deckhouse_run_file_is_the_run_the_engine_gives() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let text =
-        std::fs::read_to_string(root.join("app/e2e/fixtures/gas_deckhouse_self_propelled.vdesign"))
-            .unwrap();
+        read_with_area(root.join("app/e2e/fixtures/gas_deckhouse_self_propelled.vdesign")).unwrap();
     let d = check(&text, &Profile::built_in()).design.unwrap();
     // `run_design` is what `ovd run` calls; it settles the rooms and the crew, which `run_option` does not.
     let RunOutcome::Results { results, .. } = ovd_format::run_design(&d).remove(0).outcome else {
         panic!("the deckhouse design did not run");
     };
     let stored: Value = serde_json::from_str(
-        &std::fs::read_to_string(root.join("app/scripts/fixtures/deckhouse-run.json")).unwrap(),
+        &read_with_area(root.join("app/scripts/fixtures/deckhouse-run.json")).unwrap(),
     )
     .unwrap();
     for (k, v) in stored.as_object().unwrap() {

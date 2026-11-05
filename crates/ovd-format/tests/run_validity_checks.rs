@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 /// The design-impact inputs "sweep hopper channel" (`tools/design_impact.py`), as a new Design.
 fn hopper_channel(loa: f64, beam: f64, bottom_width: Option<f64>) -> Value {
     let mut inputs = json!({
-        "cargo": "bauxite", "hull_form": "raked_box", "formation": { "kind": "self_propelled" },
+        "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only", "formation": { "kind": "self_propelled" },
         "length_overall_m": loa, "beam_m": beam, "moulded_depth_m": 4.5,
         "cargo_containment": "sloped_hopper_hold", "max_speed_kn": 9.0,
         "channel_current_kn": 1.5, "channel_depth_m": 5.0,

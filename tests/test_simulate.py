@@ -1,11 +1,13 @@
 """The web simulator's gas path goes through the arrangement search and hits the benchmarks."""
+import pytest
+
 from ovd.simulate import simulate
 
 # `max_tank_od_m` is the 12 m tank diameter cap of 0.1.0: it is an input, 16 m by default, since
 # issue #175. The snapshots below were printed by 0.1.0, so they set it.
 CN_II = dict(vessel="gas_barge", cargo="LPG_propane", loa_m=90, beam_m=14.8, depth_m=6.5, cb=0.85,
              freeboard_min_m=0.3, draught_limit_m=4.4, self_propelled=True, ruleset="IGC_2G",
-             fill_ratio=0.95, max_tank_od_m=12.0)
+             fill_ratio=0.95, max_tank_od_m=12.0, service_area="coastal-and-river")
 
 
 def test_gas_uses_the_search_not_auto():
@@ -97,7 +99,8 @@ def test_box_barge_unchanged():
     """Label: snapshot
     """
     o = simulate(dict(vessel="box_barge", cargo="bauxite", loa_m=76.5, beam_m=11.4, depth_m=3.5,
-                      cb=0.928, lightship_k_t_per_m3=0.1093, freeboard_min_m=0.3))
+                      cb=0.928, lightship_k_t_per_m3=0.1093, freeboard_min_m=0.3,
+                      service_area="river-only"))
     # Re-pinned (#448); was 2200 to 2300 t: the hull's sections give the volume, so the cb input
     # no longer reduces it (2346 t).
     assert 2300 < o["results"]["cargo_t"] < 2400
@@ -115,7 +118,7 @@ def test_gas_infeasible_fit_is_shown_as_a_failed_check():
     """
     tender = dict(vessel="gas_barge", cargo="LPG_propane", loa_m=60, beam_m=7.0, depth_m=6.0,
                   cb=0.85, freeboard_min_m=0.3, self_propelled=False, ruleset="IGC_2G",
-                  fill_ratio=0.98)
+                  fill_ratio=0.98, service_area="coastal-and-river")
     assert simulate(tender)["arrangement"]["feasible"] is True
     o = simulate(dict(tender, loa_m=150, beam_m=8.0))
     assert o["results"]["cargo_t"] > 0
@@ -124,3 +127,21 @@ def test_gas_infeasible_fit_is_shown_as_a_failed_check():
     o = simulate(CN_II)
     assert o["arrangement"]["feasible"] is True
     assert not any(c["name"] == "Feasible arrangement" for c in o["checks"])
+
+
+@pytest.mark.parametrize("vessel", ["gas_barge", "box_barge", "hopper_barge", "tank_barge"])
+def test_simulate_without_a_service_area_is_an_error_for_every_vessel_type(vessel):
+    """Label: property
+
+    Issue #925: the Service Area is required, with no default, for every vessel type. The message is the
+    one `ovd run` gives: it names the two values and the fix.
+    """
+    p = {k: v for k, v in CN_II.items() if k != "service_area"}
+    p["vessel"] = vessel
+    with pytest.raises(ValueError) as e:
+        simulate(p)
+    text = str(e.value)
+    assert "`river-only`" in text and "`coastal-and-river`" in text
+    assert "ovd fill --service-area" in text
+    with pytest.raises(ValueError):
+        simulate(dict(p, service_area="ocean-only"))

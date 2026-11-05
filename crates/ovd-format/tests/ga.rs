@@ -692,6 +692,7 @@ fn new_self_propelled(cargo: &str) -> Value {
         "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
         "options": [{ "name": "Option 1", "inputs": {
             "cargo": { "value": cargo, "source": "typed" },
+            "service_area": { "value": "river-only", "source": "typed" },
             "hull_form": { "value": "raked_box", "source": "typed" },
             "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
             "length_overall_m": { "value": 76.5, "source": "typed" },

@@ -22,7 +22,7 @@ fn sim(params: Value) -> Value {
 /// A self-propelled sloped-hopper bauxite barge, 70 x 11 x 4 m, Cb 0.9, with `extra` params merged in.
 fn hopper(extra: Value) -> Value {
     let mut p = json!({
-        "vessel": "hopper_barge", "cargo": "bauxite", "loa_m": 70, "beam_m": 11, "depth_m": 4,
+        "vessel": "hopper_barge", "service_area": "river-only", "cargo": "bauxite", "loa_m": 70, "beam_m": 11, "depth_m": 4,
         "cb": 0.9, "self_propelled": true
     });
     for (k, v) in extra.as_object().unwrap() {
@@ -34,7 +34,7 @@ fn hopper(extra: Value) -> Value {
 /// A gas barge, 90 x 30 x 6.5 m (wide enough for the tank cap to bind), with `extra` merged in.
 fn gas(extra: Value) -> Value {
     let mut p = json!({
-        "vessel": "gas_barge", "cargo": "LPG_propane", "loa_m": 90, "beam_m": 30, "depth_m": 6.5,
+        "vessel": "gas_barge", "service_area": "river-only", "cargo": "LPG_propane", "loa_m": 90, "beam_m": 30, "depth_m": 6.5,
         "cb": 0.85
     });
     for (k, v) in extra.as_object().unwrap() {
@@ -549,7 +549,7 @@ fn a_number_in_an_error_message_is_written_as_python_writes_it() {
         ("7", "7"),
     ] {
         let params = format!(
-            r#"{{"vessel":"gas_barge","cargo":"LPG_propane","loa_m":90,"beam_m":14.8,"depth_m":6.5,"cb":0.85,"ruleset":{text}}}"#
+            r#"{{"vessel":"gas_barge", "service_area": "river-only","cargo":"LPG_propane","loa_m":90,"beam_m":14.8,"depth_m":6.5,"cb":0.85,"ruleset":{text}}}"#
         );
         let case = parse_case(&format!(
             r#"{{"fn":"simulate","args":{{"params":{params}}}}}"#
@@ -593,7 +593,7 @@ fn max_tank_od_m_reaches_the_arrangement_search() {
 #[test]
 fn a_hull_that_carries_nothing_reports_its_light_draught() {
     let v = sim(json!({
-        "vessel": "gas_barge", "cargo": "LPG_propane", "loa_m": 20, "beam_m": 14.8, "depth_m": 6.5,
+        "vessel": "gas_barge", "service_area": "river-only", "cargo": "LPG_propane", "loa_m": 20, "beam_m": 14.8, "depth_m": 6.5,
         "cb": 0.85
     }));
     assert_eq!(v["results"]["cargo_t"], json!(0.0));

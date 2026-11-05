@@ -16,6 +16,13 @@ use ovd_format::{
 };
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 /// The spec's default of each input, and whether it is a rule value (sourced) or an estimate.
 const DEFAULTS: &[(&str, &str, &str)] = &[
     ("frame_spacing_m", "3.66", "sourced"),
@@ -29,7 +36,7 @@ const DEFAULTS: &[(&str, &str, &str)] = &[
 
 fn legacy(name: &str) -> String {
     let path = format!("{}/tests/legacy/{name}.vdesign", env!("CARGO_MANIFEST_DIR"));
-    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+    read_with_area(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
 fn hand(cargo: &str, formation: &str) -> String {
@@ -38,6 +45,7 @@ fn hand(cargo: &str, formation: &str) -> String {
         "defaults_profile": "built-in",
         "options": [{ "name": "Option 1", "inputs": {
             "cargo": { "value": cargo, "source": "typed" },
+            "service_area": { "value": "river-only", "source": "typed" },
             "hull_form": { "value": "raked_box", "source": "typed" },
             "formation": { "value": { "kind": formation }, "source": "typed" },
             "length_overall_m": { "value": 110.0, "source": "typed" },

@@ -79,9 +79,19 @@ fn schema_takes_a_profile() {
 
 #[test]
 fn new_design_equals_ovd_new() {
-    let out = ovd(&["new"]);
+    // Issue #925: the starter has no Service Area until one is given; `ovd new --service-area` gives it.
+    let out = ovd(&["new", "--service-area", "river-only"]);
+    let session = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    assert_eq!(session.save().unwrap(), stdout(&out));
+    // Without the flag the starter has none, and `ovd new` says so.
+    let bare = ovd(&["new"]);
     let session = DesignSession::new_design(Profile::built_in()).unwrap();
-    assert_eq!(session.design().to_text(), stdout(&out));
+    assert_eq!(session.design().to_text(), stdout(&bare));
+    assert!(
+        stderr(&bare).contains("no Service Area"),
+        "{}",
+        stderr(&bare)
+    );
 }
 
 #[test]
@@ -92,18 +102,23 @@ fn open_of_a_hand_written_file_equals_ovd_fill() {
         "format": "vdesign", "format_version": 2, "engine_version": "0.1.0",
         "options": [
             { "name": "A", "inputs": {
-                "cargo": "LPG_propane", "hull_form": "raked_box",
+                "cargo": "LPG_propane", "hull_form": "raked_box", "service_area": "river-only",
                 "formation": { "kind": "self_propelled" },
                 "length_overall_m": 100, "beam_m": 12, "moulded_depth_m": 5 } },
             { "name": "B", "inputs": {
-                "cargo": "bauxite", "hull_form": "raked_box",
+                "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only",
                 "formation": { "kind": "pushed_convoy", "abreast": 2, "in_line": 2 },
                 "length_overall_m": 76.5, "beam_m": 11.4, "moulded_depth_m": 3.5,
                 "cargo_containment": "sloped_hopper_hold", "block_coefficient": 0.9 } }
         ]
     });
     std::fs::write(&file, hand.to_string()).unwrap();
-    let filled = ovd(&["fill", file.to_str().unwrap()]);
+    let filled = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        file.to_str().unwrap(),
+    ]);
     assert!(filled.status.success(), "{}", stderr(&filled));
     let (session, _) = DesignSession::open(&hand.to_string(), Profile::built_in()).unwrap();
     assert_eq!(session.design().to_text(), stdout(&filled));
@@ -154,6 +169,10 @@ fn a_saved_design_passes_ovd_validate() {
     let first = session.design().options[0].name.clone();
     session.set_input(&first, "beam_m", json!(12.0)).unwrap();
     session.add_option(None).unwrap();
+    // Issue #925: a new Option has no Service Area until one is chosen.
+    session
+        .set_input("Option 2", "service_area", json!("river-only"))
+        .unwrap();
     let file = dir.join("saved.vdesign");
     std::fs::write(&file, session.save().unwrap()).unwrap();
     let out = ovd(&["validate", file.to_str().unwrap()]);

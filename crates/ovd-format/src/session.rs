@@ -579,6 +579,14 @@ impl DesignSession {
         })
     }
 
+    /// The starter Design with its Service Area chosen (issue #925): what the app's new-design choice
+    /// makes. `new_design` leaves it unset, because it has no default.
+    pub fn new_design_in(profile: Profile, service_area: &str) -> Result<DesignSession, String> {
+        let mut session = DesignSession::new_design(profile)?;
+        session.set_input("Option 1", "service_area", serde_json::json!(service_area))?;
+        Ok(session)
+    }
+
     /// Open a `.vdesign` text. Left-out inputs are written in from the profile, as `ovd fill`
     /// does. A file with hard errors still opens, so the errors can be fixed; `Err` only when
     /// the text cannot be read as a Design (not JSON, no named Option).

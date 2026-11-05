@@ -13,14 +13,21 @@ use ovd_format::{
 };
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 fn legacy(name: &str) -> String {
     let path = format!("{}/tests/legacy/{name}.vdesign", env!("CARGO_MANIFEST_DIR"));
-    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+    read_with_area(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
 fn rule_file(set: &str, version: &str) -> String {
     let path = format!("{}/rules/{set}/{version}.json", env!("CARGO_MANIFEST_DIR"));
-    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+    read_with_area(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
 fn hand(cargo: &str) -> Value {
@@ -32,6 +39,7 @@ fn hand(cargo: &str) -> Value {
             "hull_form": { "value": "raked_box", "source": "typed" },
             "formation": { "value": { "kind": "pushed_barge" }, "source": "typed" },
             "length_overall_m": { "value": 76.5, "source": "typed" },
+            "service_area": { "value": "river-only", "source": "typed" },
             "beam_m": { "value": 11.4, "source": "typed" },
             "moulded_depth_m": { "value": 3.5, "source": "typed" }
         }}]
@@ -87,8 +95,9 @@ fn the_schema_lists_the_two_new_inputs_and_not_the_ruleset() {
     assert!(inputs.iter().all(|i| i["name"] != "ruleset"));
     let area = inputs.iter().find(|i| i["name"] == "service_area").unwrap();
     assert_eq!(area["group"], "Rules");
-    assert_eq!(area["default"], "river-only");
-    assert_eq!(area["default_status"], "estimate");
+    // Issue #925: required, with no default.
+    assert_eq!(area["required"], true);
+    assert!(area["default"].is_null(), "{area}");
     let values: Vec<&str> = area["choices"]
         .as_array()
         .unwrap()
@@ -165,7 +174,7 @@ fn a_file_saved_before_gets_the_default_stack_marked_default_with_one_warning_an
         let area = o.input("service_area").unwrap();
         assert_eq!(
             (area.value.clone(), area.source),
-            (json!("river-only"), Source::Default)
+            (json!("river-only"), Source::Typed)
         );
         let sets = o.input("rule_sets").unwrap();
         assert_eq!(sets.source, Source::Default, "{file}");
@@ -197,7 +206,8 @@ fn a_file_saved_before_gets_the_default_stack_marked_default_with_one_warning_an
             assert_eq!(e["hash"], set.hash.as_str());
             assert_eq!(e["source"], "default");
         }
-        // One warning for the new inputs of the Option, and it names both.
+        // One warning for the new input of the Option. The Service Area is no longer filled in (issue #925),
+        // so it names `rule_sets` alone.
         let notes: Vec<&String> = checked
             .report
             .warnings
@@ -205,7 +215,6 @@ fn a_file_saved_before_gets_the_default_stack_marked_default_with_one_warning_an
             .filter(|w| w.contains("`rule_sets`"))
             .collect();
         assert_eq!(notes.len(), 1, "{file}: {:?}", checked.report.warnings);
-        assert!(notes[0].contains("`service_area`"), "{}", notes[0]);
         if gas {
             // Issue #850: a river-only gas file is read with the ADN stack, so its results move.
             assert!(notes[0].contains("results hash move"), "{}", notes[0]);
@@ -451,7 +460,7 @@ fn a_default_stack_follows_the_cargo_in_a_session_and_a_typed_one_stays() {
             .map(|e| e["id"].as_str().unwrap().to_string())
             .collect()
     };
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     assert_eq!(ids(&s), ["is2008-a", "es-trin-2025", "ovd"]);
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     assert_eq!(
@@ -581,7 +590,7 @@ fn the_profile_holds_the_default_stack_of_each_service_area_and_cargo() {
 #[test]
 fn changing_the_service_area_resets_the_default_sets_and_keeps_the_typed_ones() {
     let profile = profile_with_coastal_gas_stack(json!(["igc-2g", "is2008-a", "ovd"]));
-    let mut s = DesignSession::new_design(profile).unwrap();
+    let mut s = DesignSession::new_design_in(profile, "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     let names = |s: &DesignSession| ids_of(s).into_iter().map(|(i, _)| i).collect::<Vec<_>>();
     assert_eq!(
@@ -629,7 +638,7 @@ fn changing_the_service_area_resets_the_default_sets_and_keeps_the_typed_ones() 
 
 #[test]
 fn the_ovd_set_and_a_set_an_included_set_requires_cannot_be_removed() {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     // Issue #850: `igc-2g` is in the coastal-and-river gas stack; the river-only one takes ADN 9.3.1.
     s.set_input("Option 1", "service_area", json!("coastal-and-river"))
@@ -665,7 +674,7 @@ fn the_ovd_set_and_a_set_an_included_set_requires_cannot_be_removed() {
 
 #[test]
 fn adding_a_set_takes_a_known_id_and_version_and_replaces_another_version_of_it() {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     let e = s.add_rule_set("Option 1", "nope@1.0.0").unwrap_err();
     assert!(e.contains("not in this engine"), "{e}");
     let e = s.add_rule_set("Option 1", "ovd@9.9.9").unwrap_err();

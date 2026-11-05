@@ -163,7 +163,7 @@ fn simulate_refusal(params: &str) -> String {
 fn simulate_reads_text_for_a_number_as_python_float_does() {
     let run = |loa: &str| {
         let case = ovd_format::parse_case(&format!(
-            r#"{{"fn":"simulate","args":{{"params":{{"vessel":"hopper_barge","cargo":"bauxite","loa_m":{loa},"beam_m":11,"depth_m":4,"cb":0.9}}}}}}"#
+            r#"{{"fn":"simulate","args":{{"params":{{"vessel":"hopper_barge", "service_area": "river-only","cargo":"bauxite","loa_m":{loa},"beam_m":11,"depth_m":4,"cb":0.9}}}}}}"#
         ))
         .unwrap();
         eval("simulate", &case).unwrap()
@@ -189,7 +189,7 @@ fn simulate_reports_a_ruleset_that_is_not_text_as_unknown() {
         (r#"["a", 1]"#, "Unknown ruleset ['a', 1]."),
     ] {
         let case = ovd_format::parse_case(&format!(
-            r#"{{"fn":"simulate","args":{{"params":{{"vessel":"gas_barge","cargo":"LPG_propane","loa_m":90,"beam_m":14.8,"depth_m":6.5,"cb":0.85,"ruleset":{ruleset}}}}}}}"#
+            r#"{{"fn":"simulate","args":{{"params":{{"vessel":"gas_barge", "service_area": "river-only","cargo":"LPG_propane","loa_m":90,"beam_m":14.8,"depth_m":6.5,"cb":0.85,"ruleset":{ruleset}}}}}}}"#
         ))
         .unwrap();
         let out = eval("simulate", &case).unwrap();
@@ -199,8 +199,7 @@ fn simulate_reports_a_ruleset_that_is_not_text_as_unknown() {
 
 #[test]
 fn simulate_refuses_params_where_python_would_raise_key_or_type_error() {
-    let good =
-        r#""vessel":"hopper_barge","cargo":"bauxite","loa_m":70,"beam_m":11,"depth_m":4,"cb":0.9"#;
+    let good = r#""vessel":"hopper_barge", "service_area": "river-only","cargo":"bauxite","loa_m":70,"beam_m":11,"depth_m":4,"cb":0.9"#;
     // Control: the same params without a defect are accepted.
     let ok = ovd_format::parse_case(&format!(
         r#"{{"fn":"simulate","args":{{"params":{{{good}}}}}}}"#
@@ -210,23 +209,23 @@ fn simulate_refuses_params_where_python_would_raise_key_or_type_error() {
     for (what, params) in [
         (
             "unknown vessel",
-            r#"{"vessel":"tug","cargo":"bauxite","loa_m":70,"beam_m":11,"depth_m":4,"cb":0.9}"#,
+            r#"{"vessel":"tug","service_area":"river-only","cargo":"bauxite","loa_m":70,"beam_m":11,"depth_m":4,"cb":0.9}"#,
         ),
         (
             "unknown cargo",
-            r#"{"vessel":"hopper_barge","cargo":"coal","loa_m":70,"beam_m":11,"depth_m":4,"cb":0.9}"#,
+            r#"{"vessel":"hopper_barge", "service_area": "river-only","cargo":"coal","loa_m":70,"beam_m":11,"depth_m":4,"cb":0.9}"#,
         ),
         (
             "missing dimension",
-            r#"{"vessel":"hopper_barge","cargo":"bauxite","beam_m":11,"depth_m":4,"cb":0.9}"#,
+            r#"{"vessel":"hopper_barge", "service_area": "river-only","cargo":"bauxite","beam_m":11,"depth_m":4,"cb":0.9}"#,
         ),
         (
             "null for a number",
-            r#"{"vessel":"hopper_barge","cargo":"bauxite","loa_m":70,"beam_m":11,"depth_m":4,"cb":0.9,"freeboard_min_m":null}"#,
+            r#"{"vessel":"hopper_barge", "service_area": "river-only","cargo":"bauxite","loa_m":70,"beam_m":11,"depth_m":4,"cb":0.9,"freeboard_min_m":null}"#,
         ),
         (
             "box without lightship_k",
-            r#"{"vessel":"box_barge","cargo":"bauxite","loa_m":70,"beam_m":11,"depth_m":4,"cb":0.9}"#,
+            r#"{"vessel":"box_barge", "service_area": "river-only","cargo":"bauxite","loa_m":70,"beam_m":11,"depth_m":4,"cb":0.9}"#,
         ),
     ] {
         let msg = simulate_refusal(params);

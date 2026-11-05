@@ -198,7 +198,7 @@ fn under_a_tunnel_stern_each_disc_lies_on_its_tunnels_axis() {
 }
 
 fn new_self_propelled(propulsor: &str, stern: &str) -> DesignSession {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     for (n, v) in [
         ("cargo", json!("bauxite")),
         ("length_overall_m", json!(110.0)),

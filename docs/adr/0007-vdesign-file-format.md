@@ -118,7 +118,7 @@ save writes the current version.
   (added by the user). The `ruleset` input is removed: its one value, `IGC_2G`, is the per-tank rule the
   gas search always used, so a file that names it is read with the name dropped (a version 1 file keeps its
   notes about `ADN_G` and the stepped reading). A file of version 1 or 2, or a version 3 file saved before
-  this block, gets `service_area = river-only` and the default stack of its Cargo Containment, each set at
+  this block, gets (until issue #925, which made the Service Area required: now an error until it is set) `service_area = river-only` and the default stack of its Cargo Containment, each set at
   its highest built-in version with its content hash, marked `default`, with one warning per Option, so its
   results do not change (the `1.0.0` sets of the spec are not the stack the engine checked: `ovcd` is at
   2.1.0 and `lr-inland-gas` at 1.1.0). Opening a stored set: a stored version that is built in is used; a

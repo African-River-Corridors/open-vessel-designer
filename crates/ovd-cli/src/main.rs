@@ -16,12 +16,15 @@ const HELP: &str = "\
 ovd - Open Vessel Designer
 
 Usage:
-  ovd new [--profile <profile.json>] [--class <class id>] [<file.vdesign>]
+  ovd new [--profile <profile.json>] [--class <class id>] [--service-area <river-only|coastal-and-river>]
+          [<file.vdesign>]
       Write a starter Design with one Option. Its five required inputs (Cargo, Hull Form,
       Formation, length, beam) are examples to edit, and so is its moulded depth, which you may
       delete: a left-out depth is the beam times the depth-to-beam ratio of the Cargo, from the
       Defaults Profile. Every other input comes from the Defaults Profile and is marked \"default\".
       Prints to stdout when no file is given.
+      The Service Area has no default. Without --service-area the starter has none, and `ovd run`
+      says so; with it the starter is complete and saved with its results hash.
       --class defines the Option by a standard Vessel Class (see `ovd schema`, input
       `vessel_class`): length, beam and Formation come from the class and are marked \"class\".
   ovd hull import [--profile <profile.json>] <file.csv> --option <name> <in.vdesign> [<out.vdesign>]
@@ -30,7 +33,8 @@ Usage:
       allowed. The Option becomes an offsets hull with that table, and its length, beam and depth
       take the table's values. Prints to stdout when no output file is given; never overwrites.
   ovd fill [--profile <profile.json>] [--rule-set <file>]... [--add-rule-set <id>@<version>]...
-            [--remove-rule-set <id>]... [--as-new] <in.vdesign> [<out.vdesign>]
+            [--remove-rule-set <id>]... [--as-new] [--service-area <river-only|coastal-and-river>]
+            <in.vdesign> [<out.vdesign>]
       Write every input a hand-written Design leaves out in, as used and marked \"default\",
       from the Defaults Profile. Prints to stdout when no output file is given; never
       overwrites a file. Writes nothing and exits 1 if there is any hard error.
@@ -40,6 +44,8 @@ Usage:
       --add-rule-set adds a Rule Set to every Option, marked \"typed\" (a loaded --rule-set file
       may supply it); --remove-rule-set removes one. The `ovd` set stays, and so does a set that a
       selected set includes.
+      The Service Area has no default: a Design with none is an error. --service-area sets it, as
+      typed, in every Option that has none (an Option that has one keeps it).
   ovd validate [--profile <profile.json>] [--rule-set <file>]... [--inputs] <file.vdesign>
       List hard errors and soft warnings without running. --inputs also lists every input
       as used, typed or default. Exits 1 if there is any hard error. A file must store
@@ -192,6 +198,7 @@ struct Flags<'a> {
     json: bool,
     steel_list: bool,
     as_new: bool,
+    service_area: Option<&'a str>,
     files: Vec<&'a str>,
 }
 
@@ -210,6 +217,7 @@ fn parse_flags<'a>(
         json: false,
         steel_list: false,
         as_new: false,
+        service_area: None,
         files: Vec::new(),
     };
     let mut it = args.iter();
@@ -239,6 +247,13 @@ fn parse_flags<'a>(
             "--json" if allow_json => flags.json = true,
             "--steel-list" if allow_json => flags.steel_list = true,
             "--as-new" if allow_as_new => flags.as_new = true,
+            // Issue #925: only `fill` writes a Design, so only `fill` can set the Service Area.
+            "--service-area" if allow_as_new => {
+                flags.service_area = Some(
+                    it.next()
+                        .ok_or("--service-area needs river-only or coastal-and-river")?,
+                );
+            }
             a if a.starts_with('-') => return Err(format!("unknown option `{a}`")),
             a => flags.files.push(a),
         }
@@ -401,26 +416,48 @@ fn rule_set_gate(flag: &str) -> Result<(), String> {
 
 fn new(args: &[&str]) -> Result<(), String> {
     // `--class <id>` defines the starter Option by a standard Vessel Class (issue #94).
+    // `--service-area <value>` sets the Service Area, which has no default (issue #925).
     let mut class: Option<&str> = None;
+    let mut service_area: Option<&str> = None;
     let mut rest: Vec<&str> = Vec::new();
     let mut it = args.iter();
     while let Some(&arg) = it.next() {
         if arg == "--class" {
             class = Some(it.next().ok_or("--class needs a Vessel Class id")?);
+        } else if arg == "--service-area" {
+            service_area = Some(
+                it.next()
+                    .ok_or("--service-area needs river-only or coastal-and-river")?,
+            );
         } else {
             rest.push(arg);
         }
     }
     let flags = parse_flags(&rest, false, false, false)?;
     let profile = load_profile(flags.profile)?;
-    let text = match class {
-        None => ovd_format::new_design(&profile)?.to_text(),
-        Some(id) => {
-            let mut session = ovd_format::DesignSession::new_design(profile)?;
-            // The starter's example depth is for the starter hull; the class's beam gets the rule's.
-            session.reset_input("Option 1", "moulded_depth_m")?;
-            session.set_input("Option 1", "vessel_class", serde_json::json!(id))?;
+    let mut session = ovd_format::DesignSession::new_design(profile)?;
+    if let Some(id) = class {
+        // The starter's example depth is for the starter hull; the class's beam gets the rule's.
+        session.reset_input("Option 1", "moulded_depth_m")?;
+        session.set_input("Option 1", "vessel_class", serde_json::json!(id))?;
+    }
+    let text = match service_area {
+        Some(area) => {
+            if !ovd_format::vdesign::SERVICE_AREAS.contains(&area) {
+                return Err(format!(
+                    "`{area}` is not a Service Area; it must be `river-only` or `coastal-and-river`"
+                ));
+            }
+            session.set_input("Option 1", "service_area", serde_json::json!(area))?;
             session.save()?
+        }
+        None => {
+            // Not a default: the starter has no Service Area until the designer gives one.
+            eprintln!(
+                "note: the starter has no Service Area. {}",
+                ovd_format::vdesign::service_area_required()
+            );
+            session.design().to_text()
         }
     };
     match flags.files.as_slice() {
@@ -473,7 +510,13 @@ fn fill(args: &[&str]) -> Result<(), String> {
     let profile = load_profile(flags.profile)?;
     // `fill` computes nothing; the sets are read for `--add-rule-set` and `--remove-rule-set`.
     let (library, _) = load_rule_sets(&flags.rule_sets)?;
-    let text = std::fs::read_to_string(input).map_err(|e| format!("cannot read {input}: {e}"))?;
+    let mut text =
+        std::fs::read_to_string(input).map_err(|e| format!("cannot read {input}: {e}"))?;
+    // Issue #925: the Service Area has no default; this flag is the designer's answer, set in every
+    // Option that has none.
+    if let Some(area) = flags.service_area {
+        text = ovd_format::vdesign::with_service_area(&text, area)?;
+    }
     let filled = if flags.as_new {
         ovd_format::fill_as_new(&text, &profile)
     } else {
