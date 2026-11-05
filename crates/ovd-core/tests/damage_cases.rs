@@ -326,6 +326,8 @@ fn igc_table() -> PermeabilityTable {
 
 fn case_of(names: &[&str]) -> DamageCase {
     DamageCase {
+        x_m: (0.0, 1.0),
+        y_m: None,
         name: "test".to_string(),
         flooded: names
             .iter()
@@ -573,6 +575,8 @@ fn normam_is_the_marpol_extents_anywhere_with_the_engine_room_intact_and_full_ta
 fn gas_flooding_gives_a_hold_the_gross_floor_of_the_table() {
     let spaces = gas_layout();
     let case = DamageCase {
+        x_m: (8.0, 34.0),
+        y_m: None,
         name: "c".to_string(),
         flooded: vec![FloodedVolume::from_box(
             "H1C",
@@ -600,4 +604,42 @@ fn gas_flooding_gives_a_hold_the_gross_floor_of_the_table() {
     let f = gas_flooding(&case, &spaces, &table, &|_| 0.0);
     assert_eq!(f.flooded[0].gross_floor, Some(0.70));
     assert_eq!(f.flooded[0].permeability, 0.95);
+}
+
+/// Issue #928: each case carries where the damage is, so the drawing does not read it from the name: the
+/// longitudinal extent of every case, and the width across of a bottom damage only.
+#[test]
+fn each_case_carries_its_extent() {
+    let spaces = gas_layout();
+    let cases = igc_damage_cases(
+        &spaces,
+        60.0,
+        12.0,
+        &igc_extents(),
+        &StandardOfDamage::igc_2g(&spaces, 60.0, true),
+        &|_| 0.95,
+    );
+    let (mut side, mut bottom) = (0, 0);
+    for c in &cases {
+        assert!(c.x_m.0 < c.x_m.1, "{}", c.name);
+        assert!(
+            c.name
+                .contains(&format!("{:.1} to {:.1} m", c.x_m.0, c.x_m.1)),
+            "{}",
+            c.name
+        );
+        if c.name.starts_with("bottom") {
+            bottom += 1;
+            let (y0, y1) = c.y_m.unwrap_or_else(|| panic!("{}: no y_m", c.name));
+            assert!(
+                y0 < y1 && c.name.contains(&format!("{y0:.1} to {y1:.1} m across")),
+                "{}",
+                c.name
+            );
+        } else {
+            side += 1;
+            assert!(c.y_m.is_none(), "{}", c.name);
+        }
+    }
+    assert!(side > 0 && bottom > 0, "side {side}, bottom {bottom}");
 }

@@ -2,7 +2,7 @@
 // nothing here: it finds the case lists, groups them by loading condition and finds each case's row in
 // the Rule Trace. The governing case of a condition is the first case whose damage Rule fails in the
 // trace; where every case passes, it is the case the engine names as governing (the `governing` list of
-// the `damage` block), which has a row in the trace too.
+// the `damage` block and of each `damage_by_rule` set), which has a row in the trace too.
 
 export interface DamageStage {
   fraction: number;
@@ -42,7 +42,7 @@ export interface TraceLike {
 export interface DamageResults {
   damage?: unknown;
   marpol_damage?: DamageCase[];
-  damage_by_rule?: Record<string, { rule_set?: string; method?: string; cases?: DamageCase[] }>;
+  damage_by_rule?: Record<string, { rule_set?: string; method?: string; cases?: DamageCase[]; governing?: { condition: string; case: string }[] }>;
   rule_trace?: TraceLike;
 }
 
@@ -55,7 +55,7 @@ export interface DamageSet {
   /** The method, in the engine's words, where the results give one. */
   method: string | null;
   cases: DamageCase[];
-  /** The governing case the engine names, by loading condition (the gas path only). */
+  /** The governing case the engine names, by loading condition (the gas path: the `damage` block and each `damage_by_rule` set). */
   engineGoverning: { condition: string; case: string }[];
   /** The trace rows of the cases are the rows of this Rule, by its id prefix (and Rule Set, where known). */
   rulePrefix: string;
@@ -94,7 +94,7 @@ export function damageSets(results: DamageResults | null | undefined): DamageSet
         ruleSet: b.rule_set ?? key,
         method: b.method ?? null,
         cases: b.cases,
-        engineGoverning: [],
+        engineGoverning: (b.governing ?? []).map((g) => ({ condition: g.condition, case: g.case })),
         rulePrefix: RULE_PREFIX[setId(b.rule_set ?? key)] ?? "",
       });
     }

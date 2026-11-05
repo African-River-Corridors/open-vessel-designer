@@ -127,6 +127,8 @@ export interface DamageSheet {
   stem: string;
   condition: string | null;
   case: string | null;
+  /** The key of the `damage_by_rule` set the sheet is of; absent for the `damage` block's (issue #928). */
+  set?: string;
   svg: string;
 }
 export type DamageViews = { sheets: DamageSheet[]; message?: string };
