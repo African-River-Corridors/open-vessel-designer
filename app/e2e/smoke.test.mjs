@@ -40,6 +40,7 @@ async function inSettings(act) {
     const r = document.querySelector("[data-testid=settings]")?.getBoundingClientRect();
     return { x: r && Math.round(r.x), y: r && Math.round(r.y), w: r && Math.round(r.width), meta: document.querySelectorAll("header .meta").length };
   });
+  console.log("DIAG settings click at", JSON.stringify(before));
   await (await browser.$("[data-testid=settings]")).click();
   try {
     await until("the Settings dialog", async () => (await browser.$("[data-testid=settings-dialog]")).isExisting());
