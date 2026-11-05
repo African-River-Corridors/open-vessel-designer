@@ -2,11 +2,11 @@
   "$schema": "../rule-set.schema.json",
   "id": "solas-ii-2",
   "family": "solas",
-  "title": "SOLAS Chapter II-2 (fire protection): two named gaps for the stern, not coded",
+  "title": "SOLAS Chapter II-2 (fire protection): two named gaps for the stern, not yet coded (issue #916)",
   "version": "1.0.0",
   "edition": {
-    "document": "SOLAS 1974 as amended, Chapter II-2 (consolidated text)",
-    "edition": "not in the rule sources",
+    "document": "SOLAS 1974 as amended, Chapter II-2",
+    "edition": "the library holds the 2000 revision (MSC.99(73)); the amendments since are not yet read",
     "in_force": "n/a"
   },
   "sources": [],
@@ -18,13 +18,13 @@
   "rules": [
     {
       "id": "solas/II-2.13.4.2.1/two-escapes-cat-a",
-      "title": "Two means of escape from a machinery space of Category A (named gap: the paragraph is cited by number from the ticket, and its text has not been read)",
+      "title": "Two means of escape from a machinery space of Category A (Chapter II-2 Regulation 13 para 4.2.1; named gap, not yet coded: issue #916)",
       "origin": "regulation",
       "source": {
         "document": "SOLAS 1974 as amended, Chapter II-2 (consolidated text)",
-        "edition": "not in the rule sources: the library holds no consolidated Chapter II-2 (the 2000 text in MSC.99(73) uses the numbering replaced in 2006)",
+        "edition": "MSC.99(73), adopted 5 December 2000, the revision in the library; the amendments since are not yet read (issue #916)",
         "locator": "II-2.13.4.2.1",
-        "page": "none: the paragraph text has not been read",
+        "page": "stern-tug/machinery-wheelhouse/imo-msc99-73/MSC.99-73.pdf, Regulation 13, 'Escape from machinery spaces of category A'; not read for coding",
         "access": ""
       },
       "codified": {
@@ -41,19 +41,19 @@
       "consequence": "note",
       "sizes": false,
       "evaluated": false,
-      "gap": "Not coded: the consolidated SOLAS Chapter II-2 text is not in the rule sources, so the requirement is not read and no limit is given. The model places no escape routes. Named for a reviewer; add the text to the library to codify it",
+      "gap": "Not yet coded (issue #916): the library holds Chapter II-2 as revised by MSC.99(73) in 2000, which carries this paragraph, but not the amendments since, so the current text has not been read. No limit is given. The model places no escape routes. Named for a reviewer. Consequence `note`: it names a requirement the model cannot yet check, and warns of no failure (the airlock and V/22.1.3 gap rows are `warn` because their Rules carry a limit that the model could not work out; these two carry none)",
       "finding": null,
       "since": "1.0.0"
     },
     {
       "id": "solas/II-2.9.2.4.2.5/a60-front",
-      "title": "A-60 class division on a front that faces the cargo area (named gap: the paragraph is cited by number from the ticket, and its text has not been read)",
+      "title": "A-60 class division on the exterior boundaries of a superstructure or deckhouse facing the cargo area, and 3 m along its sides (Chapter II-2 Regulation 9 para 2.4.2.5, a tanker paragraph, applied to gas carriers through IGC 11.1.1; named gap, not yet coded: issue #916)",
       "origin": "regulation",
       "source": {
         "document": "SOLAS 1974 as amended, Chapter II-2 (consolidated text)",
-        "edition": "not in the rule sources: the library holds no consolidated Chapter II-2 (the 2000 text in MSC.99(73) uses the numbering replaced in 2006)",
+        "edition": "MSC.99(73), adopted 5 December 2000, the revision in the library; the amendments since are not yet read (issue #916)",
         "locator": "II-2.9.2.4.2.5",
-        "page": "none: the paragraph text has not been read",
+        "page": "stern-tug/machinery-wheelhouse/imo-msc99-73/MSC.99-73.pdf, Regulation 9; not read for coding",
         "access": ""
       },
       "codified": {
@@ -70,9 +70,15 @@
       "consequence": "note",
       "sizes": false,
       "evaluated": false,
-      "gap": "Not coded: the consolidated SOLAS Chapter II-2 text is not in the rule sources, so the requirement is not read and no limit is given. The model places no fire divisions. Named for a reviewer; add the text to the library to codify it",
+      "gap": "Not yet coded (issue #916): the library holds Chapter II-2 as revised by MSC.99(73) in 2000, which carries this paragraph, but not the amendments since, so the current text has not been read. No limit is given. The model places no fire divisions. Tankers only: it reaches gas carriers through IGC 11.1.1, and liquid bulk tankers directly. Named for a reviewer. Consequence `note`, as the escape row",
       "finding": null,
-      "since": "1.0.0"
+      "since": "1.0.0",
+      "applies_when": {
+        "cargo_class": [
+          "gas",
+          "liquid_bulk"
+        ]
+      }
     }
   ]
 }

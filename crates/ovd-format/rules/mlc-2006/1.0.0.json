@@ -2,7 +2,7 @@
   "$schema": "../rule-set.schema.json",
   "id": "mlc-2006",
   "family": "mlc",
-  "title": "Maritime Labour Convention 2006, Standard A3.1: accommodation (headroom, sleeping-room location and floor area, sanitary facilities), for a Service Area that reaches sea",
+  "title": "Maritime Labour Convention 2006, Standard A3.1: accommodation (headroom, sleeping-room location and floor area, sanitary facilities), for a Service Area that reaches sea; the exemptions of A3.1.20 (ships under 200 GT) and A3.1.21 are not applied",
   "version": "1.0.0",
   "edition": {
     "document": "Maritime Labour Convention, 2006, as amended",

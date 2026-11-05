@@ -175,3 +175,193 @@ fn mlc_sanitary_ratio_is_six_and_each_sleeping_room_has_a_washbasin() {
     assert_eq!(at(1.0), Outcome::Pass);
     assert_eq!(at(0.99), Outcome::Fail);
 }
+
+// ---- Failure tests (review of #898, fix 2): the rooms Measures are read from a real rooms table, so a
+// design that does not meet a limit fails its row. A stub with a number would show only the Rule.
+
+use ovd_core::measured::rooms_measure;
+use ovd_core::rooms::{Rooms, RoomsBasis, size_rooms};
+
+/// The real `rooms.*` Measures over a rooms table, with a deckhouse clear height and a gross tonnage.
+struct TableStub {
+    rooms: Rooms,
+    clear_height_m: f64,
+    gt: f64,
+}
+
+impl MeasureSource for TableStub {
+    fn def(&self, id: &str) -> Option<MeasureInfo> {
+        measure_info(id)
+    }
+    fn objects(&self, object: &str) -> Vec<String> {
+        match ObjectType::from_key(object).expect("an OVD object type") {
+            ObjectType::Option => vec!["Option".into()],
+            _ => Vec::new(),
+        }
+    }
+    fn value(&self, m: &MeasureRef, _: usize) -> Result<MeasureValue, String> {
+        match m.id.as_str() {
+            "option.gross_tonnage" => Ok(MeasureValue::Number(self.gt)),
+            id if id.starts_with("rooms.") => {
+                rooms_measure(&self.rooms, self.clear_height_m, &id["rooms.".len()..], m)
+            }
+            other => Err(other.to_string()),
+        }
+    }
+    fn input(&self, name: &str) -> Option<String> {
+        (name == "service_area").then(|| "coastal-and-river".to_string())
+    }
+}
+
+fn sea_rooms(berths: u32, gt: u32) -> Rooms {
+    size_rooms(&RoomsBasis {
+        berths,
+        reaches_sea: true,
+        gt,
+        officers: 0,
+        seafarers: berths,
+        mode_b: false,
+    })
+}
+
+fn table_outcome(set: &str, version: &str, rule: &str, stub: &TableStub) -> Outcome {
+    let s = Library::built_in().find(set, version).unwrap().clone();
+    evaluate(&[&s], stub)
+        .rows
+        .iter()
+        .find(|r| r.rule.as_deref() == Some(rule))
+        .unwrap_or_else(|| panic!("{rule}"))
+        .outcome
+}
+
+#[test]
+fn a_deckhouse_with_too_little_clear_height_fails_both_headroom_rows() {
+    // Label: sourced - MLC A3.1.6(a) 203 cm; ES-TRIN 15.02(6) 2.00 m. Hand working: the deckhouse tier of
+    // 2.6 m less the 0.5 m deck allowance is 2.10 m clear (passes both); a clear height of 1.9 m is under
+    // both limits (fails both).
+    let at = |clear: f64| TableStub {
+        rooms: sea_rooms(6, 5_000),
+        clear_height_m: clear,
+        gt: 5_000.0,
+    };
+    for clear in [2.10, 2.03] {
+        let s = at(clear);
+        assert_eq!(
+            table_outcome("mlc-2006", "1.0.0", "mlc/A3.1.6(a)/headroom", &s),
+            Outcome::Pass,
+            "{clear}"
+        );
+        assert_eq!(
+            table_outcome("es-trin-2025", "2.1.0", "es-trin/15.02(6)/headroom", &s),
+            Outcome::Pass,
+            "{clear}"
+        );
+    }
+    let low = at(1.9);
+    assert_eq!(
+        table_outcome("mlc-2006", "1.0.0", "mlc/A3.1.6(a)/headroom", &low),
+        Outcome::Fail
+    );
+    assert_eq!(
+        table_outcome("es-trin-2025", "2.1.0", "es-trin/15.02(6)/headroom", &low),
+        Outcome::Fail
+    );
+    // 2.01 m is over ES-TRIN's 2.00 m but under MLC's 2.03 m: only the MLC row fails.
+    let mid = at(2.01);
+    assert_eq!(
+        table_outcome("mlc-2006", "1.0.0", "mlc/A3.1.6(a)/headroom", &mid),
+        Outcome::Fail
+    );
+    assert_eq!(
+        table_outcome("es-trin-2025", "2.1.0", "es-trin/15.02(6)/headroom", &mid),
+        Outcome::Pass
+    );
+    // The cabin volume reads the same clear height: 7 m3 needs 3.5 m2 at 2.00 m, so a 3.4 m2 cabin at
+    // 2.03 m (6.9 m3) fails ES-TRIN 15.02(9).
+    let mut thin = at(2.03);
+    for r in &mut thin.rooms.rows {
+        if r.id == "cabin" {
+            r.area_each_m2 = 3.4;
+        }
+    }
+    assert_eq!(
+        table_outcome(
+            "es-trin-2025",
+            "2.1.0",
+            "es-trin/15.02(9)/cabin-volume",
+            &thin
+        ),
+        Outcome::Fail
+    );
+}
+
+#[test]
+fn an_undersized_cabin_floor_fails_the_mlc_cabin_row() {
+    // Label: sourced - MLC A3.1.9(f)(ii): 5.5 m2 from 3,000 to under 10,000 GT. The table is sized to
+    // 5.5 m2 at 3,000 GT; the same table cut to 5.4 m2 fails, and 5.5 m2 passes. The row reads the
+    // gross tonnage of the run (`option.gross_tonnage`), the band the sizing also used when the rooms
+    // settle (`settled` compares the band); the run's value governs the row.
+    let mut s = TableStub {
+        rooms: sea_rooms(3, 3_000),
+        clear_height_m: 2.10,
+        gt: 3_000.0,
+    };
+    let cabin = s.rooms.rows.iter().find(|r| r.id == "cabin").unwrap();
+    assert_eq!(cabin.area_each_m2, 5.5);
+    assert_eq!(
+        table_outcome("mlc-2006", "1.0.0", "mlc/A3.1.9(f)/cabin-area", &s),
+        Outcome::Pass
+    );
+    for r in &mut s.rooms.rows {
+        if r.id == "cabin" {
+            r.area_each_m2 = 5.4;
+        }
+    }
+    assert_eq!(
+        table_outcome("mlc-2006", "1.0.0", "mlc/A3.1.9(f)/cabin-area", &s),
+        Outcome::Fail
+    );
+    // At 2,999 GT the band is 4.5 m2, so 5.4 m2 passes.
+    s.gt = 2_999.0;
+    assert_eq!(
+        table_outcome("mlc-2006", "1.0.0", "mlc/A3.1.9(f)/cabin-area", &s),
+        Outcome::Pass
+    );
+}
+
+#[test]
+fn too_few_toilets_fail_the_mlc_sanitary_row() {
+    // Label: sourced - MLC A3.1.11(c): one toilet for every six persons or less. Hand working: 7 berths
+    // with one toilet is 7 persons a toilet (over 6): fails; 6 berths with one toilet is 6: passes.
+    let one_toilet = |berths: u32| {
+        let mut rooms = sea_rooms(berths, 5_000);
+        for r in &mut rooms.rows {
+            if r.id == "toilet" {
+                r.count = 1;
+            }
+        }
+        TableStub {
+            rooms,
+            clear_height_m: 2.10,
+            gt: 5_000.0,
+        }
+    };
+    assert_eq!(
+        table_outcome(
+            "mlc-2006",
+            "1.0.0",
+            "mlc/A3.1.11(c)/toilets",
+            &one_toilet(7)
+        ),
+        Outcome::Fail
+    );
+    assert_eq!(
+        table_outcome(
+            "mlc-2006",
+            "1.0.0",
+            "mlc/A3.1.11(c)/toilets",
+            &one_toilet(6)
+        ),
+        Outcome::Pass
+    );
+}

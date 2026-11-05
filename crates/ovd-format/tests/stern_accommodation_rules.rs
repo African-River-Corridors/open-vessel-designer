@@ -266,7 +266,8 @@ fn a_coastal_deckhouse_option_meets_the_es_trin_and_mlc_rooms_rows() {
         assert_eq!(found[0]["outcome"], "pass", "{id}: {:?}", found[0]);
     }
     let head = rows(&r, "mlc/A3.1.6(a)/headroom");
-    assert_eq!(head[0]["value"], json!(2.03));
+    // The row reads the design's clear height: the 2.6 m tier less the 0.5 m deck allowance, 2.10 m.
+    assert_eq!(head[0]["value"], json!(2.1));
     assert_eq!(head[0]["limit"], json!(2.03));
     let area = rows(&r, "mlc/A3.1.9(f)/cabin-area");
     let (value, limit) = (
@@ -281,9 +282,10 @@ fn a_coastal_deckhouse_option_meets_the_es_trin_and_mlc_rooms_rows() {
 
 #[test]
 fn the_two_solas_ii_2_paragraphs_are_named_gaps_and_never_pass() {
-    // Decision of 2026-11-05 (issue #781): the consolidated SOLAS II-2 text is not in the rule sources,
-    // so 13.4.2.1 (two escapes from a Category A machinery space) and 9.2.4.2.5 (A-60 fronts facing
-    // cargo) are reported as `not evaluated` with the gap named, not coded.
+    // Decision of 2026-11-05 (issue #781): SOLAS II-2 13.4.2.1 (two escapes from a Category A machinery
+    // space) and 9.2.4.2.5 (A-60 fronts facing cargo) are reported as `not evaluated` with the gap named,
+    // not coded: the library holds the 2000 text (MSC.99(73)), the amendments since are not read
+    // (issue #916). The A-60 row is a tanker paragraph: gas (IGC 11.1.1) and liquid bulk only.
     let lib = Library::built_in();
     let set = lib
         .find("solas-v22", "1.1.0")
@@ -302,7 +304,7 @@ fn the_two_solas_ii_2_paragraphs_are_named_gaps_and_never_pass() {
             rule.gap
                 .as_deref()
                 .unwrap()
-                .contains("not in the rule sources"),
+                .contains("Not yet coded (issue #916)"),
             "{id}"
         );
         let found = rows(&r, id);
@@ -324,4 +326,47 @@ fn a_river_only_option_takes_no_mlc_rows_and_a_container_block_has_no_rooms_to_c
     let block = results("coastal-and-river", "container_block");
     assert!(rows(&block, "mlc/A3.1.9(f)/cabin-area").is_empty());
     assert!(rows(&block, "es-trin/15.02(9)/cabin-volume").is_empty());
+}
+
+#[test]
+fn the_a60_front_row_is_for_gas_and_liquid_bulk_and_not_for_dry_bulk() {
+    // Label: sourced - SOLAS II-2 Regulation 9 para 2.4.2.5 is a tanker paragraph, applied to gas
+    // carriers through IGC 11.1.1; a dry-bulk hull is neither. The escape row (Regulation 13) is for
+    // every ship.
+    let run = |cargo: &str, containment: Option<&str>| {
+        let mut inputs = json!({
+            "cargo": { "value": cargo, "source": "typed" },
+            "hull_form": { "value": "raked_box", "source": "typed" },
+            "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+            "length_overall_m": { "value": 110.0, "source": "typed" },
+            "beam_m": { "value": 11.4, "source": "typed" },
+            "moulded_depth_m": { "value": 6.0, "source": "typed" },
+            "service_area": { "value": "coastal-and-river", "source": "typed" },
+            "arrangement_style": { "value": "deckhouse", "source": "typed" }
+        });
+        if let Some(c) = containment {
+            inputs["cargo_containment"] = json!({ "value": c, "source": "typed" });
+        }
+        let file = json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": inputs }]
+        });
+        let d = fill_as_new(&file.to_string(), &Profile::built_in())
+            .design
+            .unwrap();
+        match run_option_with(&d.options[0], &Library::built_in(), &[]) {
+            RunOutcome::Results { results, .. } => results,
+            other => panic!("{other:?}"),
+        }
+    };
+    let a60 = "solas/II-2.9.2.4.2.5/a60-front";
+    let escape = "solas/II-2.13.4.2.1/two-escapes-cat-a";
+    let gas = run("LNG", None);
+    assert_eq!(rows(&gas, a60).len(), 1);
+    let tanker = run("crude_oil", Some("integral_tanks"));
+    assert_eq!(rows(&tanker, a60).len(), 1);
+    assert_eq!(rows(&tanker, escape).len(), 1);
+    let dry = run("bauxite", Some("box_hold"));
+    assert!(rows(&dry, a60).is_empty(), "no A-60 row on dry bulk");
+    assert_eq!(rows(&dry, escape).len(), 1);
 }

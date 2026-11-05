@@ -153,8 +153,9 @@ pub struct Rooms {
     pub reaches_sea: bool,
     /// MLC A3.1 was applied: the Service Area reaches sea.
     pub mlc_applied: bool,
-    /// The headroom of the clear height the rooms must allow (m): ES-TRIN 2.00, MLC 2.03 at sea.
-    /// The floor areas are worked at 2.00 m (see `MLC_HEADROOM_M`).
+    /// The headroom the rooms must be given (m): the rule's own figure, ES-TRIN 2.00, MLC 2.03 at
+    /// sea. It is the requirement, not what the design gives: the headroom Rules read the deckhouse's
+    /// clear height instead. The floor areas are worked at 2.00 m (see `MLC_HEADROOM_M`).
     pub headroom_m: f64,
     /// What the rooms were sized from (the basis of this pass): the gross tonnage in whole units
     /// (0 when not known), the officers' berths and the seafarers carried.

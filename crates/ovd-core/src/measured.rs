@@ -137,13 +137,43 @@ impl Measured {
             .as_ref()
     }
 
-    /// A value of the rooms table, for the `rooms.*` Measures. Each reads the table the run sized, and
-    /// no number of its own: the headroom is the headroom the rooms were sized to.
+    /// The clear height of the deckhouse tiers (m): the tier height less the allowance for the deck
+    /// structure and the overhead services. This is the design's headroom: the headroom Rules read it,
+    /// not the headroom the rooms were sized for (which would be the Rule's own limit).
+    pub fn deckhouse_clear_height_m(&self) -> Option<f64> {
+        let d = self
+            .vessel
+            .as_ref()?
+            .result
+            .aft_arrangement
+            .as_ref()?
+            .deckhouse
+            .as_ref()?;
+        Some(d.tier_height_m - crate::aft_arrangement::deckhouse_sizes::DECK_ALLOWANCE_M)
+    }
+
+    /// A value of the rooms table, for the `rooms.*` Measures: see [`rooms_measure`].
     fn rooms_value(&self, name: &str, m: &MeasureRef) -> Result<MeasureValue, String> {
         let r = self
             .rooms()
             .filter(|r| !r.rows.is_empty())
             .ok_or_else(|| "the Option has no deckhouse rooms table".to_string())?;
+        let clear = self
+            .deckhouse_clear_height_m()
+            .ok_or_else(|| "the Option has no deckhouse".to_string())?;
+        rooms_measure(r, clear, name, m)
+    }
+}
+
+/// A value of a rooms table for the `rooms.*` Measures. The headroom is the deckhouse's clear height
+/// (`clear_height_m`), which a design can get wrong; the areas and counts are read from the table.
+pub fn rooms_measure(
+    r: &crate::rooms::Rooms,
+    clear_height_m: f64,
+    name: &str,
+    m: &MeasureRef,
+) -> Result<MeasureValue, String> {
+    {
         let row = |id: &str| {
             r.rows
                 .iter()
@@ -173,9 +203,9 @@ impl Measured {
             })
         };
         match name {
-            "headroom_m" => n(r.headroom_m),
+            "headroom_m" => n(clear_height_m),
             "cabin_area_m2" => n(smallest_cabin()?),
-            "cabin_volume_m3" => n(smallest_cabin()? * r.headroom_m),
+            "cabin_volume_m3" => n(smallest_cabin()? * clear_height_m),
             "communal_area_m2" => n(row("communal")?.area_m2),
             "communal_area_per_person_m2" => n(row("communal")?.area_m2 / f64::from(r.berths)),
             "washbasins_per_cabin" => {

@@ -110,7 +110,7 @@ fn the_cabins_of_a_sea_going_hull_are_the_greater_of_mlc_and_es_trin() {
             .unwrap()
             .contains("mlc-2006-a3.1")
     );
-    assert_eq!(r["rooms"]["headroom_m"].as_f64().unwrap(), 2.03);
+    assert_eq!(r["rooms"]["headroom_required_m"].as_f64().unwrap(), 2.03);
     let b = r["crew"]["berths"].as_i64().unwrap();
     let officers = r["crew"]["officers"].as_i64().unwrap();
     let gt = r["crew"]["inputs"]["gross_tonnage"].as_f64().unwrap();

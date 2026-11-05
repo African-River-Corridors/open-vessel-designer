@@ -996,7 +996,8 @@ fn rooms_block_of(measured: &crate::simulate::Measured, crew: Option<&Value>) ->
         "tier_area_m2": crate::eval::num(d.tier_area_m2),
         "rule": if r.reaches_sea { "mlc-2006-a3.1 and es-trin-2025-ch15 (the greater, per room)" } else { "es-trin-2025-ch15" },
         "mlc_applied": r.mlc_applied,
-        "headroom_m": crate::eval::num(r.headroom_m),
+        "headroom_required_m": crate::eval::num(r.headroom_m),
+        "clear_height_m": crate::eval::num(d.tier_height_m - ovd_core::aft_arrangement::deckhouse_sizes::DECK_ALLOWANCE_M),
         "rule_note": r.rule_note,
         // Settled: the crew block's berths, officers, seafarers and (at sea) GT band are those the
         // rooms were sized from.
