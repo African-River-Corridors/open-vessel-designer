@@ -235,7 +235,7 @@ pub fn crew_json(
     }
     let hours = typed_input("navigation_hours_per_day")
         .and_then(|i| i.value.as_f64())
-        .unwrap_or(if reaches_sea { 24.0 } else { 14.0 });
+        .unwrap_or(24.0);
     let ums = option
         .input("unmanned_machinery_space")
         .and_then(|i| i.value.as_bool())
@@ -290,7 +290,7 @@ pub fn crew_json(
             crew.minimum, crew.least
         ));
         notes.push(
-            "RPN 19.02 prescribes no engineer, no cook and no MLC accommodation (MLC does not reach inland-only ships); a mode B crew sleeps one to a cabin when it rests underway (RPN 18.02(4))"
+            "RPN 19.02 prescribes no engineer, no cook and no MLC accommodation (MLC does not reach inland-only ships). RPN 18.02(4) allows a single room for crew resting underway, at or below 60 dB(A), in operating modes A1 and A2 only; mode B (18.02(3)) sets rest time and no room rule (RPN is an unofficial English text)"
                 .to_string(),
         );
         minimum = crew.minimum;

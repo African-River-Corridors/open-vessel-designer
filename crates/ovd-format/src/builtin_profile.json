@@ -1383,12 +1383,12 @@
       "basis": "The manning Rule Set the crew model runs on (spec 0011 D13, issue #778). liberia-man-001: Liberia Marine Notice MAN-001 Rev. 11/22, the coastal default. uk-msn-1868: UK MSN 1868 (M) Amendment 1; it gives officers only, so the ratings come from MAN-001. ccnr-rpn-19: CCNR RPN chapters 18 and 19 (edition of 1 January 2026), the river-only default. The UK set always runs beside a Liberia run as a cross-check, and a difference of more than one person is flagged. All three are drafts until a second reader verifies them"
     },
     "navigation_hours_per_day": {
-      "default_by_service_area": { "river-only": 14.0, "coastal-and-river": 24.0 },
+      "default_by_service_area": { "river-only": 24.0, "coastal-and-river": 24.0 },
       "unit": "h",
       "hard": { "gt": 0, "le": 24 },
       "soft": { "min": 6.0, "max": 24.0 },
       "status": "estimate",
-      "basis": "Hours of navigation in 24 hours (spec 0011 4.1, 4.2, issue #778). Coastal: 24, a vessel that sails day and night. River: 14, the CCNR RPN 18.01(1) operating mode A1 limit. More than 12 hours puts three watchkeepers on the bridge (STCW A-VIII/1 rest, the spec's step 3); a river Option takes its operating mode from the hours (A1 up to 14 h, A2 up to 18 h, B up to 24 h). A working value with no source for the vessel's real trading pattern"
+      "basis": "Hours of navigation in 24 hours (spec 0011 4.1, 4.2, issue #778). Both Service Areas: 24, a vessel that sails round the clock (maintainer, 2026-11-05); on a river this is CCNR RPN 18.01(1) operating mode B. Type 14 for mode A1 (day sailing). More than 12 hours puts three watchkeepers on the bridge (STCW A-VIII/1 rest, the spec's step 3); a river Option takes its operating mode from the hours (A1 up to 14 h, A2 up to 18 h, B up to 24 h). A working value with no source for the vessel's real trading pattern"
     },
     "unmanned_machinery_space": {
       "default": true,
