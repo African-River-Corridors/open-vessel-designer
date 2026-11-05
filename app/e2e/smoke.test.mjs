@@ -49,6 +49,7 @@ async function inSettings(act) {
  * none of the marked ones is left (issue #470: a click on the old form was lost).
  */
 async function open(file, expectName, timeout = 15000) {
+  const started = Date.now();
   await browser.execute(() => document.querySelectorAll(".field[data-input]").forEach((e) => e.setAttribute("data-before-open", "")));
   answer("open.txt", file);
   await (await browser.$("button=Open")).click();
@@ -58,6 +59,8 @@ async function open(file, expectName, timeout = 15000) {
     timeout,
   );
   await until("outputs", async () => (await browser.$("[data-testid=outputs]")).isExisting(), timeout);
+  // The open time of each file, in the log, so a slow open shows before it reaches the limit (issue #922).
+  console.log(`e2e open-time ${expectName}: ${Date.now() - started} ms (limit ${timeout} ms)`);
 }
 
 /** Untick "none" on a number input, and wait until its box is there to type in. */
