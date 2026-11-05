@@ -49,6 +49,12 @@ pub trait MeasureSource {
     fn missing(&self, _object: &str) -> Option<String> {
         None
     }
+    /// Why the design has no objects of a type because the run left them out on purpose (issue #923: the
+    /// damage cases of a run that skipped damage). A Rule on such a type that the set evaluates is `not run`,
+    /// never `not evaluated`: the engine could do it and was asked not to. `None`: it was not left out.
+    fn not_run(&self, _object: &str) -> Option<String> {
+        None
+    }
     /// Whether the design has this Measure at all. A Rule on a Measure the design does not have (a
     /// check the engine did not run for it) is `not applicable`, never a failure.
     fn has(&self, _measure: &MeasureRef) -> bool {
@@ -65,6 +71,9 @@ pub enum Outcome {
     Note,
     NotApplicable,
     NotEvaluated,
+    /// Issue #923: the engine can evaluate the Rule and the run left it out on purpose (damage stability
+    /// with `--no-damage`). Not a pass: a verdict never says the design meets a Rule that was not run.
+    NotRun,
 }
 
 impl Outcome {
@@ -76,6 +85,7 @@ impl Outcome {
             Outcome::Note => "note",
             Outcome::NotApplicable => "not applicable",
             Outcome::NotEvaluated => "not evaluated",
+            Outcome::NotRun => "not run",
         }
     }
 }
@@ -135,9 +145,18 @@ impl Trace {
 
     /// The blocking Rules that are not evaluated, each once, in trace order.
     pub fn blocking_not_evaluated(&self) -> Vec<&TraceRow> {
+        self.blocking_with(Outcome::NotEvaluated)
+    }
+
+    /// The blocking Rules the run left out on purpose (issue #923), each once, in trace order.
+    pub fn blocking_not_run(&self) -> Vec<&TraceRow> {
+        self.blocking_with(Outcome::NotRun)
+    }
+
+    fn blocking_with(&self, outcome: Outcome) -> Vec<&TraceRow> {
         let mut out: Vec<&TraceRow> = Vec::new();
         for r in &self.rows {
-            if r.outcome == Outcome::NotEvaluated
+            if r.outcome == outcome
                 && r.consequence == Some(Consequence::Block)
                 && !out.iter().any(|o| o.rule == r.rule)
             {
@@ -490,6 +509,11 @@ fn reach(rule: &Rule, def: Option<&MeasureInfo>, source: &dyn MeasureSource) -> 
     };
     let objects = source.objects(&def.object);
     if objects.is_empty() {
+        if rule.evaluated
+            && let Some(reason) = source.not_run(&def.object)
+        {
+            return Reach::One(Outcome::NotRun, Some(reason));
+        }
         return match source.missing(&def.object) {
             Some(reason) => Reach::One(Outcome::NotEvaluated, Some(reason)),
             None => Reach::One(Outcome::NotApplicable, None),

@@ -37,7 +37,7 @@ import subprocess
 import sys
 
 NOTICE = "Concept and preliminary design only. Not verified. Never for approval."
-OUTCOME_ORDER = ["fail", "warn", "not evaluated", "note", "pass", "not applicable"]
+OUTCOME_ORDER = ["fail", "warn", "not evaluated", "not run", "note", "pass", "not applicable"]
 RULE_SET_NAMES = {"igc": "IGC Code", "is2008": "IS Code 2008", "es-trin": "ES-TRIN 2025/1", "icll": "ICLL",
                   "solas": "SOLAS", "lr-inland": "LR inland", "abs-barges": "ABS barges", "rheinschpv": "RheinSchPV",
                   "ovd": "OVD"}
@@ -379,7 +379,7 @@ def rule_paragraphs(o, notes=None):
 def not_evaluated(o):
     seen = {}
     for r in R(o)["rule_trace"]["rows"]:
-        if r["outcome"] == "not evaluated" and r["rule"] not in seen:
+        if r["outcome"] in ("not evaluated", "not run") and r["rule"] not in seen:
             seen[r["rule"]] = r
     return [f"{k}: {_rule_label(r, 90)}" for k, r in sorted(seen.items())]
 
@@ -549,8 +549,9 @@ def _ga(assets):
 def _compliance_blocks(o):
     ne = not_evaluated(o)
     counts = rule_counts(o)
+    not_run = f" and {counts['not run']} were not run (damage stability was skipped)" if counts["not run"] else ""
     return [prose(f"{counts['pass']} trace lines pass, {counts['warn']} warn, {counts.get('fail', 0)} fail and "
-                  f"{counts['not evaluated']} are not evaluated. The matrix shows each governing Rule and every warning once."),
+                  f"{counts['not evaluated']} are not evaluated{not_run}. The matrix shows each governing Rule and every warning once."),
             compliance(o),
             prose("**The governing Rules, one by one.**\n\n" + rule_paragraphs(o)),
             prose("**Rules not evaluated in this run:**\n\n" + ("\n".join(f"- `{x}`" for x in ne) or "- none"))]
@@ -596,8 +597,27 @@ def chapter_states(o, ref=None, assets=None):
     return states
 
 
+def damage_line(o):
+    """What the report says of whether damage stability ran (issue #923): from `damage_status`, never a guess."""
+    status = R(o).get("damage_status")
+    cases = R(o).get("damage_cases")
+    if status == "not run":
+        n = f" ({cases:,} cases skipped)" if isinstance(cases, int) else ""
+        return ("**Damage stability was not run for this result**" + n + ". The trace verdict does not cover it: "
+                "no damage Rule was checked. Run the design again with damage on.")
+    if status == "run":
+        return "Damage stability was run" + (f" ({cases:,} cases)." if isinstance(cases, int) else ".")
+    if status == "not applicable":
+        return "Damage stability: not applicable. No damage Rule Set applies to this hull in this run."
+    return f"Damage stability: {NOT_EVALUATED}. The run does not say whether damage stability ran."
+
+
 def _missing_reason(o, cid, missing):
     """Why a chapter is not evaluated. For damage stability it is the engine gap the trace names, not a JSON key."""
+    if cid == "a11" and R(o).get("damage_status") == "not run":
+        cases = R(o).get("damage_cases")
+        n = f" ({cases:,} cases skipped)" if isinstance(cases, int) else ""
+        return f"Damage stability was not run for this result{n}: the run was asked to skip it (`damage_status` is `not run`). Run it again with damage on."
     if cid == "a11":
         for r in R(o).get("rule_trace", {}).get("rows", []):
             if r["outcome"] == "not evaluated" and (r.get("measure") or {}).get("id") == "stability.damage" and r.get("gap"):
@@ -624,9 +644,10 @@ def not_evaluated_block(shows, why, closes):
 def _rule_gaps(o):
     seen = {}
     for r in R(o).get("rule_trace", {}).get("rows", []):
-        if r["outcome"] == "not evaluated" and r["rule"] not in seen:
+        if r["outcome"] in ("not evaluated", "not run") and r["rule"] not in seen:
             seen[r["rule"]] = r
     return [[f"Rule {k}: {_rule_label(r, 90)}", (r.get("gap") or "The run does not evaluate it.").rstrip(".") + ".",
+             "Run the design again with damage on" if r["outcome"] == "not run" else
              "The engine capability the gap names" + (f" (issue {r['finding']})" if r.get("finding") else "")]
             for k, r in sorted(seen.items())]
 
@@ -681,8 +702,9 @@ def _summary(o):
         verdict = prose("**Not evaluated.** The run holds no `rule_trace`, so there is no verdict.")
     else:
         c = rule_counts(o)
-        verdict = prose(f"Trace verdict: {c['pass']} pass, {c['warn']} warn, {c.get('fail', 0)} fail and {c['not evaluated']} not evaluated.")
-    return [verdict, principal_table(o)]
+        not_run = f", {c['not run']} not run" if c["not run"] else ""
+        verdict = prose(f"Trace verdict: {c['pass']} pass, {c['warn']} warn, {c.get('fail', 0)} fail and {c['not evaluated']} not evaluated{not_run}.")
+    return [verdict, prose(damage_line(o)), principal_table(o)]
 
 
 def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", title=None, commit=None, assets=None,

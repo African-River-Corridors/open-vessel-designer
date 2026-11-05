@@ -5711,6 +5711,8 @@
             }
           ]
         },
+        "damage_status": "not applicable",
+        "damage_cases": 0,
         "boil_off": {
           "evaluated": true,
           "heat_leak_kw": 106.17163985353027,
@@ -11652,6 +11654,7 @@
                 "title": "Hull in the cargo area: one of the three designs the clause allows (Type G)"
               }
             ],
+            "blocking_not_run": [],
             "summary": "meets every evaluated blocking Rule; 4 blocking Rule(s) not evaluated: Survival after the assumed damage, Severe wind and rolling criterion (weather criterion), Capacity of each cargo tank within Table 4.3.1, Hull in the cargo area: one of the three designs the clause allows (Type G)"
           },
           "measures": [
@@ -17530,6 +17533,8 @@
             }
           ]
         },
+        "damage_status": "not applicable",
+        "damage_cases": 0,
         "boil_off": {
           "evaluated": true,
           "heat_leak_kw": 106.9367668960662,
@@ -23471,6 +23476,7 @@
                 "title": "Hull in the cargo area: one of the three designs the clause allows (Type G)"
               }
             ],
+            "blocking_not_run": [],
             "summary": "meets every evaluated blocking Rule; 4 blocking Rule(s) not evaluated: Survival after the assumed damage, Severe wind and rolling criterion (weather criterion), Capacity of each cargo tank within Table 4.3.1, Hull in the cargo area: one of the three designs the clause allows (Type G)"
           },
           "measures": [
@@ -29371,6 +29377,8 @@
             }
           ]
         },
+        "damage_status": "not applicable",
+        "damage_cases": 0,
         "boil_off": {
           "evaluated": true,
           "heat_leak_kw": 108.57377192062634,
@@ -35312,6 +35320,7 @@
                 "title": "Hull in the cargo area: one of the three designs the clause allows (Type G)"
               }
             ],
+            "blocking_not_run": [],
             "summary": "meets every evaluated blocking Rule; 4 blocking Rule(s) not evaluated: Survival after the assumed damage, Severe wind and rolling criterion (weather criterion), Capacity of each cargo tank within Table 4.3.1, Hull in the cargo area: one of the three designs the clause allows (Type G)"
           },
           "measures": [

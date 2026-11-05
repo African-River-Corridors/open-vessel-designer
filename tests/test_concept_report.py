@@ -197,6 +197,8 @@ READ_BY = {
     "crew": [],   # no chapter reads it yet; #830 maps it to A4
     "air_drafts": [],   # unhashed (#888): the app and the side elevation read it; no chapter yet
     "stern_arrangement": [],   # the Stern & crew view reads it (#887); no chapter does yet
+    "damage_status": ["a11"],   # whether damage ran (#923): A.11 gives it as its reason; the summary states it too
+    "damage_cases": [],   # the case count (#923): the summary and A.11 print it beside the status; no chapter needs it
 }
 GA = {"ga-side": "side.png", "ga-mid": "mid.png"}   # so A.4 is built, and its deletion shows
 
@@ -275,9 +277,13 @@ def test_an_appendix_block_says_what_it_would_show_why_and_what_would_close_it()
 
 def test_not_applicable_is_never_printed_by_the_skeleton():
     """Label: property
-    A separate state, printed only when a rule or module says so (none does yet).
+    A separate state, printed only when a rule or module says so. One does: the engine's `damage_status`
+    (issue #923), printed as the damage line of the summary and nowhere else.
     """
-    assert "not applicable" not in _text(cr.build(RUN, "A basis")).lower()
+    text = _text(cr.build(RUN, "A basis")).lower()
+    line = cr.damage_line(A).lower()
+    assert text.count(line) == 1
+    assert "not applicable" not in text.replace(line, "")
 
 
 def test_a_missing_table_value_prints_not_evaluated_never_blank_or_zero():
@@ -499,3 +505,46 @@ def test_the_app_strip_shows_what_the_report_summary_shows():
                              text=True, check=True).stdout
         for texts, o in zip(json.loads(out), run["options"]):
             assert [t.replace("\u00a0", " ") for t in texts] == [r[1] for r in _summary_rows(run, o["name"])]
+
+
+def _with_damage(status, cases=None, rows_not_run=False):
+    """The run A with `damage_status` set, and, for a skipped run, the damage Rule row read `not run` (issue #923)."""
+    run = json.loads(json.dumps(RUN))
+    o = next(x for x in run["options"] if x["name"] == "A basis")
+    o["results"]["damage_status"] = status
+    if cases is not None:
+        o["results"]["damage_cases"] = cases
+    if rows_not_run:
+        for row in o["results"]["rule_trace"]["rows"]:
+            if row["rule"] == "igc/2.7/damage-survival":
+                row.update(outcome="not run", gap="damage stability was not run: the run skipped it")
+    return run, o
+
+
+def _summary_text(doc):
+    return "\n".join(b["markdown"] for b in _section(doc, "summary")["body"] if b["type"] == "prose")
+
+
+def test_the_summary_and_a11_say_whether_damage_ran():
+    """Label: property
+    Issue #923: the summary states `damage_status` for every value, and a skipped run says so in A.11 with the
+    cases it skipped. Nothing in the report says the damage Rules were met when the run did not run them.
+    """
+    said = {}
+    for status, cases in (("run", 40), ("not run", 40), ("not applicable", None)):
+        run, o = _with_damage(status, cases, rows_not_run=status == "not run")
+        doc = cr.build(run, "A basis", assets=GA)
+        said[status] = _summary_text(doc)
+        a11 = _section(doc, "a11")["body"][0]["markdown"]
+        if status == "not run":
+            assert "40 cases skipped" in said[status] and "not run" in said[status]
+            assert "Damage stability was not run for this result (40 cases skipped)" in a11
+            assert "1 not run" in said[status]
+            items = [r for t in _section(doc, "a14")["body"] if t["type"] == "table" for r in t["rows"]]
+            assert any("igc/2.7/damage-survival" in r[0] and r[2] == "Run the design again with damage on" for r in items)
+        else:
+            assert "was not run" not in said[status]
+    assert "Damage stability was run (40 cases)." in said["run"]
+    assert "not applicable" in said["not applicable"]
+    # A run that does not say whether damage ran is not read as run.
+    assert "Damage stability: not evaluated" in _summary_text(cr.build(_run_without("damage_status"), "A basis", assets=GA))

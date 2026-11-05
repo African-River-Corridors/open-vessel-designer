@@ -9,6 +9,7 @@
 //! A single self-propelled Hull, a single pushed barge (without its pusher) and a pushed convoy
 //! (one barge and the totals of every barge, without the pusher) are computed.
 
+use crate::damage::DamageControl;
 use crate::rule_set::Library;
 use crate::simulate::{Outcome, RunRules, simulate_params_measured};
 use crate::trace::{rule_inputs, stack_for, trace_json, trace_of};
@@ -361,8 +362,8 @@ pub use arc_rules::load::canonical_json;
 /// (`structure_geometry`) stay outside, like the meshes: `ovd run --json` stores them only on request
 /// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
 /// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
-/// moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results. The stern arrangement (`stern_arrangement`, issue #887) is a summary of what the drawing block holds, for the Stern & crew view; it too is outside the hash.
-pub const UNHASHED_KEYS: [&str; 20] = [
+/// moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results. The stern arrangement (`stern_arrangement`, issue #887) is a summary of what the drawing block holds, for the Stern & crew view; it too is outside the hash. So are `damage_status` (`run`, `not run` or `not applicable`) and `damage_cases` (the number of damage cases, counted even when damage is skipped), issue #923: when damage runs they add to the results and move no saved hash.
+pub const UNHASHED_KEYS: [&str; 22] = [
     "drawing",
     "stability_marks",
     "cost_masses",
@@ -383,6 +384,8 @@ pub const UNHASHED_KEYS: [&str; 20] = [
     "air_drafts",
     "stern_arrangement",
     "holding_time",
+    "damage_status",
+    "damage_cases",
 ];
 
 /// SHA-256 of the canonical JSON of `results`, without the [`UNHASHED_KEYS`].
@@ -449,6 +452,7 @@ pub fn option_vessel_run(option: &DesignOption) -> Result<VesselRun, String> {
     let rules = RunRules {
         sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
         inputs: rule_inputs(option),
+        ..RunRules::default()
     };
     let (outcome, measured) = simulate_params_measured(&params, &rules);
     match outcome {
@@ -612,6 +616,17 @@ pub fn run_option_with(
     library: &Library,
     extra: &[(String, String)],
 ) -> RunOutcome {
+    run_option_with_damage(option, library, extra, &DamageControl::default())
+}
+
+/// [`run_option_with`], with the damage switch and progress hook (issue #923). With `damage.run` false the
+/// results hold no damage cases, `damage_status` is `not run`, and the damage Rules read `not run`.
+pub fn run_option_with_damage(
+    option: &DesignOption,
+    library: &Library,
+    extra: &[(String, String)],
+    damage: &DamageControl,
+) -> RunOutcome {
     let params = match simulate_params_of(option) {
         Ok(p) => p,
         Err(m) => return RunOutcome::Failed(m),
@@ -624,6 +639,7 @@ pub fn run_option_with(
     let rules = RunRules {
         sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
         inputs: rule_inputs(option),
+        damage: damage.clone(),
     };
     let mut params = params;
     let (outcome, mut measured, _rooms_settled) =
@@ -1180,11 +1196,21 @@ pub fn run_design_with(
     library: &Library,
     extra: &[(String, String)],
 ) -> Vec<RunOption> {
+    run_design_with_damage(design, library, extra, &DamageControl::default())
+}
+
+/// [`run_design_with`], with the damage switch and progress hook (issue #923; see [`run_option_with_damage`]).
+pub fn run_design_with_damage(
+    design: &Design,
+    library: &Library,
+    extra: &[(String, String)],
+    damage: &DamageControl,
+) -> Vec<RunOption> {
     design
         .options
         .iter()
         .map(|o| {
-            let outcome = run_option_with(o, library, extra);
+            let outcome = run_option_with_damage(o, library, extra, damage);
             let hash_status = match (&outcome, &o.results_hash) {
                 (RunOutcome::Results { hash, .. }, Some(stored))
                     if hash.eq_ignore_ascii_case(stored) =>
@@ -1316,6 +1342,19 @@ pub fn summary_lines(name: &str, results: &Value) -> Vec<String> {
         f(r, &["air_draft_loaded_m"], 2),
         f(r, &["air_draft_light_m"], 2)
     ));
+    // Issue #923: whether damage stability was run.
+    if let Some(status) = results["damage_status"].as_str() {
+        lines.push(match (status, results["damage_cases"].as_u64()) {
+            ("not run", Some(n)) => format!(
+                "  Damage stability: NOT RUN ({n} cases skipped); the verdict does not cover it"
+            ),
+            ("not run", None) => {
+                "  Damage stability: NOT RUN; the verdict does not cover it".to_string()
+            }
+            ("run", Some(n)) => format!("  Damage stability: run ({n} cases)"),
+            (status, _) => format!("  Damage stability: {status}"),
+        });
+    }
     // A gas Design: the tank, with its diameter datum said (issue #292).
     let tank = &results["drawing"]["tank"];
     if tank.is_object() {

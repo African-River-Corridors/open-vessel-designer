@@ -50,8 +50,11 @@ Usage:
       List hard errors and soft warnings without running. --inputs also lists every input
       as used, typed or default. Exits 1 if there is any hard error. A file must store
       every input as used, so a left-out input is a hard error: run `ovd fill` first.
-  ovd run [--profile <profile.json>] [--rule-set <file>]... [--json [--steel-list]] <file.vdesign>
-      Compute every Option of a Design and print a short summary. --json prints the full
+  ovd run [--profile <profile.json>] [--rule-set <file>]... [--json [--steel-list]] [--no-damage] <file.vdesign>
+      Compute every Option of a Design and print a short summary. Damage stability runs by
+      default; --no-damage skips it (the slowest part): the results then say `damage_status`
+      `not run`, count the cases skipped in `damage_cases`, and read the damage Rules `not run`,
+      and the verdict does not say the design meets them (issue #923). --json prints the full
       results instead. A gas hull's steel comes as its summary (`structure`: weight and centre
       per member group, scrap, plates bought); --steel-list adds the per-item steel list
       (`steel_list`) and its geometry (`structure_geometry`), which are large and outside the
@@ -197,6 +200,7 @@ struct Flags<'a> {
     inputs: bool,
     json: bool,
     steel_list: bool,
+    no_damage: bool,
     as_new: bool,
     service_area: Option<&'a str>,
     files: Vec<&'a str>,
@@ -216,6 +220,7 @@ fn parse_flags<'a>(
         inputs: false,
         json: false,
         steel_list: false,
+        no_damage: false,
         as_new: false,
         service_area: None,
         files: Vec::new(),
@@ -246,6 +251,8 @@ fn parse_flags<'a>(
             "--inputs" if allow_inputs => flags.inputs = true,
             "--json" if allow_json => flags.json = true,
             "--steel-list" if allow_json => flags.steel_list = true,
+            // Issue #923: only `run` works out damage stability, so only `run` can skip it.
+            "--no-damage" if allow_json => flags.no_damage = true,
             "--as-new" if allow_as_new => flags.as_new = true,
             // Issue #925: only `fill` writes a Design, so only `fill` can set the Service Area.
             "--service-area" if allow_as_new => {
@@ -789,7 +796,12 @@ fn run(args: &[&str]) -> Result<bool, String> {
             return Ok(false);
         }
     };
-    let runs = ovd_format::run_design_with(design, &rules, &extra);
+    // Issue #923: damage stability runs unless `--no-damage` skips it; the results say which.
+    let damage = ovd_format::damage::DamageControl {
+        run: !flags.no_damage,
+        progress: None,
+    };
+    let runs = ovd_format::run_design_with_damage(design, &rules, &extra, &damage);
     for r in &runs {
         if let HashStatus::Differs { stored, computed } = &r.hash_status {
             eprintln!(
