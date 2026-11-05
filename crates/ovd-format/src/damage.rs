@@ -331,7 +331,6 @@ pub(crate) fn run_gas_damage(
                 })).collect::<Vec<_>>(),
             });
             CaseRun {
-                case,
                 row,
                 verdict: ovd_core::measured::DamageVerdict {
                     name: format!("{}: {}", c.condition.name, case.name),
@@ -344,7 +343,8 @@ pub(crate) fn run_gas_damage(
                 gd,
             }
         });
-        for r in runs {
+        // `runs` is in case order, so each result pairs with its case (the governing case's extent, issue #928).
+        for (case, r) in cases.iter().zip(runs) {
             let worse = match &worst {
                 None => true,
                 Some((i, ..)) => {
@@ -355,7 +355,7 @@ pub(crate) fn run_gas_damage(
                 }
             };
             if worse {
-                worst_case = Some(r.case);
+                worst_case = Some(case);
                 worst = Some((out.len(), r.flooded, r.m, r.gd));
             }
             rows.push(r.row);
@@ -540,9 +540,7 @@ pub(crate) const NORMAM_METHOD: &str =
 
 /// What one damage case gives: its row of the `damage` block, its verdict, and what the governing case needs
 /// if it is the worst (the flooding, the damaged mass and its centre of gravity).
-struct CaseRun<'a> {
-    /// The case itself, for the governing case's extent (issue #928).
-    case: &'a ovd_core::damage_cases::DamageCase,
+struct CaseRun {
     row: serde_json::Value,
     verdict: ovd_core::measured::DamageVerdict,
     flooded: Vec<ovd_core::damage_stability::FloodedVolume>,
