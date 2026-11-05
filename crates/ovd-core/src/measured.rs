@@ -122,6 +122,123 @@ pub fn loading_condition_kind(name: &str) -> &'static str {
     }
 }
 
+/// The rooms measures (issue #781): which room row, and what is read from it.
+impl Measured {
+    /// The rooms table of a deckhouse stern, when the run sized one (issue #780).
+    pub fn rooms(&self) -> Option<&crate::rooms::Rooms> {
+        self.vessel
+            .as_ref()?
+            .result
+            .aft_arrangement
+            .as_ref()?
+            .deckhouse
+            .as_ref()?
+            .rooms
+            .as_ref()
+    }
+
+    /// The clear height of the deckhouse tiers (m): the tier height less the allowance for the deck
+    /// structure and the overhead services. This is the design's headroom: the headroom Rules read it,
+    /// not the headroom the rooms were sized for (which would be the Rule's own limit).
+    pub fn deckhouse_clear_height_m(&self) -> Option<f64> {
+        let d = self
+            .vessel
+            .as_ref()?
+            .result
+            .aft_arrangement
+            .as_ref()?
+            .deckhouse
+            .as_ref()?;
+        Some(d.tier_height_m - crate::aft_arrangement::deckhouse_sizes::DECK_ALLOWANCE_M)
+    }
+
+    /// A value of the rooms table, for the `rooms.*` Measures: see [`rooms_measure`].
+    fn rooms_value(&self, name: &str, m: &MeasureRef) -> Result<MeasureValue, String> {
+        let r = self
+            .rooms()
+            .filter(|r| !r.rows.is_empty())
+            .ok_or_else(|| "the Option has no deckhouse rooms table".to_string())?;
+        let clear = self
+            .deckhouse_clear_height_m()
+            .ok_or_else(|| "the Option has no deckhouse".to_string())?;
+        rooms_measure(r, clear, name, m)
+    }
+}
+
+/// A value of a rooms table for the `rooms.*` Measures. The headroom is the deckhouse's clear height
+/// (`clear_height_m`), which a design can get wrong; the areas and counts are read from the table.
+pub fn rooms_measure(
+    r: &crate::rooms::Rooms,
+    clear_height_m: f64,
+    name: &str,
+    m: &MeasureRef,
+) -> Result<MeasureValue, String> {
+    {
+        let row = |id: &str| {
+            r.rows
+                .iter()
+                .find(|x| x.id == id)
+                .ok_or_else(|| format!("the rooms table has no `{id}` row"))
+        };
+        let n = |x: f64| Ok(MeasureValue::Number(x));
+        // The sleeping cabins of the table: ratings, the senior officers with a day room, the other
+        // officers (issue #892). A cabin Rule reads the smallest, so it holds for every cabin.
+        let cabins = || {
+            let rows: Vec<&crate::rooms::Room> = r
+                .rows
+                .iter()
+                .filter(|x| matches!(x.id, "cabin" | "cabin_senior" | "cabin_officer"))
+                .collect();
+            if rows.is_empty() {
+                Err("the rooms table has no cabin row".to_string())
+            } else {
+                Ok(rows)
+            }
+        };
+        let smallest_cabin = || {
+            cabins().map(|c| {
+                c.iter()
+                    .map(|x| x.area_each_m2)
+                    .fold(f64::INFINITY, f64::min)
+            })
+        };
+        match name {
+            "headroom_m" => n(clear_height_m),
+            "cabin_area_m2" => n(smallest_cabin()?),
+            "cabin_volume_m3" => n(smallest_cabin()? * clear_height_m),
+            "communal_area_m2" => n(row("communal")?.area_m2),
+            "communal_area_per_person_m2" => n(row("communal")?.area_m2 / f64::from(r.berths)),
+            "washbasins_per_cabin" => {
+                let cabin_count: u32 = cabins()?.iter().map(|x| x.count).sum();
+                n(f64::from(row("washbasin")?.count) / f64::from(cabin_count))
+            }
+            "toilet_area_m2" => n(row("toilet")?.area_each_m2),
+            "persons_per_fixture" => {
+                let fixture = match m.args.iter().find(|(k, _)| k == "fixture") {
+                    Some((_, ArgValue::Text(f))) => f.as_str(),
+                    _ => {
+                        return Err(
+                            "`rooms.persons_per_fixture` needs the text argument `fixture`"
+                                .to_string(),
+                        );
+                    }
+                };
+                if !matches!(fixture, "toilet" | "washbasin" | "shower") {
+                    return Err(format!(
+                        "`rooms.persons_per_fixture` takes the fixture `toilet`, `washbasin` or `shower`, not `{fixture}`"
+                    ));
+                }
+                let count = row(fixture)?.count;
+                if count == 0 {
+                    return Err(format!("the rooms table has no {fixture}"));
+                }
+                n(f64::from(r.berths) / f64::from(count))
+            }
+            other => Err(format!("no value for Measure `rooms.{other}`")),
+        }
+    }
+}
+
 impl Measured {
     /// The value of an object input of loading condition `index` (`loading_condition_kind`).
     pub fn object_input(&self, object: &str, index: usize, name: &str) -> Option<String> {
@@ -393,6 +510,8 @@ impl Measured {
                 !self.speeds_kn.is_empty() && self.design_speed_kn.is_some()
             }
             "wheelhouse.lift_enough" => self.lift_enough.is_some(),
+            // Issue #781: the deckhouse rooms of a deckhouse stern; none on the container block.
+            id if id.starts_with("rooms.") => self.rooms().is_some_and(|r| !r.rows.is_empty()),
             "powering.depth_over_draught" => self.depth_over_draught.is_some(),
             "freeboard.laden" => self.freeboard_laden_m.is_some(),
             "formation.coupling_force" => self.coupling_force_kn.is_some(),
@@ -404,6 +523,12 @@ impl Measured {
             "propulsion.redundancy_28_04"
             | "wheelhouse.field_of_view"
             | "wheelhouse.raised_stability"
+            | "wheelhouse.conning_arc_deg"
+            | "arrangement.airlock"
+            | "arrangement.airlock_door_spacing_m"
+            | "arrangement.sleeping_rooms_above_load_line"
+            | "machinery.escape_routes"
+            | "arrangement.cargo_facing_fronts"
             | "formation.separate_vessels"
             | "formation.notch_wing_walls" => false,
             _ => true,
@@ -568,6 +693,9 @@ impl Measured {
                 return Err("the powering has no environment".to_string());
             }
             return Ok(MeasureValue::Number(slowest / design));
+        }
+        if let Some(name) = m.id.strip_prefix("rooms.") {
+            return self.rooms_value(name, m);
         }
         if m.id == "wheelhouse.lift_enough" {
             return self

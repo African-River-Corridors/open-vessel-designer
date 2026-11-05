@@ -163,8 +163,9 @@
  "rooms": {
   "basis": "Spec 0011 D5, section 2: rooms sized from the crew model's berths to ES-TRIN 2025/1 Chapter 15. Areas marked estimate are required by the text but have no floor area in it: each is a stated estimate with its working. Concept and preliminary design only (ADR 0011).",
   "berths": 19,
+  "clear_height_m": 2.1,
   "gt_used": 13919,
-  "headroom_m": 2.03,
+  "headroom_required_m": 2.03,
   "mlc_applied": true,
   "officers": 8,
   "required_area_basis": "the rooms of the crew's berths, each sized to the greater of MLC 2006 Standard A3.1 and ES-TRIN 2025/1 Chapter 15 (this Service Area reaches sea); no exemption applied (issues #780, #892)",

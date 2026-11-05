@@ -118,7 +118,7 @@ fn a_coastal_option_is_checked_against_two_lengths_and_the_light_blind_distance_
         json!({ "service_area": "coastal-and-river", "arrangement_style": "container_block" }),
     ));
     let sets = r["rule_trace"]["rule_sets"].to_string();
-    assert!(sets.contains("solas-v22@1.0.0"), "{sets}");
+    assert!(sets.contains("solas-v22@1.1.0"), "{sets}");
     let light = rows(&r, "solas/V.22.1.1/blind-zone-light");
     let laden = rows(&r, "solas/V.22.1.1/blind-zone-laden");
     assert_eq!(light.len(), 1);

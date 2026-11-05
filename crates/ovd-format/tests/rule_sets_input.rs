@@ -130,6 +130,8 @@ fn the_schema_lists_the_two_new_inputs_and_not_the_ruleset() {
             "es-trin-2025",
             "icll-freeboard",
             "solas-v22",
+            "solas-ii-2",
+            "mlc-2006",
             "abs-barges",
             "abs-steel-barges",
             "ovd"
@@ -652,6 +654,8 @@ fn the_ovd_set_and_a_set_an_included_set_requires_cannot_be_removed() {
             "es-trin-2025",
             "icll-freeboard",
             "solas-v22",
+            "solas-ii-2",
+            "mlc-2006",
             "abs-barges",
             "abs-steel-barges",
             "ovd"
@@ -693,7 +697,7 @@ fn the_trace_states_the_scope_with_the_service_area_the_sets_and_the_gaps() {
     let river = scope(&design);
     assert!(
         river.starts_with(
-            "Service Area river-only; Rule Sets is2008-a@2.0.0, es-trin-2025@2.0.0, ovd@"
+            "Service Area river-only; Rule Sets is2008-a@2.0.0, es-trin-2025@2.1.0, ovd@"
         ),
         "{river}"
     );

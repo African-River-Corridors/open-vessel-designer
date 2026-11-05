@@ -69,6 +69,10 @@ const BUILT_IN: &[(&str, &str)] = &[
         include_str!("../rules/es-trin-2025/2.0.0.json"),
     ),
     (
+        "rules/es-trin-2025/2.1.0.json",
+        include_str!("../rules/es-trin-2025/2.1.0.json"),
+    ),
+    (
         "rules/icll-freeboard/1.0.0.json",
         include_str!("../rules/icll-freeboard/1.0.0.json"),
     ),
@@ -83,6 +87,15 @@ const BUILT_IN: &[(&str, &str)] = &[
     (
         "rules/solas-v22/1.0.0.json",
         include_str!("../rules/solas-v22/1.0.0.json"),
+    ),
+    (
+        "rules/solas-v22/1.1.0.json",
+        include_str!("../rules/solas-v22/1.1.0.json"),
+    ),
+    // Issue #781: two SOLAS II-2 paragraphs named as gaps, not coded (the text is not in the library).
+    (
+        "rules/solas-ii-2/1.0.0.json",
+        include_str!("../rules/solas-ii-2/1.0.0.json"),
     ),
     (
         "rules/abs-barges/1.0.0.json",
@@ -118,6 +131,16 @@ const BUILT_IN: &[(&str, &str)] = &[
     (
         "rules/igc-2g/3.2.0.json",
         include_str!("../rules/igc-2g/3.2.0.json"),
+    ),
+    // Issue #781: the IGC 3.6.1 airlock rows.
+    (
+        "rules/igc-2g/3.3.0.json",
+        include_str!("../rules/igc-2g/3.3.0.json"),
+    ),
+    // Issue #781: the MLC 2006 accommodation Standard, for a Service Area that reaches sea.
+    (
+        "rules/mlc-2006/1.0.0.json",
+        include_str!("../rules/mlc-2006/1.0.0.json"),
     ),
     (
         "rules/lr-inland-gas/1.0.0.json",

@@ -457,6 +457,8 @@ One row per Rule per object, in selection order, then the set's rule order, then
 
 On `coastal-and-river` every stack also holds `abs-barges` (issue #363: two note rows for an ATB Formation, none for any other).
 
+`mlc-2006` (issue #781, Maritime Labour Convention 2006 Standard A3.1: accommodation rows checked against the deckhouse rooms table) applies to a Service Area that reaches sea only (`applies_when` `service_area: coastal-and-river`; MLC Article II(1)(i) defines "ship" to exclude one that navigates exclusively in inland waters). The maintainer confirmed its place in the `coastal-and-river` default stacks on 2026-11-05. The exemptions of A3.1.20 (ships under 200 GT) and A3.1.21 are not applied: the rows hold for every ship of the Service Area.
+
 - **Target stacks (later specs, not built here).** River only adds an inland class stability set (BV
   NR217 Pt B Ch 2 Sec 2 [4.1], which has the same three numbers as ADN 9.3.1.14.2) and ES-TRIN 2025/1
   Chapter 4 freeboard and safety clearance as a reference. Coastal and river adds IS Code 2008 Part B
