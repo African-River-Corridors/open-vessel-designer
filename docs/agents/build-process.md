@@ -204,6 +204,8 @@ switch to the Rust core to the agents. Problems found after a merge are fixed fo
 ## Rules every agent follows
 
 - One PR per ticket, straight to `main`. Never push to `main` directly.
+- Examples and reference designs follow today's Rules; a design that fails them is fixed, not pinned (ADR
+  0025, `docs/adr/0025-re-baseline-examples-to-todays-rules.md`).
 - Never loosen a test tolerance to make a number pass. Never hand-edit an expected value: a value is
   printed by the original code or worked out and cited.
 - This repo is public. Check every PR body and comment with the embargo one-liner in `issue-tracker.md`,
