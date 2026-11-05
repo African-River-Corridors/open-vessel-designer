@@ -98,7 +98,7 @@
           "source": "default"
         },
         "bow_rake_max_length_m": {
-          "value": 10.0,
+          "value": null,
           "source": "default"
         },
         "gross_tonnage": {
@@ -110,7 +110,7 @@
           "source": "default"
         },
         "lpg_loading_limit_basis": {
-          "value": "igc_15_1_3",
+          "value": "refrigerated_density",
           "source": "default"
         },
         "lpg_loading_temperature_c": {
@@ -126,27 +126,27 @@
           "source": "default"
         },
         "tank_design_pressure_mpa": {
-          "value": 1.77,
+          "value": 0.5,
           "source": "default"
         },
         "tank_design_temperature_c": {
-          "value": 0.0,
+          "value": null,
           "source": "default"
         },
         "tank_material": {
-          "value": "S690QL1",
+          "value": "9Ni",
           "source": "default"
         },
         "tank_head_type": {
-          "value": "ellipsoidal_2to1",
+          "value": "hemisphere",
           "source": "default"
         },
         "tank_liquid_pressure": {
-          "value": "static",
+          "value": "none",
           "source": "default"
         },
         "tank_allowable_stress_basis": {
-          "value": "igc_4_23_3_1",
+          "value": "published_design",
           "source": "default"
         },
         "tank_allowable_stress_mpa": {
@@ -154,11 +154,11 @@
           "source": "default"
         },
         "tank_insulation_type": {
-          "value": "none",
+          "value": "unspecified",
           "source": "default"
         },
         "tank_insulation_thickness_mm": {
-          "value": 0.0,
+          "value": 350.0,
           "source": "default"
         },
         "holding_profile": {
@@ -203,7 +203,7 @@
           "source": "default"
         },
         "tank_structure_factor": {
-          "value": 1.12,
+          "value": 1.3,
           "source": "default"
         },
         "tanks_across": {
@@ -247,23 +247,23 @@
           "source": "default"
         },
         "tank_forming_allowance_pct": {
-          "value": 5.0,
+          "value": 0.0,
           "source": "default"
         },
         "tank_dome_wall_thickness_mm": {
-          "value": 25.0,
+          "value": 0.0,
           "source": "default"
         },
         "aft_end_space_m": {
-          "value": 0.2,
+          "value": 0.6,
           "source": "default"
         },
         "fwd_end_space_m": {
-          "value": 0.2,
+          "value": 0.5,
           "source": "default"
         },
         "opening_setback_basis": {
-          "value": "cargo_area",
+          "value": "tank_end",
           "source": "default"
         },
         "tank_wall_thickness_mm": {
@@ -279,7 +279,7 @@
           "source": "default"
         },
         "stern_run_length_m": {
-          "value": null,
+          "value": 0.0,
           "source": "default"
         },
         "stern_transom_height_m": {
@@ -287,31 +287,11 @@
           "source": "default"
         },
         "propulsor_type": {
-          "value": "azimuth_ducted",
-          "source": "default"
-        },
-        "propulsor_count": {
-          "value": 2.0,
-          "source": "default"
-        },
-        "propeller_diameter_m": {
-          "value": null,
-          "source": "default"
-        },
-        "propeller_diameter_basis": {
-          "value": "light_draught",
-          "source": "default"
-        },
-        "propulsor_efficiency_factor": {
-          "value": 0.8,
-          "source": "default"
-        },
-        "bollard_pull_factor": {
-          "value": 0.974,
+          "value": "unspecified",
           "source": "default"
         },
         "power_source": {
-          "value": "gas_fuelled",
+          "value": "battery_electric",
           "source": "default"
         },
         "installed_power_kw": {
@@ -319,19 +299,27 @@
           "source": "default"
         },
         "design_speed_kn": {
-          "value": 9.7,
+          "value": null,
           "source": "default"
         },
         "installed_power_margin": {
-          "value": 1.2,
+          "value": null,
           "source": "default"
         },
         "bow_thruster": {
-          "value": "channel_jet",
+          "value": "none",
           "source": "default"
         },
-        "bow_thruster_power_kw": {
+        "battery_energy_kwh": {
           "value": null,
+          "source": "default"
+        },
+        "trip_length_km": {
+          "value": null,
+          "source": "default"
+        },
+        "battery_unit_energy_kwh": {
+          "value": 5000.0,
           "source": "default"
         },
         "wheelhouse_type": {
@@ -339,23 +327,27 @@
           "source": "default"
         },
         "sightline_method": {
-          "value": "blind_distance",
+          "value": "margin",
           "source": "default"
         },
         "stern_block_mass_included": {
-          "value": true,
-          "source": "default"
-        },
-        "gas_combustion_unit": {
           "value": false,
           "source": "default"
         },
+        "propulsive_efficiency": {
+          "value": 0.45,
+          "source": "default"
+        },
         "resistance_method": {
-          "value": "barge_form_factor",
+          "value": "barge_fit",
           "source": "default"
         },
         "max_speed_kn": {
           "value": 10.0,
+          "source": "default"
+        },
+        "thruster_count": {
+          "value": 3.0,
           "source": "default"
         },
         "thruster_envelope_m": {
@@ -411,7 +403,7 @@
           "source": "default"
         },
         "wheelhouse_eye_height_m": {
-          "value": 1.65,
+          "value": 1.5,
           "source": "default"
         },
         "sightline_margin_m": {
@@ -475,47 +467,7 @@
           "source": "default"
         },
         "loading_conditions": {
-          "value": "is_code_2008",
-          "source": "default"
-        },
-        "may_sail_without_ballast": {
-          "value": false,
-          "source": "default"
-        },
-        "endurance_h": {
-          "value": 72.0,
-          "source": "default"
-        },
-        "fixed_stores_t": {
-          "value": 10.0,
-          "source": "default"
-        },
-        "ballast_plan": {
-          "value": "least_ballast",
-          "source": "default"
-        },
-        "ballast_departure_double_bottom_fill": {
-          "value": 0.0,
-          "source": "default"
-        },
-        "ballast_departure_peak_fill": {
-          "value": 0.0,
-          "source": "default"
-        },
-        "ballast_departure_wing_fill": {
-          "value": 0.0,
-          "source": "default"
-        },
-        "ballast_arrival_double_bottom_fill": {
-          "value": 0.0,
-          "source": "default"
-        },
-        "ballast_arrival_peak_fill": {
-          "value": 0.0,
-          "source": "default"
-        },
-        "ballast_arrival_wing_fill": {
-          "value": 0.0,
+          "value": "legacy",
           "source": "default"
         },
         "hull_steel_rate": {
@@ -559,19 +511,19 @@
           "source": "default"
         },
         "genset_rate_per_kwe": {
-          "value": 500.0,
+          "value": 0.0,
           "source": "default"
         },
         "machinery_steel_rate": {
-          "value": 2500.0,
+          "value": 0.0,
           "source": "default"
         },
         "deckhouse_rate_per_m2": {
-          "value": 3000.0,
+          "value": 0.0,
           "source": "default"
         },
         "gas_fuel_system_rate_per_kw": {
-          "value": 200.0,
+          "value": 0.0,
           "source": "default"
         },
         "wheelhouse_accom_lump": {
@@ -591,7 +543,7 @@
           "source": "default"
         },
         "tank_internals_fraction": {
-          "value": 0.5,
+          "value": 0.0,
           "source": "default"
         },
         "currency": {
@@ -611,11 +563,11 @@
           "source": "default"
         },
         "entrance_distance_m": {
-          "value": 5.0,
+          "value": 2.0,
           "source": "default"
         },
         "engine_room_vent_inlet_distance_m": {
-          "value": 5.0,
+          "value": 2.0,
           "source": "default"
         },
         "funnel_outlet_distance_m": {
@@ -670,20 +622,14 @@
             },
             {
               "id": "is2008-a",
-              "version": "2.0.0",
-              "hash": "c8fb5651866ea1f2e9d8197a866b320e3b6ab33e398e4d926b9158bc82e7d7a2",
+              "version": "1.0.0",
+              "hash": "cfab2d1cda90d0cfda8edbf0955082345cd30ef2d102c9840e8d4feab5297e37",
               "source": "default"
             },
             {
               "id": "lr-inland-gas",
               "version": "2.0.0",
               "hash": "d48daf283c393b48dfd37441bac44b573718d44b1fc93d2d6291d77ee76e4564",
-              "source": "default"
-            },
-            {
-              "id": "es-trin-2025",
-              "version": "2.0.0",
-              "hash": "76f9756de763c47b277ff099cbf05a5872382bb6d9e91bf2a3f593909901bfe3",
               "source": "default"
             },
             {
@@ -696,7 +642,7 @@
           "source": "default"
         }
       },
-      "results_hash": "9b0e5429ffbcecafbedfca05d06678cf4390b7efb243a4711154261252939e2d"
+      "results_hash": "e533cccfa9dd049295451db9c4b89d66d493c87980c56af2b44977b1ddae50a4"
     }
   ],
   "defaults_profile": "built-in"
