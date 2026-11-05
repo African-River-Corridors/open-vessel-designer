@@ -206,6 +206,7 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         "sightline_method",
         "wheelhouse_type",
         "arrangement_style",
+        "deckhouse_openings",
         "tank_head_type",
         "tank_liquid_pressure",
         "tank_allowable_stress_basis",
@@ -1037,18 +1038,29 @@ fn stern_arrangement_of(
     let limit_set = vessel.capacity.air_draft_limit_m.is_some();
     Some(match &aft.deckhouse {
         // D4: fixed on the deckhouse, unless an air-draft limit is set and the wheelhouse can lift.
-        Some(d) => json!({
-            "style": "deckhouse",
-            "tiers": d.tiers,
-            "wheelhouse": if d.wheelhouse_elevating { "elevating" } else { "fixed" },
-            "wheelhouse_basis": if d.wheelhouse_elevating {
-                "air_draft_limit"
-            } else if limit_set && lift <= 0.0 {
-                "no_lift"
-            } else {
-                "no_air_draft_limit"
-            },
-        }),
+        Some(d) => {
+            let mut block = json!({
+                "style": "deckhouse",
+                "tiers": d.tiers,
+                "wheelhouse": if d.wheelhouse_elevating { "elevating" } else { "fixed" },
+                "wheelhouse_basis": if d.wheelhouse_elevating {
+                    "air_draft_limit"
+                } else if limit_set && lift <= 0.0 {
+                    "no_lift"
+                } else {
+                    "no_air_draft_limit"
+                },
+            });
+            // Issue #912: the openings of the deckhouse (outside the results hash, like the block).
+            if let Some(p) = &measured.openings {
+                block["openings"] = openings_json(p);
+                block["opening_zone_m"] = crate::eval::num(p.zone_m);
+                block["icll_length_m"] = crate::eval::num(p.l_icll_m);
+                block["openings_source"] = json!(if p.typed { "typed" } else { "default" });
+                block["openings_basis"] = json!(p.basis);
+            }
+            block
+        }
         None => json!({
             "style": "container_block",
             "tiers": Value::Null,
@@ -1062,6 +1074,35 @@ fn stern_arrangement_of(
             },
         }),
     })
+}
+
+/// The openings of a deckhouse stern as results rows (issue #912): each with its position, face, kind
+/// and space, its distance from the deckhouse front, whether it faces the cargo area and whether it
+/// stands in the zone of IGC 3.2.4.1.
+fn openings_json(p: &ovd_core::deckhouse_openings::Placement) -> Value {
+    use crate::eval::num;
+    Value::Array(
+        p.openings
+            .iter()
+            .map(|o| {
+                json!({
+                    "id": o.opening.id,
+                    "kind": o.opening.kind.key(),
+                    "space": o.opening.space.key(),
+                    "face": o.opening.face.key(),
+                    "x_m": num(o.opening.x_m),
+                    "y_m": num(o.opening.y_m),
+                    "z_m": num(o.opening.z_m),
+                    "tier": o.opening.tier,
+                    "openable": o.opening.openable,
+                    "gas_tight": o.opening.gas_tight,
+                    "distance_from_front_m": num(o.distance_from_front_m),
+                    "faces_cargo_area": o.faces_cargo_area,
+                    "in_zone": o.in_zone,
+                })
+            })
+            .collect(),
+    )
 }
 
 /// The `gross_tonnage` results block (issue #777): V by its parts, K1, the computed GT, the typed

@@ -961,6 +961,10 @@
       "default": null,
       "basis": "the deck openings through which progressive flooding may take place: engine room vent inlets and air intakes, entrances, deckhouse openings, hatches not closed weathertight (IS Code 2008, MSC.267(85), Part B 2.2.3.5: not an opening closed by a watertight manhole cover or a vent fitted with an automatic closure). One row each: x_m from the aft end, y_m across from the centre line (either side), height_above_deck_m above the deck at the side. With no angle typed, the engine works the angle of down-flooding for each loading condition from these: the heel, from the hull's sections at the free-trim equilibrium, at which the lowest opening is immersed. A typed angle wins. none: no openings listed, so the angle is the typed one, if any (issue #592)"
     },
+    "deckhouse_openings": {
+      "default": null,
+      "basis": "the openings of a deckhouse stern, typed as rows of kind (entrance, window, air_inlet, air_intake), space (accommodation, service, machinery, control_station, wheelhouse), face (front, side, aft), x_m (forward of the stern), y_m (to starboard of the centreline) and z_m (above the keel), with optional openable, gas_tight, tier and name. null: the engine places a default layout (an estimate): accommodation and machinery doors and air inlets on the aft end, wheelhouse doors on the sides designed gas-tight, a fixed wheelhouse front. A typed list stands in for the default layout, wholly. IGC 3.2.4.1 and 3.2.4.2 (MSC.370(93)) are what the rows of the Rule Set check"
+    },
     "draught_limit_m": {
       "default": null,
       "unit": "m",

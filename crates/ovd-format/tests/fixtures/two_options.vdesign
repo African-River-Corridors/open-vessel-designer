@@ -369,6 +369,10 @@
           "value": null,
           "source": "default"
         },
+        "deckhouse_openings": {
+          "value": null,
+          "source": "default"
+        },
         "service_area": {
           "value": "river-only",
           "source": "default"
@@ -755,6 +759,10 @@
           "source": "default"
         },
         "price_base_date": {
+          "value": null,
+          "source": "default"
+        },
+        "deckhouse_openings": {
           "value": null,
           "source": "default"
         },

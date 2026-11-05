@@ -33,6 +33,7 @@ pub fn measure_info(id: &str) -> Option<MeasureInfo> {
         | InputKind::ParameterSet
         | InputKind::OffsetsTable
         | InputKind::OpeningsList
+        | InputKind::DeckhouseOpenings
         | InputKind::OperationProfile
         | InputKind::RuleSets => return None,
     };

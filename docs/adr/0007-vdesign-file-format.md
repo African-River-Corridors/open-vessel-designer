@@ -112,6 +112,10 @@ save writes the current version.
   `deckhouse_side_opening_distance_m`, `entrance_distance_m`, `engine_room_vent_inlet_distance_m` and
   `funnel_outlet_distance_m`. A file without them reads false, 5 m, 2 m, 2 m and 2 m, marked `default`, so
   its results do not change.
+  Issue #912 adds `deckhouse_openings` to the Openings group: a list of rows (`kind`, `space`, `face`, `x_m`,
+  `y_m`, `z_m`, optionally `openable`, `gas_tight`, `tier`, `name`) that stands in for the default layout of the
+  openings of a deckhouse stern. A file without it reads null, marked `default`: the engine places the default
+  layout, which is outside the results hash, so its results do not change.
   Issue #274 (spec 0004) adds the rules block, a "Rules" group: `service_area` (`river-only` or
   `coastal-and-river`) and `rule_sets`, the list of Rule Sets the Option is checked against, each
   `{id, version, hash, source}` with `source` `default` (from the Service Area and the Cargo) or `typed`

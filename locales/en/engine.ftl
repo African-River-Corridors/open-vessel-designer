@@ -241,6 +241,10 @@ check-lock-length = overall length { $length } m <= lock length { $limit } m
 check-name-within-lock-width = within lock width
 check-lock-width = overall beam { $width } m <= lock width { $limit } m
 
+## crates/ovd-format/src/deckhouse_openings.rs
+
+msg-deckhouse-openings-bad-row = deckhouse opening { $row } { $why }
+
 ## crates/ovd-format/src/formation.rs
 
 warn-formation-sizing-not-converged = The pusher sizing did not converge in { $passes } passes (the power moved by more than { $tol } %). The power shown is that of the last pass.
@@ -411,6 +415,7 @@ msg-hull-form-not-built = `{ $input }` = { $value } is not built yet: the engine
 msg-parameter-set = `{ $input }` must be an object of named numbers, or null
 msg-offsets-table = `{ $input }` must be a list of rows with `station_x_m`, `y_m` and `z_m` in metres, or null
 msg-openings-list = `{ $input }` must be a list of openings with `x_m`, `y_m` and `height_above_deck_m` in metres, or null
+msg-deckhouse-openings-list = `{ $input }` must be a list of openings, each with a `kind`, a `space`, a `face` and `x_m`, `y_m`, `z_m` in metres, or null
 msg-scheme = `{ $input }` = { $value } is not a scheme with a Vessel Class that can define a vessel (see `ovd schema`)
 msg-class-cannot-define = `{ $input }` = { $value } cannot define a vessel: class { $class } gives no length or beam, or its Formation ({ $formation }) is not one a Design has
 msg-class-unknown = `{ $input }` = { $value } is not a Vessel Class (see `ovd schema`)

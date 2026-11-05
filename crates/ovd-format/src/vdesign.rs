@@ -1146,6 +1146,12 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
         applies_to: AppliesTo::All,
         value: "null",
     },
+    // Issue #912: a file saved before types no deckhouse openings; the engine places the default layout.
+    LegacyFixedJson {
+        name: "deckhouse_openings",
+        applies_to: AppliesTo::All,
+        value: "null",
+    },
     // Issue #429: a file saved before costs in USD, with no price base date.
     LegacyFixedJson {
         name: "currency",
@@ -1675,6 +1681,9 @@ pub enum InputKind {
     /// Issue #592: the deck openings of the angle of down-flooding, rows of `x_m`, `y_m`,
     /// `height_above_deck_m`, or null.
     OpeningsList,
+    /// Issue #912: the openings of a deckhouse stern, rows of `kind`, `space`, `face`, `x_m`, `y_m`,
+    /// `z_m` (and optionally `openable`, `gas_tight`, `tier`, `name`), or null: the default layout.
+    DeckhouseOpenings,
     /// Issue #869: the operation profile of a Type C tank's holding time, a list of legs
     /// `{state, days, passage_speed_kn?, gas_use_kg_h?}`.
     OperationProfile,
@@ -3612,6 +3621,14 @@ pub const INPUTS: &[InputSpec] = &[
         "type_c_tanks",
         Group::Openings,
     ),
+    // Issue #912: the engine places the openings of a deckhouse stern; this list stands in for them.
+    spec(
+        "deckhouse_openings",
+        "Deckhouse openings",
+        InputKind::DeckhouseOpenings,
+        false,
+        Group::Openings,
+    ),
     only(
         "deckhouse_side_opening_distance_m",
         "Distance of the first side opening from the deckhouse front",
@@ -5316,6 +5333,18 @@ fn check_value(spec: &InputSpec, v: &Value, profile: &Profile) -> Result<(Value,
                 "msg-openings-list",
                 "`{input}` must be a list of openings with `x_m`, `y_m` and `height_above_deck_m` in \
                  metres, or null",
+                input = input()
+            )),
+        },
+        InputKind::DeckhouseOpenings => match v {
+            Value::Null => Ok((Value::Null, vec![])),
+            Value::Array(rows) if rows.iter().all(crate::deckhouse_openings::is_row) => {
+                Ok((v.clone(), vec![]))
+            }
+            _ => Err(text!(
+                "msg-deckhouse-openings-list",
+                "`{input}` must be a list of openings, each with a `kind`, a `space`, a `face` and \
+                 `x_m`, `y_m`, `z_m` in metres, or null",
                 input = input()
             )),
         },

@@ -6,6 +6,7 @@ mod convoy;
 mod cost;
 pub mod crew;
 pub mod damage;
+pub mod deckhouse_openings;
 mod eval;
 pub mod export;
 mod formation;

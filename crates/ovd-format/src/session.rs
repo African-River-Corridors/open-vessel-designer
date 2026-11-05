@@ -226,6 +226,19 @@ fn input_entry(spec: &crate::vdesign::InputSpec, profile: &Profile) -> Value {
                 json!({ "type": "rows", "columns": crate::openings::COLUMNS, "unit": "m" }),
             );
         }
+        InputKind::DeckhouseOpenings => {
+            // The app lists it as it does the other list of openings: a count, typed in the file.
+            e.insert("kind".into(), json!("openings_list"));
+            e.insert("nullable".into(), json!(true));
+            e.insert(
+                "shape".into(),
+                json!({
+                    "type": "rows",
+                    "columns": ["kind", "space", "face", "x_m", "y_m", "z_m"],
+                    "unit": "m",
+                }),
+            );
+        }
         InputKind::OperationProfile => {
             e.insert("kind".into(), json!("operation_profile"));
             e.insert("nullable".into(), json!(false));

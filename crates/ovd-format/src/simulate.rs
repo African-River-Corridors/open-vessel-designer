@@ -734,9 +734,18 @@ fn aft_design_of(p: &Map<String, Value>) -> R<ovd_core::aft_arrangement::AftDesi
                 .unwrap_or(false),
         }),
     };
+    // Issue #912: a typed list of the deckhouse openings stands in for the default layout.
+    let deckhouse_openings = match p.get("deckhouse_openings") {
+        None | Some(Value::Null) => None,
+        Some(v) => match crate::deckhouse_openings::openings_of(v) {
+            Ok(list) => list,
+            Err(t) => return bad(t.to_string()),
+        },
+    };
     Ok(a::AftDesign {
         arrangement_style,
         rooms_basis,
+        deckhouse_openings,
         n_thrusters: whole("thruster_count", d.n_thrusters)?,
         thruster_envelope_m: get_or(p, "thruster_envelope_m", d.thruster_envelope_m)?,
         thruster_clear_m: get_or(p, "thruster_clearance_m", d.thruster_clear_m)?,
@@ -1543,6 +1552,11 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
         hull: hull.table.clone(),
         structure: structure_block(p)?,
     });
+    // Issue #912: the openings of a deckhouse stern, placed (or typed), for the Measures and the results.
+    measured.openings = measured
+        .vessel
+        .as_ref()
+        .and_then(ovd_core::deckhouse_openings::place_for_vessel);
     // Issue #448: Cb and the hydrostatics at the laden level draught; the reported draught is the
     // one at mid-length of the free-trim float when the hull has LCG data (a dry bulk hull with
     // its stern block mass), with the deadweight at the middle of the hold zone.
@@ -3464,6 +3478,8 @@ fn simulate_gas(
                     (s, plane)
                 }),
                 checks: Vec::new(),
+                // Issue #912: the openings of a deckhouse stern.
+                openings: ovd_core::deckhouse_openings::place_for_vessel(&vessel_inputs),
                 vessel: Some(vessel_inputs.clone()),
                 ..Measured::default()
             },

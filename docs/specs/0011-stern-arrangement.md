@@ -68,6 +68,10 @@ The `deckhouse` style derives, from a **Crew** number and the Service Area:
 | D18 | Hold-to-machinery separation (IGC 3.1.2, Type C) | **Gastight A-60 bulkhead by default; cofferdam as an option, replacing the bulkhead, never added to it. The 0.20 m tank-end space is renamed a hold end clearance** | R2–R3 |
 | D19 | Deckhouse and engine-room steel rate before calibration | **Ship an unverified estimate now: the build lane takes a textbook rate (Watson; Schneekluth & Bertram), cited, marked unverified until calibration** | R2–R3 |
 
+
+Issue #912 (D17, built): on a `deckhouse` stern the engine places the openings (default layout, or the typed list `deckhouse_openings`), each with position, face, kind and space. The Measures `opening.distance_from_front`, `opening.faces_cargo_area`, `opening.in_zone` (and `openable`, `gas_tight`, `kind`, `space`, `face`), on a new object type `opening`, and `deckhouse.opening_zone` and `deckhouse.icll_length`, read them. The zone is 4 % of L, not less than 3 m and not more than 5 m, measured from the deckhouse front to each opening (IGC 3.2.4.1); L is 96 % of the waterline length at 85 % of the depth (ICLL Regulation 3(1)(a), without the rudder-stock alternative). The block is `stern_arrangement.openings`, outside the results hash. The Rules that check them are #913.
+
+
 ## 4. Inputs
 
 ### 4.1 Crew model (decided R2: runs on a manning Rule Set)

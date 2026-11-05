@@ -371,6 +371,10 @@
           "value": null,
           "source": "default"
         },
+        "deckhouse_openings": {
+          "value": null,
+          "source": "default"
+        },
         "service_area": {
           "value": "river-only",
           "source": "default"

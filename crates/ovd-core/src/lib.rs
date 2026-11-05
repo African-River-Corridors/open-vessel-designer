@@ -24,6 +24,7 @@ pub mod constants;
 pub mod crew;
 pub mod damage_cases;
 pub mod damage_stability;
+pub mod deckhouse_openings;
 pub mod design_grid;
 pub mod electric_energy;
 pub mod formation;

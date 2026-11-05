@@ -40,10 +40,12 @@ pub enum ObjectType {
     EsTrinDamageCase,
     /// One assumed damage of NORMAM-202 5.23.8 on a liquid bulk hull (spec 0012 D2, issue #763).
     NormamDamageCase,
+    /// One opening of a deckhouse stern: an entrance, a window or an air inlet (issue #912).
+    Opening,
 }
 
 impl ObjectType {
-    pub const ALL: [ObjectType; 13] = [
+    pub const ALL: [ObjectType; 14] = [
         ObjectType::Option,
         ObjectType::Hull,
         ObjectType::Tank,
@@ -57,6 +59,7 @@ impl ObjectType {
         ObjectType::AdnGasDamageCase,
         ObjectType::EsTrinDamageCase,
         ObjectType::NormamDamageCase,
+        ObjectType::Opening,
     ];
 
     /// The object type of a key, or `None` for a key OVD does not declare.
@@ -79,6 +82,7 @@ impl ObjectType {
             ObjectType::AdnGasDamageCase => "adn-gas-damage-case",
             ObjectType::EsTrinDamageCase => "es-trin-damage-case",
             ObjectType::NormamDamageCase => "normam-damage-case",
+            ObjectType::Opening => "opening",
         }
     }
 }
@@ -579,6 +583,96 @@ pub static MEASURES: &[MeasureDef] = &[
         value: ValueKind::Bool,
         args: &[],
         method: "The fire division of a front that faces the cargo area; the model places none, and the SOLAS II-2 text is not in the rule sources (a named gap)",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "deckhouse.icll_length",
+        unit: "m",
+        object: ObjectType::Option,
+        value: ValueKind::Number,
+        args: &[],
+        method: "L of IGC 1.2.31, the load line length: 96 % of the length on a waterline at 85 % of the moulded depth (ICLL Regulation 3(1)(a)); the alternative of the length from the fore side of the stem to the rudder stock axis is not worked",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "deckhouse.opening_zone",
+        unit: "m",
+        object: ObjectType::Option,
+        value: ValueKind::Number,
+        args: &[],
+        method: "The zone of IGC 3.2.4.1 from the deckhouse front in which no entrance, air inlet or opening stands on a side: 4 % of L, not less than 3 m and not more than 5 m",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "opening.distance_from_front",
+        unit: "m",
+        object: ObjectType::Opening,
+        value: ValueKind::Number,
+        args: &[],
+        method: "The distance along the deckhouse from its front (the end facing the cargo area) to the opening: nought on the front itself",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "opening.faces_cargo_area",
+        unit: "-",
+        object: ObjectType::Opening,
+        value: ValueKind::Bool,
+        args: &[],
+        method: "Whether the opening is on the deckhouse end that faces the cargo area (IGC 3.2.4.1)",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "opening.in_zone",
+        unit: "-",
+        object: ObjectType::Opening,
+        value: ValueKind::Bool,
+        args: &[],
+        method: "Whether the opening is on the front, or on a side nearer the front than the zone length (IGC 3.2.4.1); an opening on the end bulkhead away from the cargo area is never in the zone",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "opening.openable",
+        unit: "-",
+        object: ObjectType::Opening,
+        value: ValueKind::Bool,
+        args: &[],
+        method: "Whether the opening opens: a door, an air inlet, or a window designed to open (IGC 3.2.4.2)",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "opening.gas_tight",
+        unit: "-",
+        object: ObjectType::Opening,
+        value: ValueKind::Bool,
+        args: &[],
+        method: "Whether the opening is designed so that the wheelhouse can be made gas and vapour tight rapidly and efficiently (IGC 3.2.4.2); set on the opening by the layout or the typed list",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "opening.kind",
+        unit: "-",
+        object: ObjectType::Opening,
+        value: ValueKind::Text,
+        args: &[],
+        method: "The kind of the opening: entrance, window, air_inlet or air_intake",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "opening.space",
+        unit: "-",
+        object: ObjectType::Opening,
+        value: ValueKind::Text,
+        args: &[],
+        method: "The space the opening serves: accommodation, service, machinery, control_station or wheelhouse",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "opening.face",
+        unit: "-",
+        object: ObjectType::Opening,
+        value: ValueKind::Text,
+        args: &[],
+        method: "The face of the deckhouse the opening is in: front, side or aft",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {
