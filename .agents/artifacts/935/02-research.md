@@ -45,7 +45,16 @@ The numerical damage engine (cases, flooding, stability, stages) is already in `
 ### 4. Rule text
 
 - IGC 2.7 survival, 2.7.1.1-.3 (any stage), 2.7.2.1 (final): library `igc/MSC.370-93.txt:1375-1400`.
-- IGC 2.3.1 extents: `MSC.370-93.txt:1099`. IGC 2.3.2.1: lesser damage is assumed when worse (`:1130`). This is one reason the pass is not monotonic in diameter (#914: 11.1 m passes, 11.0 m fails).
+- IGC 2.3.1 extents: `MSC.370-93.txt:1099`. IGC 2.3.2.1 (lesser damage, if worse, is assumed) and 2.3.2.2 (local damage to depth d): `:1130-1136`.
+- **Known gap:** the engine does not generate the lesser damage of 2.3.2.1 or the local damage of 2.3.2.2 (`damage_cases.rs:41`). The screen inherits that gap; a design that passes may still fail a lesser or local case. This ticket does not close it.
+
+### 4a. Why the pass can be non-monotonic in diameter, in the engine as it is
+
+#914 measured it (11.1 m passes, 11.0 m fails 2 rows); lesser damage is not the cause, since it is not generated. The case set and the conditions change in steps with the arrangement, not smoothly:
+- The box extents are fixed (IGC 2.3.1, from L and B), but the tank OD and side space move the compartment boundaries, so a case breaches a tank or not (`gas_flooding`, `damage_cases.rs:728`). A breached tank loses its cargo (`without_breached_cargo`); an intact tank in a flooded hold keeps its buoyancy (spec 0012 D7). Each is a jump in mass or buoyancy, not a smooth change.
+- The cases are placed on bulkheads and just beyond them (`box_damage_cases`, `damage_cases.rs:569-578`); a bulkhead that moves with the tank length changes which windows exist.
+- The IS Code conditions are rebuilt per arrangement, with automatic ballast plans (`is_code_conditions`, `gas_arrangement.rs:911`), and the ballast chosen changes in steps.
+Which of these flips the 11.0/11.1 m pair was not traced (no runs tonight). These step changes are enough to rule out bisection: a pass at one OD says nothing about the OD 0.1 m smaller.
 - ADN 9.3.1.15.1: `adn/adn.txt:34129`. ES-TRIN Article 28.03: `es-trin/ES_TRIN_2025_signed_en.txt` (index `:378`).
 
 ### 5. `--no-damage` does not exist yet

@@ -41,11 +41,11 @@ Out: hold flooding severity (#914 lead); #915 wording; the `--no-damage` switch 
 ### Q2. In what order are candidates screened?
 
 - **Chosen:** damage only after a candidate passes stability and the non-damage trace, in the existing descending order. The first that also passes damage wins, as today.
-- Risk: every stability-passing candidate between 13.28 m and the winner runs damage. On the example that may be more than the ticket's target of 3. Mitigation, in the same PR: memo the verdicts by (depth, tanks across, tank OD to 1 mm), and stop the walk for a (depth, tanks across) pair once its first damage pass is found. Report the count in the PR; if it exceeds 3, the maintainer decides (open question 1).
+- Risk: every stability-passing candidate between 13.28 m and the winner runs damage. On the example that may be more than the ticket's target of 3. Mitigation: memo the verdicts by (depth, tanks across, tank OD to 1 mm), and stop the walk for a (depth, tanks across) pair once its first damage pass is found. If the count exceeds 3, the maintainer decides (open question 1).
 
 ### Q3. How is the 0.1 m refinement expressed?
 
-After a winner, for the winner's (depth, tanks across), try tank OD from the next larger grid candidate down in 0.1 m steps. Build each through `side_clearance_override_m`: with n across, OD = (B − 2·cs − (n−1)·gap)/n, so a 0.1 m OD step is a 0.05·n m clearance step. Full stack per step; first pass from the top wins. No bisection: IGC 2.3.2.1 (lesser damage that is worse must be assumed) and the case set changing with OD make the pass non-monotonic.
+After a winner, for the winner's (depth, tanks across), try tank OD from the next larger grid candidate down in 0.1 m steps. Build each through `side_clearance_override_m`: with n across, OD = (B − 2·cs − (n−1)·gap)/n, so a 0.1 m OD step is a 0.05·n m clearance step. First pass from the top wins. No bisection: the pass is non-monotonic (#914, measured), because tank breach, cargo loss and auto ballast change in steps with OD (research §4a). Lesser and local damage (IGC 2.3.2) are not generated (`damage_cases.rs:41`): a known gap, kept.
 
 ### Q4. How is "not screened" carried?
 
