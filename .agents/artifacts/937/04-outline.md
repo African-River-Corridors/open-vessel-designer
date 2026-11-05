@@ -79,7 +79,8 @@ gate changes the phase it names.
 
 - **Result:** a reader can use the API from the docs alone.
 - **Files:** `docs/python-api.md` (new), `website/mkdocs.yml` (nav), `README.md` (one link),
-  `changes/ticket-937-simulate-one-path.md`, `pyproject.toml` and `Cargo.toml` (`0.4.0`).
+  `changes/ticket-937-simulate-one-path.md`; `pyproject.toml` and `Cargo.toml` (`0.4.0`) only if
+  the maintainer picks design 13 (a).
 - **Checks:** `python3 tools/changelog_collect.py --check`; the docs link check
   (`website/check_links.py`); `bash tools/gates.sh`.
 
@@ -87,4 +88,5 @@ gate changes the phase it names.
 
 Unknown-key nearest-name hints (#938); the parity guard over every example (#939); the damage
 stage with progress (#940); the typed API and `design_grid.sweep` (#941); removing the old entry; the
-calibration re-fit (design 10).
+calibration re-fit (design 10; a ticket is needed either way); the version bump if design
+13 (b).
