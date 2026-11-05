@@ -75,7 +75,8 @@ Only `test` and `release-guard` are required. Keep the others from making a pull
 
 | Workflow, job | On a pull request | Elsewhere |
 |---|---|---|
-| `ci.yml`: `test` (the `gate-*` jobs), `release-guard`, `drawing-crosscheck`, `app-e2e` | always | push to main, tags |
+| `ci.yml`: `test` (the `gate-*` jobs), `release-guard`, `drawing-crosscheck` | always | push to main, tags |
+| `app-gate.yml`: `app-e2e` (the built app, on the `e2e` profile: optimised, debug assertions on), `web-app` | never | from `release.yml` (every release); every Monday from `app-checks.yml`; by hand |
 | `web-parity.yml`: `web-parity` (a release gate) | never | only from `release.yml` (every release), or by hand |
 | `app-checks.yml`: `web-app` | only when `app/**`, `crates/ovd-web/**`, `tools/build_web.sh` or `tools/web_parity.mjs` change | push to main on the same paths; every day |
 | `app-checks.yml`: `app-linux`, `app-windows` | never | every day (07:17 UTC); on request (`workflow_dispatch`) |
