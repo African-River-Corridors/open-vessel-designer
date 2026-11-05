@@ -9,7 +9,7 @@
 //! is halved to 300 s.
 //!
 //! The holding time is gated against its floor. The pressure is REPORTED, NOT GATED (maintainer,
-//! 2026-11-05): OVD sits above its floor, and the finding is tracked in #TBD-pressure-gap. The floor
+//! 2026-11-05): OVD sits above its floor, and the finding is tracked in #917. The floor
 //! stays as it is.
 //!
 //! Label: sourced - NeqSim 3.27.0 with GERG-2008 (evaluation/holding_time/neqsim_cases.json, by tools/neqsim_holding_time.py).
@@ -142,7 +142,7 @@ fn every_case_agrees_with_neqsim_on_holding_time_within_the_floor_and_the_pressu
             .map(|(t, want)| 100.0 * (pressure_bar_abs_at(&out, *t) - want).abs() / want)
             .fold(0.0, f64::max);
         eprintln!(
-            "{id}: holding time {d:.4} % (floor {t_hold} %), pressure {worst:.4} % (floor {t_press} %): pressure reported, not gated - see issue #TBD-pressure-gap"
+            "{id}: holding time {d:.4} % (floor {t_hold} %), pressure {worst:.4} % (floor {t_press} %): pressure reported, not gated - see issue #917"
         );
         assert!(worst.is_finite());
         assert_eq!(

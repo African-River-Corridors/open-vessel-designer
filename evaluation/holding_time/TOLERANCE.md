@@ -65,7 +65,7 @@ and 0.0195 %. Both are below the floors above, so the floors stand.
 OVD against NeqSim at 600 s: holding time within 0.018 % in every case, inside its floor of 0.0340 % (about
 30 times inside it in cases A to C). **Holding time is gated** against that floor. Pressure at the stored times
 is 0.077 to 0.110 %, above its floor of 0.0632 %: **reported, not gated** (maintainer, 2026-11-05; see issue
-#TBD-pressure-gap). The floor is unchanged.
+#917). The floor is unchanged.
 
 holding-time-tolerance-percent: 0.0340
 pressure-tolerance-percent: 0.0632
