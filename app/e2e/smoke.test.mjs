@@ -391,7 +391,8 @@ describe("OVD app smoke tests", () => {
    * coastal-and-river stack; a river-only gas Design takes ADN 9.3.1 in place of the IGC Code (issue #850),
    * whose cases the view lists without a drawing.
    */
-  const SLOW_OPEN_MS = 60000;
+  // The wait for a slow open, in ms. CI sets OVD_E2E_SLOW_OPEN_MS (issue #922).
+  const SLOW_OPEN_MS = Number(process.env.OVD_E2E_SLOW_OPEN_MS || 60000);
   function gasDamageDesign(area = "coastal-and-river") {
     const inputs = {
       cargo: { value: "LNG", source: "typed" },

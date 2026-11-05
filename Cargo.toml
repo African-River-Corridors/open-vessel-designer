@@ -29,3 +29,11 @@ serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precisio
 # at any opt level, so the results are the same bits.
 [profile.dev.package.ovd-core]
 opt-level = 3
+
+# Issue #922: the app e2e job runs the built app and `ovd` on this profile: optimised like a release, with
+# debug assertions kept on, because the smoke tests drive the app through hooks that exist only when
+# `debug_assertions` is on (the dialog answers `OVD_TEST_DIALOG_DIR`, the first-run marker folder
+# `OVD_TEST_CONFIG_DIR`; see app/src-tauri/src/lib.rs and notice.rs). Not shipped.
+[profile.e2e]
+inherits = "release"
+debug-assertions = true

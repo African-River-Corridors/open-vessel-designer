@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Run the smoke tests against the built debug app. Needs `tauri-driver`, WebKitWebDriver and a
+# Run the smoke tests against the built app (a debug build by default; CI sets OVD_APP_BINARY and OVD_CLI to
+# the `e2e` profile build: optimised, debug assertions on). Needs `tauri-driver`, WebKitWebDriver and a
 # display (CI wraps this in xvfb-run). Build the app first:  npx tauri build --debug --no-bundle
+# (or, as CI does:  npx tauri build --no-bundle -- --profile e2e   and   cargo build -p ovd-cli --profile e2e)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 command -v tauri-driver >/dev/null || { echo "e2e: tauri-driver is not on PATH (cargo install tauri-driver --locked)" >&2; exit 1; }
