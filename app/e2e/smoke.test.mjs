@@ -36,7 +36,19 @@ const field = (label) => browser.$(`input[aria-label="${label}"]`);
 /** Open Settings (app bar), do `act`, close it again. */
 async function inSettings(act) {
   await (await browser.$("[data-testid=settings]")).click();
-  await until("the Settings dialog", async () => (await browser.$("[data-testid=settings-dialog]")).isExisting());
+  try {
+    await until("the Settings dialog", async () => (await browser.$("[data-testid=settings-dialog]")).isExisting());
+  } catch (e) {
+    // The click on Settings is sometimes lost (issue #922): keep what the page shows, in the log and as a
+    // screenshot in the job's app-screenshots artifact.
+    console.log("DIAG settings dialog missing, body:", await browser.execute(() => document.body.innerText.slice(0, 600)));
+    console.log("DIAG settings dialog missing, test ids:", await browser.execute(() => [...document.querySelectorAll("[role=dialog],dialog,[data-testid]")].slice(0, 40).map((n) => n.getAttribute("data-testid") || n.tagName).join(",")));
+    if (process.env.OVD_E2E_SHOTS) {
+      fs.mkdirSync(process.env.OVD_E2E_SHOTS, { recursive: true });
+      await browser.saveScreenshot(path.join(process.env.OVD_E2E_SHOTS, "settings-dialog-missing.png"));
+    }
+    throw e;
+  }
   await act();
   await (await browser.$("[data-testid=settings-close]")).click();
   await until("Settings to close", async () => !(await browser.$("[data-testid=settings-dialog]").isExisting()));

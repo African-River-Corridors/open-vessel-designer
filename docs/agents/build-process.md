@@ -80,6 +80,11 @@ Only `test` and `release-guard` are required. Keep the others from making a pull
 | `web-parity.yml`: `web-parity` (a release gate) | never | only from `release.yml` (every release), or by hand |
 | `app-checks.yml`: `app-linux`, `app-windows` | never | every day (07:17 UTC); on request (`workflow_dispatch`) |
 | `app-checks.yml`: `daily-failure` | never | after a failed scheduled run, it opens an issue |
+| `lean-proofs.yml`: `lean` | when `proofs/lean/**`, `crates/arc-rules/**` or the workflow file change | push to main on the same paths; every Monday (04:17 UTC); by hand |
+| `release.yml`: the release gate (`gate`, `app-gate`, `web-parity`, `calibration-bands`, `wheels`, `wasm-hashes`, `binaries`) | never | when a release is published; called from `app-build.yml`; by hand |
+| `app-build.yml`: `verify`, `gate`, `build`, `release` (installers, and the release itself) | never | push to main when `pyproject.toml` changes (only a version bump releases); push of a `v*` or `test-*` tag; by hand (builds, publishes nothing) |
+| `publish-pypi.yml`: `gate`, `sdist`, `publish` | never | push of a `v*` tag only; the `pypi` environment needs approval |
+| `design-impact-publish.yml`: `publish` | never | after a `ci.yml` run completes (`workflow_run`); it posts the design-impact report to the pull request |
 | `codeql.yml` | never | push to main; every Monday; by hand |
 | `website.yml` | only when `website/**`, `docs/**`, `*.md` or the workflow file change | push to main when those, or `app/**`, `crates/**`, `Cargo.toml`, `Cargo.lock` or `tools/build_web.sh` change; by hand |
 | `nightly.yml` | only when the workflow file, `.config/nextest.toml`, `docs/agents/slow-tests.md` or `tools/gates.sh` change | every day (02:41 UTC); by hand |
