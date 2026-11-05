@@ -7,6 +7,11 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[features]
+# Run the damage cases on worker threads (issue #921). Off for WebAssembly, which stays serial.
+default = ["parallel"]
+parallel = []
+
 [dependencies]
 # The rules kernel with its Rule Set loader (ADR 0019).
 arc-rules = { workspace = true, features = ["load"] }

@@ -198,6 +198,7 @@ pub(crate) fn run_gas_damage(
     let mut governing: Vec<serde_json::Value> = Vec::new();
     let (loa, beam) = (hull.spec.loa, hull.spec.beam);
     let (cases, table) = (&run.cases, &run.table);
+    let workers = damage_workers(cases.len());
     let mut out: Vec<ovd_core::measured::DamageVerdict> = Vec::new();
     for c in conditions {
         if run.full_load_only && c.role != ovd_core::loading_conditions::Role::FullLoadDeparture {
@@ -241,7 +242,8 @@ pub(crate) fn run_gas_damage(
                 .find(|t| t.name == name)
                 .map_or(0.0, |t| t.fill)
         };
-        // (index into `out`, the flooding, the damaged mass and centre of gravity) of the governing case
+        // (index into `out`, the flooding, the damaged mass and centre of gravity) of the governing case, and the
+        // case itself
         let mut worst_case: Option<&ovd_core::damage_cases::DamageCase> = None;
         let mut worst: Option<(
             usize,
@@ -249,7 +251,10 @@ pub(crate) fn run_gas_damage(
             f64,
             Gravity,
         )> = None;
-        for case in cases {
+        // Every case is independent of the others (issue #921), so they run on worker threads; each worker keeps
+        // its own cuts of the hull. The results come back in case order and the choice of the governing case
+        // below runs over them in that order, so the output is the serial one, bit for bit.
+        let runs = run_ordered(cases, workers, |case| {
             let f = gas_flooding(case, spaces, table, &filling);
             let (m, gd) = without_breached_cargo(mass, g, cargo, spaces, &f.breached);
             let outcome = assess(
@@ -282,15 +287,7 @@ pub(crate) fn run_gas_damage(
                     0.5 * beam,
                     hull.spec.depth,
                 );
-            let worse = match &worst {
-                None => true,
-                Some((i, ..)) => {
-                    let w = &out[*i];
-                    let o: &ovd_core::damage_stability::DamageOutcome = &w.outcome;
-                    (o.ok && !outcome.ok) || (o.ok == outcome.ok && outcome.max_gz_m < o.max_gz_m)
-                }
-            };
-            rows.push(json!({
+            let row = json!({
                 "condition": c.condition.name,
                 "name": case.name,
                 "flooded": case.flooded.iter().map(|v| v.name.clone()).collect::<Vec<_>>(),
@@ -320,17 +317,37 @@ pub(crate) fn run_gas_damage(
                     "area_m_rad": num(st.area_m_rad),
                     "ok": st.ok,
                 })).collect::<Vec<_>>(),
-            }));
+            });
+            CaseRun {
+                row,
+                verdict: ovd_core::measured::DamageVerdict {
+                    name: format!("{}: {}", c.condition.name, case.name),
+                    flooded: case.flooded.iter().map(|v| v.name.clone()).collect(),
+                    outcome,
+                    stages,
+                },
+                flooded: f.flooded,
+                m,
+                gd,
+            }
+        });
+        // `runs` is in case order, so each result pairs with its case (the governing case's extent, issue #928).
+        for (case, r) in cases.iter().zip(runs) {
+            let worse = match &worst {
+                None => true,
+                Some((i, ..)) => {
+                    let w = &out[*i];
+                    let o: &ovd_core::damage_stability::DamageOutcome = &w.outcome;
+                    (o.ok && !r.verdict.outcome.ok)
+                        || (o.ok == r.verdict.outcome.ok && r.verdict.outcome.max_gz_m < o.max_gz_m)
+                }
+            };
             if worse {
                 worst_case = Some(case);
-                worst = Some((out.len(), f.flooded.clone(), m, gd));
+                worst = Some((out.len(), r.flooded, r.m, r.gd));
             }
-            out.push(ovd_core::measured::DamageVerdict {
-                name: format!("{}: {}", c.condition.name, case.name),
-                flooded: case.flooded.iter().map(|v| v.name.clone()).collect(),
-                outcome,
-                stages,
-            });
+            rows.push(r.row);
+            out.push(r.verdict);
         }
         if let Some((i, flooded, m, gd)) = worst {
             let o = &out[i].outcome;
@@ -499,3 +516,96 @@ pub(crate) const ES_TRIN_METHOD: &str = "lost buoyancy, final stage; intermediat
 /// How the `damage_by_rule` block names the method of the NORMAM 5.23.8 damage cases.
 pub(crate) const NORMAM_METHOD: &str =
     "lost buoyancy, final stage (NORMAM-202/DPC 5.23.8, 5.23.9); laden departure";
+
+/// What one damage case gives: its row of the `damage` block, its verdict, and what the governing case needs
+/// if it is the worst (the flooding, the damaged mass and its centre of gravity).
+struct CaseRun {
+    row: serde_json::Value,
+    verdict: ovd_core::measured::DamageVerdict,
+    flooded: Vec<ovd_core::damage_stability::FloodedVolume>,
+    m: f64,
+    gd: ovd_core::sections::Gravity,
+}
+
+/// How many worker threads the damage cases may use; 0 means one per core.
+static DAMAGE_WORKERS: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
+
+/// For tests only (issue #921), hence hidden from the docs: a process-wide knob, so a test that sets it must be
+/// the only one in its test binary. Sets the number of worker threads for the damage cases: 1 runs them
+/// serially, 0 (the default) uses one per core. The results are the same bits whatever the number. A build for
+/// WebAssembly, or without the `parallel` feature, is always serial.
+#[doc(hidden)]
+pub fn set_damage_workers(n: usize) {
+    DAMAGE_WORKERS.store(n, core::sync::atomic::Ordering::Relaxed);
+}
+
+/// The worker count for `cases` cases: at least 1, at most one per case.
+fn damage_workers(cases: usize) -> usize {
+    #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
+    {
+        let set = DAMAGE_WORKERS.load(core::sync::atomic::Ordering::Relaxed);
+        let n = if set == 0 {
+            std::thread::available_parallelism().map_or(1, |n| n.get())
+        } else {
+            set
+        };
+        n.min(cases).max(1)
+    }
+    #[cfg(not(all(feature = "parallel", not(target_arch = "wasm32"))))]
+    {
+        let _ = (cases, &DAMAGE_WORKERS);
+        1
+    }
+}
+
+/// Run `f` on every item and return the results in the order of the items. With `workers` above 1 the items
+/// are shared between scoped threads (std only), each taking the next item not yet taken. `f` is pure in its
+/// item, so the order of the results does not depend on which worker ran which item. This is the one place a
+/// per-case progress call or a cancel check belongs (issue #923): after `f` returns, or before a worker takes
+/// its next item.
+fn run_ordered<T, R, F>(items: &[T], workers: usize, f: F) -> Vec<R>
+where
+    T: Sync,
+    R: Send,
+    F: Fn(&T) -> R + Sync,
+{
+    #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
+    if workers > 1 && items.len() > 1 {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let next = AtomicUsize::new(0);
+        let (next, f) = (&next, &f);
+        let mut slots: Vec<Option<R>> = items.iter().map(|_| None).collect();
+        std::thread::scope(|scope| {
+            let handles: Vec<_> = (0..workers)
+                .map(|_| {
+                    scope.spawn(move || {
+                        let mut done: Vec<(usize, R)> = Vec::new();
+                        loop {
+                            let i = next.fetch_add(1, Ordering::Relaxed);
+                            let Some(item) = items.get(i) else { break };
+                            done.push((i, f(item)));
+                        }
+                        done
+                    })
+                })
+                .collect();
+            for h in handles {
+                match h.join() {
+                    Ok(done) => {
+                        for (i, r) in done {
+                            slots[i] = Some(r);
+                        }
+                    }
+                    Err(panic) => std::panic::resume_unwind(panic),
+                }
+            }
+        });
+        return slots
+            .into_iter()
+            .map(|r| r.expect("every case ran once"))
+            .collect();
+    }
+    #[cfg(not(all(feature = "parallel", not(target_arch = "wasm32"))))]
+    let _ = workers;
+    items.iter().map(f).collect()
+}
