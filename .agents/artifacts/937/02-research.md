@@ -140,7 +140,10 @@ whose Service Area is explicitly river-only, and leaves out `es-trin-2025`.
 - `tests/test_api_small_changes.py` pins the `ruleset` error text (`:23-29`), numbers as text
   (`:32-62`) and the `ValueError` text (`:65-71`).
 - `tests/api_scenarios.py:548-595` has 7 `simulate.*` scenarios; each passes `cb` or `ruleset`.
-- `tests/test_vdesign_edge_sweep.py:228-260` runs every valid Option through `simulate`.
+- `tests/test_vdesign_edge_sweep.py:228-260` runs every valid Option through `simulate`. On the
+  new path each of those calls is a full `run` (`fill_from_profile`, the rule stack, the rooms
+  loop, cost and trace; R7, R9, R10), not the old bare engine call, so the sweep costs more per
+  Option. Damage off by default (#923) keeps the largest share out.
 
 **[20] The oracle.** `api_ce96e66.json` says it was printed by the frozen Python at `ce96e66` and
 is not to be edited by hand (`:2`). A moved scenario is listed in `KNOWN_DIFFERENCES`
@@ -151,8 +154,7 @@ is not to be edited by hand (`:2`). A moved scenario is listed in `KNOWN_DIFFERE
 
 ## F. Dependencies
 
-**[22] #925.** Not merged at `a63ca819`. A branch exists in a local worktree (tip `7c598fd7`, base
-`75e1ccc1`), not pushed and with no PR. It makes `service_area` required (`true`), adds
+**[22] #925.** Not merged at `a63ca819`, and no PR yet. The planned change makes `service_area` required (`true`), adds
 `service_area_required()` and a check in the old `simulate`. Without #925, `read_option` fills a
 missing Service Area with the profile's `river-only` and says nothing an API caller sees.
 
@@ -164,4 +166,12 @@ byte-equal test is what proves it.
 **[24] Docs.** There is no Python API page. The README has one worked example (`README.md:109-140`).
 The docs site nav has no API entry (`website/mkdocs.yml:55-66`).
 
-**[25] Version.** `0.3.0` in `pyproject.toml:3` and `Cargo.toml:8`.
+**[25] Version.** `0.3.0` in `pyproject.toml:3` and `Cargo.toml:8`. A merge to `main` that changes
+the version publishes a numbered pre-release (`.github/workflows/app-build.yml:6-9`).
+`ENGINE_VERSION` is `env!("CARGO_PKG_VERSION")` (`vdesign.rs:47`), and it is stamped into every
+saved file. So a bump in this PR is also a release and a file-format stamp change.
+
+**[26] Calibration path.** `calibration.py:791-803` fits the installed-power factor through the old
+`simulate`. The fitted factor is then used by every Option through `run`'s path. Once `run` and the
+old `simulate` give different powering for the same hull (#932), the factor was fitted on a path no
+design uses.

@@ -27,10 +27,12 @@ dict ──translate──▶ typed inputs ──.vdesign text──▶ fill_fro
 
 ## 1. Entry name
 
-Options: (a) a new function on the `simulate` entry (`eval("simulate", {"fn": "design"})`);
-(b) a new entry `api` with `fn: "simulate"`.
-**Pick (b)**, entry `"api"`, function `"simulate"`. It keeps the old entry untouched, so the old
-oracle scenarios keep their meaning, and #940 adds `"simulate_damage"` beside it.
+**Decision for the maintainer:** the engine entry name.
+- (a) A new function on the `simulate` entry (`eval("simulate", {"fn": "design"})`).
+- (b) A new entry `api` with `fn: "simulate"`.
+- Recommendation: **(b)**. It keeps the old entry untouched, so the old oracle scenarios keep their
+  meaning, and #940 adds `"simulate_damage"` beside it. The cost: a new name in `ENTRY_POINTS`
+  that every entry list and the parity harness must learn.
 
 ## 2. The dict-to-inputs step
 
@@ -47,10 +49,14 @@ renames, it never fills. Every value it writes is marked `typed`.
 | `self_propelled: true` / `atb: true` / neither | `formation` `{kind: self_propelled}` / `{kind: atb}` / `{kind: pushed_barge}` | as the issue settles |
 | an old name and its glossary name both given | — | error: "give one of `loa_m` and `length_overall_m`" |
 
-`vessel` left out: no `cargo_containment` is written, and the profile picks it by cargo phase
-(R16). For a dry-bulk Cargo this equals the old `box_barge`. For a gas or liquid Cargo the old
-engine returned "cannot be carried"; the new path builds the right Containment. **Pick:** follow
-the profile; it is the file path's answer.
+**Decision for the maintainer:** a dict with no `vessel` (and no `cargo_containment`).
+- (a) Write no `cargo_containment`; the profile picks it by cargo phase (R16). For a dry-bulk
+  Cargo this equals the old `box_barge`. A gas or liquid dict that returns "cannot be carried"
+  today now runs, as a Type C or integral-tank hull.
+- (b) Write `box_hold`, as the old engine assumed; a gas or liquid dict keeps failing, now as a
+  fill error.
+- Recommendation: **(a)**. It is the file path's answer, and "one path" asks for it. The cost is a
+  silent change of meaning for a caller who relied on the error.
 
 ## 3. Required inputs the old dict never gave
 
@@ -181,7 +187,9 @@ its fitted factor would move, and that factor is a calibrated value the profile 
 
 **Decision for the maintainer:** calibration in #937.
 - (a) Calibration calls the old engine entry by name (`_bridge.call("simulate", "simulate", ...)`)
-  until a follow-up moves it to the new path with its own re-fit and design-impact table.
+  until a follow-up moves it to the new path with its own re-fit and design-impact table. A re-fit
+  ticket is needed either way: the factor is fitted on the old path but used on `run`'s path
+  (R26), so today's factor is already off that path.
 - (b) Move it now: add `hull_form`, `service_area`, drop `cb`, re-fit, and report the moved
   factors in this PR.
 - Recommendation: **(a)**. The re-fit is a calibration change with its own evidence; it should not
@@ -215,8 +223,16 @@ until a follow-up removes them. The Python package exposes no alias to it. Calib
   from the README. It lists the inputs (generated from `INPUTS`, as the schema already gives them),
   the old names and their glossary names, the refused keys, the `damage` flag and the new result
   blocks.
-- **Version:** `0.3.0` → `0.4.0` (a 0.x minor bump, as the issue settles). A `changes/` fragment with
-  the moved results.
+- A `changes/` fragment with the moved results.
+
+**Decision for the maintainer:** the version bump. The issue asks for a 0.x minor bump. A merge
+that changes the version publishes a numbered pre-release, and `ENGINE_VERSION` follows it, so
+every file saved afterwards is stamped with the new version (R25).
+- (a) Bump `0.3.0` → `0.4.0` in this PR.
+- (b) No bump here. The `changes/` fragment records the break; a separate release PR bumps the
+  version when the maintainer chooses to publish (it can also carry #938 to #941).
+- Recommendation: **(b)**. A release should be made on purpose, and #937 is one of a series that
+  moves the same API.
 
 ## Dependencies
 
