@@ -15,9 +15,9 @@ from ovd.simulate import simulate
 # issue #175, and the numbers in this file were printed by 0.1.0.
 CN_II = dict(vessel="gas_barge", cargo="LPG_propane", loa_m=90, beam_m=14.8, depth_m=6.5, cb=0.85,
              freeboard_min_m=0.3, draught_limit_m=4.4, self_propelled=True, ruleset="IGC_2G",
-             fill_ratio=0.95, max_tank_od_m=12.0)
+             fill_ratio=0.95, max_tank_od_m=12.0, service_area="coastal-and-river")
 BOX = dict(vessel="box_barge", cargo="bauxite", loa_m=76.5, beam_m=11.4, depth_m=3.5, cb=0.928,
-           lightship_k_t_per_m3=0.1093, freeboard_min_m=0.3)
+           lightship_k_t_per_m3=0.1093, freeboard_min_m=0.3, service_area="river-only")
 
 
 @pytest.mark.parametrize("ruleset,text", [

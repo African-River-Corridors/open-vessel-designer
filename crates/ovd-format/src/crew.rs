@@ -216,7 +216,7 @@ pub fn crew_json(
     library: &Library,
     facts: &CrewFacts,
 ) -> Result<Value, String> {
-    let area = service_area_of(option);
+    let area = service_area_of(option)?;
     let reaches_sea = area == "coastal-and-river";
     let input_num = |name: &str| option.input(name).and_then(|i| i.value.as_f64());
     let default_set = if reaches_sea {

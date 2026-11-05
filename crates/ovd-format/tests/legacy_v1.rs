@@ -9,9 +9,36 @@
 use ovd_format::{DesignSession, HashStatus, Profile, Source, check, fill};
 use serde_json::{Value, json};
 
-fn legacy(name: &str) -> String {
+fn legacy_raw(name: &str) -> String {
     let path = format!("{}/tests/legacy/{name}.vdesign", env!("CARGO_MANIFEST_DIR"));
     std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+}
+
+/// The legacy file with a river-only Service Area set, as `ovd fill --service-area river-only` does (issue
+/// #925: the legacy files have none, and a Design with none is an error). The migration tests below are about
+/// what else an old file gets.
+fn legacy(name: &str) -> String {
+    ovd_format::with_service_area(&legacy_raw(name), "river-only").unwrap()
+}
+
+#[test]
+fn a_legacy_file_has_no_service_area_so_it_is_the_error_until_it_is_set() {
+    // Issue #925: no default is read for it, for a version 1 file either.
+    for name in ["v1_adn_g_self_propelled", "v1_dry_bulk_box_hold"] {
+        let raw = legacy_raw(name);
+        let want = ovd_format::service_area_required().to_string();
+        for errors in [
+            check(&raw, &Profile::built_in()).report.errors,
+            fill(&raw, &Profile::built_in()).report.errors,
+        ] {
+            assert!(
+                errors.iter().any(|e| e.contains(&want)),
+                "{name}: {errors:?}"
+            );
+        }
+        let set = fill(&legacy(name), &Profile::built_in());
+        assert!(set.report.is_ok(), "{name}: {:?}", set.report.errors);
+    }
 }
 
 fn has(list: &[String], text: &str) -> bool {
@@ -24,7 +51,7 @@ const OD: &str = "this version 1 file has no `max_tank_od_m`; it now uses the de
 
 #[test]
 fn the_fixture_really_is_a_version_1_file_that_names_adn_g() {
-    let raw: Value = serde_json::from_str(&legacy("v1_adn_g_self_propelled")).unwrap();
+    let raw: Value = serde_json::from_str(&legacy_raw("v1_adn_g_self_propelled")).unwrap();
     assert_eq!(raw["format_version"], 1);
     let inputs = &raw["options"][0]["inputs"];
     assert_eq!(inputs["ruleset"]["value"], "ADN_G");
@@ -124,7 +151,7 @@ fn a_bare_value_form_is_changed_too() {
     let file = json!({
         "format": "vdesign", "format_version": 1, "engine_version": "0.1.0",
         "options": [{ "name": "A", "inputs": {
-            "cargo": "LNG", "hull_form": "raked_box", "length_overall_m": 80.0, "beam_m": 12.0,
+            "cargo": "LNG", "hull_form": "raked_box", "service_area": "river-only", "length_overall_m": 80.0, "beam_m": 12.0,
             "moulded_depth_m": 5.0, "formation": { "kind": "self_propelled" },
             "ruleset": "ADN_G", "adn_tank_cap_m3": 380.0
         } }]

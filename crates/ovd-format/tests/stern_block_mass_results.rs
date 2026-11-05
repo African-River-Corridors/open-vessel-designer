@@ -7,6 +7,13 @@
 use ovd_format::{DesignSession, HashStatus, Profile, RunOutcome};
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 fn results(s: &DesignSession) -> Value {
     match s.evaluate().options[0].outcome.as_ref().expect("it ran") {
         RunOutcome::Results { results, .. } => results.clone(),
@@ -16,7 +23,7 @@ fn results(s: &DesignSession) -> Value {
 
 #[test]
 fn a_new_self_propelled_option_carries_the_block_and_shows_it() {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     for (n, v) in [
         ("cargo", json!("LNG")),
         ("length_overall_m", json!(110.0)),
@@ -50,7 +57,7 @@ fn a_file_saved_before_has_no_block_mass_and_keeps_its_hash() {
         env!("CARGO_MANIFEST_DIR")
     );
     let (s, opened) =
-        DesignSession::open(&std::fs::read_to_string(path).unwrap(), Profile::built_in()).unwrap();
+        DesignSession::open(&read_with_area(path).unwrap(), Profile::built_in()).unwrap();
     assert_eq!(opened.hash_status[0].1, HashStatus::Matches);
     assert!(results(&s).get("stern_block_mass").is_none());
 }

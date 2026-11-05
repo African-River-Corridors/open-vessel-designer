@@ -303,14 +303,13 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         _ => return Err("the Option has no Cargo Containment".to_string()),
     };
     p.insert("vessel".into(), json!(vessel));
-    // Issue #822: the Service Area sets the vent mast of a gas hull (IGC or ADN); no other hull
-    // reads it, so no other params change.
-    if vessel == "gas_barge" {
-        p.insert(
-            "service_area".into(),
-            json!(crate::trace::service_area_of(option)),
-        );
-    }
+    // Issue #925: the Service Area is required for every vessel type, with no default; `simulate`
+    // reads it the same way as `run`. It sets the vent mast of a gas hull (issue #822), and a coastal
+    // deckhouse is sized to SOLAS V/22 (issue #779).
+    p.insert(
+        "service_area".into(),
+        json!(crate::trace::service_area_of(option)?),
+    );
     p.insert("self_propelled".into(), json!(kind == "self_propelled"));
     // Issue #362: the barge of an ATB has a Notch (see the tug and Notch inputs above).
     if kind == "atb" {
@@ -732,7 +731,8 @@ pub fn run_option_with(
                 let stern_arrangement = stern_arrangement_of(option, &measured);
                 let mut rule_trace = trace_json(
                     &trace_of(&selection, option, &measured),
-                    crate::trace::service_area_of(option),
+                    // `simulate_params_of` above refused an Option with none (issue #925).
+                    crate::trace::service_area_of(option).unwrap_or_default(),
                     &selection.warnings,
                 );
                 rule_trace["measures"] = crate::trace::reported_measures_json(&measured);

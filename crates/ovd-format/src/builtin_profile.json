@@ -241,9 +241,7 @@
       "basis": "box hold: calibrated box barges span 0.095 to 0.1223 t/m3 (calibration/factors.yaml). Integral tanks: 0.1141 t/m3, the mean implied k of 15 declared tank-barge records (calibration/tank_lightship.yaml, fitted by tools/fit_tank_lightship.py); an estimate, because a record gives a deadweight, not a lightship. The pumps, piping, vents and heating are added on top"
     },
     "service_area": {
-      "default": "river-only",
-      "status": "estimate",
-      "basis": "Where the vessel operates: river-only or coastal-and-river (ADR 0011; spec 0004, \"Service Area and default stacks\"). river-only was confirmed as the default by the maintainer on 2026-10-16. The two give different gas Rule Set stacks (issue #850). A file saved before holds none and is read as river-only"
+      "basis": "Where the vessel operates: river-only or coastal-and-river (ADR 0011; spec 0004, \"Service Area and default stacks\"). Required, with no default (maintainer, 2026-11-05, issue #925): the Service Area picks the code family (river-only: ADN, ES-TRIN, RPN; coastal-and-river: IGC, ICLL, SOLAS, MLC), so a wrong default would check the wrong code without a word. A design with none is an error; `ovd fill --service-area` sets it"
     },
     "rule_sets": {
       "default_stacks": {

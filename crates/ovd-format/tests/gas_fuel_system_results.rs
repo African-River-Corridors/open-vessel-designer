@@ -10,6 +10,7 @@ use serde_json::{Value, json};
 fn results(extra: Value) -> Value {
     let mut inputs = json!({
         "cargo": { "value": "LNG", "source": "typed" },
+        "service_area": { "value": "river-only", "source": "typed" },
         "hull_form": { "value": "raked_box", "source": "typed" },
         "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
         "length_overall_m": { "value": 110.0, "source": "typed" },

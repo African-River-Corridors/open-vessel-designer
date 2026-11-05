@@ -32,7 +32,7 @@ fn open(name: &str) -> DesignSession {
 }
 
 fn starter() -> DesignSession {
-    DesignSession::new_design(Profile::built_in()).unwrap()
+    DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap()
 }
 
 fn input<'a>(s: &'a DesignSession, option: &str, name: &str) -> &'a ovd_format::StoredInput {
@@ -56,10 +56,20 @@ fn has_input(s: &DesignSession, option: &str, name: &str) -> bool {
 
 #[test]
 fn new_design_is_the_starter_design() {
-    let s = starter();
+    // Issue #925: the starter has no Service Area until one is chosen; `new_design_in` chooses it.
+    let s = DesignSession::new_design(Profile::built_in()).unwrap();
     let expected = new_design(&Profile::built_in()).unwrap();
     assert_eq!(s.design().to_text(), expected.to_text());
     assert_eq!(s.design().options.len(), 1);
+    assert!(s.design().options[0].input("service_area").is_none());
+    let chosen = starter();
+    assert_eq!(
+        chosen.design().options[0]
+            .input("service_area")
+            .unwrap()
+            .value,
+        json!("river-only")
+    );
 }
 
 #[test]
@@ -102,7 +112,7 @@ fn open_writes_in_left_out_inputs_marked_default() {
     let file = json!({
         "format": "vdesign", "format_version": 2, "engine_version": "0.2.0",
         "options": [{ "name": "A", "inputs": {
-            "cargo": "LNG", "hull_form": "raked_box", "formation": { "kind": "self_propelled" },
+            "cargo": "LNG", "hull_form": "raked_box", "service_area": "river-only", "formation": { "kind": "self_propelled" },
             "length_overall_m": 100.0, "beam_m": 12.0, "moulded_depth_m": 5.0,
         }}]
     });

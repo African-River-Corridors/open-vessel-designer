@@ -171,7 +171,7 @@ fn a_crude_oil_file_gets_its_containment_and_the_tank_inputs_from_the_profile() 
     )
     .unwrap();
     assert_eq!(opened.hash_status[0].1, HashStatus::Matches);
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("crude_oil"))
         .unwrap();
     let option = &s.design().options[0];

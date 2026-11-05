@@ -1189,7 +1189,20 @@ fn tank_report(
 pub use ovd_core::measured::Measured;
 
 fn simulate(p: &Map<String, Value>) -> R<Value> {
+    require_service_area(p)?;
     simulate_measured(p, &mut Measured::default(), &unstored_rules(p))
+}
+
+/// Issue #925: the Service Area is required, for every vessel type, with the same message as `run`, `report`
+/// and the app (`vdesign::service_area_required`). A value that is not one of the two is refused the same way.
+fn require_service_area(p: &Map<String, Value>) -> R<()> {
+    match p.get("service_area").and_then(Value::as_str) {
+        Some(a) if crate::vdesign::SERVICE_AREAS.contains(&a) => Ok(()),
+        _ => Err(Stop::Raised(
+            "ValueError".to_string(),
+            crate::vdesign::service_area_required().to_string(),
+        )),
+    }
 }
 
 /// The Rule Sets `simulate` takes when it is given none (issue #850): for a gas hull whose Service Area is
@@ -1200,10 +1213,8 @@ fn simulate(p: &Map<String, Value>) -> R<Value> {
 /// candidate. The ADN hull limits size the tank in `run`, so `simulate` sizes it the same way. Every other
 /// hull has no Rule Sets here, as before.
 ///
-/// A Service Area LEFT OUT stays "not river-only" here, as it always did, so the Python API's results
-/// (pinned to the original Python) do not move. That differs from `run` and the profile, where a missing
-/// Service Area is read as river-only (`trace::DEFAULT_SERVICE_AREA`, `unstored_stack_ids`): `run` always
-/// gives the Service Area, so the difference shows only to a caller of `simulate` that leaves it out.
+/// A Service Area left out is an error (issue #925), checked in [`simulate`]; here it is always one of the
+/// two values. An explicit `coastal-and-river` applies no Rule Sets (issue #931).
 /// A gas file with no stored Rule Sets is read by `run` with the older set versions
 /// (`trace::legacy_rule_sets`); `simulate` has no file, so it takes the latest.
 fn unstored_rules(p: &Map<String, Value>) -> RunRules {
@@ -1214,7 +1225,7 @@ fn unstored_rules(p: &Map<String, Value>) -> RunRules {
     }
     let library = crate::rule_set::built_in();
     let pairs: Vec<(&str, &str)> =
-        crate::trace::unstored_stack_ids(Some("type_c_tanks"), Some("river-only"))
+        crate::trace::unstored_stack_ids(Some("type_c_tanks"), "river-only")
             .into_iter()
             .filter_map(|id| library.latest(id))
             .map(|set| (set.id.as_str(), set.version.as_str()))
@@ -3006,7 +3017,7 @@ fn simulate_gas(
         water_density_t_per_m3: rho,
         required_freeboard_m: fb,
         air_draft_limit_m: truthy_float(p, "air_draft_limit_m")?,
-        // Issue #822: the cargo vent mast. A Service Area left out reads the IGC clauses.
+        // Issue #822: the cargo vent mast; the Service Area is always given (issue #925).
         river_only: p.get("service_area").and_then(Value::as_str) == Some("river-only"),
         vent_stub_m: get_or(p, "vent_stub_m", ovd_core::vent_mast::DEFAULT_VENT_STUB_M)?,
         vent_mast_lowerable: p.get("vent_mast_lowerable").is_some_and(truthy),

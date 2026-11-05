@@ -19,6 +19,7 @@ fn required(cargo: &str) -> Value {
         "cargo": cargo,
         "hull_form": "raked_box",
         "length_overall_m": 76.5,
+        "service_area": "river-only",
         "beam_m": 11.4,
         "moulded_depth_m": 3.5,
         "formation": { "kind": "self_propelled" }
@@ -59,10 +60,17 @@ fn used(inputs: Value, name: &str) -> (Value, Source) {
     (input.value, input.source)
 }
 
+/// Issue #925: a new design has no Service Area; these tests are about something else, so it is set.
+fn started(profile: &Profile) -> ovd_format::Design {
+    let text = ovd_format::with_service_area(&new_design(profile).unwrap().to_text(), "river-only")
+        .unwrap();
+    fill(&text, profile).design.unwrap()
+}
+
 #[test]
 fn a_new_design_round_trips_through_its_own_text_unchanged() {
     let profile = Profile::built_in();
-    let design = new_design(&profile).unwrap();
+    let design = started(&profile);
     let checked = check(&design.to_text(), &profile);
     assert_eq!(checked.report.errors, Vec::<String>::new());
     assert_eq!(checked.report.warnings, Vec::<String>::new());
@@ -82,7 +90,7 @@ fn gas_cargo_defaults_to_type_c_tanks_with_its_rule_sets_and_fill_ratio() {
     assert_eq!(sets[0]["id"], "adn-gas");
     assert_eq!(
         used(inputs.clone(), "service_area"),
-        (json!("river-only"), Source::Default)
+        (json!("river-only"), Source::Typed)
     );
     assert_eq!(
         used(inputs.clone(), "fill_ratio"),
@@ -431,7 +439,7 @@ fn a_profile_missing_a_default_is_refused() {
 #[test]
 fn an_edited_profile_range_changes_warnings_but_never_the_stored_inputs() {
     let profile = Profile::built_in();
-    let saved = new_design(&profile).unwrap().to_text();
+    let saved = started(&profile).to_text();
     let mut p: Value = serde_json::from_str(Profile::built_in_text()).unwrap();
     p["inputs"]["max_speed_kn"]["default"] = json!(12.0);
     p["inputs"]["max_speed_kn"]["soft"] = json!({ "min": 11.0, "max": 14.0 });
@@ -454,7 +462,7 @@ fn a_whole_number_default_in_an_edited_profile_still_round_trips() {
     let mut p: Value = serde_json::from_str(Profile::built_in_text()).unwrap();
     p["inputs"]["max_speed_kn"]["default"] = json!(12);
     let edited = Profile::from_json(&p.to_string()).unwrap();
-    let design = new_design(&edited).unwrap();
+    let design = started(&edited);
     assert_eq!(check(&design.to_text(), &edited).design.unwrap(), design);
 }
 

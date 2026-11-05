@@ -27,7 +27,9 @@
     (schema?.groups ?? []).map((g) => ({
       name: g,
       inputs: (schema?.inputs ?? []).filter(
-        (i) => i.group === g && option?.inputs[i.name] !== undefined
+        // Issue #925: a required choice the Option does not hold yet (the Service Area, which has no
+        // default) is drawn with nothing chosen, so the designer is asked for it.
+        (i) => i.group === g && (option?.inputs[i.name] !== undefined || (i.required && i.kind === "choice"))
           && i.kind !== "vessel_scheme" && i.kind !== "vessel_class", // drawn by VesselClass
       ),
     })).filter((g) => g.inputs.length > 0 || g.name === VESSEL_CLASS_GROUP),
@@ -110,7 +112,7 @@
         {#each g.inputs as spec (`${spec.name}|${snap.active_option}|${generation}`)}
           <InputField
             {spec}
-            stored={option!.inputs[spec.name]}
+            stored={option!.inputs[spec.name] ?? { value: null, source: "typed" }}
             messages={messagesFor(spec.name)}
             onEdit={(v) => onEdit(spec.name, v)}
             onReset={() => onReset(spec.name)}

@@ -42,7 +42,12 @@ fn one_changed_digit_changes_the_hash() {
 }
 
 fn starter() -> ovd_format::Design {
-    new_design(&Profile::built_in()).unwrap()
+    // Issue #925: the starter has no Service Area; these tests are about something else, so it is set.
+    let profile = Profile::built_in();
+    let text =
+        ovd_format::with_service_area(&new_design(&profile).unwrap().to_text(), "river-only")
+            .unwrap();
+    ovd_format::fill(&text, &profile).design.unwrap()
 }
 
 #[test]
@@ -146,7 +151,7 @@ fn fill_does_not_stamp_a_file_that_has_a_hard_error() {
     let text = json!({
         "format": "vdesign", "format_version": 2, "engine_version": "0.1.0",
         "options": [{ "name": "A", "inputs": {
-            "cargo": "bauxite", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
+            "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only", "formation": {"kind": "pushed_barge"},
             "length_overall_m": 76.5, "beam_m": -1.0, "moulded_depth_m": 3.5 } }]
     })
     .to_string();
@@ -182,7 +187,7 @@ fn raw_file(engine_version: &str, options: Value) -> String {
 
 fn raw_option(name: &str, hash: Option<&str>) -> Value {
     let mut o = json!({ "name": name, "inputs": {
-        "cargo": "bauxite", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
+        "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only", "formation": {"kind": "pushed_barge"},
         "length_overall_m": 76.5, "beam_m": 11.4, "moulded_depth_m": 3.5 } });
     if let Some(h) = hash {
         o["results_hash"] = json!(h);

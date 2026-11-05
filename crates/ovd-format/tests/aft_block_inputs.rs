@@ -12,6 +12,13 @@ use ovd_format::vdesign::{INPUTS, LEGACY_FIXED_INPUTS};
 use ovd_format::{DesignSession, HashStatus, Profile, RunOutcome, Source, check};
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 const NEW: [&str; 17] = [
     "thruster_count",
     "thruster_envelope_m",
@@ -41,7 +48,7 @@ fn raw_fixture(name: &str) -> String {
         "{}/tests/fixtures/{name}.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
-    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+    read_with_area(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
 /// A fixture as a file written before these inputs existed: the keys taken out. Its stored results
@@ -279,7 +286,7 @@ fn a_version_1_self_propelled_file_gets_the_fixed_values_in_one_grouped_note() {
         "{}/tests/legacy/v1_adn_g_self_propelled.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
-    let text = std::fs::read_to_string(path).unwrap();
+    let text = read_with_area(path).unwrap();
     let (_, opened) = DesignSession::open(&text, Profile::built_in()).unwrap();
     assert_eq!(opened.report.errors, Vec::<String>::new());
     let grouped = opened
@@ -659,7 +666,7 @@ fn the_gas_search_carries_the_values_through_to_every_candidate() {
 
 #[test]
 fn a_session_gives_the_profile_value_when_the_formation_or_cargo_changes() {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     // A starter Design is a pushed barge: no aft inputs.
     assert!(s.design().options[0].input("thruster_count").is_none());
     s.set_formation("Option 1", "self_propelled", None, None)
@@ -713,7 +720,7 @@ fn an_edited_profile_changes_a_session_but_never_an_old_file() {
         json!(1.0)
     );
     // A session under the edited profile: the profile values.
-    let mut s = DesignSession::new_design(edited).unwrap();
+    let mut s = DesignSession::new_design_in(edited, "river-only").unwrap();
     s.set_formation("Option 1", "self_propelled", None, None)
         .unwrap();
     let get = |n: &str| s.design().options[0].input(n).unwrap().value.as_f64();

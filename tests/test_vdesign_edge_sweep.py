@@ -50,6 +50,8 @@ TOP_LEVEL = {
     "max_speed_kn": "speed_max_kn",
     "air_draft_limit_m": "air_draft_limit_m",
     "draught_limit_m": "draught_limit_m",
+    # Issue #925: the Service Area is required, with no default; the sweep states it.
+    "service_area": "service_area",
 }
 CHANNEL = {
     "channel_depth_m": "depth_m",
@@ -74,7 +76,7 @@ NON_NEGATIVE_GEOMETRY = ("hold_top_width_m", "hold_bottom_width_m", "hold_height
 # The deepest hull the gas depth search tries (the core's DEFAULT_DEPTHS_M ends at 7.0 m).
 DEPTH_SEARCH_MAX_M = 7.0
 NUMBERS = [n for n in list(TOP_LEVEL) + list(CHANNEL)
-           if n not in ("cargo", "ruleset", "optimise_depth")]
+           if n not in ("cargo", "ruleset", "optimise_depth", "service_area")]
 
 
 def to_simulate(inputs: dict) -> dict:
@@ -136,6 +138,7 @@ def sweep_options(profile: dict) -> list:
             "hull_form": "raked_box",
             "formation": rng.choice(formations),
             "cargo_containment": containment,
+            "service_area": "river-only",
         }
         for name in NUMBERS:
             if ONLY_FOR.get(name, containment) != containment:
@@ -183,7 +186,7 @@ def boundary_options() -> list:
     for containment in VESSEL:
         base = {"cargo": CARGOS[CONTAINMENT_PHASE[containment]][0], "hull_form": "raked_box",
                 "formation": {"kind": "pushed_barge"}, "cargo_containment": containment,
-                "length_overall_m": 76.5, "beam_m": 11.4, "moulded_depth_m": 3.5,
+                "service_area": "river-only", "length_overall_m": 76.5, "beam_m": 11.4, "moulded_depth_m": 3.5,
                 "channel_bottom_width_m": 60.0}
         base.update({k: v for k, v in TYPICAL.items() if ONLY_FOR.get(k, containment) == containment})
         cases = [
@@ -239,7 +242,8 @@ def test_the_impossible_result_check_catches_an_error_value_and_a_negative():
     assert impossible({"error": "Bauxite cannot be carried in a gas barge."})
     one_metre = simulate(to_simulate({
         "cargo": "bauxite", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
-        "cargo_containment": "box_hold", "length_overall_m": 76.5, "beam_m": 1.0,
+        "cargo_containment": "box_hold", "service_area": "river-only",
+        "length_overall_m": 76.5, "beam_m": 1.0,
         "moulded_depth_m": 3.5, "channel_bottom_width_m": None, **{k: v for k, v in TYPICAL.items()
                                    if ONLY_FOR.get(k, "box_hold") == "box_hold"}}))
     found = impossible(one_metre)

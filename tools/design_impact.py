@@ -75,7 +75,10 @@ ENTRIES_AT = "\n### "
 def _inputs(cargo, containment, formation, loa, beam, depth, **more):
     d = {"cargo": cargo, "hull_form": "raked_box", "formation": formation if isinstance(formation, dict) else {"kind": formation},
          "length_overall_m": loa, "beam_m": beam, "moulded_depth_m": depth,
-         "cargo_containment": containment}
+         "cargo_containment": containment,
+         # Issue #925: the Service Area is required. The sweep states river-only, the value a left-out
+         # Service Area used to read as, so no case moves; a case that gives its own overrides it.
+         "service_area": "river-only"}
     if depth is None:               # left out: the Defaults Profile's rule gives it
         del d["moulded_depth_m"]
     d.update(more)

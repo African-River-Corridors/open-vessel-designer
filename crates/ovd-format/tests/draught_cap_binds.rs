@@ -28,7 +28,7 @@ fn results_of(typed: Value) -> Value {
 
 fn dry_bulk(kind: &str, fb: f64) -> Value {
     json!({
-        "cargo": "bauxite", "hull_form": "raked_box", "formation": { "kind": kind },
+        "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only", "formation": { "kind": kind },
         "length_overall_m": 76.5, "beam_m": 11.4, "moulded_depth_m": 3.5,
         "min_freeboard_m": fb
     })

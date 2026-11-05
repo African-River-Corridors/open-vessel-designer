@@ -16,6 +16,13 @@ use ovd_format::trace::trace_of;
 use ovd_format::{Profile, RunOutcome, check, fill_as_new, input_schema, run_option};
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 fn new_gas_design(cargo: &str, extra: Value) -> ovd_format::Design {
     let mut inputs = json!({
         "cargo": { "value": cargo, "source": "typed" },
@@ -86,7 +93,7 @@ fn the_five_inputs_are_in_the_openings_group_for_type_c_tanks_with_estimate_defa
 
 #[test]
 fn a_file_saved_before_reads_the_smallest_distances_the_rules_allow_with_one_note() {
-    let text = std::fs::read_to_string(format!(
+    let text = read_with_area(format!(
         "{}/tests/legacy/v2_gas_lpg_before_313.vdesign",
         env!("CARGO_MANIFEST_DIR")
     ))

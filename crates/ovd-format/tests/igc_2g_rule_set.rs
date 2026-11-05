@@ -34,6 +34,8 @@ fn v2_with(name: &str) -> Value {
 /// A version 1 gas file with the ruleset set to `name`.
 fn v1_with(name: &str) -> Value {
     let mut f = raw("legacy", "v1_adn_g_self_propelled");
+    // Issue #925: the legacy file has no Service Area; this test is about the ruleset name.
+    f["options"][0]["inputs"]["service_area"] = json!({ "value": "river-only", "source": "typed" });
     f["options"][0]["inputs"]["ruleset"]["value"] = json!(name);
     f
 }

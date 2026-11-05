@@ -43,7 +43,7 @@ fn old_file(name: &str) -> String {
 }
 
 fn gas_session() -> DesignSession {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     s.set_input("Option 1", "length_overall_m", json!(110.0))
         .unwrap();
@@ -149,7 +149,7 @@ fn a_new_gas_option_has_the_default_profile_labelled_default() {
 
 #[test]
 fn an_option_without_type_c_tanks_has_none_of_them_and_refuses_them() {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("diesel_en590"))
         .unwrap();
     s.set_input("Option 1", "length_overall_m", json!(80.0))

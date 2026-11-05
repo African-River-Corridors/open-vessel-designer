@@ -14,9 +14,6 @@ use ovd_core::rule_trace::{
 use ovd_core::rules::{ArgValue, MeasureRef};
 use serde_json::{Value, json};
 
-/// The Service Area of an Option that stores none (spec 0004, "Service Area and default stacks").
-pub const DEFAULT_SERVICE_AREA: &str = "river-only";
-
 /// The registry entry of a Measure: a computed Measure of the core, or `input.<name>` for an input
 /// of the schema that is a number, a yes/no or a choice. The unit of an input Measure is its unit in
 /// the built-in Defaults Profile (`-` for none).
@@ -71,13 +68,8 @@ pub fn default_stack_ids(containment: Option<&str>) -> Vec<&'static str> {
 /// The stack of ids an Option with no stored `rule_sets` takes: [`default_stack_ids`], except that a
 /// river-only gas Option takes ADN 2025 9.3.1 as its design Rule Set, with the two IGC 2.4.1.2 tank
 /// distance rows beside it (issue #850).
-pub fn unstored_stack_ids(
-    containment: Option<&str>,
-    service_area: Option<&str>,
-) -> Vec<&'static str> {
-    if containment == Some("type_c_tanks")
-        && service_area.unwrap_or(DEFAULT_SERVICE_AREA) == "river-only"
-    {
+pub fn unstored_stack_ids(containment: Option<&str>, service_area: &str) -> Vec<&'static str> {
+    if containment == Some("type_c_tanks") && service_area == "river-only" {
         vec![
             "adn-gas",
             "igc-tank-clearance",
@@ -92,9 +84,8 @@ pub fn unstored_stack_ids(
 
 /// The `rule_sets` a file saved before the input existed is read with: the stack the engine checked
 /// every Option against then (issue #274), whatever the profile's default stacks are now. Issue #850:
-/// a river-only gas file (a file with no Service Area is read as river-only) is read with the ADN gas
-/// stack, as the maintainer decided; a file that stores its Rule Sets keeps them.
-pub fn legacy_rule_sets(containment: Option<&str>, service_area: Option<&str>) -> Value {
+/// a river-only gas file is read with the ADN gas stack, as the maintainer decided; a file that stores its Rule Sets keeps them.
+pub fn legacy_rule_sets(containment: Option<&str>, service_area: &str) -> Value {
     let library = crate::rule_set::built_in();
     let sets: Vec<Value> = unstored_stack_ids(containment, service_area)
         .into_iter()
@@ -205,11 +196,16 @@ pub fn refresh_default_rule_sets(option: &mut DesignOption, profile: &Profile) {
     if option.input("rule_sets").is_none() {
         return;
     }
+    // Issue #925: with no Service Area there is no default stack to refresh; the missing Service Area
+    // is reported by the file check, not here.
+    let Ok(area) = service_area_of(option).map(String::from) else {
+        return;
+    };
     let containment = option
         .input("cargo_containment")
         .and_then(|i| i.value.as_str())
         .map(String::from);
-    let mut list = default_rule_sets(profile, service_area_of(option), containment.as_deref())
+    let mut list = default_rule_sets(profile, &area, containment.as_deref())
         .as_array()
         .cloned()
         .unwrap_or_default();
@@ -291,12 +287,14 @@ fn check_selection(library: &Library, list: &[Value]) -> Result<(), String> {
     library.select(&pairs).map(|_| ())
 }
 
-/// The Service Area of an Option: its input, or the default.
-pub fn service_area_of(option: &DesignOption) -> &str {
+/// The Service Area of an Option: its input. An Option with none (one built by hand, not read from a
+/// file, which always has one) is the one error of issue #925, with no default.
+pub fn service_area_of(option: &DesignOption) -> Result<&str, String> {
     option
         .input("service_area")
         .and_then(|i| i.value.as_str())
-        .unwrap_or(DEFAULT_SERVICE_AREA)
+        .filter(|a| crate::vdesign::SERVICE_AREAS.contains(a))
+        .ok_or_else(|| crate::vdesign::service_area_required().to_string())
 }
 
 /// The sets an Option stores: `(id, version, hash)` of each entry of its `rule_sets` input. `None`
@@ -369,7 +367,7 @@ pub fn stack_for<'a>(
                 option
                     .input("cargo_containment")
                     .and_then(|i| i.value.as_str()),
-                option.input("service_area").and_then(|i| i.value.as_str()),
+                service_area_of(option)?,
             ) {
                 if let Some(set) = library.latest(id) {
                     chosen.push((set.id.clone(), set.version.clone()));
@@ -699,7 +697,6 @@ impl MeasureSource for OptionMeasures<'_> {
             .input(name)
             .and_then(|i| i.value.as_str())
             .map(str::to_string)
-            .or_else(|| (name == "service_area").then(|| DEFAULT_SERVICE_AREA.to_string()))
     }
 }
 
@@ -1151,7 +1148,9 @@ pub fn box_trace(
             measured: &measured,
         },
     );
-    Ok(trace_json(&trace, DEFAULT_SERVICE_AREA, &[]))
+    // A box condition has no Option, so no Service Area; the harness fixture is a river-only stand-in
+    // (the label of the trace only).
+    Ok(trace_json(&trace, "river-only", &[]))
 }
 
 /// The Rule Trace of a self-propelled Option whose measured values the case gives (the evaluation
@@ -1248,7 +1247,7 @@ pub fn stern_trace(
     }
     let selection = library.select(chosen)?;
     let trace = trace_of(&selection, option, &measured);
-    Ok(trace_json(&trace, service_area_of(option), &[]))
+    Ok(trace_json(&trace, service_area_of(option)?, &[]))
 }
 
 /// What a liquid bulk layout gives the Rule Trace (the evaluation harness, issue #338): the layout, the

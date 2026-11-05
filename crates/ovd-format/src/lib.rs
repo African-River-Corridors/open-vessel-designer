@@ -50,5 +50,5 @@ pub use session::{
 pub use text_ids::msg_json;
 pub use vdesign::{
     Checked, Design, DesignOption, Report, Source, StoredInput, check, fill, fill_as_new,
-    new_design,
+    new_design, service_area_required, with_service_area,
 };

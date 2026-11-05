@@ -16,14 +16,21 @@ use ovd_format::vdesign::{
 use ovd_format::{DesignSession, HashStatus, Profile, RunOutcome, Source, check, fill_as_new};
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 fn legacy(name: &str) -> String {
     let path = format!("{}/tests/legacy/{name}.vdesign", env!("CARGO_MANIFEST_DIR"));
-    std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
+    read_with_area(&path).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
 /// A new Design of this Cargo (and carriage condition, for an LPG Cargo), as a session makes it.
 fn new_session(cargo: &str, carriage: &str) -> DesignSession {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!(cargo)).unwrap();
     s.set_input("Option 1", "length_overall_m", json!(110.0))
         .unwrap();
@@ -599,7 +606,7 @@ fn an_older_profile_copy_without_the_entries_loads_and_takes_the_built_in_ones()
     // The copy's fixed wall stays the copy's default.
     assert_eq!(old.default("tank_wall_thickness_mm"), Some(&json!(25.0)));
     // And it makes a Design.
-    let mut s = DesignSession::new_design(old).unwrap();
+    let mut s = DesignSession::new_design_in(old, "river-only").unwrap();
     s.set_input("Option 1", "cargo", json!("LPG_propane"))
         .unwrap();
     assert_eq!(stored(&s, "fill_ratio").unwrap().0, json!(0.96));
@@ -643,7 +650,7 @@ fn the_fill_ratio_of_a_design_is_the_igc_limit_and_the_old_0_95_is_never_used() 
     assert_eq!(r["arrangement"]["fill_ratio"], 0.98);
     let case = ovd_format::parse_case(
         &json!({ "fn": "simulate", "args": { "params": {
-            "vessel": "gas_barge", "cargo": "LNG", "loa_m": 110.0, "beam_m": 11.4, "depth_m": 6.0, "cb": 0.85,
+            "vessel": "gas_barge", "service_area": "river-only", "cargo": "LNG", "loa_m": 110.0, "beam_m": 11.4, "depth_m": 6.0, "cb": 0.85,
             "self_propelled": true
         } } })
         .to_string(),
@@ -660,7 +667,7 @@ fn calibration_structure_factors() -> Vec<(String, String, f64)> {
         "{}/../../calibration/tank_cases.yaml",
         env!("CARGO_MANIFEST_DIR")
     );
-    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
+    let text = read_with_area(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
     let runnable = text.split("not_yet_runnable_tank_cases:").next().unwrap();
     let (mut id, mut carriage, mut out) = (String::new(), String::new(), Vec::new());
     for line in runnable.lines() {

@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 
 fn file(cargo: &str, beam: f64, depth: Option<f64>) -> String {
     let mut inputs = json!({
-        "cargo": cargo, "hull_form": "raked_box", "length_overall_m": 80.0, "beam_m": beam,
+        "cargo": cargo, "hull_form": "raked_box", "service_area": "river-only", "length_overall_m": 80.0, "beam_m": beam,
         "formation": { "kind": "self_propelled" }
     });
     if let Some(d) = depth {
@@ -121,7 +121,7 @@ fn every_cargo_of_the_format_has_a_group_and_the_oils_are_the_liquid_ones() {
 
 #[test]
 fn a_depth_on_its_default_follows_a_change_of_beam_or_cargo_and_a_typed_depth_does_not() {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.set_input("Option 1", "moulded_depth_m", json!(4.0))
         .unwrap();
     s.reset_input("Option 1", "moulded_depth_m").unwrap();
@@ -153,7 +153,7 @@ fn a_depth_on_its_default_follows_a_change_of_beam_or_cargo_and_a_typed_depth_do
 
 #[test]
 fn a_class_defined_option_picks_the_default_depth_up_like_any_other() {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     s.reset_input("Option 1", "moulded_depth_m").unwrap();
     s.set_input("Option 1", "vessel_class", json!("CEMT-IV"))
         .unwrap();

@@ -29,7 +29,8 @@ fn gas_hull(cargo: &str, loa: f64, beam: f64, depth: f64) -> Value {
             "cargo": t(json!(cargo)), "hull_form": t(json!("raked_box")),
             "formation": t(json!({"kind": "self_propelled"})), "length_overall_m": t(json!(loa)),
             "beam_m": t(json!(beam)), "moulded_depth_m": t(json!(depth)),
-            "cargo_containment": t(json!("type_c_tanks"))}}]});
+            "cargo_containment": t(json!("type_c_tanks")),
+            "service_area": t(json!("river-only"))}}]});
     let checked = check(&design.to_string(), &Profile::built_in());
     match run_design(&checked.design.expect("a valid Design"))
         .remove(0)

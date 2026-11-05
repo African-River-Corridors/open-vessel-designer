@@ -19,6 +19,7 @@ fn results_of(cargo: &str, extra: Value) -> Value {
         "hull_form": { "value": "raked_box", "source": "typed" },
         "formation": { "value": { "kind": "pushed_barge" }, "source": "typed" },
         "length_overall_m": { "value": 76.5, "source": "typed" },
+        "service_area": { "value": "river-only", "source": "typed" },
         "beam_m": { "value": 11.4, "source": "typed" },
         "moulded_depth_m": { "value": 3.5, "source": "typed" }
     });

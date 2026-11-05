@@ -102,7 +102,7 @@ fn evaluations() -> Vec<(String, Value)> {
     }
     out.push((
         "new design".into(),
-        DesignSession::new_design(Profile::built_in())
+        DesignSession::new_design_in(Profile::built_in(), "river-only")
             .unwrap()
             .evaluate()
             .to_json(),

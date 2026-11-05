@@ -8,8 +8,15 @@
 use ovd_format::{DesignSession, HashStatus, Profile, RunOutcome, Source, ga_views_of};
 use serde_json::{Value, json};
 
+/// Issue #925: a legacy fixture has no Service Area, which is now an error. This test is about something else, so
+/// it reads the file with a river-only Service Area set, as `ovd fill --service-area river-only` does.
+fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> {
+    let text = std::fs::read_to_string(path)?;
+    Ok(ovd_format::with_service_area(&text, "river-only").unwrap())
+}
+
 fn new_design(cargo: &str, carriage: &str) -> DesignSession {
-    let mut s = DesignSession::new_design(Profile::built_in()).unwrap();
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
     for (name, value) in [
         ("cargo", json!(cargo)),
         ("length_overall_m", json!(110.0)),
@@ -137,7 +144,7 @@ fn a_file_saved_before_keeps_hemispherical_heads_and_its_results() {
         "{}/tests/legacy/v2_gas_lpg_before_313_igc_stack.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
-    let text = std::fs::read_to_string(path).unwrap();
+    let text = read_with_area(path).unwrap();
     let (s, opened) = DesignSession::open(&text, Profile::built_in()).unwrap();
     assert_eq!(opened.hash_status[0].1, HashStatus::Matches);
     let i = s.design().options[0].input("tank_head_type").unwrap();

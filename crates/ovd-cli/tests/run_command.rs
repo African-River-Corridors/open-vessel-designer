@@ -44,7 +44,7 @@ fn read_json(path: &Path) -> Value {
 /// A starter Design written by `ovd new`.
 fn starter(dir: &Path) -> PathBuf {
     let file = dir.join("starter.vdesign");
-    let out = ovd(&["new", p(&file)]);
+    let out = ovd(&["new", "--service-area", "river-only", p(&file)]);
     assert!(out.status.success(), "{}", stderr(&out));
     file
 }
@@ -62,7 +62,7 @@ fn filled(dir: &Path, name: &str, inputs: Value) -> PathBuf {
         }),
     );
     let out = dir.join(format!("{name}.vdesign"));
-    let r = ovd(&["fill", p(&raw), p(&out)]);
+    let r = ovd(&["fill", "--service-area", "river-only", p(&raw), p(&out)]);
     assert!(r.status.success(), "{}", stderr(&r));
     out
 }
@@ -352,7 +352,7 @@ fn json_results_are_what_simulate_answers_for_a_pushed_barge() {
     let expected = simulate_answer(json!({
         "vessel": "box_barge", "cargo": "bauxite", "loa_m": 76.5, "beam_m": 11.4, "depth_m": 3.5,
         "cb": 0.928, "lightship_k_t_per_m3": 0.1093, "freeboard_min_m": 0.3,
-        "self_propelled": false, "eta_d": 0.45, "speed_max_kn": 10.0
+        "self_propelled": false, "eta_d": 0.45, "speed_max_kn": 10.0, "service_area": "river-only"
     }));
     assert_eq!(results, &expected);
     // Pinned values from the original Python.
@@ -722,7 +722,15 @@ fn fill_adds_and_removes_rule_sets_and_run_states_the_scope() {
     assert!(stack(&added).contains(&("is2008-a".into(), "1.0.0".into(), "typed".into())));
     // `ovd` cannot be removed; a refusal writes nothing.
     let refused = dir.join("refused.vdesign");
-    let out = ovd(&["fill", "--remove-rule-set", "ovd", p(&file), p(&refused)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        "--remove-rule-set",
+        "ovd",
+        p(&file),
+        p(&refused),
+    ]);
     assert!(!out.status.success());
     assert!(
         stderr(&out).contains("cannot be removed"),

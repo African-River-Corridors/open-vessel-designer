@@ -13,7 +13,12 @@ use ovd_format::{
 use serde_json::{Value, json};
 
 fn starter() -> ovd_format::Design {
-    new_design(&Profile::built_in()).unwrap()
+    // Issue #925: the starter has no Service Area; these tests are about something else, so it is set.
+    let profile = Profile::built_in();
+    let text =
+        ovd_format::with_service_area(&new_design(&profile).unwrap().to_text(), "river-only")
+            .unwrap();
+    ovd_format::fill(&text, &profile).design.unwrap()
 }
 
 fn set(design: &mut ovd_format::Design, name: &str, value: Value) {
