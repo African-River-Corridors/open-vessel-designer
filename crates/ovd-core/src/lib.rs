@@ -33,6 +33,7 @@ pub mod gas_fuel;
 pub mod gas_separation;
 pub mod gas_stability;
 pub mod holding_profile;
+pub mod holding_time;
 pub mod holtrop_mennen;
 pub mod hull;
 pub mod hull_panels;

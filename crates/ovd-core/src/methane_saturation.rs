@@ -11,7 +11,7 @@
 //! The rules give pressures as gauge; the table is absolute. They differ by one standard atmosphere,
 //! 0.101325 MPa.
 
-use libm::{floor, round};
+use libm::{exp, floor, log, round};
 
 /// One standard atmosphere (MPa): a gauge pressure plus this is the absolute pressure.
 pub const ATMOSPHERE_MPA: f64 = 0.101325;
@@ -174,10 +174,29 @@ pub fn property(p: Property, t_c: f64) -> Result<f64, OutOfTable> {
     Ok(if f == 0.0 { a } else { a + f * (b - a) })
 }
 
-/// The saturation pressure at `t_c` (MPa absolute).
+/// The saturation pressure at `t_c` (MPa absolute): the table value at a row, and between two rows
+/// ln P linear in 1/T (the Clausius-Clapeyron form), which follows the vapour pressure curve far more
+/// closely than a straight line in P (issue #870).
 pub fn saturation_pressure_mpa(t_c: f64) -> Result<f64, OutOfTable> {
-    Ok(property(Property::PressureBar, t_c)? / 10.0)
+    let x = t_c - TABLE_LOW_C;
+    if x.is_nan() || x < 0.0 || x > (METHANE.len() - 1) as f64 {
+        return Err(OutOfTable);
+    }
+    let i = floor(x) as usize;
+    if i + 1 >= METHANE.len() || x == i as f64 {
+        return Ok(METHANE[i].0 / 10.0);
+    }
+    let (ta, tb) = (kelvin(i), kelvin(i + 1));
+    let (la, lb) = (log(METHANE[i].0), log(METHANE[i + 1].0));
+    let w = (1.0 / (t_c + 273.15) - 1.0 / ta) / (1.0 / tb - 1.0 / ta);
+    Ok(exp(la + w * (lb - la)) / 10.0)
 }
+
+/// The temperature of table row `i` (K).
+fn kelvin(i: usize) -> f64 {
+    TABLE_LOW_C + i as f64 + 273.15
+}
+
 /// The saturated liquid density at `t_c` (kg/m3).
 pub fn liquid_density_kg_m3(t_c: f64) -> Result<f64, OutOfTable> {
     property(Property::LiquidDensity, t_c)
@@ -225,16 +244,25 @@ pub fn latent_heat_kj_per_kg(t_c: f64) -> Result<f64, OutOfTable> {
 }
 
 /// The temperature (C) at which the saturation pressure is `p_mpa` absolute: the inverse of
-/// [`saturation_pressure_mpa`] on the same straight lines.
+/// [`saturation_pressure_mpa`], ln P linear in 1/T between rows. A row pressure gives its row
+/// temperature exactly.
 pub fn saturation_temperature_c(p_mpa: f64) -> Result<f64, OutOfTable> {
     let bar = p_mpa * 10.0;
     if bar.is_nan() || bar < METHANE[0].0 || bar > METHANE[METHANE.len() - 1].0 {
         return Err(OutOfTable);
     }
+    if bar == METHANE[0].0 {
+        return Ok(TABLE_LOW_C);
+    }
     for i in 1..METHANE.len() {
         let (lo, hi) = (METHANE[i - 1].0, METHANE[i].0);
         if bar <= hi {
-            return Ok(TABLE_LOW_C + (i - 1) as f64 + (bar - lo) / (hi - lo));
+            if bar == hi {
+                return Ok(TABLE_LOW_C + i as f64);
+            }
+            let (ta, tb) = (kelvin(i - 1), kelvin(i));
+            let w = (log(bar) - log(lo)) / (log(hi) - log(lo));
+            return Ok(1.0 / (1.0 / ta + w * (1.0 / tb - 1.0 / ta)) - 273.15);
         }
     }
     Err(OutOfTable)

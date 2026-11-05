@@ -186,3 +186,24 @@ fn the_latent_heat_reproduces_the_constants_the_boil_off_has_used() {
         assert_eq!(methane_latent_heat_kj_per_kg(t), Ok(v), "{t} C");
     }
 }
+
+#[test]
+fn between_rows_the_pressure_is_ln_p_linear_in_one_over_t_not_a_straight_line() {
+    // Worked by hand at -149.5 C, between the -150 C row (2.3784 bar) and the -149 C row (2.5420 bar):
+    // T = 123.65 K between 123.15 K and 124.15 K, so the weight on the upper row is
+    // w = (1/123.65 - 1/123.15) / (1/124.15 - 1/123.15) = 0.5020218, and
+    // ln P = ln 2.3784 + w (ln 2.5420 - ln 2.3784), P = 2.4591705 bar = 0.24591705 MPa.
+    // A straight line in P gives (2.3784 + 2.5420) / 2 = 2.4602 bar, 0.045 % higher: this test fails on it.
+    let p = saturation_pressure_mpa(-149.5).unwrap();
+    assert!((p - 0.24591705).abs() < 2.0e-8, "{p}");
+    assert!(
+        (p - 0.24602).abs() > 1.0e-4,
+        "the straight line is not the answer"
+    );
+    // The inverse takes that pressure back to -149.5 C.
+    let t = saturation_temperature_c(0.24591705).unwrap();
+    assert!((t + 149.5).abs() < 1.0e-6, "{t}");
+    // And a pressure the straight line would place at -149.5 C is not at -149.5 C.
+    let t_line = saturation_temperature_c(0.24602).unwrap();
+    assert!((t_line + 149.5).abs() > 1.0e-3, "{t_line}");
+}

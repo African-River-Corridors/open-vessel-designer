@@ -193,7 +193,7 @@ READ_BY = {
     "vessel": [], "cargo": [], "phase": [],   # A.1 prints a cell "not evaluated" for these
     # no chapter reads these yet: a deletion must change nothing in the skeleton
     "self_propelled": [], "warnings": [], "fit_tried": [], "text_ids": [],
-    "gross_tonnage": [],
+    "gross_tonnage": [], "holding_time": [],   # the holding-time block (#870); a chapter reads it with #871
     "crew": [],   # no chapter reads it yet; #830 maps it to A4
     "air_drafts": [],   # unhashed (#888): the app and the side elevation read it; no chapter yet
     "stern_arrangement": [],   # the Stern & crew view reads it (#887); no chapter does yet

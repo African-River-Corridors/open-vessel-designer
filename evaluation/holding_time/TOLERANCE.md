@@ -55,3 +55,17 @@ The reference itself is converged in step: halving 120 s to 60 s moves no holdin
 
 Holding time: the larger of **0.0340 %** and the step error H4 measures. Pressure at the stored times: the larger
 of **0.0632 %** and the step error H4 measures. These floors move only with the maintainer's approval.
+
+## Item 2, measured by H4 (#870)
+
+OVD steps at 600 s with a second-order (predictor-corrector) step. Halving it to 300 s changes the holding time
+by 0 % in cases A to C (constant heat leak) and 0.0070 % in case D, and the pressure at the stored times by 0 %
+and 0.0195 %. Both are below the floors above, so the floors stand.
+
+OVD against NeqSim at 600 s: holding time within 0.018 % in every case, inside its floor of 0.0340 % (about
+30 times inside it in cases A to C). **Holding time is gated** against that floor. Pressure at the stored times
+is 0.077 to 0.110 %, above its floor of 0.0632 %: **reported, not gated** (maintainer, 2026-11-05; see issue
+#917). The floor is unchanged.
+
+holding-time-tolerance-percent: 0.0340
+pressure-tolerance-percent: 0.0632
