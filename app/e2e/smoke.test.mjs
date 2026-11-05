@@ -36,7 +36,19 @@ const field = (label) => browser.$(`input[aria-label="${label}"]`);
 /** Open Settings (app bar), do `act`, close it again. */
 async function inSettings(act) {
   await (await browser.$("[data-testid=settings]")).click();
-  await until("the Settings dialog", async () => (await browser.$("[data-testid=settings-dialog]")).isExisting());
+  try {
+    await until("the Settings dialog", async () => (await browser.$("[data-testid=settings-dialog]")).isExisting());
+  } catch (e) {
+    // The click on Settings is sometimes lost (issue #922): keep what the page shows, in the log and as a
+    // screenshot in the job's app-screenshots artifact.
+    console.log("DIAG settings dialog missing, body:", await browser.execute(() => document.body.innerText.slice(0, 600)));
+    console.log("DIAG settings dialog missing, test ids:", await browser.execute(() => [...document.querySelectorAll("[role=dialog],dialog,[data-testid]")].slice(0, 40).map((n) => n.getAttribute("data-testid") || n.tagName).join(",")));
+    if (process.env.OVD_E2E_SHOTS) {
+      fs.mkdirSync(process.env.OVD_E2E_SHOTS, { recursive: true });
+      await browser.saveScreenshot(path.join(process.env.OVD_E2E_SHOTS, "settings-dialog-missing.png"));
+    }
+    throw e;
+  }
   await act();
   await (await browser.$("[data-testid=settings-close]")).click();
   await until("Settings to close", async () => !(await browser.$("[data-testid=settings-dialog]").isExisting()));
@@ -49,6 +61,7 @@ async function inSettings(act) {
  * none of the marked ones is left (issue #470: a click on the old form was lost).
  */
 async function open(file, expectName, timeout = 15000) {
+  const started = Date.now();
   await browser.execute(() => document.querySelectorAll(".field[data-input]").forEach((e) => e.setAttribute("data-before-open", "")));
   answer("open.txt", file);
   await (await browser.$("button=Open")).click();
@@ -58,6 +71,8 @@ async function open(file, expectName, timeout = 15000) {
     timeout,
   );
   await until("outputs", async () => (await browser.$("[data-testid=outputs]")).isExisting(), timeout);
+  // The open time of each file, in the log, so a slow open shows before it reaches the limit (issue #922).
+  console.log(`e2e open-time ${expectName}: ${Date.now() - started} ms (limit ${timeout} ms)`);
 }
 
 /** Untick "none" on a number input, and wait until its box is there to type in. */
@@ -297,7 +312,7 @@ describe("OVD app smoke tests", () => {
     assert.equal((await browser.$$("[data-testid=stern-crew] svg")).length, 0, "no drawing until #783");
     await browser.pause(300);
     assert.ok((await overflow()) <= 0, "the stern view of a container block scrolls");
-    await open(path.resolve(here, "fixtures/gas_deckhouse_self_propelled.vdesign"), "gas_deckhouse_self_propelled.vdesign");
+    await open(path.resolve(here, "fixtures/gas_deckhouse_self_propelled.vdesign"), "gas_deckhouse_self_propelled.vdesign", DECKHOUSE_OPEN_MS);
     await show("Drawings", "Stern & crew");
     await until("the deckhouse view", async () => (await browser.$$("[data-testid=stern-outfit-warning]")).length === 1);
     // The warning is the engine's, found by its Message Id in the run: the view has no text of its own for it.
@@ -388,7 +403,12 @@ describe("OVD app smoke tests", () => {
    * coastal-and-river stack; a river-only gas Design takes ADN 9.3.1 in place of the IGC Code (issue #850),
    * whose cases the view lists without a drawing.
    */
-  const SLOW_OPEN_MS = 60000;
+  // The wait for a slow open, in ms: under 3 times the slowest open measured on the CI release-profile build
+  // (6.2 s for the coastal-and-river gas Design, issue #922). It was 60 s for a debug build, which took 14 s.
+  // CI can set OVD_E2E_SLOW_OPEN_MS to try another limit.
+  // The gas deckhouse fixture opened in 6.2 to 10.6 s on the CI build (issue #922): 3 times the slowest.
+  const DECKHOUSE_OPEN_MS = Number(process.env.OVD_E2E_DECKHOUSE_OPEN_MS || 30000);
+  const SLOW_OPEN_MS = Number(process.env.OVD_E2E_SLOW_OPEN_MS || 18000);
   function gasDamageDesign(area = "coastal-and-river") {
     const inputs = {
       cargo: { value: "LNG", source: "typed" },
@@ -409,8 +429,8 @@ describe("OVD app smoke tests", () => {
   }
 
   it("shows the damage cases, the governing case of each condition and the damage drawing of a gas Design (issue #886)", async () => {
-    // The coastal-and-river design computes the IGC damage cases and the stern arrangement: several seconds in
-    // a debug build, so the open and the drawing get more than the usual 15 s (issue #850).
+    // The coastal-and-river design computes the IGC damage cases and the stern arrangement: about 6 s on the CI build,
+    // so the open and the drawing get a little more than the usual 15 s (issues #850, #922).
     await open(gasDamageDesign(), "gas-damage-coastal-and-river.vdesign", SLOW_OPEN_MS);
     await show("Stability & Propulsion", "Damage stability");
     await until("the damage drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1, SLOW_OPEN_MS);

@@ -75,13 +75,19 @@ Only `test` and `release-guard` are required. Keep the others from making a pull
 
 | Workflow, job | On a pull request | Elsewhere |
 |---|---|---|
-| `ci.yml`: `test` (the `gate-*` jobs), `release-guard`, `drawing-crosscheck`, `app-e2e` | always | push to main, tags |
+| `ci.yml`: `test` (the `gate-*` jobs), `release-guard`, `drawing-crosscheck` | always | push to main, tags (`v*`, `test-*`), the merge queue, by hand; the release workflow calls `test` and `release-guard` |
+| `app-gate.yml`: `app-e2e` (the built app, on the `e2e` profile: optimised, debug assertions on), `web-app` | never | from `release.yml` (every release); every Monday (07:47 UTC) and on request, through `app-checks.yml`; by hand |
 | `web-parity.yml`: `web-parity` (a release gate) | never | only from `release.yml` (every release), or by hand |
-| `app-checks.yml`: `web-app` | only when `app/**`, `crates/ovd-web/**`, `tools/build_web.sh` or `tools/web_parity.mjs` change | push to main on the same paths; every day |
 | `app-checks.yml`: `app-linux`, `app-windows` | never | every day (07:17 UTC); on request (`workflow_dispatch`) |
-| `codeql.yml` | never | push to main; every Monday |
-| `website.yml` | only when `website/**`, `docs/**` or `*.md` change | push to main |
-| `nightly.yml` | when the slow-test list or the gate script changes | every day |
+| `app-checks.yml`: `daily-failure` | never | after a failed scheduled run, it opens an issue |
+| `lean-proofs.yml`: `lean` | when `proofs/lean/**`, `crates/arc-rules/**` or the workflow file change | push to main on the same paths; every Monday (04:17 UTC); by hand |
+| `release.yml`: the release gate (`gate`, `app-gate`, `web-parity`, `calibration-bands`, `wheels`, `wasm-hashes`, `binaries`) | never | when a release is published; called from `app-build.yml`; by hand |
+| `app-build.yml`: `verify`, `gate`, `build`, `release` (installers, and the release itself) | never | push to main when `pyproject.toml` changes (only a version bump releases); push of a `v*` or `test-*` tag; by hand (builds, publishes nothing) |
+| `publish-pypi.yml`: `gate`, `sdist`, `publish` | never | push of a `v*` tag only; the `pypi` environment needs approval |
+| `design-impact-publish.yml`: `publish` | never | after a `ci.yml` run completes (`workflow_run`); it posts the design-impact report to the pull request |
+| `codeql.yml` | never | push to main; every Monday; by hand |
+| `website.yml` | only when `website/**`, `docs/**`, `*.md` or the workflow file change | push to main when those, or `app/**`, `crates/**`, `Cargo.toml`, `Cargo.lock` or `tools/build_web.sh` change; by hand |
+| `nightly.yml` | only when the workflow file, `.config/nextest.toml`, `docs/agents/slow-tests.md` or `tools/gates.sh` change | every day (02:41 UTC); by hand |
 
 **A runner trial for the Rust tests** (issue #847). Two repository variables (Settings, Secrets and variables,
 Actions, Variables) change `gate-rust` only. `CI_RUST_RUNNER` is its runner label, for example `arc-linux-16`.

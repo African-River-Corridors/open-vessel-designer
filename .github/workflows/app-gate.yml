@@ -8,6 +8,11 @@ name: App gate
 on:
   workflow_call:
   workflow_dispatch:
+    inputs:
+      slow_open_ms:
+        description: "Wait for a slow open in the app e2e test, in ms (empty: the default in smoke.test.mjs). Set it low to prove the gate fails."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -65,7 +70,9 @@ jobs:
           path: ${{ runner.temp }}/web-screenshots
           if-no-files-found: warn
 
-  # End-to-end smoke tests (spec 0002): the built debug app, driven by Tauri's WebDriver on Linux.
+  # End-to-end smoke tests (spec 0002): the built app, driven by Tauri's WebDriver on Linux. The app and the
+  # `ovd` CLI are built on the `e2e` profile (Cargo.toml): optimised like a release, with debug assertions on,
+  # because the test hooks (dialog answers, first-run marker folder) exist only with debug assertions (#922).
   # It left the pull request path (issue #716): it runs on a release (release.yml calls this workflow),
   # every week and on request.
   app-e2e:
@@ -80,7 +87,10 @@ jobs:
           cache-dependency-path: app/package-lock.json
       - name: Install the pinned Rust toolchain (rust-toolchain.toml)
         run: rustup toolchain install
+      # Its own cache key: the `e2e` profile must not share the web-app job's key, or it restores that cache and saves nothing (#922).
       - uses: Swatinem/rust-cache@v2
+        with:
+          key: e2e-profile
       - name: Tauri system libraries, WebDriver and a virtual display
         run: |
           sudo apt-get update
@@ -95,18 +105,21 @@ jobs:
       - name: Install tauri-driver
         if: steps.driver.outputs.cache-hit != 'true'
         run: cargo install tauri-driver --version 2.1.0 --locked
-      - name: Build the debug app
+      - name: Build the app (e2e profile, optimised, debug assertions on)
         working-directory: app
         run: |
           npm ci
-          npx tauri build --debug --no-bundle
+          npx tauri build --no-bundle -- --profile e2e
       - name: Build the CLI (the smoke tests compare its mesh hash, issue #457)
-        run: cargo build -p ovd-cli
+        run: cargo build -p ovd-cli --profile e2e
       - name: Smoke tests
         working-directory: app
         env:
           # The smoke tests save a screenshot of each view here, for review.
           OVD_E2E_SHOTS: ${{ runner.temp }}/app-screenshots
+          OVD_APP_BINARY: ../../target/e2e/ovd-app
+          OVD_CLI: ${{ github.workspace }}/target/e2e/ovd
+          OVD_E2E_SLOW_OPEN_MS: ${{ inputs.slow_open_ms }}
         run: xvfb-run -a bash e2e/run.sh
       - name: Upload the screenshots
         if: always()
