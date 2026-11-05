@@ -451,8 +451,12 @@ describe("OVD app smoke tests", () => {
     for (let i = 0; i < count; i++) {
       if (count > 1) await (await browser.$$("[data-testid=damage-condition]"))[i].click();
       await until("the drawing of the condition", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1, SLOW_OPEN_MS);
-      assert.equal((await browser.$$("[data-testid=damage-case-row][data-governing=true]")).length, 1, `condition ${i}`);
-      assert.match(await browser.$("[data-testid=damage-drawing-case]").getText(), /^Governing case: /);
+      const marked = await browser.$$("[data-testid=damage-case-row][data-governing=true]");
+      assert.equal(marked.length, 1, `condition ${i}`);
+      // the drawing's caption names the case that is marked
+      const caption = await browser.$("[data-testid=damage-drawing-case]").getText();
+      assert.match(caption, /^Governing case: /);
+      assert.ok(caption.endsWith(await marked[0].getAttribute("data-case")), `${caption} is not the marked case`);
     }
     await shot("928-river-only-damage");
   });

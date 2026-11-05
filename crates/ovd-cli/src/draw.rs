@@ -221,6 +221,13 @@ fn draw_design(args: &[&str]) -> Result<(), String> {
         documents_of.extend(
             ovd_format::damage_drawings_named(&run.outcome, Some(&run.name)).unwrap_or_default(),
         );
+        // Issue #928: and one per governing case of each other Rule Set's damage cases, as the app shows.
+        documents_of.extend(
+            ovd_format::damage_drawings_by_rule_named(&run.outcome, Some(&run.name))
+                .unwrap_or_default()
+                .into_iter()
+                .flat_map(|(_, sheets)| sheets),
+        );
         let mut stem = slug(&run.name);
         let mut n = 2;
         while used.contains(&stem) {

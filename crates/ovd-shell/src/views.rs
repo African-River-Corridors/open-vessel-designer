@@ -285,35 +285,79 @@ pub(crate) mod tests {
         }
     }
 
-    /// Issue #928: a river-only gas Option has no `damage` block, only `damage_by_rule`; each set that
-    /// names a governing case gets a sheet per governing case, marked with its set.
+    /// A gas hull in the IS Code 2008 conditions on the default Rule Sets, of the given size and Service Area.
+    fn gas_outcome(loa: f64, beam: f64, depth: f64, area: &str) -> RunOutcome {
+        let file = json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": {
+                "cargo": { "value": "LNG", "source": "typed" },
+                "hull_form": { "value": "raked_box", "source": "typed" },
+                "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+                "length_overall_m": { "value": loa, "source": "typed" },
+                "beam_m": { "value": beam, "source": "typed" },
+                "moulded_depth_m": { "value": depth, "source": "typed" },
+                "service_area": { "value": area, "source": "typed" },
+                "loading_conditions": { "value": "is_code_2008", "source": "typed" }
+            } }]
+        });
+        let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+        run_option(&filled.design.unwrap().options[0])
+    }
+
+    /// Issue #928: a river-only gas Option has no `damage` block, only `damage_by_rule`; a coastal one has
+    /// both. Over 110 m ES-TRIN 28.03 is a second set. Each set that names a governing case gets a sheet per
+    /// governing case, tagged with its set, and the sheet draws that case and that set's Rule Set.
     #[test]
-    fn a_river_only_gas_run_sends_one_damage_svg_per_governing_case_of_each_rule_set() {
-        let o = outcome("gas_adn_river_two_wide.vdesign");
-        let RunOutcome::Results { results, .. } = &o else {
-            panic!("no results")
-        };
-        assert!(
-            results["damage"].is_null(),
-            "a river-only gas run has no `damage` block"
-        );
-        let v = damage_views(&o, "Option 1").expect("damage views");
-        assert!(v.get("message").is_none(), "{v}");
-        let sheets = v["sheets"].as_array().unwrap();
-        let mut want = 0;
-        for (key, block) in results["damage_by_rule"].as_object().unwrap() {
-            let governing = block["governing"].as_array().map_or(&[][..], Vec::as_slice);
-            want += governing.len();
-            let mine: Vec<&Value> = sheets.iter().filter(|s| s["set"] == key.as_str()).collect();
-            assert_eq!(mine.len(), governing.len(), "{key}");
-            for (sheet, g) in mine.iter().zip(governing) {
-                assert!(sheet["svg"].as_str().unwrap().starts_with("<?xml"));
-                assert_eq!(sheet["condition"], g["condition"], "{key}");
-                assert_eq!(sheet["case"], g["case"], "{key}");
+    fn each_rule_sets_governing_cases_are_drawn_on_river_only_and_coastal_hulls_over_110_m() {
+        for (area, top) in [("river-only", false), ("coastal-and-river", true)] {
+            let o = gas_outcome(130.0, 16.0, 7.5, area);
+            let RunOutcome::Results { results, .. } = &o else {
+                panic!("no results")
+            };
+            assert_eq!(!results["damage"].is_null(), top, "{area}");
+            let by_rule = results["damage_by_rule"].as_object().unwrap();
+            assert!(
+                by_rule.keys().any(|k| k.starts_with("es-trin")),
+                "{area}: ES-TRIN is computed over 110 m"
+            );
+            let v = damage_views(&o, "Option 1").expect("damage views");
+            assert!(v.get("message").is_none(), "{area}: {v}");
+            let sheets = v["sheets"].as_array().unwrap();
+            let mut want = 0;
+            let mut check = |set: Option<&str>, block: &Value| {
+                let governing = block["governing"].as_array().map_or(&[][..], Vec::as_slice);
+                want += governing.len();
+                let rule_set = block["rule_set"].as_str().unwrap().replace('@', " ");
+                let mine: Vec<&Value> = sheets
+                    .iter()
+                    .filter(|s| s.get("set").and_then(Value::as_str) == set)
+                    .collect();
+                assert_eq!(mine.len(), governing.len(), "{area} {set:?}");
+                for (sheet, g) in mine.iter().zip(governing) {
+                    let svg = sheet["svg"].as_str().unwrap();
+                    assert!(svg.starts_with("<?xml"));
+                    assert_eq!(sheet["condition"], g["condition"], "{area} {set:?}");
+                    assert_eq!(sheet["case"], g["case"], "{area} {set:?}");
+                    // what is drawn, not what is labelled: the case and the Rule Set are in the SVG
+                    let case = format!(
+                        "{}: {}",
+                        g["condition"].as_str().unwrap(),
+                        g["case"].as_str().unwrap()
+                    )
+                    .to_uppercase();
+                    assert!(svg.contains(&case), "{area} {set:?}: {case}");
+                    assert!(svg.contains(&rule_set), "{area} {set:?}: {rule_set}");
+                }
+            };
+            if top {
+                check(None, &results["damage"]);
             }
+            for (key, block) in by_rule {
+                check(Some(key), block);
+            }
+            assert!(want > 0);
+            assert_eq!(sheets.len(), want, "{area}");
         }
-        assert!(want > 0, "the ADN set names a governing case");
-        assert_eq!(sheets.len(), want);
     }
 
     #[test]

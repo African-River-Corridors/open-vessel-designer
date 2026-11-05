@@ -19,6 +19,27 @@ const TANK_SIDES: usize = 36;
 pub const NO_DAMAGE_DRAWING: &str =
     "a damage case drawing is drawn for an Option whose results hold damage cases (spec 0012)";
 
+/// The distance of the damage extent's dimension line from the hull, in millimetres.
+const DAMAGE_ZONE_OFFSET_MM: f64 = 8.0;
+
+/// Where along its Space (0 to 1) the leader of the nth of `n` labels lands: the leaders of a stack of Spaces
+/// that share an x extent land 15 % to 85 % along it, one after another.
+fn stagger_fraction(nth: usize, n: usize) -> f64 {
+    if n < 2 {
+        return 0.5;
+    }
+    0.15 + 0.7 * nth as f64 / (n - 1) as f64
+}
+
+/// The longitudinal extent of the damage, from the case name the engine gives ("side (starboard) damage, 45.9
+/// to 55.9 m"). The results hold no separate number for it. `None` where the name has no such range.
+fn damage_zone(case: &str) -> Option<(f64, f64)> {
+    let (_, tail) = case.rsplit_once(", ")?;
+    let (a, b) = tail.strip_suffix(" m")?.split_once(" to ")?;
+    let (a, b) = (a.trim().parse::<f64>().ok()?, b.trim().parse::<f64>().ok()?);
+    (a < b).then_some((a, b))
+}
+
 /// One Flooded Volume as the drawing shows it.
 struct Flooded {
     name: String,
@@ -140,6 +161,7 @@ fn damage_canvas(h: &Hull, g: &Governing, n: u32) -> Canvas {
     let mut c = Canvas::new(n);
     let half = h.beam / 2.0;
     let mut labels: Vec<(String, [f64; 2])> = Vec::new();
+    let mut extents: Vec<(f64, f64)> = Vec::new();
     // The plan: the hull, its rakes, the centre line; each flooded Space hatched over its extent across.
     c.polyline(
         "OUTLINE",
@@ -174,6 +196,19 @@ fn damage_canvas(h: &Hull, g: &Governing, n: u32) -> Canvas {
         c.polyline("OBJECT", &rect, true);
         c.hatch("HATCH", &rect, "lines");
         labels.push((f.name.clone(), [0.5 * (f.x.0 + f.x.1), 0.5 * (p0 + p1)]));
+        extents.push(f.x);
+    }
+    // Each leader lands at its own x along its Space, the highest Space's furthest from the label column
+    // and the lowest's nearest, so no two arrowheads meet and no leader runs over another (issue #928).
+    let mut by_height: Vec<usize> = (0..labels.len()).collect();
+    by_height.sort_by(|&a, &b| labels[b].1[1].total_cmp(&labels[a].1[1]));
+    for (rank, &i) in by_height.iter().enumerate() {
+        let (a, b) = extents[i];
+        labels[i].1[0] = a + (b - a) * (1.0 - stagger_fraction(rank, by_height.len()));
+    }
+    if let Some((lo, hi)) = damage_zone(&g.case) {
+        // The longitudinal extent of the damage, below the plan.
+        c.try_dim_horizontal([lo, -half], [hi, -half], -DAMAGE_ZONE_OFFSET_MM);
     }
     let x = damage_x(g);
     c.line("CENTRE", [x, -half], [x, half], Some("dashed"));
@@ -226,24 +261,47 @@ pub fn damage_drawings_for(
     results: &Value,
     option: Option<&str>,
 ) -> Result<Vec<(String, Value)>, String> {
-    sheets_of_block(results, &results["damage"], "damage", option)
+    sheets_of_block(
+        results,
+        &results["damage"],
+        "damage",
+        option,
+        0,
+        total_sheets(results),
+    )
 }
 
-/// The sheets of one block of damage cases: `stem` is the file-name stem before the sheet number.
+/// How many governing cases the results hold in all: the `damage` block and every `damage_by_rule` set. The
+/// sheets of an Option are numbered across all of them, so no two have one document number (issue #928).
+fn total_sheets(results: &Value) -> u32 {
+    let count = |b: &Value| b["governing"].as_array().map_or(0, Vec::len) as u32;
+    count(&results["damage"])
+        + results["damage_by_rule"]
+            .as_object()
+            .into_iter()
+            .flatten()
+            .map(|(_, b)| count(b))
+            .sum::<u32>()
+}
+
+/// The sheets of one block of damage cases: `stem` is the file-name stem before the sheet number. The sheets
+/// of the block are numbered from `before + 1` of `total` on the drawing, and from 1 in the stem.
 fn sheets_of_block(
     results: &Value,
     block: &Value,
     stem: &str,
     option: Option<&str>,
+    before: u32,
+    total: u32,
 ) -> Result<Vec<(String, Value)>, String> {
     let (set, governing) = read_governing(block)?;
     let mut h = read_hull(results)?;
     h.option_name = option.map(str::to_string);
     let title = label!("draw-view-damage-case", "DAMAGE CASE");
-    let count = governing.len();
     let mut out = Vec::new();
     for (i, g) in governing.iter().enumerate() {
-        let sheet = (i + 1) as u32;
+        let local = (i + 1) as u32;
+        let sheet = before + local;
         let mut notes = vec![label!(
             "draw-note-damage-case",
             "{view}: THE GOVERNING CASE OF THE CONDITION. FLOODED SPACES HATCHED. DIMENSIONS IN METRES.",
@@ -279,9 +337,9 @@ fn sheets_of_block(
             "FOR CONCEPT AND PRELIMINARY DESIGN ONLY, NOT FOR APPROVAL."
         ));
         let mut fields = title_fields(&h, &title, "DC", sheet, &plain_capitals(&h.vessel))?;
-        fields["sheet_count"] = json!(count);
+        fields["sheet_count"] = json!(total);
         let (doc, _) = place(notes, fields, RATIOS[0], &|n| damage_canvas(&h, g, n))?;
-        out.push((format!("{stem}-{sheet}"), doc));
+        out.push((format!("{stem}-{local}"), doc));
     }
     Ok(out)
 }
@@ -308,13 +366,19 @@ pub fn damage_drawings_by_rule(
     results: &Value,
     option: Option<&str>,
 ) -> Result<Vec<RuleDamageSheets>, String> {
+    let total = total_sheets(results);
+    let mut before = results["damage"]["governing"]
+        .as_array()
+        .map_or(0, Vec::len) as u32;
     let mut out = Vec::new();
     for (key, block) in results["damage_by_rule"].as_object().into_iter().flatten() {
         if block["governing"].as_array().is_none_or(|l| l.is_empty()) {
             continue;
         }
         let stem = format!("damage-{key}");
-        out.push((key.clone(), sheets_of_block(results, block, &stem, option)?));
+        let sheets = sheets_of_block(results, block, &stem, option, before, total)?;
+        before += sheets.len() as u32;
+        out.push((key.clone(), sheets));
     }
     Ok(out)
 }
