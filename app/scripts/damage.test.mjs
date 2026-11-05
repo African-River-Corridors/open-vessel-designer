@@ -113,3 +113,17 @@ test("two cases with one name take their own trace rows, in order", () => {
   assert.equal(passes(s, twin[1], trace), false);
   assert.equal(governingCase(s, "A", trace), twin[1]);
 });
+
+test("a damage_by_rule set marks the engine's governing case of every condition (issue #928)", () => {
+  // A river-only gas file: no `damage` block, the ADN set names the governing case, and every case passes.
+  const adn = [c("Full load", "a", true), c("Full load", "b", true), c("Ballast", "a", true), c("Ballast", "b", true)];
+  const rule = (k) => ({ ...row(objectOf(k), "pass"), rule: "adn/9.3.1.15.1/damage-stability", rule_sets: ["adn-gas@2.0.0"] });
+  const results = {
+    damage_by_rule: { "adn-gas": { rule_set: "adn-gas@2.0.0", method: "m", cases: adn, governing: [{ condition: "Full load", case: "b" }, { condition: "Ballast", case: "a" }] } },
+    rule_trace: { rows: adn.map(rule) },
+  };
+  const [s] = damageSets(results);
+  assert.deepEqual(s.engineGoverning, [{ condition: "Full load", case: "b" }, { condition: "Ballast", case: "a" }]);
+  assert.equal(governingCase(s, "Full load", results.rule_trace).name, "b");
+  assert.equal(governingCase(s, "Ballast", results.rule_trace).name, "a");
+});

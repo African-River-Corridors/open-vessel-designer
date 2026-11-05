@@ -40,8 +40,7 @@ struct Governing {
     flooded: Vec<Flooded>,
 }
 
-fn read_governing(results: &Value) -> Result<(String, Vec<Governing>), String> {
-    let block = &results["damage"];
+fn read_governing(block: &Value) -> Result<(String, Vec<Governing>), String> {
     let list = block["governing"]
         .as_array()
         .filter(|l| !l.is_empty())
@@ -227,7 +226,17 @@ pub fn damage_drawings_for(
     results: &Value,
     option: Option<&str>,
 ) -> Result<Vec<(String, Value)>, String> {
-    let (set, governing) = read_governing(results)?;
+    sheets_of_block(results, &results["damage"], "damage", option)
+}
+
+/// The sheets of one block of damage cases: `stem` is the file-name stem before the sheet number.
+fn sheets_of_block(
+    results: &Value,
+    block: &Value,
+    stem: &str,
+    option: Option<&str>,
+) -> Result<Vec<(String, Value)>, String> {
+    let (set, governing) = read_governing(block)?;
     let mut h = read_hull(results)?;
     h.option_name = option.map(str::to_string);
     let title = label!("draw-view-damage-case", "DAMAGE CASE");
@@ -272,7 +281,7 @@ pub fn damage_drawings_for(
         let mut fields = title_fields(&h, &title, "DC", sheet, &plain_capitals(&h.vessel))?;
         fields["sheet_count"] = json!(count);
         let (doc, _) = place(notes, fields, RATIOS[0], &|n| damage_canvas(&h, g, n))?;
-        out.push((format!("damage-{sheet}"), doc));
+        out.push((format!("{stem}-{sheet}"), doc));
     }
     Ok(out)
 }
@@ -284,6 +293,39 @@ pub fn damage_drawings_named(
 ) -> Result<Vec<(String, Value)>, String> {
     match outcome {
         RunOutcome::Results { results, .. } => damage_drawings_for(results, option),
+        RunOutcome::NotAvailable(message) | RunOutcome::Failed(message) => Err(message.clone()),
+    }
+}
+
+/// One Rule Set's damage sheets: the key of the set in `damage_by_rule`, and its sheets (a file-name stem
+/// such as `damage-adn-gas-1`, and the drawing).
+pub type RuleDamageSheets = (String, Vec<(String, Value)>);
+
+/// The damage case drawings of the `damage_by_rule` sets of an Option's results (issue #928): one sheet per
+/// governing case of each set that names one, in the order of the block. A set with no governing case (the
+/// liquid path's, which carries none) has no sheets and is left out. An Option with none gives an empty list.
+pub fn damage_drawings_by_rule(
+    results: &Value,
+    option: Option<&str>,
+) -> Result<Vec<RuleDamageSheets>, String> {
+    let mut out = Vec::new();
+    for (key, block) in results["damage_by_rule"].as_object().into_iter().flatten() {
+        if block["governing"].as_array().is_none_or(|l| l.is_empty()) {
+            continue;
+        }
+        let stem = format!("damage-{key}");
+        out.push((key.clone(), sheets_of_block(results, block, &stem, option)?));
+    }
+    Ok(out)
+}
+
+/// As [`damage_drawings_by_rule`], from a run outcome.
+pub fn damage_drawings_by_rule_named(
+    outcome: &RunOutcome,
+    option: Option<&str>,
+) -> Result<Vec<RuleDamageSheets>, String> {
+    match outcome {
+        RunOutcome::Results { results, .. } => damage_drawings_by_rule(results, option),
         RunOutcome::NotAvailable(message) | RunOutcome::Failed(message) => Err(message.clone()),
     }
 }

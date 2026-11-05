@@ -442,11 +442,19 @@ describe("OVD app smoke tests", () => {
     await shot("886-gas-damage");
   });
 
-  it("lists the ADN damage cases of a river-only gas Design, which has no damage drawing yet (issues #850, #886)", async () => {
-    await open(gasDamageDesign("river-only"), "gas-damage-river-only.vdesign");
+  it("marks the engine's governing case and draws it for each condition of a river-only gas Design (issues #850, #886, #928)", async () => {
+    await open(gasDamageDesign("river-only"), "gas-damage-river-only.vdesign", SLOW_OPEN_MS);
     await show("Stability & Propulsion", "Damage stability");
     await until("the case table", async () => (await browser.$$("[data-testid=damage-case-row]")).length >= 1);
-    assert.equal((await browser.$$("[data-testid=damage-drawing] svg")).length, 0);
+    // The first set is the ADN one: in each of its conditions one case is marked governing and one drawing is shown.
+    const count = Math.max((await browser.$$("[data-testid=damage-condition]")).length, 1);
+    for (let i = 0; i < count; i++) {
+      if (count > 1) await (await browser.$$("[data-testid=damage-condition]"))[i].click();
+      await until("the drawing of the condition", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1, SLOW_OPEN_MS);
+      assert.equal((await browser.$$("[data-testid=damage-case-row][data-governing=true]")).length, 1, `condition ${i}`);
+      assert.match(await browser.$("[data-testid=damage-drawing-case]").getText(), /^Governing case: /);
+    }
+    await shot("928-river-only-damage");
   });
 
   it("shows the damage cases of a liquid hull, and says there is no drawing for it (issue #886)", async () => {

@@ -27,8 +27,13 @@
   const governing = $derived(set ? governingCase(set, condition, trace) : null);
   /** The case whose stages are shown: the one picked in this condition, or else the governing one. */
   const shown = $derived<DamageCase | null>((casePick && cases.includes(casePick) ? casePick : null) ?? governing ?? cases[0] ?? null);
-  /** Only the `damage` block of the gas path has drawings: one sheet per condition, for its governing case. */
-  const sheet = $derived(set && set.id === "damage" && set.ruleSet ? (drawings?.sheets ?? []).find((s) => (s.condition ?? "") === condition) : undefined);
+  /** The sheet of a set that names a governing case (the gas path's `damage` block, or a `damage_by_rule` set): one per condition. */
+  const sheet = $derived.by(() => {
+    if (!set || set.engineGoverning.length === 0) return undefined;
+    const key = set.id === "damage" ? undefined : set.id.startsWith("by-rule:") ? set.id.slice("by-rule:".length) : null;
+    if (key === null || (key === undefined && !set.ruleSet)) return undefined;
+    return (drawings?.sheets ?? []).find((s) => s.set === key && (s.condition ?? "") === condition);
+  });
 
   const FLOATS: Record<string, string> = { yes: "app-damage-floats-yes", sinks: "app-damage-floats-sinks", "no equilibrium": "app-damage-floats-none" };
   const floats = (v: string) => (FLOATS[v] ? t(FLOATS[v]) : v);

@@ -6,7 +6,10 @@
 
 use ovd_draw::render::svg::{SvgOptions, to_svg};
 use ovd_draw::{NoFiles, RunResult, run_value};
-use ovd_format::{NO_DAMAGE_DRAWING, RunOutcome, damage_drawings_named, ga_views_named};
+use ovd_format::{
+    NO_DAMAGE_DRAWING, RunOutcome, damage_drawings_by_rule_named, damage_drawings_named,
+    ga_views_named,
+};
 use serde_json::{Value, json};
 
 /// The three views of a computed Option as SVG (`side`, `plan`, `midship`), or the reason there are
@@ -24,36 +27,59 @@ pub fn hull_views(outcome: &RunOutcome, option: &str) -> Value {
 }
 
 /// The damage case drawings of a computed Option as SVG, for the Damage stability view: `sheets`, one per
-/// governing case, each with its `condition` and `case` as the results name them, and `message` when a
+/// governing case (a `damage_by_rule` sheet also names its `set`), each with its `condition` and `case` as the results name them, and `message` when a
 /// sheet is left out. `None` for an Option whose results hold no drawable damage cases, so the front end
 /// is sent nothing then. The font is not embedded: the front end loads it once.
 pub fn damage_views(outcome: &RunOutcome, option: &str) -> Option<Value> {
-    let sheets = match damage_drawings_named(outcome, Some(option)) {
-        Ok(s) => s,
-        Err(message) if message == NO_DAMAGE_DRAWING => return None,
-        Err(message) => return Some(json!({ "sheets": [], "message": message })),
-    };
     let results = match outcome {
         RunOutcome::Results { results, .. } => results,
         _ => return None,
     };
-    let governing = results["damage"]["governing"]
-        .as_array()
-        .map_or(&[][..], Vec::as_slice);
+    // The `damage` block's sheets first, then the sheets of each `damage_by_rule` set that names a governing
+    // case (issue #928); a river-only gas Option has only the latter.
+    let top = match damage_drawings_named(outcome, Some(option)) {
+        Ok(s) => s,
+        Err(message) if message == NO_DAMAGE_DRAWING => Vec::new(),
+        Err(message) => return Some(json!({ "sheets": [], "message": message })),
+    };
+    let by_rule = match damage_drawings_by_rule_named(outcome, Some(option)) {
+        Ok(s) => s,
+        Err(message) => return Some(json!({ "sheets": [], "message": message })),
+    };
+    if top.is_empty() && by_rule.is_empty() {
+        return None;
+    }
     let mut out = Vec::new();
     let mut refused = Vec::new();
-    for (i, (stem, document)) in sheets.iter().enumerate() {
+    let mut draw = |stem: &str, document: &Value, governing: Option<&Value>, set: Option<&str>| {
         match run_value(document, &NoFiles) {
-            RunResult::Ok(norm) => out.push(json!({
-                "stem": stem,
-                "condition": governing.get(i).map_or(Value::Null, |g| g["condition"].clone()),
-                "case": governing.get(i).map_or(Value::Null, |g| g["case"].clone()),
-                "svg": to_svg(&norm, &SvgOptions { embed_font: false }),
-            })),
+            RunResult::Ok(norm) => {
+                let mut sheet = json!({
+                    "stem": stem,
+                    "condition": governing.map_or(Value::Null, |g| g["condition"].clone()),
+                    "case": governing.map_or(Value::Null, |g| g["case"].clone()),
+                    "svg": to_svg(&norm, &SvgOptions { embed_font: false }),
+                });
+                if let Some(set) = set {
+                    sheet["set"] = Value::String(set.to_string());
+                }
+                out.push(sheet);
+            }
             RunResult::Errors(clauses) => {
                 let list: Vec<String> = clauses.into_iter().collect();
                 refused.push(format!("{stem} (clause {})", list.join(", ")));
             }
+        }
+    };
+    let governing_of = |block: &Value| block["governing"].as_array().cloned().unwrap_or_default();
+    let top_governing = governing_of(&results["damage"]);
+    for (i, (stem, document)) in top.iter().enumerate() {
+        draw(stem, document, top_governing.get(i), None);
+    }
+    for (key, sheets) in &by_rule {
+        let governing = governing_of(&results["damage_by_rule"][key.as_str()]);
+        for (i, (stem, document)) in sheets.iter().enumerate() {
+            draw(stem, document, governing.get(i), Some(key));
         }
     }
     let mut v = json!({ "sheets": out });
@@ -257,6 +283,37 @@ pub(crate) mod tests {
             assert_eq!(sheet["condition"], g["condition"]);
             assert_eq!(sheet["case"], g["case"]);
         }
+    }
+
+    /// Issue #928: a river-only gas Option has no `damage` block, only `damage_by_rule`; each set that
+    /// names a governing case gets a sheet per governing case, marked with its set.
+    #[test]
+    fn a_river_only_gas_run_sends_one_damage_svg_per_governing_case_of_each_rule_set() {
+        let o = outcome("gas_adn_river_two_wide.vdesign");
+        let RunOutcome::Results { results, .. } = &o else {
+            panic!("no results")
+        };
+        assert!(
+            results["damage"].is_null(),
+            "a river-only gas run has no `damage` block"
+        );
+        let v = damage_views(&o, "Option 1").expect("damage views");
+        assert!(v.get("message").is_none(), "{v}");
+        let sheets = v["sheets"].as_array().unwrap();
+        let mut want = 0;
+        for (key, block) in results["damage_by_rule"].as_object().unwrap() {
+            let governing = block["governing"].as_array().map_or(&[][..], Vec::as_slice);
+            want += governing.len();
+            let mine: Vec<&Value> = sheets.iter().filter(|s| s["set"] == key.as_str()).collect();
+            assert_eq!(mine.len(), governing.len(), "{key}");
+            for (sheet, g) in mine.iter().zip(governing) {
+                assert!(sheet["svg"].as_str().unwrap().starts_with("<?xml"));
+                assert_eq!(sheet["condition"], g["condition"], "{key}");
+                assert_eq!(sheet["case"], g["case"], "{key}");
+            }
+        }
+        assert!(want > 0, "the ADN set names a governing case");
+        assert_eq!(sheets.len(), want);
     }
 
     #[test]
