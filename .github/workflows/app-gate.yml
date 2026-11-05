@@ -87,7 +87,10 @@ jobs:
           cache-dependency-path: app/package-lock.json
       - name: Install the pinned Rust toolchain (rust-toolchain.toml)
         run: rustup toolchain install
+      # Its own cache key: the `e2e` profile must not share the web-app job's key, or it restores that cache and saves nothing (#922).
       - uses: Swatinem/rust-cache@v2
+        with:
+          key: e2e-profile
       - name: Tauri system libraries, WebDriver and a virtual display
         run: |
           sudo apt-get update

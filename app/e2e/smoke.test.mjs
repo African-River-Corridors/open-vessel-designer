@@ -300,7 +300,7 @@ describe("OVD app smoke tests", () => {
     assert.equal((await browser.$$("[data-testid=stern-crew] svg")).length, 0, "no drawing until #783");
     await browser.pause(300);
     assert.ok((await overflow()) <= 0, "the stern view of a container block scrolls");
-    await open(path.resolve(here, "fixtures/gas_deckhouse_self_propelled.vdesign"), "gas_deckhouse_self_propelled.vdesign");
+    await open(path.resolve(here, "fixtures/gas_deckhouse_self_propelled.vdesign"), "gas_deckhouse_self_propelled.vdesign", DECKHOUSE_OPEN_MS);
     await show("Drawings", "Stern & crew");
     await until("the deckhouse view", async () => (await browser.$$("[data-testid=stern-outfit-warning]")).length === 1);
     // The warning is the engine's, found by its Message Id in the run: the view has no text of its own for it.
@@ -394,6 +394,8 @@ describe("OVD app smoke tests", () => {
   // The wait for a slow open, in ms: under 3 times the slowest open measured on the CI release-profile build
   // (6.2 s for the coastal-and-river gas Design, issue #922). It was 60 s for a debug build, which took 14 s.
   // CI can set OVD_E2E_SLOW_OPEN_MS to try another limit.
+  // The gas deckhouse fixture opened in 6.2 to 10.6 s on the CI build (issue #922): 3 times the slowest.
+  const DECKHOUSE_OPEN_MS = Number(process.env.OVD_E2E_DECKHOUSE_OPEN_MS || 30000);
   const SLOW_OPEN_MS = Number(process.env.OVD_E2E_SLOW_OPEN_MS || 18000);
   function gasDamageDesign(area = "coastal-and-river") {
     const inputs = {
