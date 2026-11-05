@@ -76,7 +76,7 @@ NON_NEGATIVE_GEOMETRY = ("hold_top_width_m", "hold_bottom_width_m", "hold_height
 # The deepest hull the gas depth search tries (the core's DEFAULT_DEPTHS_M ends at 7.0 m).
 DEPTH_SEARCH_MAX_M = 7.0
 NUMBERS = [n for n in list(TOP_LEVEL) + list(CHANNEL)
-           if n not in ("cargo", "ruleset", "optimise_depth")]
+           if n not in ("cargo", "ruleset", "optimise_depth", "service_area")]
 
 
 def to_simulate(inputs: dict) -> dict:

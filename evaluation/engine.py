@@ -88,6 +88,8 @@ def stern_case_trace(i: dict, *, rule_sets: tuple[str, ...] = (), select: tuple[
         "moulded_depth_m": float(i["depth_m"]), "bow_thruster": i["bow_thruster"],
         "propulsor_count": int(i["propulsor_count"]),
         "propulsor_type": "shaft_nozzle" if ducted else "shaft_open", "stern_form": "transom",
+        # Issue #925: the Service Area is required. The stern cases are river-only cases, as they ran before.
+        "service_area": "river-only",
     }
     measured = {
         "blind_distance_light_m": i["blind_distance_light_m"], "blind_distance_laden_m": i["blind_distance_laden_m"],
