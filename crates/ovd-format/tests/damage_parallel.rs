@@ -3,10 +3,9 @@
 //! Label: property - serial and parallel runs of the 140 x 29 m coastal LNG reference design, coastal and
 //! river-only, give byte-equal results: every damage block, the damage by rule, the rule trace. The stored
 //! hash cannot see the damage blocks (they are unhashed, issue #895), so the bytes are compared. Each pair
-//! runs three times. The cache is checked too: a run with it is compared with one that cuts afresh every time,
-//! serial and parallel (the serial and parallel runs both use the cache, so they alone cannot see a cache error).
+//! runs three times.
 
-use ovd_format::damage::{set_damage_cache, set_damage_workers};
+use ovd_format::damage::set_damage_workers;
 use ovd_format::{Profile, RunOutcome, fill_as_new, run_option};
 use serde_json::{Value, json};
 
@@ -51,7 +50,7 @@ fn damage_case_count(results: &Value) -> usize {
 }
 
 #[test]
-fn serial_parallel_cached_and_fresh_damage_results_are_byte_equal() {
+fn serial_and_parallel_damage_results_are_byte_equal() {
     for area in ["coastal-and-river", "river-only"] {
         for round in 1..=3 {
             set_damage_workers(1);
@@ -68,25 +67,6 @@ fn serial_parallel_cached_and_fresh_damage_results_are_byte_equal() {
                 "{area}, round {round}: the parallel results differ from the serial ones"
             );
         }
-    }
-    set_damage_workers(0);
-    cached_damage_results_equal_uncached_ones();
-}
-
-// Not a test of its own: the knobs are process-wide, so the two checks run one after the other in one test.
-fn cached_damage_results_equal_uncached_ones() {
-    for area in ["coastal-and-river", "river-only"] {
-        set_damage_workers(4);
-        set_damage_cache(false);
-        let fresh = results_of(area);
-        set_damage_cache(true);
-        let cached = results_of(area);
-        assert!(damage_case_count(&fresh) > 0, "{area}: no damage cases");
-        assert_eq!(
-            serde_json::to_string(&fresh).unwrap(),
-            serde_json::to_string(&cached).unwrap(),
-            "{area}: the cached results differ from the uncached ones"
-        );
     }
     set_damage_workers(0);
 }

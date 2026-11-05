@@ -189,8 +189,7 @@ pub(crate) fn run_gas_damage(
 ) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), String> {
     use ovd_core::damage_cases::{deck_edge_immersed, gas_flooding, without_breached_cargo};
     use ovd_core::damage_stability::{
-        CutCache, Floats, INTERMEDIATE_FRACTIONS, assess_cached, intermediate_stages_cached,
-        righting_lever_at_cached,
+        Floats, INTERMEDIATE_FRACTIONS, assess, intermediate_stages, righting_lever_at,
     };
     use ovd_core::sections::{Gravity, Waterplane};
     use serde_json::json;
@@ -199,16 +198,7 @@ pub(crate) fn run_gas_damage(
     let mut governing: Vec<serde_json::Value> = Vec::new();
     let (loa, beam) = (hull.spec.loa, hull.spec.beam);
     let (cases, table) = (&run.cases, &run.table);
-    // One cache of hull cuts per worker, kept across the conditions of the run (they share the hull).
-    let mut caches: Vec<CutCache> = (0..damage_workers(cases.len()))
-        .map(|_| {
-            if DAMAGE_CACHE.load(core::sync::atomic::Ordering::Relaxed) {
-                CutCache::default()
-            } else {
-                CutCache::disabled()
-            }
-        })
-        .collect();
+    let workers = damage_workers(cases.len());
     let mut out: Vec<ovd_core::measured::DamageVerdict> = Vec::new();
     for c in conditions {
         if run.full_load_only && c.role != ovd_core::loading_conditions::Role::FullLoadDeparture {
@@ -264,10 +254,10 @@ pub(crate) fn run_gas_damage(
         // Every case is independent of the others (issue #921), so they run on worker threads; each worker keeps
         // its own cuts of the hull. The results come back in case order and the choice of the governing case
         // below runs over them in that order, so the output is the serial one, bit for bit.
-        let runs = run_ordered(cases, &mut caches, |case, cache| {
+        let runs = run_ordered(cases, workers, |case| {
             let f = gas_flooding(case, spaces, table, &filling);
             let (m, gd) = without_breached_cargo(mass, g, cargo, spaces, &f.breached);
-            let outcome = assess_cached(
+            let outcome = assess(
                 &hull.table,
                 &f.flooded,
                 m,
@@ -275,10 +265,9 @@ pub(crate) fn run_gas_damage(
                 density,
                 start,
                 &run.criteria,
-                cache,
             );
             // Issue #760: the intermediate stages, by added mass with the cargo still aboard (D15 to D18).
-            let stages = intermediate_stages_cached(
+            let stages = intermediate_stages(
                 &hull.table,
                 &f.flooded,
                 &outcome,
@@ -286,7 +275,6 @@ pub(crate) fn run_gas_damage(
                 density,
                 start,
                 &run.stage_criteria,
-                cache,
             );
             let deck = outcome.floats == Floats::Yes
                 && deck_edge_immersed(
@@ -369,17 +357,8 @@ pub(crate) fn run_gas_damage(
                 (0..=4)
                     .filter_map(|k| {
                         let heel = o.heel_deg + side * 5.0 * k as f64;
-                        righting_lever_at_cached(
-                            &hull.table,
-                            &flooded,
-                            m,
-                            gd,
-                            density,
-                            start,
-                            heel,
-                            &caches[0],
-                        )
-                        .map(|v| json!([num(heel), num(side * v)]))
+                        righting_lever_at(&hull.table, &flooded, m, gd, density, start, heel)
+                            .map(|v| json!([num(heel), num(side * v)]))
                     })
                     .collect()
             } else {
@@ -551,9 +530,6 @@ struct CaseRun {
 /// How many worker threads the damage cases may use; 0 means one per core.
 static DAMAGE_WORKERS: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
-/// Whether the damage cases keep the cuts of the hull (the default), or cut afresh every time.
-static DAMAGE_CACHE: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(true);
-
 /// For tests only (issue #921), hence hidden from the docs: a process-wide knob, so a test that sets it must be
 /// the only one in its test binary. Sets the number of worker threads for the damage cases: 1 runs them
 /// serially, 0 (the default) uses one per core. The results are the same bits whatever the number. A build for
@@ -561,13 +537,6 @@ static DAMAGE_CACHE: core::sync::atomic::AtomicBool = core::sync::atomic::Atomic
 #[doc(hidden)]
 pub fn set_damage_workers(n: usize) {
     DAMAGE_WORKERS.store(n, core::sync::atomic::Ordering::Relaxed);
-}
-
-/// For tests only (issue #921), hidden from the docs, process-wide like [`set_damage_workers`]: `false` makes
-/// the damage cases cut the hull afresh every time, the reference the cache is compared against.
-#[doc(hidden)]
-pub fn set_damage_cache(on: bool) {
-    DAMAGE_CACHE.store(on, core::sync::atomic::Ordering::Relaxed);
 }
 
 /// The worker count for `cases` cases: at least 1, at most one per case.
@@ -589,44 +558,39 @@ fn damage_workers(cases: usize) -> usize {
     }
 }
 
-/// Run `f` on every item and return the results in the order of the items. `caches` gives one cut cache per
-/// worker: one cache runs the items on this thread; more share the items between scoped threads (std only),
-/// each taking the next item not yet taken. `f` is pure in its item, so the order of the results does not
-/// depend on which worker ran which item. This is the one place a per-case progress call or a cancel check
-/// belongs (issue #923): after `f` returns, or before a worker takes its next item.
-fn run_ordered<T, R, F>(
-    items: &[T],
-    caches: &mut [ovd_core::damage_stability::CutCache],
-    f: F,
-) -> Vec<R>
+/// Run `f` on every item and return the results in the order of the items. With `workers` above 1 the items
+/// are shared between scoped threads (std only), each taking the next item not yet taken. `f` is pure in its
+/// item, so the order of the results does not depend on which worker ran which item. This is the one place a
+/// per-case progress call or a cancel check belongs (issue #923): after `f` returns, or before a worker takes
+/// its next item.
+fn run_ordered<T, R, F>(items: &[T], workers: usize, f: F) -> Vec<R>
 where
     T: Sync,
     R: Send,
-    F: Fn(&T, &ovd_core::damage_stability::CutCache) -> R + Sync,
+    F: Fn(&T) -> R + Sync,
 {
     #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
-    if caches.len() > 1 && items.len() > 1 {
+    if workers > 1 && items.len() > 1 {
         use std::sync::atomic::{AtomicUsize, Ordering};
         let next = AtomicUsize::new(0);
         let (next, f) = (&next, &f);
         let mut slots: Vec<Option<R>> = items.iter().map(|_| None).collect();
         std::thread::scope(|scope| {
-            let workers: Vec<_> = caches
-                .iter_mut()
-                .map(|cache| {
+            let handles: Vec<_> = (0..workers)
+                .map(|_| {
                     scope.spawn(move || {
                         let mut done: Vec<(usize, R)> = Vec::new();
                         loop {
                             let i = next.fetch_add(1, Ordering::Relaxed);
                             let Some(item) = items.get(i) else { break };
-                            done.push((i, f(item, cache)));
+                            done.push((i, f(item)));
                         }
                         done
                     })
                 })
                 .collect();
-            for w in workers {
-                match w.join() {
+            for h in handles {
+                match h.join() {
                     Ok(done) => {
                         for (i, r) in done {
                             slots[i] = Some(r);
@@ -641,5 +605,7 @@ where
             .map(|r| r.expect("every case ran once"))
             .collect();
     }
-    items.iter().map(|item| f(item, &caches[0])).collect()
+    #[cfg(not(all(feature = "parallel", not(target_arch = "wasm32"))))]
+    let _ = workers;
+    items.iter().map(f).collect()
 }
