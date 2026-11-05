@@ -409,10 +409,42 @@ fn worked_case_85_m_inland_type_g_tanker_in_mode_b_is_4() {
     assert_eq!(b["rule_set"]["id"], "ccnr-rpn-19");
     // 4 + the owner's engineer + 2 spare.
     assert_eq!((&b["crew"], &b["berths"]), (&json!(5), &json!(7)));
-    // The 14 h river default is mode A1: group 2 takes the greater alternative, 3.
-    let a1 = crew("river-only", json!({}), &facts(1500.0, 1000.0, 0.0, 85.0));
+    // A typed 14 h is mode A1: group 2 takes the greater alternative, 3.
+    let a1 = crew(
+        "river-only",
+        json!({ "navigation_hours_per_day": 14.0 }),
+        &facts(1500.0, 1000.0, 0.0, 85.0),
+    );
     assert_eq!(a1["rpn"]["operating_mode"], "A1");
     assert_eq!(a1["minimum"], 3);
+    // Issue #929: untyped hours on a river-only Option read 24 h, so RPN mode B (round-the-clock).
+    let dflt = crew("river-only", json!({}), &facts(1500.0, 1000.0, 0.0, 85.0));
+    assert_eq!(dflt["inputs"]["navigation_hours_per_day"], 24.0);
+    assert_eq!(dflt["rpn"]["operating_mode"], "B");
+    assert_eq!(dflt["minimum"], 4);
+}
+
+#[test]
+fn the_rpn_note_does_not_tie_mode_b_to_single_rooms() {
+    // Issue #929. RPN 18.02(4): a single room for rest underway is for modes A1 and A2 only; mode B
+    // (18.02(3)) sets rest time and no room rule.
+    let b = crew("river-only", json!({}), &facts(1500.0, 1000.0, 0.0, 85.0));
+    let notes: Vec<&str> = b["notes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|n| n.as_str())
+        .collect();
+    let note = notes
+        .iter()
+        .find(|n| n.contains("18.02(4)"))
+        .expect("the 18.02(4) note");
+    assert!(!note.contains("mode B crew sleeps"), "{note}");
+    assert!(note.contains("A1 and A2 only"), "{note}");
+    assert!(
+        note.contains("mode B (18.02(3)) sets rest time and no room rule"),
+        "{note}"
+    );
 }
 
 // --- UK against Liberia -------------------------------------------------------------------------
@@ -548,9 +580,10 @@ fn the_defaults_follow_the_service_area() {
         get("coastal-and-river", "navigation_hours_per_day"),
         Some(json!(24.0))
     );
+    // Issue #929: round-the-clock by default on a river too (RPN mode B).
     assert_eq!(
         get("river-only", "navigation_hours_per_day"),
-        Some(json!(14.0))
+        Some(json!(24.0))
     );
     assert_eq!(
         get("coastal-and-river", "unmanned_machinery_space"),
