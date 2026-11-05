@@ -24,7 +24,9 @@ inputs and switch; only the default differs, as the maintainer asked.
 ## 2. Where damage results live
 
 The session keeps the last damage run per Option: `name → (fingerprint, results)`. The fingerprint
-is the canonical JSON of the Option's inputs plus the profile name. `evaluate_json` uses the kept
+is a hash of the canonical JSON of the Option's inputs and of the Defaults Profile's text. The
+profile's name is not enough: a loaded profile can change its content under the same name, and
+inputs left as `default` would then take new values. `evaluate_json` uses the kept
 results for an Option whose fingerprint still matches, and the no-damage results otherwise. A
 rename moves the entry; a delete drops it.
 
@@ -152,9 +154,21 @@ The words (Message Ids in `locales/en/app.ftl`):
   click **Run**, then see the cases and drawing.
 - Hashes in the Compare table do not move (R10).
 
+## 9. #921 as a blocker
+
+The issue says "Blocked by #923; #921 (so the estimate is worth showing)". This design needs #921
+only for speed: nothing here reads its code, except that the callback must be `Sync`.
+
+**Decision for the maintainer:** keep #921 as a blocker.
+- (a) Drop it. Build #924 on #923 alone. The estimate is right on a serial engine too; it is only
+  longer. When #921 lands, the measured time per case falls by itself.
+- (b) Keep it, as the issue says. The feature ships when it is fast.
+- Recommendation: **(a)**. The progress bar and Cancel matter most when damage is slow. The e2e
+  factor-of-2 check measures whichever engine is built.
+
 ## Dependencies
 
 - #923 must give: the switch on `run_option` (or a sibling), the callback with stop, `damage_status`,
   and (decision 6a) the case total on a no-damage run.
-- #921: speed only. The callback must be `Sync`.
+- #921: speed only (decision 9). The callback must be `Sync`.
 - PR #944 (#928): merge first; #924 edits the same `Damage.svelte`.

@@ -6,8 +6,7 @@ phase: research
 
 # #924 research findings
 
-Read at `a63ca819`. Nothing was built or run. #923 and #921 have no PR yet; #921 is in progress in
-a local worktree (uncommitted). PR #944 (#928) is open. Numbers in brackets are the questions.
+Read at `a63ca819`. Nothing was built or run. #923 and #921 have no PR yet. PR #944 (#928) is open. Numbers in brackets are the questions.
 
 ## A. How the app runs an Option today
 
@@ -64,7 +63,7 @@ it to stop the run; `damage_status` `run` / `not run` / `not applicable`; `ovd r
 with `--no-damage`; skipped rows read `not run`; the verdict line never says "meets every" when
 not run. Nothing yet says whether the case **total** is known on a run without damage.
 
-**[12] #921.** In progress: a cargo feature `parallel`, on by default; WebAssembly stays serial
+**[12] #921.** No PR yet. The planned change: a cargo feature `parallel`, on by default; WebAssembly stays serial
 (`damage.rs` `#[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]`). Cases run per loading
 condition on worker threads and come back in case order (`run_ordered`). So a progress callback
 may be called from several threads.

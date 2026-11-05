@@ -37,9 +37,9 @@ report. Read at `a63ca819`.
     (`UNHASHED_KEYS`).
 11. What does #923 promise: switch, `damage_status`, callback, stop? Issue #923 items 1 to 5 and
     its comment.
-12. What does #921 change for threads and WebAssembly? Local branch `ticket/921-damage-parallel`,
-    `crates/ovd-format/src/damage.rs` (`damage_workers`, `run_ordered`), `Cargo.toml` feature
-    `parallel`.
+12. What does #921 change for threads and WebAssembly? Issue #921 items 1 to 3 (no PR yet);
+    `crates/ovd-format/src/damage.rs:134-190` (`gas_damage_verdicts`, `run_gas_damage`), where the
+    case loop runs.
 13. Can the engine time a case in the browser? `std::time::Instant` on `wasm32-unknown-unknown`;
     `git grep Instant -- crates/ovd-format`.
 

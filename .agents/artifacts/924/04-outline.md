@@ -6,7 +6,7 @@ phase: outline
 
 # #924 outline
 
-Starts after #923 and PR #944 are on `main`. The picks follow the recommendations in
+Starts after #923 and PR #944 are on `main` (and after #921 if decision 9 keeps it as a blocker). The picks follow the recommendations in
 `03-design.md`; a different answer at the gate changes the phase it names.
 
 ## Phase 1. The session runs without damage, and keeps damage runs
@@ -17,7 +17,8 @@ Starts after #923 and PR #944 are on `main`. The picks follow the recommendation
   `crates/ovd-shell/src/state.rs` (the kept runs, fingerprint, rename and delete),
   `crates/ovd-shell/src/views.rs` (damage views from the kept run).
 - **Checks:** Rust tests in `state.rs`: a coastal gas fixture evaluates with `damage_status`
-  `not run`; after a kept run it is `run`; an edit makes it `not run`; a rename keeps it; save
+  `not run`; after a kept run it is `run`; an edit makes it `not run`; a new profile under the same name makes it `not run`; a rename
+  keeps it; save
   writes the same hash with and without a kept run.
 
 ## Phase 2. Desktop command, progress, cancel
