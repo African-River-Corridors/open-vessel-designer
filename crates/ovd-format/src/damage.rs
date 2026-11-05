@@ -189,7 +189,8 @@ pub(crate) fn run_gas_damage(
 ) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), String> {
     use ovd_core::damage_cases::{deck_edge_immersed, gas_flooding, without_breached_cargo};
     use ovd_core::damage_stability::{
-        Floats, INTERMEDIATE_FRACTIONS, assess, intermediate_stages, righting_lever_at,
+        CutCache, Floats, INTERMEDIATE_FRACTIONS, assess_cached, intermediate_stages_cached,
+        righting_lever_at_cached,
     };
     use ovd_core::sections::{Gravity, Waterplane};
     use serde_json::json;
@@ -198,6 +199,10 @@ pub(crate) fn run_gas_damage(
     let mut governing: Vec<serde_json::Value> = Vec::new();
     let (loa, beam) = (hull.spec.loa, hull.spec.beam);
     let (cases, table) = (&run.cases, &run.table);
+    // One cache of hull cuts per worker, kept across the conditions of the run (they share the hull).
+    let mut caches: Vec<CutCache> = (0..damage_workers(cases.len()))
+        .map(|_| CutCache::default())
+        .collect();
     let mut out: Vec<ovd_core::measured::DamageVerdict> = Vec::new();
     for c in conditions {
         if run.full_load_only && c.role != ovd_core::loading_conditions::Role::FullLoadDeparture {
@@ -241,7 +246,8 @@ pub(crate) fn run_gas_damage(
                 .find(|t| t.name == name)
                 .map_or(0.0, |t| t.fill)
         };
-        // (index into `out`, the flooding, the damaged mass and centre of gravity) of the governing case
+        // (index into `out`, the flooding, the damaged mass and centre of gravity) of the governing case, and the
+        // case itself
         let mut worst_case: Option<&ovd_core::damage_cases::DamageCase> = None;
         let mut worst: Option<(
             usize,
@@ -249,10 +255,13 @@ pub(crate) fn run_gas_damage(
             f64,
             Gravity,
         )> = None;
-        for case in cases {
+        // Every case is independent of the others (issue #921), so they run on worker threads; each worker keeps
+        // its own cuts of the hull. The results come back in case order and the choice of the governing case
+        // below runs over them in that order, so the output is the serial one, bit for bit.
+        let runs = run_ordered(cases, &mut caches, |case, cache| {
             let f = gas_flooding(case, spaces, table, &filling);
             let (m, gd) = without_breached_cargo(mass, g, cargo, spaces, &f.breached);
-            let outcome = assess(
+            let outcome = assess_cached(
                 &hull.table,
                 &f.flooded,
                 m,
@@ -260,9 +269,10 @@ pub(crate) fn run_gas_damage(
                 density,
                 start,
                 &run.criteria,
+                cache,
             );
             // Issue #760: the intermediate stages, by added mass with the cargo still aboard (D15 to D18).
-            let stages = intermediate_stages(
+            let stages = intermediate_stages_cached(
                 &hull.table,
                 &f.flooded,
                 &outcome,
@@ -270,6 +280,7 @@ pub(crate) fn run_gas_damage(
                 density,
                 start,
                 &run.stage_criteria,
+                cache,
             );
             let deck = outcome.floats == Floats::Yes
                 && deck_edge_immersed(
@@ -282,15 +293,7 @@ pub(crate) fn run_gas_damage(
                     0.5 * beam,
                     hull.spec.depth,
                 );
-            let worse = match &worst {
-                None => true,
-                Some((i, ..)) => {
-                    let w = &out[*i];
-                    let o: &ovd_core::damage_stability::DamageOutcome = &w.outcome;
-                    (o.ok && !outcome.ok) || (o.ok == outcome.ok && outcome.max_gz_m < o.max_gz_m)
-                }
-            };
-            rows.push(json!({
+            let row = json!({
                 "condition": c.condition.name,
                 "name": case.name,
                 "flooded": case.flooded.iter().map(|v| v.name.clone()).collect::<Vec<_>>(),
@@ -320,17 +323,37 @@ pub(crate) fn run_gas_damage(
                     "area_m_rad": num(st.area_m_rad),
                     "ok": st.ok,
                 })).collect::<Vec<_>>(),
-            }));
-            if worse {
-                worst_case = Some(case);
-                worst = Some((out.len(), f.flooded.clone(), m, gd));
-            }
-            out.push(ovd_core::measured::DamageVerdict {
-                name: format!("{}: {}", c.condition.name, case.name),
-                flooded: case.flooded.iter().map(|v| v.name.clone()).collect(),
-                outcome,
-                stages,
             });
+            CaseRun {
+                case,
+                row,
+                verdict: ovd_core::measured::DamageVerdict {
+                    name: format!("{}: {}", c.condition.name, case.name),
+                    flooded: case.flooded.iter().map(|v| v.name.clone()).collect(),
+                    outcome,
+                    stages,
+                },
+                flooded: f.flooded,
+                m,
+                gd,
+            }
+        });
+        for r in runs {
+            let worse = match &worst {
+                None => true,
+                Some((i, ..)) => {
+                    let w = &out[*i];
+                    let o: &ovd_core::damage_stability::DamageOutcome = &w.outcome;
+                    (o.ok && !r.verdict.outcome.ok)
+                        || (o.ok == r.verdict.outcome.ok && r.verdict.outcome.max_gz_m < o.max_gz_m)
+                }
+            };
+            if worse {
+                worst_case = Some(r.case);
+                worst = Some((out.len(), r.flooded, r.m, r.gd));
+            }
+            rows.push(r.row);
+            out.push(r.verdict);
         }
         if let Some((i, flooded, m, gd)) = worst {
             let o = &out[i].outcome;
@@ -340,8 +363,17 @@ pub(crate) fn run_gas_damage(
                 (0..=4)
                     .filter_map(|k| {
                         let heel = o.heel_deg + side * 5.0 * k as f64;
-                        righting_lever_at(&hull.table, &flooded, m, gd, density, start, heel)
-                            .map(|v| json!([num(heel), num(side * v)]))
+                        righting_lever_at_cached(
+                            &hull.table,
+                            &flooded,
+                            m,
+                            gd,
+                            density,
+                            start,
+                            heel,
+                            &caches[0],
+                        )
+                        .map(|v| json!([num(heel), num(side * v)]))
                     })
                     .collect()
             } else {
@@ -499,3 +531,99 @@ pub(crate) const ES_TRIN_METHOD: &str = "lost buoyancy, final stage; intermediat
 /// How the `damage_by_rule` block names the method of the NORMAM 5.23.8 damage cases.
 pub(crate) const NORMAM_METHOD: &str =
     "lost buoyancy, final stage (NORMAM-202/DPC 5.23.8, 5.23.9); laden departure";
+
+/// What one damage case gives: its row of the `damage` block, its verdict, and what the governing case needs
+/// if it is the worst (the flooding, the damaged mass and its centre of gravity).
+struct CaseRun<'a> {
+    /// The case itself, for the governing case's extent (issue #928).
+    case: &'a ovd_core::damage_cases::DamageCase,
+    row: serde_json::Value,
+    verdict: ovd_core::measured::DamageVerdict,
+    flooded: Vec<ovd_core::damage_stability::FloodedVolume>,
+    m: f64,
+    gd: ovd_core::sections::Gravity,
+}
+
+/// How many worker threads the damage cases may use; 0 means one per core.
+static DAMAGE_WORKERS: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
+
+/// Set the number of worker threads for the damage cases (issue #921): 1 runs them serially, 0 (the default)
+/// uses one per core. The results are the same bits whatever the number. A build for WebAssembly, or without
+/// the `parallel` feature, is always serial.
+pub fn set_damage_workers(n: usize) {
+    DAMAGE_WORKERS.store(n, core::sync::atomic::Ordering::Relaxed);
+}
+
+/// The worker count for `cases` cases: at least 1, at most one per case.
+fn damage_workers(cases: usize) -> usize {
+    #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
+    {
+        let set = DAMAGE_WORKERS.load(core::sync::atomic::Ordering::Relaxed);
+        let n = if set == 0 {
+            std::thread::available_parallelism().map_or(1, |n| n.get())
+        } else {
+            set
+        };
+        n.min(cases).max(1)
+    }
+    #[cfg(not(all(feature = "parallel", not(target_arch = "wasm32"))))]
+    {
+        let _ = (cases, &DAMAGE_WORKERS);
+        1
+    }
+}
+
+/// Run `f` on every item and return the results in the order of the items. `caches` gives one cut cache per
+/// worker: one cache runs the items on this thread; more share the items between scoped threads (std only),
+/// each taking the next item not yet taken. `f` is pure in its item, so the order of the results does not
+/// depend on which worker ran which item. This is the one place a per-case progress call or a cancel check
+/// belongs (issue #923): after `f` returns, or before a worker takes its next item.
+fn run_ordered<T, R, F>(
+    items: &[T],
+    caches: &mut [ovd_core::damage_stability::CutCache],
+    f: F,
+) -> Vec<R>
+where
+    T: Sync,
+    R: Send,
+    F: Fn(&T, &ovd_core::damage_stability::CutCache) -> R + Sync,
+{
+    #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
+    if caches.len() > 1 && items.len() > 1 {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let next = AtomicUsize::new(0);
+        let (next, f) = (&next, &f);
+        let mut slots: Vec<Option<R>> = items.iter().map(|_| None).collect();
+        std::thread::scope(|scope| {
+            let workers: Vec<_> = caches
+                .iter_mut()
+                .map(|cache| {
+                    scope.spawn(move || {
+                        let mut done: Vec<(usize, R)> = Vec::new();
+                        loop {
+                            let i = next.fetch_add(1, Ordering::Relaxed);
+                            let Some(item) = items.get(i) else { break };
+                            done.push((i, f(item, cache)));
+                        }
+                        done
+                    })
+                })
+                .collect();
+            for w in workers {
+                match w.join() {
+                    Ok(done) => {
+                        for (i, r) in done {
+                            slots[i] = Some(r);
+                        }
+                    }
+                    Err(panic) => std::panic::resume_unwind(panic),
+                }
+            }
+        });
+        return slots
+            .into_iter()
+            .map(|r| r.expect("every case ran once"))
+            .collect();
+    }
+    items.iter().map(|item| f(item, &caches[0])).collect()
+}

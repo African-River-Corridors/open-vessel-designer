@@ -20,14 +20,16 @@
 //! (they are open to the sea), the flooding of undamaged compartments through openings, and the
 //! non-watertight openings (the model holds none, so the limit is the 27 degrees of the criteria).
 
+use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use libm::{acos, cos, fabs, sqrt};
 
 use crate::compartments::{Space, SpaceShape};
-use crate::sections::{Gravity, SectionsTable, Waterplane, immersed};
+use crate::sections::{Gravity, Immersed, SectionsTable, Waterplane, immersed};
 use crate::tanks::TankHead;
+use core::cell::RefCell;
 
 const RAD_PER_DEG: f64 = core::f64::consts::PI / 180.0;
 
@@ -374,8 +376,41 @@ struct Buoyancy {
     kb: f64,
 }
 
-fn buoyancy(table: &SectionsTable, flooded: &[FloodedVolume], wp: &Waterplane) -> Buoyancy {
-    let im = immersed(table, wp);
+/// The cuts of a hull by waterplanes, kept within one run (issue #921). Many damage cases cut the same hull at
+/// the same waterplane (the intact start, the top waterplane of the total, the first solve steps), and a cut
+/// depends on the hull and the waterplane only. The key is the exact bits of the waterplane's height, trim and
+/// heel, and the address of the Sections Table, so a hit returns the very value a fresh cut would give and the
+/// results do not move. Keep one cache per run and per worker thread; it holds no lock.
+#[derive(Debug, Default)]
+pub struct CutCache {
+    cuts: RefCell<BTreeMap<(usize, u64, u64, u64), Immersed>>,
+}
+
+impl CutCache {
+    /// The cut of `table` by `wp`: kept from an earlier call with the same bits, or made now.
+    fn immersed(&self, table: &SectionsTable, wp: &Waterplane) -> Immersed {
+        let key = (
+            table as *const SectionsTable as usize,
+            wp.c.to_bits(),
+            wp.trim_deg.to_bits(),
+            wp.heel_deg.to_bits(),
+        );
+        if let Some(hit) = self.cuts.borrow().get(&key) {
+            return *hit;
+        }
+        let cut = immersed(table, wp);
+        self.cuts.borrow_mut().insert(key, cut);
+        cut
+    }
+}
+
+fn buoyancy(
+    table: &SectionsTable,
+    flooded: &[FloodedVolume],
+    wp: &Waterplane,
+    cache: &CutCache,
+) -> Buoyancy {
+    let im = cache.immersed(table, wp);
     let mut v = im.volume_m3;
     let (mut mx, mut my, mut mz) = (v * im.lcb_m, v * im.tcb_m, v * im.kb_m);
     for b in flooded {
@@ -426,12 +461,13 @@ struct Problem<'a> {
     /// The volume of water displaced, m³: the mass over the density.
     target_m3: f64,
     g: Gravity,
+    cache: &'a CutCache,
 }
 
 /// The residuals at a waterplane: the volume (relative), then B - G along the earth's forward
 /// horizontal and across (the righting lever, positive when righting).
 fn residuals(p: &Problem, wp: &Waterplane) -> [f64; 3] {
-    let b = buoyancy(p.table, p.flooded, wp);
+    let b = buoyancy(p.table, p.flooded, wp, p.cache);
     let (u, w) = earth_axes(wp);
     let bg = (b.lcb - p.g.lcg_m, b.tcb - p.g.tcg_m, b.kb - p.g.kg_m);
     [(b.v - p.target_m3) / p.target_m3, dot(bg, w), dot(bg, u)]
@@ -718,6 +754,30 @@ pub fn assess(
     start: (f64, f64),
     criteria: &DamageCriteria,
 ) -> DamageOutcome {
+    assess_cached(
+        table,
+        flooded,
+        mass_t,
+        g,
+        density,
+        start,
+        criteria,
+        &CutCache::default(),
+    )
+}
+
+/// [`assess`] with the cuts kept in `cache` (issue #921): the same result, bit for bit.
+#[allow(clippy::too_many_arguments)]
+pub fn assess_cached(
+    table: &SectionsTable,
+    flooded: &[FloodedVolume],
+    mass_t: f64,
+    g: Gravity,
+    density: f64,
+    start: (f64, f64),
+    criteria: &DamageCriteria,
+    cache: &CutCache,
+) -> DamageOutcome {
     let target = mass_t / density;
     if target.is_nan() || target <= 0.0 {
         return DamageOutcome::failed(Floats::NoEquilibrium);
@@ -728,7 +788,7 @@ pub fn assess(
         trim_deg: 0.0,
         c: f64::MAX / 4.0,
     };
-    let total = buoyancy(table, flooded, &top).v;
+    let total = buoyancy(table, flooded, &top, cache).v;
     if target >= total {
         return DamageOutcome::failed(Floats::Sinks);
     }
@@ -737,6 +797,7 @@ pub fn assess(
         flooded,
         target_m3: target,
         g,
+        cache,
     };
     // The stage of equilibrium: c, trim and heel together.
     let mut guess = State {
@@ -847,11 +908,36 @@ pub fn righting_lever_at(
     start: (f64, f64),
     heel_deg: f64,
 ) -> Option<f64> {
+    righting_lever_at_cached(
+        table,
+        flooded,
+        mass_t,
+        g,
+        density,
+        start,
+        heel_deg,
+        &CutCache::default(),
+    )
+}
+
+/// [`righting_lever_at`] with the cuts kept in `cache` (issue #921): the same result, bit for bit.
+#[allow(clippy::too_many_arguments)]
+pub fn righting_lever_at_cached(
+    table: &SectionsTable,
+    flooded: &[FloodedVolume],
+    mass_t: f64,
+    g: Gravity,
+    density: f64,
+    start: (f64, f64),
+    heel_deg: f64,
+    cache: &CutCache,
+) -> Option<f64> {
     let p = Problem {
         table,
         flooded,
         target_m3: mass_t / density,
         g,
+        cache,
     };
     let s = newton(
         &p,
@@ -886,6 +972,30 @@ pub fn intermediate_stages(
     density: f64,
     start: (f64, f64),
     criteria: &DamageCriteria,
+) -> Vec<DamageOutcome> {
+    intermediate_stages_cached(
+        table,
+        flooded,
+        final_outcome,
+        (mass_t, g),
+        density,
+        start,
+        criteria,
+        &CutCache::default(),
+    )
+}
+
+/// [`intermediate_stages`] with the cuts kept in `cache` (issue #921): the same result, bit for bit.
+#[allow(clippy::too_many_arguments)]
+pub fn intermediate_stages_cached(
+    table: &SectionsTable,
+    flooded: &[FloodedVolume],
+    final_outcome: &DamageOutcome,
+    (mass_t, g): (f64, Gravity),
+    density: f64,
+    start: (f64, f64),
+    criteria: &DamageCriteria,
+    cache: &CutCache,
 ) -> Vec<DamageOutcome> {
     let final_wp = if final_outcome.floats == Floats::Yes {
         Waterplane {
@@ -939,7 +1049,7 @@ pub fn intermediate_stages(
                 tcg_m: my / m,
                 kg_m: mz / m + free_surface_tm / m,
             };
-            assess(table, &[], m, gd, density, start, criteria)
+            assess_cached(table, &[], m, gd, density, start, criteria, cache)
         })
         .collect()
 }
