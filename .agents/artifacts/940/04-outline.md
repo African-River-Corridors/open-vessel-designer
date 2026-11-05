@@ -19,8 +19,10 @@ Starts after #937 and #923 are on `main`. The picks follow `03-design.md`.
 
 ## Phase 2. Binding
 
-- **Result:** `_native.simulate_damage(case_json, progress, cancel)` releases the GIL, orders the
-  calls, stops on cancel, an exception or a signal, and re-raises after.
+- **Result:** `_native.simulate_damage(case_json, progress, cancel)` releases the GIL, runs the
+  engine on a scoped thread whose callback only counts, and keeps every Python call (`progress`,
+  `cancel`, `check_signals`) on the calling thread. It stops on cancel, an exception or a signal,
+  and re-raises after.
 - **Files:** `crates/ovd-py/src/lib.rs` (and `eval` wrapped in `py.detach` if decision 4a).
 - **Checks:** `cargo clippy -p ovd-py`; the Python tests of phase 3 (the binding has no Rust tests
   of its own, as today).
@@ -30,7 +32,8 @@ Starts after #937 and #923 are on `main`. The picks follow `03-design.md`.
 - **Result:** `ovd.simulate.simulate_damage` works as `03-design.md` section 1 says.
 - **Files:** `src/ovd/_bridge.py`, `src/ovd/simulate.py`, `tests/test_damage_stages.py` (new),
   `tests/data/public_api.json` (re-pinned by running the generator).
-- **Checks:** the six tests of design section 6; `pytest tests/test_public_api.py`.
+- **Checks:** the seven tests of design section 6 (test 7: Ctrl-C through
+  `_thread.interrupt_main()`); `pytest tests/test_public_api.py`.
 
 ## Phase 4. Docs and gates
 

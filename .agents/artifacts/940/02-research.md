@@ -6,8 +6,7 @@ phase: research
 
 # #940 research findings
 
-Read at `a63ca819`. Nothing built or run. #923 has no PR; #937's design is in PR #949; #921 is in
-progress in a local worktree.
+Read at `a63ca819`. Nothing built or run. #923 has no PR; #937's design is in PR #949; #921 has no PR yet.
 
 ## A. The Python boundary
 
@@ -35,10 +34,15 @@ function and an engine function that takes a Rust callback.
 `damage_status` `run` / `not run` / `not applicable`. The form of the callback is not fixed yet.
 #940 needs it to be callable from any thread, so it must be `Sync`.
 
-**[6] Threads.** With #921, cases of one loading condition run on worker threads
+**[6] Threads.** With #921 as planned, cases of one loading condition run on worker threads
 (`std::thread::scope`), per worker, and come back in case order. WebAssembly stays serial. So the
 callback can be called from several threads at once, and `done` counted by each worker can reach
 Python out of order unless the binding orders it.
+
+**[6a] Signals.** Python runs signal handlers only in the main thread, and `check_signals` only
+reports a pending signal there. Called from a #921 worker thread it never sees Ctrl-C. So every
+Python call (`progress`, `cancel`, `check_signals`) must happen on the thread that called
+`simulate_damage`, not on the engine's workers.
 
 **[7] #937.** Adds the `api` entry with `fn: "simulate"`, which builds the Option through
 `fill_from_profile` and runs it with `run_option_with`; `simulate(p, damage=False)` in Python.

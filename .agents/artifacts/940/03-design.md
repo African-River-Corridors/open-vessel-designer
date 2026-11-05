@@ -43,24 +43,34 @@ parity harness and the entry lists see the name. It equals `simulate` with `dama
 
 ## 3. The binding (`crates/ovd-py`)
 
+Rule: the engine's threads never call Python. Every Python call happens on the calling thread
+(R6a: signals are seen only there).
+
 A new `#[pyfunction] simulate_damage(py, case_json, progress, cancel) -> PyResult<String>`:
 
 1. Parse the case with the GIL held.
-2. `py.detach(|| ovd_format::api::simulate_damage(&case, &callback))` (R2). The closure holds only
-   `Py<PyAny>` handles (`Ungil`).
-3. The callback, per finished case:
-   - bumps an `AtomicUsize` for `done`;
-   - takes a `Mutex<()>` so only one thread speaks to Python at a time, and reads `done` inside it,
-     so Python sees `done` rise and never fall (R6);
-   - `Python::attach`: calls `progress(done, total)` if given; calls `cancel()` if given;
-     calls `py.check_signals()`;
-   - returns `Stop` if `cancel()` is true, if either callable raised, or if a signal is pending;
-     else `Go`.
-4. After the run, with the GIL held: if a callable raised or a signal is pending, raise that
+2. Make the shared state: `done: AtomicUsize`, `total: AtomicUsize`, `stop: AtomicBool`, and a
+   wake-up (`Condvar`, or a channel the workers send `()` on).
+3. The engine callback, run on any thread, only counts: it stores `total`, bumps `done`, wakes the
+   caller, and returns `Stop` if `stop` is set, else `Go`. It touches no Python object.
+4. `py.detach(...)`: start the engine run on a scoped thread (`std::thread::scope`). The calling
+   thread then waits on the wake-up, with a short timeout (about 100 ms) so it also polls when no
+   case finishes. Each time it wakes it reads `done`; if `done` rose or the timeout passed, it
+   attaches (`Python::attach`) and:
+   - calls `progress(done, total)` if given and `done` rose;
+   - calls `cancel()` if given;
+   - calls `py.check_signals()`;
+   - on `cancel()` true, an exception, or a pending signal: sets `stop` and keeps the exception.
+   It loops until the engine thread ends, then joins it.
+5. After the run, with the GIL held: if a callable raised or a signal was pending, raise that
    exception; else return the result text.
 
-The last call is always `progress(total, total)` on a run that is not stopped, so a caller that
-waits for `done == total` ends.
+`done` is read by one thread and only rises, so Python sees it rise and never fall (R6). The last
+call is always `progress(total, total)` on a run that is not stopped, so a caller that waits for
+`done == total` ends. A stop takes effect at the next case each worker starts; cases already
+running finish, and their results are dropped with the status `not run`.
+
+On WebAssembly nothing changes: there is no Python there.
 
 **Decision for the maintainer:** an exception raised inside `progress` or `cancel`.
 - (a) Stop the run and re-raise it from `simulate_damage`.
@@ -75,8 +85,8 @@ Today `eval` holds the GIL for the whole run (R1). `simulate_damage` releases it
 
 **Decision for the maintainer:** release the GIL in the existing `eval` too.
 - (a) Yes, in #940: wrap the run in `py.detach`. Python threads can then run sweeps in parallel,
-  and nothing in the engine touches Python. One line, plus a test that two threads finish in less
-  time than one after the other.
+  and nothing in the engine touches Python. One line, plus a test that another Python thread
+  runs during the call (section 6, test 6).
 - (b) No; leave `eval` as it is, and do it in its own ticket.
 - Recommendation: **(a)**. It is the same mechanism and the same review. Ctrl-C during a plain
   `simulate` still waits for the call to return (no callback there); say so in the docs.
@@ -105,8 +115,12 @@ Today `eval` holds the GIL for the whole run (R1). `simulate_damage` releases it
 4. **Callback raises:** `progress` raises `ValueError`; `simulate_damage` raises that `ValueError`.
 5. **Not applicable:** #923's `not applicable` fixture as a dict gives `not applicable`, and
    `progress` is never called.
-6. **GIL (if decision 4a):** two threads each run `simulate(p)`; wall time is under the sum of the
-   two single runs (a loose bound; logged).
+6. **GIL (if decision 4a):** while one thread runs `simulate(p)`, a second Python thread bumps a
+   counter in a loop. Assert that the counter moved during the call. (A timing bound would flake:
+   one run with #921 already uses every core.)
+7. **Ctrl-C:** a `progress` callable that calls `_thread.interrupt_main()` on its second call;
+   `simulate_damage` raises `KeyboardInterrupt`. This proves the Python calls are on the calling
+   thread.
 
 Test 1 runs the coastal example with damage twice; it is slow. Mark it as the project marks slow
 Python tests.

@@ -24,8 +24,11 @@ Ticket: Damage as a second stage in the Python API, with progress. Read at `a63c
 
 5. What does #923 give: the switch, `damage_status`, a callback (done, total) and a stop?
    Issue #923 items 1 and 5, and its comment.
-6. From which threads will the callback be called once #921 lands? Local branch
-   `ticket/921-damage-parallel`: `crates/ovd-format/src/damage.rs` (`damage_workers`, `run_ordered`).
+6. From which threads will the callback be called once #921 lands? Issue #921 item 1 (no PR
+   yet); `crates/ovd-format/src/damage.rs:134-190`, where the case loop runs.
+6a. On which thread does Python handle signals? Python `signal` module docs ("Python signal
+   handlers are always executed in the main Python thread"); PyO3 `check_signals`
+   (`marker.rs:773`).
 7. What does #937 build that #940 reuses? `.agents/artifacts/937/03-design.md` (PR #949):
    the `api` entry, `simulate(p, damage=False)`.
 8. What does a cancelled run return? Issue #940 item 2 and acceptance criterion 2.
