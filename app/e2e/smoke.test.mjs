@@ -35,12 +35,23 @@ const cargoOutput = async () => (await browser.$("[data-testid=outputs] tr:first
 const field = (label) => browser.$(`input[aria-label="${label}"]`);
 /** Open Settings (app bar), do `act`, close it again. */
 async function inSettings(act) {
+  // Where the button is, and whether the first result is in, when the click starts (issue #945).
+  const before = await browser.execute(() => {
+    const r = document.querySelector("[data-testid=settings]")?.getBoundingClientRect();
+    return { x: r && Math.round(r.x), y: r && Math.round(r.y), w: r && Math.round(r.width), meta: document.querySelectorAll("header .meta").length };
+  });
+  console.log("DIAG settings click at", JSON.stringify(before));
   await (await browser.$("[data-testid=settings]")).click();
   try {
     await until("the Settings dialog", async () => (await browser.$("[data-testid=settings-dialog]")).isExisting());
   } catch (e) {
     // The click on Settings is sometimes lost (issue #922): keep what the page shows, in the log and as a
     // screenshot in the job's app-screenshots artifact.
+    console.log("DIAG settings button at the click:", JSON.stringify(before), "now:", JSON.stringify(await browser.execute((b) => {
+      const r = document.querySelector("[data-testid=settings]")?.getBoundingClientRect();
+      const hit = document.elementFromPoint(b.x + b.w / 2, b.y + 10);
+      return { x: r && Math.round(r.x), y: r && Math.round(r.y), meta: document.querySelectorAll("header .meta").length, hitAtOldCentre: hit && (hit.tagName + "." + hit.className) };
+    }, before)));
     console.log("DIAG settings dialog missing, body:", await browser.execute(() => document.body.innerText.slice(0, 600)));
     console.log("DIAG settings dialog missing, test ids:", await browser.execute(() => [...document.querySelectorAll("[role=dialog],dialog,[data-testid]")].slice(0, 40).map((n) => n.getAttribute("data-testid") || n.tagName).join(",")));
     if (process.env.OVD_E2E_SHOTS) {
