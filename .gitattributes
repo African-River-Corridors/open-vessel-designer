@@ -1,0 +1,19 @@
+# Line endings. Pin LF in the working tree on every system, Windows included. Tests and tools read
+# text files (the Text Library .ftl, CSS, JSON, YAML, fixtures) and match on "\n"; a CRLF checkout
+# broke the daily Windows app check (issue #909).
+* text=auto eol=lf
+
+# Files that are bytes, not text: never convert.
+*.png binary
+*.ico binary
+*.pdf binary
+*.woff2 binary
+*.wasm binary
+*.zip binary
+*.gz binary
+*.jpg binary
+*.icns binary
+*.webp binary
+
+# Stored with CRLF in the repository (a verbatim licence text): leave as committed.
+app/public/licenses/IBMPlexMono-OFL.txt -text
