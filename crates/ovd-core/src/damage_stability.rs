@@ -381,14 +381,37 @@ struct Buoyancy {
 /// depends on the hull and the waterplane only. The key is the exact bits of the waterplane's height, trim and
 /// heel, and the address of the Sections Table, so a hit returns the very value a fresh cut would give and the
 /// results do not move. Keep one cache per run and per worker thread; it holds no lock.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct CutCache {
     cuts: RefCell<BTreeMap<(usize, u64, u64, u64), Immersed>>,
+    /// False: every call cuts afresh, as before the cache. A reference for tests.
+    enabled: bool,
+}
+
+impl Default for CutCache {
+    fn default() -> Self {
+        CutCache {
+            cuts: RefCell::new(BTreeMap::new()),
+            enabled: true,
+        }
+    }
 }
 
 impl CutCache {
-    /// The cut of `table` by `wp`: kept from an earlier call with the same bits, or made now.
+    /// A cache that keeps nothing: every cut is made afresh. The reference a test compares the cache against.
+    pub fn disabled() -> Self {
+        CutCache {
+            enabled: false,
+            ..CutCache::default()
+        }
+    }
+
+    /// The cut of `table` by `wp`: kept from an earlier call with the same bits, or made now. In a debug build
+    /// every hit is checked against a fresh cut.
     fn immersed(&self, table: &SectionsTable, wp: &Waterplane) -> Immersed {
+        if !self.enabled {
+            return immersed(table, wp);
+        }
         let key = (
             table as *const SectionsTable as usize,
             wp.c.to_bits(),
@@ -396,6 +419,12 @@ impl CutCache {
             wp.heel_deg.to_bits(),
         );
         if let Some(hit) = self.cuts.borrow().get(&key) {
+            // Compared as text so that two NaNs of the same bits are equal.
+            debug_assert_eq!(
+                alloc::format!("{hit:?}"),
+                alloc::format!("{:?}", immersed(table, wp)),
+                "a cached cut differs from a fresh one"
+            );
             return *hit;
         }
         let cut = immersed(table, wp);

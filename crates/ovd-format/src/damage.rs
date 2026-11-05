@@ -201,7 +201,13 @@ pub(crate) fn run_gas_damage(
     let (cases, table) = (&run.cases, &run.table);
     // One cache of hull cuts per worker, kept across the conditions of the run (they share the hull).
     let mut caches: Vec<CutCache> = (0..damage_workers(cases.len()))
-        .map(|_| CutCache::default())
+        .map(|_| {
+            if DAMAGE_CACHE.load(core::sync::atomic::Ordering::Relaxed) {
+                CutCache::default()
+            } else {
+                CutCache::disabled()
+            }
+        })
         .collect();
     let mut out: Vec<ovd_core::measured::DamageVerdict> = Vec::new();
     for c in conditions {
@@ -547,11 +553,23 @@ struct CaseRun<'a> {
 /// How many worker threads the damage cases may use; 0 means one per core.
 static DAMAGE_WORKERS: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
-/// Set the number of worker threads for the damage cases (issue #921): 1 runs them serially, 0 (the default)
-/// uses one per core. The results are the same bits whatever the number. A build for WebAssembly, or without
-/// the `parallel` feature, is always serial.
+/// Whether the damage cases keep the cuts of the hull (the default), or cut afresh every time.
+static DAMAGE_CACHE: core::sync::atomic::AtomicBool = core::sync::atomic::AtomicBool::new(true);
+
+/// For tests only (issue #921), hence hidden from the docs: a process-wide knob, so a test that sets it must be
+/// the only one in its test binary. Sets the number of worker threads for the damage cases: 1 runs them
+/// serially, 0 (the default) uses one per core. The results are the same bits whatever the number. A build for
+/// WebAssembly, or without the `parallel` feature, is always serial.
+#[doc(hidden)]
 pub fn set_damage_workers(n: usize) {
     DAMAGE_WORKERS.store(n, core::sync::atomic::Ordering::Relaxed);
+}
+
+/// For tests only (issue #921), hidden from the docs, process-wide like [`set_damage_workers`]: `false` makes
+/// the damage cases cut the hull afresh every time, the reference the cache is compared against.
+#[doc(hidden)]
+pub fn set_damage_cache(on: bool) {
+    DAMAGE_CACHE.store(on, core::sync::atomic::Ordering::Relaxed);
 }
 
 /// The worker count for `cases` cases: at least 1, at most one per case.
