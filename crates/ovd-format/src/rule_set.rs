@@ -204,6 +204,13 @@ impl Domain for Ovd {
                 scope: InputScope::Object,
             });
         }
+        // Issue #913: the kind, space, face and flags of an opening are read for each opening.
+        if let Some(values) = ovd_core::deckhouse_openings::opening_input_values(name) {
+            return Some(InputDef {
+                values: values.iter().map(|v| v.to_string()).collect(),
+                scope: InputScope::Object,
+            });
+        }
         applicability_values(name).map(|values| InputDef {
             values,
             scope: InputScope::Design,

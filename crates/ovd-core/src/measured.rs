@@ -277,8 +277,17 @@ pub fn rooms_measure(
 }
 
 impl Measured {
-    /// The value of an object input of loading condition `index` (`loading_condition_kind`).
+    /// The value of an object input of loading condition `index` (`loading_condition_kind`) or of opening `index` (`opening_*`, issue #913).
     pub fn object_input(&self, object: &str, index: usize, name: &str) -> Option<String> {
+        // Issue #913: the kind, space, face and flags of an opening.
+        if object == ObjectType::Opening.key() {
+            return self
+                .openings
+                .as_ref()
+                .and_then(|p| p.openings.get(index))
+                .and_then(|o| o.opening.input(name))
+                .map(str::to_string);
+        }
         (object == ObjectType::LoadingCondition.key() && name == "loading_condition_kind")
             .then(|| self.conditions.get(index))
             .flatten()
@@ -831,6 +840,7 @@ impl Measured {
             return match name {
                 "distance_from_front" => Ok(MeasureValue::Number(o.distance_from_front_m)),
                 "faces_cargo_area" => Ok(MeasureValue::Bool(o.faces_cargo_area)),
+                "clear_of_cargo_face" => Ok(MeasureValue::Bool(!o.faces_cargo_area)),
                 "in_zone" => Ok(MeasureValue::Bool(o.in_zone)),
                 "openable" => Ok(MeasureValue::Bool(o.opening.openable)),
                 "gas_tight" => Ok(MeasureValue::Bool(o.opening.gas_tight)),
