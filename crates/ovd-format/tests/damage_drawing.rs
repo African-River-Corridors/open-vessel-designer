@@ -264,13 +264,28 @@ fn leader_lines(doc: &Value) -> Vec<([f64; 2], [f64; 2])> {
         &norm,
         &ovd_draw::render::svg::SvgOptions { embed_font: false },
     );
-    svg.lines()
+    let lines: Vec<([f64; 2], [f64; 2])> = svg
+        .lines()
         .filter(|l| l.contains("viewport.main.leader") && l.starts_with("<line"))
         .map(|l| {
             let g = |n| attr(l, n).unwrap_or_else(|| panic!("{n} in {l}"));
             ([g("x1"), g("y1")], [g("x2"), g("y2")])
         })
-        .collect()
+        .collect();
+    // Every label of the sheet has one straight leader line: a leader drawn another way (a path, an elbow)
+    // would not be measured, so the counts must agree.
+    let labels = doc["viewports"][0]["entities"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["type"] == "leader")
+        .count();
+    assert_eq!(
+        lines.len(),
+        labels,
+        "leader lines against labels of the sheet"
+    );
+    lines
 }
 
 /// How far the point `p` is from the segment `a`-`b`.
