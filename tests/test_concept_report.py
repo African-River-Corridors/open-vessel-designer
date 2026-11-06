@@ -196,6 +196,7 @@ READ_BY = {
     "gross_tonnage": [], "holding_time": [],   # the holding-time block (#870); a chapter reads it with #871
     "crew": [],   # no chapter reads it yet; #830 maps it to A4
     "air_drafts": [],   # unhashed (#888): the app and the side elevation read it; no chapter yet
+    "air_draft_report": [],   # unhashed (#991): the air draft, the highest point and the bridge limit; no chapter yet
     "stern_arrangement": [],   # the Stern & crew view reads it (#887); no chapter does yet
     "damage_status": ["a11"],   # whether damage ran (#923): A.11 gives it as its reason; the summary states it too
     # `damage_cases` (#923) is in a run only when damage ran or was skipped; the stored example has neither

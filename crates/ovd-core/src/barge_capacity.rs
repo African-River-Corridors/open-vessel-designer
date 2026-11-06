@@ -219,6 +219,12 @@ pub struct BargeCapacityInputs {
     pub required_freeboard: f64,
     /// Bridge clearance limit (m), checked against the LIGHT condition.
     pub air_draft_limit_m: Option<f64>,
+    /// Issue #991: the clearance of the lowest bridge on the route (m). Unlike `air_draft_limit_m`, which
+    /// is a design limit that blocks, an air draft over it only warns: the design stands, and the warning
+    /// names the highest point.
+    pub bridge_clearance_m: Option<f64>,
+    /// Issue #991: where the bridge clearance comes from (typed, a default), for the warning.
+    pub bridge_clearance_source: Option<String>,
     /// Ballast the empty leg can carry (t)
     pub ballast_capacity_t: f64,
 
@@ -386,6 +392,8 @@ impl BargeCapacityInputs {
             water_density: 1.0,
             required_freeboard: 0.3,
             air_draft_limit_m: None,
+            bridge_clearance_m: None,
+            bridge_clearance_source: None,
             ballast_capacity_t: 0.0,
             aft: None,
             aft_design: AftDesign::default(),
@@ -515,6 +523,32 @@ pub struct GasBasis {
     pub weights: WeightBreakdown,
 }
 
+/// The highest fixed point of a vessel with the wheelhouse lowered for transit, which sets the air draft
+/// (issue #991): its key and its top above the keel. The keys: `tank_dome` (the dome top of a gas
+/// tank), `hatch_coaming` (a dry bulk hold), `deck` (a liquid bulk hull), `stern_block` (the deck
+/// units and the wheelhouse lowered), `deckhouse` (the top tier of a deckhouse, wheelhouse fixed) and
+/// `vent_mast` (the vent exit of a gas hull whose mast does not lower).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct HighestPoint {
+    pub key: &'static str,
+    pub top_above_keel_m: f64,
+}
+
+impl HighestPoint {
+    /// The name of the point, in English, for a message.
+    pub fn label(&self) -> &'static str {
+        match self.key {
+            "tank_dome" => "tank dome",
+            "hatch_coaming" => "hatch coaming",
+            "deck" => "deck",
+            "stern_block" => "stern block (deck units, wheelhouse lowered)",
+            "deckhouse" => "deckhouse",
+            "vent_mast" => "vent mast exit",
+            _ => "highest point",
+        }
+    }
+}
+
 /// Volume-bound capacity and the resulting full-load hydrostatics.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BargeCapacityResult {
@@ -535,6 +569,8 @@ pub struct BargeCapacityResult {
     pub deadweight_t: f64,
     pub freeboard_m: f64,
     pub air_draft_top_above_keel_m: f64,
+    /// Issue #991: the highest point that sets `air_draft_top_above_keel_m`.
+    pub highest_point: Option<HighestPoint>,
     pub overloaded: bool,
 
     // Gas design detail (`None` for bulk)
@@ -1578,6 +1614,15 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // Second pass on the aft block: the wheelhouse has to see over the cargo, and the cargo top
     // is only known now. The length is unchanged by the lift.
     let cargo_top_above_keel = h_top;
+    // Issue #991: the highest point of the vessel, with the wheelhouse lowered, which sets the air draft.
+    let mut highest = HighestPoint {
+        key: match class {
+            CargoClass::Gas => "tank_dome",
+            CargoClass::DryBulk => "hatch_coaming",
+            CargoClass::LiquidBulk => "deck",
+        },
+        top_above_keel_m: h_top,
+    };
     let mut aft_second = arr.aft_inputs.clone();
     aft_second.sightline_obstruction_m = Some(cargo_top_above_keel);
     // Issue #779: a fixed deckhouse wheelhouse cannot lift for the Blind Distance, so the house is
@@ -1621,6 +1666,16 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // The tallest fixed point of the vessel with the wheelhouse lowered for transit. A pushed
     // barge carries none of it: the block is on the tug.
     let (mut aft, mut h_top_navigating) = if inp.self_propelled {
+        if aft.block_top_lowered_m > h_top {
+            highest = HighestPoint {
+                key: if aft.deckhouse.is_some() {
+                    "deckhouse"
+                } else {
+                    "stern_block"
+                },
+                top_above_keel_m: aft.block_top_lowered_m,
+            };
+        }
         h_top = py_max(h_top, aft.block_top_lowered_m);
         let nav = py_max(h_top, aft.wheelhouse_top_raised_m);
         (Some(aft), nav)
@@ -1672,6 +1727,12 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     if let Some(exit) = vent_exit {
         h_top_navigating = py_max(h_top_navigating, exit);
         if !inp.vent_mast_lowerable {
+            if exit > h_top {
+                highest = HighestPoint {
+                    key: "vent_mast",
+                    top_above_keel_m: exit,
+                };
+            }
             h_top = py_max(h_top, exit);
         }
     }
@@ -2034,6 +2095,39 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
             ));
         }
     }
+    // Issue #991: an air draft over the bridge clearance of the route is a warning, never a block: the
+    // design stands, and the warning names the highest point. The governing condition is the one the
+    // air-draft limit check uses (light, ballasted where ballast is carried).
+    if let Some(limit) = inp.bridge_clearance_m {
+        let ballasted = inp.ballast_capacity_t > 0.0;
+        let governing = if ballasted {
+            air_draft_ballast
+        } else {
+            air_draft_light
+        };
+        if governing > limit + 1e-9 {
+            let condition = if ballasted {
+                Text::fixed(
+                    "check-air-draft-condition-ballasted-light",
+                    "ballasted light",
+                )
+            } else {
+                Text::fixed("check-air-draft-condition-light", "light")
+            };
+            warnings.push(text!(
+                "warn-air-draft-over-bridge-limit",
+                "The {condition} air draft {governing} m (laden {laden} m) is over the bridge limit {limit} m by {over} m ({source}). The highest point is the {point}, {top} m above the keel. The vessel cannot pass under a bridge of that clearance.",
+                condition = condition,
+                governing = Arg::fixed(governing, 2),
+                laden = Arg::fixed(air_draft, 2),
+                limit = Arg::fixed(limit, 2),
+                over = Arg::fixed(governing - limit, 2),
+                source = Arg::cite(inp.bridge_clearance_source.clone().unwrap_or_default()),
+                point = Arg::cite(highest.label()),
+                top = Arg::fixed(highest.top_above_keel_m, 2),
+            ));
+        }
+    }
     // Issue #722: the gas hull's lightship and cost now take the same steel (the panel model), so
     // the top-down and bottom-up disagreement warning of #404 no longer applies to it.
     let mut gm = None;
@@ -2087,6 +2181,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         deadweight_t: displacement - lightship,
         freeboard_m: freeboard,
         air_draft_top_above_keel_m: h_top,
+        highest_point: Some(highest),
         overloaded,
         tank_outer_diameter_m: detail.tank_outer_diameter_m,
         n_tanks_wide: detail.n_tanks_wide,

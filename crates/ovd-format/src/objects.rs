@@ -378,6 +378,7 @@ pub(crate) fn capacity_result_from_json(
         deadweight_t: o.f64("deadweight_t")?,
         freeboard_m: o.f64("freeboard_m")?,
         air_draft_top_above_keel_m: o.f64("air_draft_top_above_keel_m")?,
+        highest_point: None,
         overloaded: o.bool("overloaded")?,
         tank_outer_diameter_m: o.opt_f64("tank_outer_diameter_m")?,
         n_tanks_wide: o.opt_i64("n_tanks_wide")?,

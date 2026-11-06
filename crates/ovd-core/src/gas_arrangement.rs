@@ -165,6 +165,10 @@ pub struct FitOptions {
     pub required_freeboard_m: f64,
     /// Air draft limit of the light condition (m), as the capacity check reads it. `None`: none.
     pub air_draft_limit_m: Option<f64>,
+    /// Issue #991: the bridge clearance of the route and where it comes from (`BargeCapacityInputs`):
+    /// an air draft over it warns.
+    pub bridge_clearance_m: Option<f64>,
+    pub bridge_clearance_source: Option<String>,
     /// The stern block's design values for every candidate (a self-propelled hull only).
     pub aft_design: AftDesign,
     /// Issue #822: the cargo vent mast of every candidate (see the fields of the same names in
@@ -474,6 +478,8 @@ impl Default for FitOptions {
             water_density_t_per_m3: DEFAULT_WATER_DENSITY,
             required_freeboard_m: DEFAULT_REQUIRED_FREEBOARD_M,
             air_draft_limit_m: None,
+            bridge_clearance_m: None,
+            bridge_clearance_source: None,
             aft_design: AftDesign::default(),
             river_only: false,
             vent_stub_m: crate::vent_mast::DEFAULT_VENT_STUB_M,
@@ -1277,6 +1283,8 @@ impl Search<'_> {
         inp.tank_design = self.o.tank_design.clone();
         inp.water_density = self.o.water_density_t_per_m3;
         inp.air_draft_limit_m = self.o.air_draft_limit_m;
+        inp.bridge_clearance_m = self.o.bridge_clearance_m;
+        inp.bridge_clearance_source = self.o.bridge_clearance_source.clone();
         inp.aft_design = self.o.aft_design.clone();
         inp.river_only = self.o.river_only;
         inp.vent_stub_m = self.o.vent_stub_m;

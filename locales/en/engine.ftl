@@ -45,6 +45,7 @@ check-deckhouse-clear-height = tier height { $tier } m less { $allowance } m for
 warn-barge-bulk-gm = Bulk GM is first-order (assumed lightship KG); cargo-shift/angle-of-repose not modelled — confirm with a full intact-stability booklet.
 check-wheelhouse-blind-distance = blind distance ahead of the bow { $blind } m <= { $limit } m, light (limit from the Rule Sets of the stack: { $source }); lift used { $lift } m of { $max_lift } m
 check-wheelhouse-blind-distance-fails = blind distance ahead of the bow over { $limit } m, light (limit from the Rule Sets of the stack: { $source }): lift needed { $needed } m of { $max_lift } m
+warn-air-draft-over-bridge-limit = The { $condition } air draft { $governing } m (laden { $laden } m) is over the bridge limit { $limit } m by { $over } m ({ $source }). The highest point is the { $point }, { $top } m above the keel. The vessel cannot pass under a bridge of that clearance.
 warn-aft-blind-distance-lift = The blind distance needs { $needed } m of lift; the column gives { $max_lift } m. Raise the column or lower the cargo top.
 check-feasible-geometry = cargo volume must be positive (tank/hold fits)
 check-name-feasible-geometry = feasible geometry

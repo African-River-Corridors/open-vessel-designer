@@ -3249,6 +3249,13 @@ pub const INPUTS: &[InputSpec] = &[
         Group::WaterwayLimits,
     ),
     spec(
+        "bridge_clearance_m",
+        "Bridge clearance",
+        NUM_OR_NONE,
+        false,
+        Group::WaterwayLimits,
+    ),
+    spec(
         "draught_limit_m",
         "Draught limit",
         NUM_OR_NONE,
