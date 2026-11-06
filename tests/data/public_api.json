@@ -2407,6 +2407,26 @@
      "False"
     ]
    ]
+  },
+  "simulate_damage": {
+   "kind": "function",
+   "params": [
+    [
+     "params",
+     "POSITIONAL_OR_KEYWORD",
+     null
+    ],
+    [
+     "progress",
+     "POSITIONAL_OR_KEYWORD",
+     "None"
+    ],
+    [
+     "cancel",
+     "POSITIONAL_OR_KEYWORD",
+     "None"
+    ]
+   ]
   }
  }
 }

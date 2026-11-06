@@ -358,13 +358,34 @@ pub(crate) fn option_of(
     }
 }
 
-/// `simulate(params, damage)`: build the Option, run it as `ovd run` does (the built-in Rule Set
-/// Library, no extra sets), and give the results.
-fn simulate_design(args: &Value) -> Result<Value, EvalError> {
+/// The Option of a call's `params`: the one build of `simulate` and `simulate_damage`. The error
+/// side is the call's own answer: a refusal, or a raised Python exception with its class.
+fn built(args: &Value) -> Result<crate::vdesign::DesignOption, Result<Value, EvalError>> {
     let params = args
         .get("params")
         .and_then(Value::as_object)
-        .ok_or_else(|| EvalError::BadInput("`args.params` must be an object".into()))?;
+        .ok_or_else(|| {
+            Err(EvalError::BadInput(
+                "`args.params` must be an object".into(),
+            ))
+        })?;
+    match option_of(params, &Profile::built_in()) {
+        Ok(o) => Ok(o),
+        Err(Stop::Bad(list)) => Err(Err(EvalError::BadInput(list.join("\n")))),
+        Err(Stop::Raised(kind, message)) => Err(raised(&kind, &message)),
+    }
+}
+
+/// Run the built Option as `ovd run` does (the built-in Rule Set Library, no extra sets).
+fn run_built(
+    option: &crate::vdesign::DesignOption,
+    control: &crate::damage::DamageControl,
+) -> (crate::RunOutcome, Option<(String, String)>) {
+    crate::run::run_option_detail(option, &Library::built_in(), &[], control)
+}
+
+/// `simulate(params, damage)`: build the Option, run it as `ovd run` does, and give the results.
+fn simulate_design(args: &Value) -> Result<Value, EvalError> {
     let damage = match args.get("damage") {
         None | Some(Value::Null) => false,
         Some(Value::Bool(b)) => *b,
@@ -374,17 +395,53 @@ fn simulate_design(args: &Value) -> Result<Value, EvalError> {
             ));
         }
     };
-    let option = match option_of(params, &Profile::built_in()) {
+    let option = match built(args) {
         Ok(o) => o,
-        Err(Stop::Bad(list)) => return Err(EvalError::BadInput(list.join("\n"))),
-        Err(Stop::Raised(kind, message)) => return raised(&kind, &message),
+        Err(answer) => return answer,
     };
     let control = crate::damage::DamageControl {
         run: damage,
         progress: None,
     };
-    let (outcome, escaped) =
-        crate::run::run_option_detail(&option, &Library::built_in(), &[], &control);
+    let (outcome, escaped) = run_built(&option, &control);
+    answer_of(outcome, escaped)
+}
+
+/// `simulate_damage(params)` with a progress hook (issue #940): the damage stage. The hook is the
+/// engine's own ([`crate::damage::ProgressHook`]): it is called on this thread only, never on a
+/// worker. The answer is what `simulate` with `damage: true` gives, on the whole value (both go
+/// through `built` and `run_built`). A hook that breaks cancels the run, and the call then gives the
+/// results with `damage_status` `not run`: the value `simulate` gives without damage. A caller that
+/// breaks the hook to raise an error, not to ask for those results, says so through `abandoned`: the
+/// call then skips that second run and gives `{"error": ...}` (the caller discards it).
+pub fn simulate_damage_with(
+    args: &Value,
+    progress: Option<crate::damage::ProgressHook>,
+    abandoned: &dyn Fn() -> bool,
+) -> Result<Value, EvalError> {
+    let option = match built(args) {
+        Ok(o) => o,
+        Err(answer) => return answer,
+    };
+    let control = crate::damage::DamageControl {
+        run: true,
+        progress,
+    };
+    let (outcome, escaped) = run_built(&option, &control);
+    let cancelled = escaped.as_ref().is_some_and(|(kind, message)| {
+        kind == "Cancelled" && message == crate::damage::DAMAGE_CANCELLED
+    });
+    if cancelled && abandoned() {
+        return ok(json!({ "error": crate::damage::DAMAGE_CANCELLED }));
+    }
+    if cancelled {
+        let skip = crate::damage::DamageControl {
+            run: false,
+            progress: None,
+        };
+        let (outcome, escaped) = run_built(&option, &skip);
+        return answer_of(outcome, escaped);
+    }
     answer_of(outcome, escaped)
 }
 
@@ -410,6 +467,7 @@ fn answer_of(
 pub fn run(function: &str, args: &Value) -> Result<Value, EvalError> {
     match function {
         "simulate" => simulate_design(args),
+        "simulate_damage" => simulate_damage_with(args, None, &|| false),
         other => Err(EvalError::BadInput(format!(
             "api has no function `{other}`"
         ))),
