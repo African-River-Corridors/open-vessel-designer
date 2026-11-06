@@ -1295,6 +1295,28 @@ pub fn stern_trace(
             lowerable: false,
         });
     }
+    // Issue #913: a case that gives the openings of a deckhouse (`openings`, rows as the typed
+    // `deckhouse_openings` input, and `icll_length_m`, the L of IGC 1.2.31) has them placed on a
+    // 20 m deckhouse whose front is `front_x_m` m forward of the stern (20 m when left out): each row's
+    // `x_m` is read from the stern, so a case works from the distance it wants as `front_x_m - x_m`.
+    if let Some(rows) = measured_values.get("openings") {
+        let list = crate::deckhouse_openings::openings_of(rows)
+            .map_err(|t| format!("the case's openings: {t:?}"))?
+            .ok_or("the case's `openings` must be a list")?;
+        let l_icll_m =
+            number("icll_length_m").ok_or("a case with openings needs `icll_length_m`")?;
+        let frame = ovd_core::deckhouse_openings::Frame {
+            x_aft_m: 0.0,
+            x_fwd_m: number("front_x_m").unwrap_or(20.0),
+            width_m: 12.0,
+            base_m: 6.0,
+            tier_height_m: 2.6,
+            tiers: 2,
+            wheelhouse: None,
+            l_icll_m,
+        };
+        measured.openings = Some(ovd_core::deckhouse_openings::place(&frame, Some(&list)));
+    }
     if let Some(kmh) = number("speed_deep_water_kmh") {
         measured
             .speeds_kn
