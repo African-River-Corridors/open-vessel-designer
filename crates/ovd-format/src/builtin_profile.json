@@ -269,7 +269,7 @@
     },
     "lpg_loading_temperature_c": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
@@ -318,7 +318,7 @@
     },
     "fill_ratio": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": {},
@@ -343,7 +343,7 @@
     },
     "tank_design_pressure_mpa": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LNG"] },
@@ -388,7 +388,7 @@
     },
     "tank_design_temperature_c": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LNG", "LNG_ethane"] },
@@ -427,7 +427,7 @@
     },
     "tank_head_type": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
@@ -453,7 +453,7 @@
     },
     "tank_material": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LNG", "LNG_ethane"] },
@@ -502,7 +502,7 @@
     },
     "tank_insulation_type": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LNG", "LNG_ethane"] },
@@ -530,7 +530,7 @@
     },
     "tank_insulation_thickness_mm": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LNG", "LNG_ethane"] },
@@ -561,7 +561,7 @@
     },
     "tank_structure_factor": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
@@ -759,7 +759,7 @@
     },
     "tank_dome_height_m": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": {},
@@ -776,7 +776,7 @@
     },
     "tank_dome_diameter_m": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": {},
