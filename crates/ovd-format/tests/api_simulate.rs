@@ -205,14 +205,34 @@ fn a_convoy_runs_and_gives_its_blocks() {
 #[test]
 fn propulsive_efficiency_is_taken_where_it_is_used_and_it_moves_the_fuel_and_cargo() {
     // The input is used when no propulsor decides it (`stern_inputs.rs`): a pushed barge, or a
-    // self-propelled hull whose `propulsor_type` is `unspecified`. A pushed barge takes it (its power is
-    // the pusher's, so the barge's own results do not move); the unspecified self-propelled hull
-    // sizes its fuel, and so its cargo, from it. A specified propulsor does not use it, and the reader
-    // says so.
+    // self-propelled hull whose `propulsor_type` is `unspecified`. A pushed barge takes it: its cargo
+    // stays, and its speed-power curves (kW and fuel) and Rule Trace follow it. The unspecified
+    // self-propelled hull sizes its fuel, and so its cargo, from it. A specified propulsor does not use
+    // it, and the reader says so.
     let barge = typed(DRY_BULK, 0);
     assert_eq!(barge["formation"]["kind"], "pushed_barge");
-    simulate(&with(barge, "propulsive_efficiency", json!(0.4)), false)
-        .expect("a pushed barge takes it");
+    let barge_at = |eta: f64| {
+        simulate(
+            &with(barge.clone(), "propulsive_efficiency", json!(eta)),
+            false,
+        )
+        .unwrap_or_else(|e| panic!("{e}"))
+    };
+    let (low_eta, high_eta) = (barge_at(0.3), barge_at(0.6));
+    assert_eq!(
+        low_eta["results"]["cargo_t"],
+        high_eta["results"]["cargo_t"]
+    );
+    let kw = |r: &Value| {
+        let points = r["curves"][0]["points"].as_array().expect("points");
+        points.last().expect("a point")["kw"].as_f64().expect("kw")
+    };
+    assert!(
+        kw(&low_eta) > kw(&high_eta),
+        "a lower efficiency needs more power: {} vs {}",
+        kw(&low_eta),
+        kw(&high_eta)
+    );
     let mut own = typed(DRY_BULK, 0);
     own.insert("formation".into(), json!({ "kind": "self_propelled" }));
     own.insert("propulsor_type".into(), json!("unspecified"));

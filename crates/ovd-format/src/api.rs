@@ -796,6 +796,15 @@ mod tests {
         want.sort();
         assert_eq!(got, want, "a glossary dict gains or loses no key");
 
+        // The same for a minimal glossary dict, as a caller writes it: no key is added.
+        let minimal = obj(gas());
+        let out = inputs_of(&minimal).expect("glossary names");
+        let mut got: Vec<&String> = out.keys().collect();
+        let mut want: Vec<&String> = minimal.keys().collect();
+        got.sort();
+        want.sort();
+        assert_eq!(got, want, "a minimal glossary dict gains no key");
+
         let old = obj(json!({
             "loa_m": 80.0, "depth_m": 4.0, "freeboard_min_m": 0.3, "eta_d": 0.5, "speed_max_kn": 8.0,
             "lightship_k_t_per_m3": 0.1, "vessel": "box_barge", "self_propelled": false,
