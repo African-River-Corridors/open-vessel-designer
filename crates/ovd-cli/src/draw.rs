@@ -218,16 +218,27 @@ fn draw_design(args: &[&str]) -> Result<(), String> {
                 .map(|d| ("tug-ga".to_string(), d)),
         );
         // Issue #761: an Option with damage cases gets one damage case sheet per governing case.
-        documents_of.extend(
-            ovd_format::damage_drawings_named(&run.outcome, Some(&run.name)).unwrap_or_default(),
-        );
+        // An Option with no damage cases has none; any other error (a governing case with no extent, issue #957)
+        // is a fault in the results and fails the run, as the app shows it.
+        match ovd_format::damage_drawings_named(&run.outcome, Some(&run.name)) {
+            Ok(sheets) => documents_of.extend(sheets),
+            Err(m)
+                if m == ovd_format::NO_DAMAGE_DRAWING
+                    || !matches!(run.outcome, ovd_format::RunOutcome::Results { .. }) => {}
+            Err(m) => {
+                eprintln!("Option '{}': no damage drawings: {m}", run.name);
+                failed = true;
+            }
+        }
         // Issue #928: and one per governing case of each other Rule Set's damage cases, as the app shows.
-        documents_of.extend(
-            ovd_format::damage_drawings_by_rule_named(&run.outcome, Some(&run.name))
-                .unwrap_or_default()
-                .into_iter()
-                .flat_map(|(_, sheets)| sheets),
-        );
+        match ovd_format::damage_drawings_by_rule_named(&run.outcome, Some(&run.name)) {
+            Ok(sets) => documents_of.extend(sets.into_iter().flat_map(|(_, sheets)| sheets)),
+            Err(_) if !matches!(run.outcome, ovd_format::RunOutcome::Results { .. }) => {}
+            Err(m) => {
+                eprintln!("Option '{}': no damage drawings: {m}", run.name);
+                failed = true;
+            }
+        }
         let mut stem = slug(&run.name);
         let mut n = 2;
         while used.contains(&stem) {
