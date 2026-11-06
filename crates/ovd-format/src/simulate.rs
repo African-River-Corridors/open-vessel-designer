@@ -1288,11 +1288,21 @@ fn simulate_measured(
     } else {
         ovd_core::powering::IMMERSION_OPEN
     };
+    // Issue #923: damage does not feed the sizing (it is an output of the pass, read by the Rule Trace only),
+    // so the passes that only size skip it, and the pass that settles runs it once. One clean progress count,
+    // and damage is worked out once, not once a pass.
+    let quiet_owned;
+    let sizing = if rules.damage.run {
+        quiet_owned = quiet_rules(rules);
+        &quiet_owned
+    } else {
+        rules
+    };
     let mut q = p.clone();
     let mut run = 0;
     loop {
         let mut m = Measured::default();
-        let v = simulate_once(&q, &mut m, rules)?;
+        let v = simulate_once(&q, &mut m, sizing)?;
         run += 1;
         // The shaft axis is half a diameter above the base: D + D x limit <= T_aft at the light draught.
         let fit = lightest_aft_draught(&v)
@@ -1305,10 +1315,25 @@ fn simulate_measured(
                 q.insert("propeller_diameter_m".to_string(), json!(fit));
             }
             _ => {
+                if rules.damage.run && m.damage_status == ovd_core::measured::DamageStatus::NotRun {
+                    // The settled pass again, with damage.
+                    return simulate_once(&q, measured, rules);
+                }
                 *measured = m;
                 return Ok(v);
             }
         }
+    }
+}
+
+/// The rules of a run with damage skipped and no progress hook: for a pass that only sizes (issue #923).
+pub(crate) fn quiet_rules(rules: &RunRules) -> RunRules {
+    RunRules {
+        damage: crate::damage::DamageControl {
+            run: false,
+            progress: None,
+        },
+        ..rules.clone()
     }
 }
 
@@ -3356,8 +3381,23 @@ fn simulate_gas(
             )
         })?;
     }
+    // A damage Rule in the stack that its set does not evaluate is `not evaluated`, not `not applicable`.
+    let unevaluated = |id: &str, set: &str, over_110: bool| {
+        (!over_110 || l > 110.0)
+            && rules
+                .sets
+                .iter()
+                .any(|s| s.id == set && s.rule(id).is_some_and(|r| !r.evaluated))
+    };
     let damage_status = if igc_set.is_none() && adn_set.is_none() && es_trin_set.is_none() {
-        ovd_core::measured::DamageStatus::NotApplicable
+        if unevaluated("igc/2.7/damage-survival", "igc-2g", false)
+            || unevaluated("adn/9.3.1.15.1/damage-stability", "adn-gas", false)
+            || unevaluated("es-trin/28.03(4)/damage-stability", "es-trin-2025", true)
+        {
+            ovd_core::measured::DamageStatus::NotEvaluated
+        } else {
+            ovd_core::measured::DamageStatus::NotApplicable
+        }
     } else if rules.damage.run {
         ovd_core::measured::DamageStatus::Run
     } else {
@@ -3494,7 +3534,11 @@ fn simulate_gas(
                 adn_gas_damage,
                 es_trin_damage,
                 damage_status,
-                damage_cases: Some(damage_cases),
+                damage_cases: matches!(
+                    damage_status,
+                    ovd_core::measured::DamageStatus::Run | ovd_core::measured::DamageStatus::NotRun
+                )
+                .then_some(damage_cases),
                 deadweight_t: Some(deadweight),
                 tank: r.tank_rules.clone(),
                 separation: r.separation.clone().map(|s| {

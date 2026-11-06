@@ -256,6 +256,7 @@ app-rules-col-status = Status
 app-rules-warn = WARN
 app-rules-note = NOTE
 app-rules-not-evaluated = NOT EVALUATED
+app-rules-not-run = NOT RUN
 app-rules-not-applicable = NOT APPLICABLE
 app-rules-yes = yes
 app-rules-no = no

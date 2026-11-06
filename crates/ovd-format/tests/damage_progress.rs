@@ -2,8 +2,7 @@
 //!
 //! Label: property - the 140 x 29 m coastal LNG reference design with 1 and with 4 worker threads. The hook
 //! is called on the thread that called the run, never on a worker, first with 0 cases done, then with a count
-//! that never falls within a pass (a run repeats its passes for the propeller sizing and the deckhouse rooms,
-//! and each pass counts from 0 again), last with every case done; the total is the case count the results give. A hook that
+//! that never falls (a run's sizing and rooms passes skip damage, so it is one pass), last with every case done; the total is the case count the results give. A hook that
 //! breaks stops the run: it gives a failure that says the damage was cancelled, and no later call follows.
 //! The worker count is a process-wide knob, so this file holds this one test.
 
@@ -86,13 +85,13 @@ fn the_hook_runs_on_the_calling_thread_counts_up_and_can_cancel() {
             "{workers} workers: the hook ran off the calling thread"
         );
         assert_eq!(calls[0].0, DamageProgress { done: 0, total });
-        // A run can repeat (the propeller sizing, the deckhouse rooms): each pass counts from 0 again.
+        // One pass only (issue #923): the sizing and rooms passes skip damage, so the count never falls and
+        // only the first call has 0 done.
         assert!(
-            calls
-                .windows(2)
-                .all(|w| w[1].0.done == 0 || w[0].0.done <= w[1].0.done),
-            "{workers} workers: the count fell inside a pass"
+            calls.windows(2).all(|w| w[0].0.done <= w[1].0.done),
+            "{workers} workers: the count fell"
         );
+        assert_eq!(calls.iter().filter(|(p, _)| p.done == 0).count(), 1);
         assert!(calls.iter().all(|(p, _)| p.total == total));
         assert_eq!(calls.last().unwrap().0.done, total, "{workers} workers");
 

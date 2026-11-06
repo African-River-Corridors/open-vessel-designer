@@ -918,6 +918,15 @@ fn settle_rooms(
         return (outcome, measured, true);
     }
     let mut last: Option<(Outcome, crate::simulate::Measured)> = None;
+    // Issue #923: damage does not feed the berths, so the passes skip it and the settled pass runs it once.
+    let quiet_owned;
+    let passes_rules = if rules.damage.run {
+        quiet_owned = crate::simulate::quiet_rules(rules);
+        &quiet_owned
+    } else {
+        rules
+    };
+    let mut last_params = params.clone();
     // The facts the crew model last gave: the next pass sizes the rooms from them.
     let mut facts: Option<RoomsFacts> = None;
     let settled = iterate_berths(ROOMS_PASSES, |_used| {
@@ -927,7 +936,8 @@ fn settle_rooms(
             params.insert("crew_seafarers".to_string(), json!(f.seafarers));
             params.insert("crew_gt".to_string(), json!(f.gt));
         }
-        let (outcome, mut measured) = simulate_params_measured(params, rules);
+        last_params = params.clone();
+        let (outcome, mut measured) = simulate_params_measured(params, passes_rules);
         let mut wanted = None;
         if let Outcome::Result(v) = &outcome
             && v.get("error").is_none()
@@ -945,7 +955,17 @@ fn settle_rooms(
         last = Some((outcome, measured));
         wanted
     });
-    let (outcome, measured) = last.expect("one pass ran");
+    let (mut outcome, mut measured) = last.expect("one pass ran");
+    if rules.damage.run && measured.damage_status == ovd_core::measured::DamageStatus::NotRun {
+        // The settled pass again, with damage.
+        let (o, mut m) = simulate_params_measured(&last_params, rules);
+        if let Outcome::Result(v) = &o
+            && v.get("error").is_none()
+        {
+            m.gross_tonnage = gross_tonnage_of(option, &m);
+        }
+        (outcome, measured) = (o, m);
+    }
     (outcome, measured, settled)
 }
 

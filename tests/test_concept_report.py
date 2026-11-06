@@ -198,7 +198,7 @@ READ_BY = {
     "air_drafts": [],   # unhashed (#888): the app and the side elevation read it; no chapter yet
     "stern_arrangement": [],   # the Stern & crew view reads it (#887); no chapter does yet
     "damage_status": ["a11"],   # whether damage ran (#923): A.11 gives it as its reason; the summary states it too
-    "damage_cases": [],   # the case count (#923): the summary and A.11 print it beside the status; no chapter needs it
+    # `damage_cases` (#923) is in a run only when damage ran or was skipped; the stored example has neither
 }
 GA = {"ga-side": "side.png", "ga-mid": "mid.png"}   # so A.4 is built, and its deletion shows
 
@@ -531,7 +531,7 @@ def test_the_summary_and_a11_say_whether_damage_ran():
     cases it skipped. Nothing in the report says the damage Rules were met when the run did not run them.
     """
     said = {}
-    for status, cases in (("run", 40), ("not run", 40), ("not applicable", None)):
+    for status, cases in (("run", 40), ("not run", 40), ("not applicable", None), ("not evaluated", None)):
         run, o = _with_damage(status, cases, rows_not_run=status == "not run")
         doc = cr.build(run, "A basis", assets=GA)
         said[status] = _summary_text(doc)
@@ -546,5 +546,7 @@ def test_the_summary_and_a11_say_whether_damage_ran():
             assert "was not run" not in said[status]
     assert "Damage stability was run (40 cases)." in said["run"]
     assert "not applicable" in said["not applicable"]
+    # A damage Rule the engine does not evaluate is not "no damage Rule applies" (issue #923).
+    assert "not evaluated" in said["not evaluated"] and "applies" not in said["not evaluated"]
     # A run that does not say whether damage ran is not read as run.
     assert "Damage stability: not evaluated" in _summary_text(cr.build(_run_without("damage_status"), "A basis", assets=GA))

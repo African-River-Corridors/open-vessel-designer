@@ -148,9 +148,9 @@ export function governingCase(set: DamageSet, condition: string, trace: TraceLik
   return mine.find((c) => !passes(set, c, trace)) ?? null;
 }
 
-/** The damage Rules the run did not evaluate, or that do not apply, with the reason in the engine's words. */
-export function damageNotes(trace: TraceLike | null | undefined): { rule: string; title: string; outcome: "not evaluated" | "not applicable"; sets: string[]; gap: string | null }[] {
+/** The damage Rules the run did not evaluate, did not run (issue #923), or that do not apply, with the reason in the engine's words. */
+export function damageNotes(trace: TraceLike | null | undefined): { rule: string; title: string; outcome: "not evaluated" | "not run" | "not applicable"; sets: string[]; gap: string | null }[] {
   return (trace?.rows ?? [])
-    .filter((r) => (isDamageRule(r.rule) || /damage/.test(r.rule ?? "")) && (r.outcome === "not evaluated" || r.outcome === "not applicable"))
-    .map((r) => ({ rule: r.rule ?? "", title: r.title, outcome: r.outcome as "not evaluated" | "not applicable", sets: r.rule_sets, gap: r.gap }));
+    .filter((r) => (isDamageRule(r.rule) || /damage/.test(r.rule ?? "")) && (r.outcome === "not evaluated" || r.outcome === "not run" || r.outcome === "not applicable"))
+    .map((r) => ({ rule: r.rule ?? "", title: r.title, outcome: r.outcome as "not evaluated" | "not run" | "not applicable", sets: r.rule_sets, gap: r.gap }));
 }

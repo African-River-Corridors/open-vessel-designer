@@ -109,9 +109,12 @@ pub struct Measured {
 /// Issue #923: whether the run worked out damage stability (`damage_status` in the results).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum DamageStatus {
-    /// The hull has no damage Rule Set in the run's stack: nothing to run.
+    /// The hull has no damage Rule in the run's stack: nothing to run.
     #[default]
     NotApplicable,
+    /// The stack holds a damage Rule for this hull, but the Rule Set version does not evaluate it (an engine
+    /// gap, not a choice): the damage Rule reads `not evaluated`.
+    NotEvaluated,
     /// Damage stability was worked out.
     Run,
     /// The run was told to skip it (`--no-damage`).
@@ -123,6 +126,7 @@ impl DamageStatus {
     pub const fn key(self) -> &'static str {
         match self {
             DamageStatus::NotApplicable => "not applicable",
+            DamageStatus::NotEvaluated => "not evaluated",
             DamageStatus::Run => "run",
             DamageStatus::NotRun => "not run",
         }

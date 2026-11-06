@@ -5711,8 +5711,7 @@
             }
           ]
         },
-        "damage_status": "not applicable",
-        "damage_cases": 0,
+        "damage_status": "not evaluated",
         "boil_off": {
           "evaluated": true,
           "heat_leak_kw": 106.17163985353027,
@@ -17533,8 +17532,7 @@
             }
           ]
         },
-        "damage_status": "not applicable",
-        "damage_cases": 0,
+        "damage_status": "not evaluated",
         "boil_off": {
           "evaluated": true,
           "heat_leak_kw": 106.9367668960662,
@@ -29377,8 +29375,7 @@
             }
           ]
         },
-        "damage_status": "not applicable",
-        "damage_cases": 0,
+        "damage_status": "not evaluated",
         "boil_off": {
           "evaluated": true,
           "heat_leak_kw": 108.57377192062634,

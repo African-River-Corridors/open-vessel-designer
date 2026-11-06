@@ -608,7 +608,10 @@ def damage_line(o):
     if status == "run":
         return "Damage stability was run" + (f" ({cases:,} cases)." if isinstance(cases, int) else ".")
     if status == "not applicable":
-        return "Damage stability: not applicable. No damage Rule Set applies to this hull in this run."
+        return "Damage stability: not applicable. No damage Rule applies to this hull in this run."
+    if status == "not evaluated":
+        return ("Damage stability: not evaluated. The Rule Sets of this run hold a damage Rule that the engine does "
+                "not evaluate in that version, so the trace verdict does not cover damage stability.")
     return f"Damage stability: {NOT_EVALUATED}. The run does not say whether damage stability ran."
 
 

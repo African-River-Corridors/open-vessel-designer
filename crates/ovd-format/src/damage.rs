@@ -710,9 +710,9 @@ pub struct DamageProgress {
 
 /// The progress hook. It is called on the thread that called the run, never on a worker thread (a Python
 /// callback, and the Ctrl-C of the Python main thread, need that): first with `done` 0, then whenever the count
-/// of finished cases changes, at most about every 5 ms, and last when the run ends. A run may repeat its
-/// passes (the default propeller sized to the light draught, the rooms of a deckhouse stern): each pass
-/// counts from `done` 0 again, with the same `total`. It returns
+/// of finished cases changes, at most about every 5 ms, and last when the run ends. Damage runs in one pass
+/// only: the passes that size the default propeller or settle the rooms of a deckhouse stern skip it (it feeds
+/// neither), so the count never falls. It returns
 /// [`ControlFlow::Break`] to cancel: no new case starts, the cases under way finish, and the run stops with
 /// [`DAMAGE_CANCELLED`]. Not `Send`: it stays on the calling thread.
 pub type ProgressHook = std::rc::Rc<dyn Fn(DamageProgress) -> ControlFlow<()>>;
@@ -761,6 +761,18 @@ impl Gauge {
 
     pub(crate) fn is_cancelled(&self) -> bool {
         self.cancelled.load(core::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// [`Gauge::report`] for the thread that waits on workers: if the hook panics, the cancel flag is set before
+    /// the panic goes on, so the workers stop at their next case and do not run every case that is left.
+    #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
+    pub(crate) fn report_guarded(&self) {
+        if let Err(panic) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| self.report()))
+        {
+            self.cancelled
+                .store(true, core::sync::atomic::Ordering::Relaxed);
+            std::panic::resume_unwind(panic);
+        }
     }
 
     /// Call the hook with the count now; a Break sets the cancel flag. Calling thread only. After a cancel the
@@ -826,16 +838,16 @@ where
                 .collect();
             // This thread polls the counter while the workers run, and calls the hook (issue #923).
             if gauge.has_hook() {
-                let mut last = usize::MAX;
+                let mut last = gauge.done();
                 while !handles.iter().all(|h| h.is_finished()) {
                     if gauge.done() != last {
                         last = gauge.done();
-                        gauge.report();
+                        gauge.report_guarded();
                     }
                     std::thread::sleep(std::time::Duration::from_millis(5));
                 }
                 if gauge.done() != last {
-                    gauge.report();
+                    gauge.report_guarded();
                 }
             }
             for h in handles {
@@ -869,4 +881,34 @@ where
         }
     }
     Ok(out)
+}
+
+#[cfg(all(test, feature = "parallel", not(target_arch = "wasm32")))]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    /// Issue #923: a hook that panics stops the workers at their next case; they do not run every case left.
+    #[test]
+    fn a_panicking_hook_stops_the_workers() {
+        let ran = AtomicUsize::new(0);
+        let items: Vec<usize> = (0..400).collect();
+        let hook: ProgressHook = std::rc::Rc::new(|p| {
+            if p.done >= 2 {
+                panic!("hook failed");
+            }
+            ControlFlow::Continue(())
+        });
+        let gauge = Gauge::new(Some(hook), items.len());
+        let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            run_ordered(&items, 4, &gauge, |_| {
+                ran.fetch_add(1, Ordering::Relaxed);
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            })
+        }));
+        assert!(caught.is_err(), "the panic did not reach the caller");
+        assert!(gauge.is_cancelled());
+        let n = ran.load(Ordering::Relaxed);
+        assert!(n < 100, "{n} of 400 cases ran after the hook panicked");
+    }
 }

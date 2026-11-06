@@ -179,3 +179,28 @@ fn a_hull_with_no_damage_rule_set_is_not_applicable_whether_or_not_damage_is_ski
         other => panic!("{other:?}"),
     }
 }
+
+#[test]
+fn a_damage_rule_the_stack_does_not_evaluate_is_not_evaluated_not_not_applicable() {
+    // The stored stack of the worked example holds an IGC version whose damage Rule is a gap.
+    let checked = check(EXAMPLE, &Profile::built_in());
+    let option = &checked.design.unwrap().options[0];
+    for control in [DamageControl::default(), skip()] {
+        let r =
+            match run_option_with_damage(option, ovd_format::rule_set::built_in(), &[], &control) {
+                RunOutcome::Results { results, .. } => results,
+                other => panic!("{other:?}"),
+            };
+        assert_eq!(r["damage_status"], "not evaluated");
+        assert!(r.get("damage_cases").is_none());
+        let rows: Vec<&Value> = r["rule_trace"]["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| row["rule"] == "igc/2.7/damage-survival")
+            .collect();
+        assert!(rows.iter().all(|row| row["outcome"] == "not evaluated"));
+        let lines = ovd_format::summary_lines("Option 1", &r).join("\n");
+        assert!(lines.contains("Damage stability: not evaluated"), "{lines}");
+    }
+}

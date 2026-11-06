@@ -105,6 +105,11 @@ test("damageNotes lists the damage Rules not evaluated or not applicable, with t
   assert.deepEqual(damageNotes(null), []);
 });
 
+test("damageNotes lists a damage Rule that was not run, with the engine's reason (issue #923)", () => {
+  const trace = { rows: [row(null, "not run", { gap: "damage stability was not run: the run skipped it" })] };
+  assert.deepEqual(damageNotes(trace).map((n) => [n.outcome, n.gap]), [["not run", "damage stability was not run: the run skipped it"]]);
+});
+
 test("two cases with one name take their own trace rows, in order", () => {
   const twin = [c("A", "bottom", true), c("A", "bottom", false)];
   const trace = { rows: [row("A: bottom", "pass"), row("A: bottom", "fail")] };
