@@ -1745,32 +1745,67 @@ fn simulate_once_inner(
                     || marpol
                     || es_trin_set.is_some_and(|_| hull.spec.loa > 110.0)
                     || normam_set.is_some();
+                // The permeability tables of the ES-TRIN and NORMAM damage (a stage whose table cannot be read gives nothing).
+                let es_trin_rule = es_trin_set
+                    .filter(|_| hull.spec.loa > 110.0)
+                    .and_then(|set| {
+                        let t = crate::damage::permeability_table(set, "es-trin-permeability");
+                        t.ok().map(|t| (set, t))
+                    });
+                let normam_rule = normam_set.and_then(|set| {
+                    let t = crate::damage::permeability_table(set, "normam-permeability");
+                    t.ok().map(|t| (set, t))
+                });
                 if applies {
                     measured.damage_status = if rules.damage.run {
                         ovd_core::measured::DamageStatus::Run
                     } else {
                         ovd_core::measured::DamageStatus::NotRun
                     };
+                    // Issue #961: the cases a full run works out, given when the run skips them too.
+                    let tables: Vec<_> = es_trin_rule
+                        .iter()
+                        .map(|(_, t)| (crate::liquid::LiquidRule::EsTrin, t))
+                        .chain(
+                            normam_rule
+                                .iter()
+                                .map(|(_, t)| (crate::liquid::LiquidRule::Normam, t)),
+                        )
+                        .collect();
+                    measured.damage_cases = Some(crate::liquid::case_count(
+                        &hull, liquid, cargo_key, rho, &conds, marpol, &tables,
+                    ));
                 }
                 if rules.damage.run {
-                    (measured.damage, measured.marpol_damage) = crate::liquid::damage_verdicts(
-                        &hull, liquid, cargo_key, rho, &conds, marpol,
+                    let cancelled = |_| {
+                        Stop::Raised(
+                            "Cancelled".to_string(),
+                            crate::damage::DAMAGE_CANCELLED.to_string(),
+                        )
+                    };
+                    let gauge = crate::damage::Gauge::new(
+                        rules.damage.progress.clone(),
+                        measured.damage_cases.unwrap_or(0),
                     );
+                    gauge.report();
+                    (measured.damage, measured.marpol_damage) = crate::liquid::damage_verdicts(
+                        &hull, liquid, cargo_key, rho, &conds, marpol, &gauge,
+                    )
+                    .map_err(cancelled)?;
                     // Issue #763: the damage of ES-TRIN 28.03 (a craft over 110 m) and of NORMAM 5.23.8, when the
                     // stack holds a Rule set that evaluates it. Unhashed, in `damage_by_rule`.
                     let mut by_rule = serde_json::Map::new();
-                    if let Some(set) = es_trin_set.filter(|_| hull.spec.loa > 110.0)
-                        && let Ok(table) =
-                            crate::damage::permeability_table(set, "es-trin-permeability")
-                    {
+                    if let Some((set, table)) = &es_trin_rule {
                         measured.es_trin_damage = crate::liquid::liquid_rule_damage(
                             crate::liquid::LiquidRule::EsTrin,
                             &hull,
                             liquid,
                             rho,
                             &conds,
-                            &table,
-                        );
+                            table,
+                            &gauge,
+                        )
+                        .map_err(cancelled)?;
                         by_rule.insert(
                             set.id.clone(),
                             crate::liquid::rule_damage_json(
@@ -1780,18 +1815,17 @@ fn simulate_once_inner(
                             ),
                         );
                     }
-                    if let Some(set) = normam_set
-                        && let Ok(table) =
-                            crate::damage::permeability_table(set, "normam-permeability")
-                    {
+                    if let Some((set, table)) = &normam_rule {
                         measured.normam_damage = crate::liquid::liquid_rule_damage(
                             crate::liquid::LiquidRule::Normam,
                             &hull,
                             liquid,
                             rho,
                             &conds,
-                            &table,
-                        );
+                            table,
+                            &gauge,
+                        )
+                        .map_err(cancelled)?;
                         by_rule.insert(
                             set.id.clone(),
                             crate::liquid::rule_damage_json(

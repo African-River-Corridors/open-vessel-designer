@@ -655,7 +655,7 @@ pub fn set_damage_workers(n: usize) {
 }
 
 /// The worker count for `cases` cases: at least 1, at most one per case.
-fn damage_workers(cases: usize) -> usize {
+pub(crate) fn damage_workers(cases: usize) -> usize {
     #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
     {
         let set = DAMAGE_WORKERS.load(core::sync::atomic::Ordering::Relaxed);
@@ -799,7 +799,7 @@ impl Gauge {
 /// item, so the order of the results does not depend on which worker ran which item. This is the one place a
 /// per-case progress call or a cancel check belongs (issue #923): after `f` returns, or before a worker takes
 /// its next item.
-fn run_ordered<T, R, F>(
+pub(crate) fn run_ordered<T, R, F>(
     items: &[T],
     workers: usize,
     gauge: &Gauge,
@@ -910,5 +910,35 @@ mod tests {
         assert!(gauge.is_cancelled());
         let n = ran.load(Ordering::Relaxed);
         assert!(n < 100, "{n} of 400 cases ran after the hook panicked");
+    }
+
+    /// Issue #961: a cancel stops the workers at their next case. The result is `Cancelled` either way (the flag is
+    /// read after the scope), so the count of cases started is what shows the early stop.
+    #[test]
+    fn a_cancel_stops_the_workers_early() {
+        let started = AtomicUsize::new(0);
+        let items: Vec<usize> = (0..200).collect();
+        let at_break = std::rc::Rc::new(std::cell::Cell::new(None));
+        let seen = at_break.clone();
+        let hook: ProgressHook = std::rc::Rc::new(move |p| {
+            if p.done >= 1 {
+                seen.set(Some(seen.get().unwrap_or(p.done)));
+                return ControlFlow::Break(());
+            }
+            ControlFlow::Continue(())
+        });
+        let gauge = Gauge::new(Some(hook), items.len());
+        let out = run_ordered(&items, 4, &gauge, |_| {
+            started.fetch_add(1, Ordering::Relaxed);
+            std::thread::sleep(std::time::Duration::from_millis(2));
+        });
+        assert!(out.is_err());
+        let (n, done) = (started.load(Ordering::Relaxed), at_break.get().unwrap());
+        // Cases under way finish (one per worker), and the poll is up to 5 ms apart: about 10 more starts.
+        assert!(
+            n <= done + 4 + 20,
+            "{n} cases started; {done} were done at the break"
+        );
+        assert!(n < 50, "{n} of 200 cases started after the cancel");
     }
 }

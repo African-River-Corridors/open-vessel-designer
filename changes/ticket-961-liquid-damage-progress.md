@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Liquid hulls count, report and cancel damage like gas hulls, issue #961. The ADN, MARPOL, ES-TRIN and NORMAM damage cases of a liquid bulk hull now run through the same ordered runner as the gas cases: they spread over worker threads, the progress hook counts them on the calling thread, and a cancel ends the run with the same "cancelled" error and no results. `damage_cases` is given for a liquid hull whether damage runs or not, and a skipped run gives the count a full run works out. No result moves when damage runs.

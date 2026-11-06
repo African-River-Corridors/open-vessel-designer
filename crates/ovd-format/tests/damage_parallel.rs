@@ -35,6 +35,24 @@ fn results_of(service_area: &str) -> Value {
     }
 }
 
+/// Issue #961: a liquid bulk hull of the crude integral-tank fixtures (ADN, and MARPOL under the coastal one),
+/// run as it is stored.
+fn liquid_results_of(name: &str) -> Value {
+    let path = format!(
+        "{}/tests/fixtures/{name}.vdesign",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    let checked = ovd_format::check(
+        &std::fs::read_to_string(path).unwrap(),
+        &Profile::built_in(),
+    );
+    assert_eq!(checked.report.errors, Vec::<String>::new());
+    match run_option(&checked.design.unwrap().options[0]) {
+        RunOutcome::Results { results, .. } => results,
+        other => panic!("{other:?}"),
+    }
+}
+
 /// The damage cases a results file holds: the IGC block, or the cases of every rule in `damage_by_rule`.
 fn damage_case_count(results: &Value) -> usize {
     let own = results["damage"]["cases"].as_array().map_or(0, Vec::len);
@@ -65,6 +83,27 @@ fn serial_and_parallel_damage_results_are_byte_equal() {
                 serde_json::to_string(&serial).unwrap(),
                 serde_json::to_string(&parallel).unwrap(),
                 "{area}, round {round}: the parallel results differ from the serial ones"
+            );
+        }
+    }
+    // Liquid hulls (issue #961): the ADN and MARPOL cases go through the same runner. The knob is process-wide,
+    // so this stays in the one test.
+    for name in [
+        "crude_integral_tanks_pushed",
+        "crude_integral_tanks_coastal",
+    ] {
+        for round in 1..=3 {
+            set_damage_workers(1);
+            let serial = liquid_results_of(name);
+            set_damage_workers(4);
+            let parallel = liquid_results_of(name);
+            let cases = serial["damage"].as_array().map_or(0, Vec::len)
+                + serial["marpol_damage"].as_array().map_or(0, Vec::len);
+            assert!(cases > 4, "{name}: only {cases} liquid damage cases");
+            assert_eq!(
+                serde_json::to_string(&serial).unwrap(),
+                serde_json::to_string(&parallel).unwrap(),
+                "{name}, round {round}: the parallel results differ from the serial ones"
             );
         }
     }
