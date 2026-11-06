@@ -40,6 +40,7 @@ PAGES = {
     "README.md": "index.md",
     "ROADMAP.md": "roadmap.md",
     "GLOSSARY.md": "glossary.md",
+    "docs/python-api.md": "python-api.md",
     "CONTRIBUTING.md": "contributing.md",
     "CODE_OF_CONDUCT.md": "code-of-conduct.md",
     "SECURITY.md": "security.md",

@@ -14,6 +14,7 @@ Option with 0 errors to `simulate` (the Rust-backed package). None may raise, re
 Risk stopped: an input combination the core refuses with an exception, or turns into a confident
 wrong number (a 1 m beam gave negative cargo and draught), gets past validation.
 """
+import collections
 import concurrent.futures
 import json
 import math
@@ -32,6 +33,21 @@ from ovd.simulate import simulate
 ROOT = Path(__file__).resolve().parents[1]
 SEED = 24
 OPTIONS = 3000
+# The sweep's valid Options that the run refuses, by reason. The file check accepts them; the run refuses
+# them with a reason, as `ovd run` does (the test checks that parity). The cause is the Defaults Profile
+# filling the inputs the old dict left to the engine, on the corner hulls of the sweep (a hull a few
+# metres long or 100 m deep): the profile's transom stern does not fit it, or the hull sections give no
+# volume, a block coefficient outside 0.3 to 1.0, or no flat bottom for the tunnels (issue #975). A new
+# reason fails the test. On seed 24 (issue #937): 882 valid Options, 100 refused: 89 stern run, 6 no
+# immersed volume, 4 block coefficient, 1 tunnels. The counts are not pinned, so a change that moves
+# them does not need a re-pin; the floor keeps the sweep from passing on a handful of Options.
+MIN_VALID_OPTIONS = 200
+EXPECTED_REFUSAL_REASONS = {
+    "the stern run of N m does not fit the hull",
+    "the hull has no immersed volume or waterplane at this draught",
+    "block_coefficient outside 0.3-1.0",
+    "section 13 has no flat bottom on the base line for the tunnels",
+}
 
 # Glossary input name -> `simulate` key. A small test helper only; the full mapping belongs
 # to the engine tickets (#23, #25).
@@ -80,13 +96,19 @@ NUMBERS = [n for n in list(TOP_LEVEL) + list(CHANNEL)
 
 
 def to_simulate(inputs: dict) -> dict:
-    """An Option's inputs (glossary names) as the `simulate` parameters."""
-    p = {"vessel": VESSEL[inputs["cargo_containment"]],
-         "self_propelled": inputs["formation"]["kind"] == "self_propelled"}
-    for name, key in TOP_LEVEL.items():
-        if name in inputs:
-            p[key] = inputs[name]
-    p["channel"] = {key: inputs[name] for name, key in CHANNEL.items()}
+    """An Option's inputs (glossary names) as the `simulate` parameters.
+
+    Issue #937: `simulate` takes the glossary names as they are, and refuses an input that does not
+    apply, so only the inputs the Option uses are sent: the channel inputs when the channel has a depth,
+    and the rest by the Cargo Containment (`ONLY_FOR`)."""
+    p = {name: value for name, value in inputs.items() if name != "ruleset"}
+    # `propulsive_efficiency` is used only when no propulsor decides it: the Defaults Profile gives a
+    # self-propelled vessel a propulsor, so it is sent for the other Formations.
+    if inputs["formation"]["kind"] == "self_propelled":
+        p.pop("propulsive_efficiency", None)
+    if p.get("channel_depth_m") is None:
+        for name in CHANNEL:
+            p.pop(name, None)
     return p
 
 
@@ -229,7 +251,11 @@ def check_option(o: dict) -> tuple[str, str]:
     inputs = {k: v["value"] for k, v in o["inputs"].items()}
     try:
         result = simulate(to_simulate(inputs))
-    except Exception as exc:  # noqa: BLE001 - any exception breaks the rule
+    except ValueError as exc:
+        # Issue #937: the run of the Option may refuse a hull the file check accepts; the test below
+        # allows one reason only and checks `ovd run` refuses the same Option the same way.
+        return "refused", f"{o['name']}\t{exc}"
+    except Exception as exc:  # noqa: BLE001 - any other exception breaks the rule
         return "raised", f"{o['name']}: {type(exc).__name__}: {exc}\n  {json.dumps(inputs)}"
     found = impossible(result)
     if found:
@@ -240,12 +266,14 @@ def check_option(o: dict) -> tuple[str, str]:
 def test_the_impossible_result_check_catches_an_error_value_and_a_negative():
     """The sweep's own check can fail: an error value and the 1 m beam's negatives are caught."""
     assert impossible({"error": "Bauxite cannot be carried in a gas barge."})
-    one_metre = simulate(to_simulate({
-        "cargo": "bauxite", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
-        "cargo_containment": "box_hold", "service_area": "river-only",
-        "length_overall_m": 76.5, "beam_m": 1.0,
-        "moulded_depth_m": 3.5, "channel_bottom_width_m": None, **{k: v for k, v in TYPICAL.items()
-                                   if ONLY_FOR.get(k, "box_hold") == "box_hold"}}))
+    # Issue #937: `simulate` builds the Option as `ovd fill` does, so a 1 m beam (a negative hold) is a
+    # fill error, not a result; the check is shown on the result the old engine gave for it.
+    one_metre = {"results": {"cargo_t": -5.0}, "geometry": {"hold_top_width_m": -1.0}}
+    with pytest.raises(TypeError, match="negative hold"):
+        simulate(to_simulate({
+            "cargo": "bauxite", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
+            "cargo_containment": "box_hold", "service_area": "river-only",
+            "length_overall_m": 76.5, "beam_m": 1.0, "moulded_depth_m": 3.5}))
     found = impossible(one_metre)
     assert any(f.startswith("cargo_t = -") for f in found), found
     # Issue #448: the draught comes from the hull's sections, so a negative displacement floats at
@@ -272,7 +300,7 @@ def test_every_option_validate_passes_runs_in_simulate(ovd, tmp_path):
     assert len(passed) >= 200, f"only {len(passed)} Options passed validation"
     assert len(refused) >= 200, f"only {len(refused)} Options were refused"
 
-    raised, wrong = [], []
+    raised, wrong, refused_by_run = [], [], []
     # Each Option is its own `simulate` call, so they run in parallel processes, in order (issue #852).
     with concurrent.futures.ProcessPoolExecutor(
             max_workers=os.cpu_count() or 2, mp_context=multiprocessing.get_context("spawn")) as pool:
@@ -281,8 +309,31 @@ def test_every_option_validate_passes_runs_in_simulate(ovd, tmp_path):
                 raised.append(message)
             elif kind == "wrong":
                 wrong.append(message)
+            elif kind == "refused":
+                refused_by_run.append(message)
     assert not raised, f"{len(raised)} valid Option(s) made simulate raise:\n" + "\n".join(
         raised[:10])
+    # Only the reasons listed above (see EXPECTED_REFUSAL_REASONS).
+    reasons = collections.Counter(
+        re.sub(r"[0-9][0-9.e+-]* m\b", "N m", m.split("\t", 1)[1]) for m in refused_by_run)
+    assert len(passed) >= MIN_VALID_OPTIONS, f"only {len(passed)} valid Options"
+    assert set(reasons) <= EXPECTED_REFUSAL_REASONS, (
+        f"refused by the run for a reason not listed: {set(reasons) - EXPECTED_REFUSAL_REASONS}\n"
+        + "\n".join(refused_by_run[:10]))
+    refused_names = {m.split("\t", 1)[0]: m.split("\t", 1)[1] for m in refused_by_run}
+    by_name = {o["name"]: o for o in passed}
+    parity = {"format": "vdesign", "format_version": 4, "engine_version": "0.3.0", "units": "SI",
+              "options": [{"name": n, "inputs": {k: {"value": v, "source": "typed"}
+                           for k, v in to_simulate({k: i["value"] for k, i in by_name[n]["inputs"].items()}).items()}}
+                          for n in refused_names]}
+    src, filled = tmp_path / "refused.vdesign", tmp_path / "refused-filled.vdesign"
+    src.write_text(json.dumps(parity), encoding="utf-8")
+    subprocess.run([ovd, "fill", "--as-new", str(src), str(filled)], check=True, capture_output=True)
+    run = json.loads(subprocess.run([ovd, "run", "--json", "--no-damage", str(filled)],
+                                    capture_output=True, text=True).stdout)
+    # `ovd run` on the same design refuses each one with the same words (it names the class).
+    assert {o["name"]: o["message"] for o in run["options"] if o["status"] == "failed"} == {
+        n: f"ValueError: {m}" for n, m in refused_names.items()}
     assert not wrong, (f"{len(wrong)} valid Option(s) gave an error value or an impossible "
                        "result:\n" + "\n".join(wrong[:10]))
     # Every just-inside hard edge of every number appears in at least one valid Option.

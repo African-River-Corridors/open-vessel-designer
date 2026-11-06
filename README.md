@@ -108,6 +108,8 @@ npx tauri build     # make the installer (target/release/bundle)
 
 ## Worked example
 
+To run one Option from a Python dict, the way the app and `ovd run` do, see the [Python API](docs/python-api.md).
+
 Size a liquefied-propane barge on a standard Chinese Class II hull (`examples/quickstart.py`):
 
 ```python
