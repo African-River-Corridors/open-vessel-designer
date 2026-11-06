@@ -497,6 +497,11 @@ OPENINGS_BASES = [
                   "Strict reading (issue #913): the wheelhouse is a control station (IGC 1.2.17), so no wheelhouse door "
                   "may face the cargo area, gas-tight or not.", 140.0,
                   door("wheelhouse door", 0.0, space="wheelhouse", face="front", gas_tight=True)),
+    openings_base("openings_wheelhouse_window_front", "Openable wheelhouse window on the deckhouse front, not designed gas-tight",
+                  "3.2.4.2: a wheelhouse window facing the cargo area may open only if the wheelhouse can be made gas-tight "
+                  "rapidly; one not designed so is held to the limit, and at the front it is at distance 0.",
+                  140.0, door("wheelhouse window", 0.0, space="wheelhouse", face="front", kind="window",
+                              openable=True, gas_tight=False)),
     openings_base("openings_window_openable_front", "Openable accommodation window on the deckhouse front",
                   "3.2.4.2: a window facing the cargo area is fixed.",
                   140.0, door("window", 0.0, face="front", kind="window", openable=True)),

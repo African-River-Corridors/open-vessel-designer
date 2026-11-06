@@ -24,7 +24,8 @@ expected:
     limit: true
   igc/3.2.4.2/wheelhouse-gas-tight:
     rule: IGC 3.2.4.2
-    what: wheelhouse side door or window not designed gas-tight, from the deckhouse front
+    what: wheelhouse door or window within the limits that is not designed gas-tight, from the deckhouse
+      front
     unit: m
     verdict: pass
     value: 3.0
