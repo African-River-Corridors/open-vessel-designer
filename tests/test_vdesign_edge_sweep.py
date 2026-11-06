@@ -14,6 +14,7 @@ Option with 0 errors to `simulate` (the Rust-backed package). None may raise, re
 Risk stopped: an input combination the core refuses with an exception, or turns into a confident
 wrong number (a 1 m beam gave negative cargo and draught), gets past validation.
 """
+import collections
 import concurrent.futures
 import json
 import math
@@ -32,6 +33,19 @@ from ovd.simulate import simulate
 ROOT = Path(__file__).resolve().parents[1]
 SEED = 24
 OPTIONS = 3000
+# The sweep's valid Options that the run refuses (seed 24), by reason, with the number of each. The file
+# check accepts them; the run refuses them with a reason, as `ovd run` does (the test checks that). The
+# cause of all of them is the Defaults Profile filling the inputs the old dict left to the engine, on the
+# corner hulls of the sweep (a hull a few metres long or 100 m deep): the profile's transom stern does not
+# fit it (89), and the hull sections give no volume, a block coefficient outside 0.3 to 1.0, or no flat
+# bottom for the tunnels. A new reason or a different count fails, so a change shows up in this diff.
+EXPECTED_PASSED = 882
+EXPECTED_REFUSALS = {
+    "the stern run of N m does not fit the hull": 89,
+    "the hull has no immersed volume or waterplane at this draught": 6,
+    "block_coefficient outside 0.3-1.0": 4,
+    "section 13 has no flat bottom on the base line for the tunnels": 1,
+}
 
 # Glossary input name -> `simulate` key. A small test helper only; the full mapping belongs
 # to the engine tickets (#23, #25).
@@ -235,10 +249,9 @@ def check_option(o: dict) -> tuple[str, str]:
     try:
         result = simulate(to_simulate(inputs))
     except ValueError as exc:
-        # Issue #937: the run of the Option may refuse a hull the file check accepts (a 1 m hull 100 m
-        # deep, whose Defaults Profile stern does not fit): `ovd run` fails on it the same way. It is a
-        # refusal with a reason, not a crash; the test bounds how many there are.
-        return "refused", f"{o['name']}: {exc}"
+        # Issue #937: the run of the Option may refuse a hull the file check accepts; the test below
+        # allows one reason only and checks `ovd run` refuses the same Option the same way.
+        return "refused", f"{o['name']}\t{exc}"
     except Exception as exc:  # noqa: BLE001 - any other exception breaks the rule
         return "raised", f"{o['name']}: {type(exc).__name__}: {exc}\n  {json.dumps(inputs)}"
     found = impossible(result)
@@ -297,11 +310,26 @@ def test_every_option_validate_passes_runs_in_simulate(ovd, tmp_path):
                 refused_by_run.append(message)
     assert not raised, f"{len(raised)} valid Option(s) made simulate raise:\n" + "\n".join(
         raised[:10])
-    # Each reason is a ValueError the run gives with its own words ("the stern run does not fit the hull":
-    # the Defaults Profile's transom stern on a hull a few metres long or 100 m deep). 100 of 882 on seed 24.
-    assert len(refused_by_run) <= len(passed) // 4, (
-        f"{len(refused_by_run)} of {len(passed)} valid Options were refused by the run:\n"
+    # Only the reasons pinned above, each with its count (see EXPECTED_REFUSALS).
+    reasons = collections.Counter(
+        re.sub(r"[0-9][0-9.e+-]* m\b", "N m", m.split("\t", 1)[1]) for m in refused_by_run)
+    assert len(passed) == EXPECTED_PASSED and dict(reasons) == EXPECTED_REFUSALS, (
+        f"{len(passed)} valid Options; refused by the run: {dict(reasons)}\n"
         + "\n".join(refused_by_run[:10]))
+    refused_names = {m.split("\t", 1)[0]: m.split("\t", 1)[1] for m in refused_by_run}
+    by_name = {o["name"]: o for o in passed}
+    parity = {"format": "vdesign", "format_version": 4, "engine_version": "0.3.0", "units": "SI",
+              "options": [{"name": n, "inputs": {k: {"value": v, "source": "typed"}
+                           for k, v in to_simulate({k: i["value"] for k, i in by_name[n]["inputs"].items()}).items()}}
+                          for n in refused_names]}
+    src, filled = tmp_path / "refused.vdesign", tmp_path / "refused-filled.vdesign"
+    src.write_text(json.dumps(parity), encoding="utf-8")
+    subprocess.run([ovd, "fill", "--as-new", str(src), str(filled)], check=True, capture_output=True)
+    run = json.loads(subprocess.run([ovd, "run", "--json", "--no-damage", str(filled)],
+                                    capture_output=True, text=True).stdout)
+    # `ovd run` on the same design refuses each one with the same words (it names the class).
+    assert {o["name"]: o["message"] for o in run["options"] if o["status"] == "failed"} == {
+        n: f"ValueError: {m}" for n, m in refused_names.items()}
     assert not wrong, (f"{len(wrong)} valid Option(s) gave an error value or an impossible "
                        "result:\n" + "\n".join(wrong[:10]))
     # Every just-inside hard edge of every number appears in at least one valid Option.
