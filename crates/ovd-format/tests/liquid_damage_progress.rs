@@ -8,22 +8,63 @@
 //! and no results. The worker count is a process-wide knob, so this file holds one test that sets it.
 
 use ovd_format::damage::{ControlFlow, DamageControl, DamageProgress, set_damage_workers};
+use ovd_format::rule_set::Library;
 use ovd_format::{Profile, RunOutcome, check, run_option_with_damage};
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-const FIXTURES: [&str; 2] = [
+const FIXTURES: [&str; 3] = [
     "crude_integral_tanks_pushed",
     "crude_integral_tanks_coastal",
+    LONG,
 ];
 
-fn run(name: &str, control: &DamageControl) -> RunOutcome {
+/// The self-propelled crude barge at 120 m with ADN, ES-TRIN and NORMAM in the stack (as `damage_phase_2.rs`).
+const LONG: &str = "long-es-trin-normam";
+
+fn long_file() -> String {
     let path = format!(
-        "{}/tests/fixtures/{name}.vdesign",
+        "{}/tests/fixtures/crude_integral_tanks_self_propelled.vdesign",
         env!("CARGO_MANIFEST_DIR")
     );
-    let text = std::fs::read_to_string(&path).unwrap();
+    let mut file: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let lib = Library::built_in();
+    let stack: Vec<Value> = [
+        ("is2008-a", "2.0.0"),
+        ("es-trin-2025", "2.0.0"),
+        ("adn-tank", "2.0.0"),
+        ("normam-202", "2.0.0"),
+        ("ovd", "3.1.0"),
+    ]
+    .iter()
+    .map(|(id, v)| {
+        let set = lib.find(id, v).unwrap();
+        json!({"id": id, "version": v, "hash": set.hash, "source": "typed"})
+    })
+    .collect();
+    let inputs = file["options"][0]["inputs"].as_object_mut().unwrap();
+    inputs.insert(
+        "rule_sets".into(),
+        json!({ "value": stack, "source": "typed" }),
+    );
+    inputs.insert(
+        "length_overall_m".into(),
+        json!({ "value": 120.0, "source": "typed" }),
+    );
+    file.to_string()
+}
+
+fn run(name: &str, control: &DamageControl) -> RunOutcome {
+    let text = if name == LONG {
+        long_file()
+    } else {
+        let path = format!(
+            "{}/tests/fixtures/{name}.vdesign",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        std::fs::read_to_string(&path).unwrap()
+    };
     let checked = check(&text, &Profile::built_in());
     assert_eq!(checked.report.errors, Vec::<String>::new());
     run_option_with_damage(
@@ -85,6 +126,15 @@ fn liquid_cases_count_report_progress_and_cancel() {
             let plain = results_of(run(name, &DamageControl::default()));
             let total = cases_worked_out(&plain);
             assert!(total > 4, "{ctx}: only {total} cases");
+            if name == LONG {
+                // The count includes the ES-TRIN and NORMAM cases, not only ADN and MARPOL.
+                for rule in ["es-trin-2025", "normam-202"] {
+                    let n = plain["damage_by_rule"][rule]["cases"]
+                        .as_array()
+                        .map_or(0, Vec::len);
+                    assert!(n > 0, "{ctx}: no {rule} cases");
+                }
+            }
             assert_eq!(plain["damage_cases"].as_u64(), Some(total as u64), "{ctx}");
             // A run that skips damage still gives the count of a full run.
             let skipped = results_of(run(name, &skip()));
