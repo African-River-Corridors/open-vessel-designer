@@ -540,6 +540,46 @@ pub struct AftArrangementResult {
     pub deckhouse: Option<Deckhouse>,
 }
 
+/// What a tier of the deckhouse holds (issue #943).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+pub enum TierKind {
+    /// A tier that holds rooms: the accommodation floor.
+    Rooms,
+    /// A tier that only lifts the wheelhouse: a stair and the wheelhouse's own plan.
+    Access,
+}
+
+impl TierKind {
+    pub const fn key(self) -> &'static str {
+        match self {
+            TierKind::Rooms => "rooms",
+            TierKind::Access => "access",
+        }
+    }
+}
+
+/// The plan of one tier of the deckhouse (issue #943): x is metres forward of the stern, z metres
+/// above the keel.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct TierPlan {
+    pub x_aft_m: f64,
+    pub x_fwd_m: f64,
+    pub width_m: f64,
+    /// The floor of this tier (m above the keel).
+    pub base_m: f64,
+    pub kind: TierKind,
+}
+
+impl TierPlan {
+    /// The floor of the tier (m2).
+    pub fn area_m2(&self) -> f64 {
+        py_max(self.x_fwd_m - self.x_aft_m, 0.0) * self.width_m
+    }
+}
+
 /// The deckhouse of the `deckhouse` Arrangement Style (spec 0011 D3, D4, D6; issue #779): tiers
 /// over the machinery space, from the main deck up, holding the accommodation, with the wheelhouse
 /// on top. x is metres forward of the stern, z metres above the keel.
@@ -558,11 +598,14 @@ pub struct Deckhouse {
     pub tier_height_m: f64,
     /// The top of the top tier, where the wheelhouse stands (m above the keel).
     pub top_m: f64,
-    /// The floor of one tier (m2).
+    /// The plan of each tier, lowest first (issue #943). `tiers` is its length.
+    pub tiers_plan: Vec<TierPlan>,
+    /// The floor of the first tier (m2).
     pub tier_area_m2: f64,
-    /// All tiers' floor (m2): the area the deckhouse cost line prices.
+    /// All tiers' floor (m2): the area the deckhouse cost line prices. The sum of the tier plans.
     pub area_m2: f64,
-    /// The volume of all the tiers (m3), the enclosed volume that joins the gross tonnage.
+    /// The volume of all the tiers (m3), the enclosed volume that joins the gross tonnage. The sum
+    /// of the tier plans, each one tier high.
     pub volume_m3: f64,
     /// The accommodation floor the tiers must hold (m2).
     pub required_area_m2: f64,
@@ -1120,6 +1163,27 @@ fn size_deckhouse(inp: &AftArrangementInputs, x_fwd: f64) -> Deckhouse {
         }
     };
     let top = inp.depth + tiers as f64 * TIER_HEIGHT_M;
+    // Issue #943, step 1: every tier is the full footprint, as before. The first tiers that hold the
+    // accommodation floor are room tiers; the rest only lift the wheelhouse.
+    let n_rooms = if tier_area > 0.0 && required > 0.0 {
+        py_max(libm::ceil(required / tier_area - 1e-9), 1.0) as i64
+    } else {
+        1
+    };
+    let tiers_plan: Vec<TierPlan> = (0..tiers)
+        .map(|i| TierPlan {
+            x_aft_m: 0.0,
+            x_fwd_m: length,
+            width_m: width,
+            base_m: inp.depth + i as f64 * TIER_HEIGHT_M,
+            kind: if i < n_rooms {
+                TierKind::Rooms
+            } else {
+                TierKind::Access
+            },
+        })
+        .collect();
+    let area: f64 = tiers_plan.iter().map(TierPlan::area_m2).sum();
     Deckhouse {
         x_aft_m: 0.0,
         x_fwd_m: length,
@@ -1128,9 +1192,10 @@ fn size_deckhouse(inp: &AftArrangementInputs, x_fwd: f64) -> Deckhouse {
         tiers,
         tier_height_m: TIER_HEIGHT_M,
         top_m: top,
+        tiers_plan,
         tier_area_m2: tier_area,
-        area_m2: tiers as f64 * tier_area,
-        volume_m3: tiers as f64 * tier_area * TIER_HEIGHT_M,
+        area_m2: area,
+        volume_m3: area * TIER_HEIGHT_M,
         required_area_m2: required,
         required_area_basis: required_basis.to_string(),
         rooms,
