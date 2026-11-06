@@ -379,3 +379,145 @@ fn the_leaders_of_the_110_m_sheets_do_not_cross() {
         }
     }
 }
+
+/// The rendered SVG of a sheet.
+fn svg_of(doc: &Value) -> String {
+    let norm = match ovd_draw::run_value(doc, &ovd_draw::NoFiles) {
+        ovd_draw::RunResult::Ok(n) => n,
+        ovd_draw::RunResult::Errors(set) => panic!("breaks the standard: {set:?}"),
+    };
+    ovd_draw::render::svg::to_svg(
+        &norm,
+        &ovd_draw::render::svg::SvgOptions { embed_font: false },
+    )
+}
+
+/// The segments a leader must not run along, in sheet millimetres: the hatch lines and the outlines of the
+/// Spaces (the `OBJECT` layer: lines and the sides of closed paths).
+fn guide_segments(svg: &str) -> Vec<([f64; 2], [f64; 2])> {
+    let mut out = Vec::new();
+    for l in svg.lines() {
+        let hatch = l.contains("data-layer=\"HATCH\"");
+        let object = l.contains("data-layer=\"OBJECT\"");
+        if l.starts_with("<line") && (hatch || object) {
+            let g = |n| attr(l, n).unwrap();
+            out.push(([g("x1"), g("y1")], [g("x2"), g("y2")]));
+        } else if l.starts_with("<path") && object {
+            let d = l.split(" d=\"").nth(1).unwrap().split('"').next().unwrap();
+            let nums: Vec<f64> = d
+                .split(['M', 'L', 'Z', ' '])
+                .filter(|t| !t.is_empty())
+                .map(|t| t.parse().unwrap())
+                .collect();
+            let pts: Vec<[f64; 2]> = nums.chunks(2).map(|c| [c[0], c[1]]).collect();
+            let closed = d.trim_end().ends_with('Z');
+            for i in 0..pts.len() {
+                if i + 1 < pts.len() {
+                    out.push((pts[i], pts[i + 1]));
+                } else if closed {
+                    out.push((pts[i], pts[0]));
+                }
+            }
+        }
+    }
+    out
+}
+
+/// How close to a hatch line or a Space outline a leader counts as running along it, and for how long
+/// it may do so, in millimetres on paper (issue #963). 0.3 mm is a line's width and a clear gap on
+/// each side. 10 mm is two arrowhead lengths and more than twice the run of a leader that crosses a line
+/// at 8 degrees (about 4 mm); on the sheets of `main` the worst leader ran along a line for most of the hull.
+const ALONG_MM: f64 = 0.3;
+const ALONG_RUN_MM: f64 = 10.0;
+
+/// The longest stretch of a leader, in millimetres, that stays within `ALONG_MM` of one guide segment
+/// (a hatch line or an outline of a Space). A leader that crosses many lines is not penalised:
+/// only a run along one line counts.
+fn longest_run_along(leader: ([f64; 2], [f64; 2]), guides: &[([f64; 2], [f64; 2])]) -> f64 {
+    let (a, b) = leader;
+    let len = libm::hypot(b[0] - a[0], b[1] - a[1]);
+    let steps = (len / 0.05).ceil() as usize;
+    let mut worst = 0.0_f64;
+    for g in guides {
+        let mut run = 0.0;
+        for s in 0..=steps {
+            let t = s as f64 / steps as f64;
+            let p = [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])];
+            if dist_to_segment(p, g.0, g.1) < ALONG_MM {
+                run += len / steps as f64;
+                worst = worst.max(run);
+            } else {
+                run = 0.0;
+            }
+        }
+    }
+    worst
+}
+
+fn leaders_run_along(doc: &Value) -> Vec<(usize, f64)> {
+    let ls = leader_lines(doc);
+    let guides = guide_segments(&svg_of(doc));
+    ls.iter()
+        .enumerate()
+        .map(|(i, l)| (i, longest_run_along(*l, &guides)))
+        .filter(|(_, run)| *run > ALONG_RUN_MM)
+        .collect()
+}
+
+/// Issue #963: no leader of a damage sheet runs along a hatch line or the outline of a Space for more than
+/// `ALONG_RUN_MM`. Measured on the rendered SVG of every sheet of the 130 m river-only and coastal hulls.
+#[test]
+fn no_leader_of_a_damage_sheet_runs_along_hatching() {
+    let mut bad = Vec::new();
+    for area in ["river-only", "coastal-and-river"] {
+        let r = gas_results(130.0, 16.0, 7.5, area);
+        for (set, stem, doc) in all_sheets(&r) {
+            for (i, run) in leaders_run_along(&doc) {
+                bad.push(format!(
+                    "{area} {set:?} {stem}: leader {i} runs {run:.1} mm along a line"
+                ));
+            }
+        }
+    }
+    assert!(bad.is_empty(), "{} faults:\n{}", bad.len(), bad.join("\n"));
+}
+
+const REFERENCE: &str =
+    include_str!("../../../examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign");
+
+/// Issue #963: the same on the damage sheets of the 140 x 29 m reference design, in both Service Areas
+/// (no two leaders cross, no leader runs along a line).
+#[test]
+fn the_leaders_of_the_reference_example_do_not_run_along_hatching() {
+    let mut sheets = 0;
+    for area in ["river-only", "coastal-and-river"] {
+        let mut file: Value = serde_json::from_str(REFERENCE).unwrap();
+        let mut option = file["options"][0].clone();
+        let inputs = option["inputs"].as_object_mut().unwrap();
+        inputs.retain(|_, v| v["source"] != "default");
+        inputs.insert(
+            "service_area".into(),
+            json!({ "value": area, "source": "typed" }),
+        );
+        option.as_object_mut().unwrap().remove("results_hash");
+        file["options"] = json!([option]);
+        file.as_object_mut().unwrap().remove("defaults_profile");
+        let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+        let r = match run_option(&filled.design.unwrap().options[0]) {
+            RunOutcome::Results { results, .. } => results,
+            other => panic!("{other:?}"),
+        };
+        for (set, stem, doc) in all_sheets(&r) {
+            sheets += 1;
+            let ls = leader_lines(&doc);
+            for i in 0..ls.len() {
+                for j in i + 1..ls.len() {
+                    assert!(!cross(ls[i], ls[j]), "{area} {set:?} {stem}: {i} x {j}");
+                }
+            }
+            let bad = leaders_run_along(&doc);
+            assert!(bad.is_empty(), "{area} {set:?} {stem}: {bad:?}");
+        }
+    }
+    assert!(sheets >= 2, "{sheets} sheets");
+}

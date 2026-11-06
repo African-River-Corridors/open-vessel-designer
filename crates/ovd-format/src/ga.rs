@@ -138,6 +138,10 @@ const TIP_CLEAR_MM: f64 = 1.5;
 /// The most passes of the slide of targets along their Spaces, and the steps of one slide.
 const SLIDE_PASSES: usize = 8;
 const SLIDE_STEPS: usize = 40;
+/// The least slope (rise over run) of a leader where it runs over the hatching of the Spaces, about 8.5
+/// degrees: a leader that crosses a hatch line at that angle stays within 0.3 mm of it for about 4 mm
+/// (issue #963). Hatch lines and Space outlines run along the hull, so this is the angle to them.
+const LEADER_MIN_SLOPE: f64 = 0.15;
 /// Room kept under the drawing for the scale bar, in millimetres.
 const BAR_ROOM_MM: f64 = 26.0;
 /// The shortest dimension line that has room for its arrowheads, in millimetres (clause 12.4.3 asks
@@ -1205,28 +1209,50 @@ impl Canvas {
     /// As [`Self::label_column`], and a label that has a range `(lo, hi)` of x may have its target slide along
     /// that range (the target is a point on a Space that is long in x): after the labels have their slots,
     /// each such target takes the x at which no leader crosses another and its arrowhead stands furthest
-    /// from every other leader, up to `TIP_CLEAR_MM`, nearest its first x among equals. `ranges[i]` goes with
-    /// `labels[i]` as the caller gave them.
+    /// from every other leader, up to `TIP_CLEAR_MM`, and among equals the shortest leader (the arrowhead on the
+    /// part of its Space nearest the column). A leader that must run far over the hatching of the other Spaces
+    /// is aimed at a label height that gives it at least `LEADER_MIN_SLOPE` over that run, on the side of the
+    /// hull its target is on, so it crosses hatch lines and Space outlines and does not run along them (issue
+    /// #963). `ranges[i]` goes with `labels[i]` as the caller gave them.
     fn label_column_ranged(
         &mut self,
         x: f64,
         labels: &mut [(String, [f64; 2])],
         ranges: &[Option<(f64, f64)>],
     ) {
+        // The hatched stretch along x: where the leaders of the Spaces run over hatching.
+        let zone_hi = ranges
+            .iter()
+            .flatten()
+            .map(|r| r.1)
+            .fold(f64::NEG_INFINITY, f64::max);
         let mut rows: Vec<SlidingLabel> = labels
             .iter()
             .zip(ranges)
-            .map(|(l, r)| (l.0.clone(), l.1, *r))
+            .map(|(l, r)| {
+                // the arrowhead lands nearest the column at the end of the slide range
+                let aim = match r {
+                    Some((lo, hi)) => {
+                        let near = lo + (hi - lo) * 0.95;
+                        let run = (zone_hi - near).max(0.0);
+                        let side = if l.1[1] >= 0.0 { 1.0 } else { -1.0 };
+                        l.1[1] + side * LEADER_MIN_SLOPE * run
+                    }
+                    None => l.1[1],
+                };
+                // the leaders are first laid out with each arrowhead at the near end of its slide
+                let at = match r {
+                    Some((lo, hi)) => [lo + (hi - lo) * 0.95, l.1[1]],
+                    None => l.1,
+                };
+                (l.0.clone(), at, *r, aim)
+            })
             .collect();
-        rows.sort_by(|a, b| {
-            b.1[1]
-                .partial_cmp(&a.1[1])
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
+        rows.sort_by(|a, b| b.3.partial_cmp(&a.3).unwrap_or(std::cmp::Ordering::Equal));
         for (l, r) in labels.iter_mut().zip(&rows) {
             *l = (r.0.clone(), r.1);
         }
-        let wanted: Vec<f64> = rows.iter().map(|l| l.1[1]).collect();
+        let wanted: Vec<f64> = rows.iter().map(|l| l.3).collect();
         let slots = spread_slots(&wanted, LABEL_STEP_MM * self.k);
         let mut order: Vec<usize> = (0..rows.len()).collect();
         // order[i] is the label that stands at slot i
@@ -1252,7 +1278,6 @@ impl Canvas {
             end[label][1] = slots[slot];
         }
         let mut target: Vec<[f64; 2]> = rows.iter().map(|r| r.1).collect();
-        let first: Vec<f64> = target.iter().map(|t| t[0]).collect();
         let clear = TIP_CLEAR_MM * self.k;
         // How leader i stands: its crossings, and the least distance of an arrowhead from another leader.
         let stand = |target: &[[f64; 2]], i: usize| -> (usize, f64) {
@@ -1282,9 +1307,7 @@ impl Canvas {
                     let better = now.0 < best.0.0
                         || (now.0 == best.0.0
                             && (now.1 > best.0.1 + 1e-9
-                                || (now.1 >= best.0.1 - 1e-9
-                                    && (cand - first[i]).abs()
-                                        < (best.1 - first[i]).abs() - 1e-9)));
+                                || (now.1 >= best.0.1 - 1e-9 && cand > best.1 + 1e-9)));
                     if better {
                         best = (now, cand);
                     }
@@ -1303,7 +1326,8 @@ impl Canvas {
 }
 
 /// A label, its target, and the range of x its target may slide along.
-type SlidingLabel = (String, [f64; 2], Option<(f64, f64)>);
+/// and the height its label is aimed at.
+type SlidingLabel = (String, [f64; 2], Option<(f64, f64)>, f64);
 
 /// How far the point `p` is from the segment `a`-`b`.
 fn point_to_segment(p: [f64; 2], a: [f64; 2], b: [f64; 2]) -> f64 {
