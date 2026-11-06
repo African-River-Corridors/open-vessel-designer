@@ -5,8 +5,8 @@
 //! `vdesign.rs`.
 
 use crate::vdesign::{
-    INPUTS, InputKind, KEYED_DEFAULTS, LEGACY_FIXED_INPUTS, LEGACY_FIXED_OTHER, TABLE_DEFAULTS,
-    TABLE_KEYS, TABLE_STATUSES, table_combinations,
+    INPUTS, InputKind, KEYED_DEFAULTS, LEGACY_FIXED_INPUTS, LEGACY_FIXED_OTHER, LEGACY_TABLE_KEYS,
+    TABLE_DEFAULTS, TABLE_KEYS, TABLE_STATUSES, table_combinations,
 };
 use serde_json::{Map, Value};
 
@@ -49,8 +49,8 @@ fn row_fits(row: &Value, context: &[(&str, &str)]) -> bool {
 }
 
 /// Check the default table of one input (issue #292): its shape, the status and source of every
-/// row, and that every combination of Cargo Containment, Cargo and carriage condition the schema
-/// can make has a row.
+/// row, and that every combination of Cargo Containment, Cargo, carriage condition and Service Area
+/// the schema can make has a row.
 fn check_table(name: &str, entry: &Map<String, Value>) -> Result<(), String> {
     let table = entry
         .get("default_by_table")
@@ -65,12 +65,19 @@ fn check_table(name: &str, entry: &Map<String, Value>) -> Result<(), String> {
         .and_then(Value::as_array)
         .map(|l| l.iter().filter_map(Value::as_str).collect())
         .unwrap_or_default();
-    if by != TABLE_KEYS {
+    if by != TABLE_KEYS && by != LEGACY_TABLE_KEYS {
         return Err(format!(
             "profile `{name}.default_by_table.by` must be {}",
             TABLE_KEYS.join(", ")
         ));
     }
+    // A three-key `by` is the list from before the Service Area was a key (issue #926): its rows
+    // fit any Service Area, so a row may not name one.
+    let keys: &[&str] = if by == LEGACY_TABLE_KEYS {
+        LEGACY_TABLE_KEYS
+    } else {
+        TABLE_KEYS
+    };
     let rows = table
         .get("rows")
         .and_then(Value::as_array)
@@ -85,7 +92,7 @@ fn check_table(name: &str, entry: &Map<String, Value>) -> Result<(), String> {
             .and_then(Value::as_object)
             .ok_or_else(|| format!("profile {at} needs an object `when`"))?;
         for (key, wanted) in when {
-            if !TABLE_KEYS.contains(&key.as_str()) {
+            if !keys.contains(&key.as_str()) {
                 return Err(format!("profile {at}.when has an unknown key `{key}`"));
             }
             let ok = match wanted {
