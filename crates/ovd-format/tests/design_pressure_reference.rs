@@ -1,5 +1,5 @@
 //! Seam: the `ovd` 3.2.0 reference row (issue #926). On a river-only Design the IGC 4.23.1.2 minimum
-//! is shown beside the design pressure as a note: it never blocks, and on a coastal Design the IGC
+//! is shown beside the design pressure as a warning: it never blocks, and on a coastal Design the IGC
 //! row is the only one.
 //!
 //! Label: sourced - IGC Code 4.23.1.2 (MSC.370(93)); the limit is the hand-worked formula of
@@ -74,7 +74,7 @@ fn po_of(r: &Value) -> f64 {
 
 /// Label: sourced - IGC 4.23.1.2, Po worked by hand from the tank block (research section 5)
 #[test]
-fn a_river_only_lng_tank_shows_the_igc_minimum_as_a_note_beside_its_pressure() {
+fn a_river_only_lng_tank_shows_the_igc_minimum_as_a_warning_beside_its_pressure() {
     let r = results_of(&river_twin());
     let found = rows(&r, ROW);
     assert!(!found.is_empty(), "no reference row in the trace");
@@ -116,9 +116,9 @@ fn on_a_coastal_design_the_reference_row_is_not_applicable() {
     assert!(!rows(&r, IGC_ROW).is_empty());
 }
 
-/// Label: property. A river-only tank whose typed pressure meets the minimum passes the note.
+/// Label: property. A river-only tank whose typed pressure meets the minimum passes the warning.
 #[test]
-fn a_river_only_pressure_at_or_above_the_minimum_passes_the_note() {
+fn a_river_only_pressure_at_or_above_the_minimum_passes_the_warning() {
     let mut s = river_twin();
     s.set_input("Option 1", "tank_design_pressure_mpa", json!(0.5))
         .unwrap();
@@ -127,9 +127,9 @@ fn a_river_only_pressure_at_or_above_the_minimum_passes_the_note() {
     }
 }
 
-/// Label: sourced - IGC 4.23.1.2, Po from the hand formula; a boundary pair one step either side
+/// Label: sourced - IGC 4.23.1.2, Po from the hand formula; a boundary pair 1 kPa either side
 #[test]
-fn the_note_fails_a_millipascal_under_the_minimum_and_passes_a_millipascal_over_it() {
+fn the_warning_fails_a_kilopascal_under_the_minimum_and_passes_a_kilopascal_over_it() {
     let po = po_of(&results_of(&river_twin()));
     for (typed, outcome) in [(po - 0.001, "warn"), (po + 0.001, "pass")] {
         let mut s = river_twin();

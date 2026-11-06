@@ -1245,7 +1245,7 @@
     },
     {
       "id": "ovd/4.23.1.2/min-design-pressure-reference",
-      "title": "For reference on a river-only Design: the design vapour pressure against the IGC minimum Po = 0.2 + A C (rho_r)^1.5 MPa (a note, never a block; ADN leaves the number to the competent authority or the classification society)",
+      "title": "For reference on a river-only Design: the design vapour pressure against the IGC minimum Po = 0.2 + A C (rho_r)^1.5 MPa (a warning, never a block; ADN leaves the number to the competent authority or the classification society)",
       "origin": "regulation",
       "source": {
         "document": "IGC Code, resolution MSC.370(93), as amended",
