@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Wheelhouse eye height (issue #990): the helmsman's eye is 1.65 m above the wheelhouse floor in the engine's own default, as ES-TRIN 2025/1 Art. 7.02(3) states; before it was 1.50 m, an estimate carried over from the original engine. A new Option already took 1.65 m from the Defaults Profile; the engine default is what the Python API, a Formation's tug and a missing input read. A file saved before the input existed keeps its 1.50 m (ADR 0007), so its results do not move.
