@@ -146,7 +146,7 @@ API, not a Design.
 | TC-A27 | Design pressure, LNG and ethane | 0.4 MPa on river-only; on a coastal Service Area the IGC 4.23.1.2 minimum of each tank (#926) | Estimate | Taken as for LNG | Profile 133 | Unknown |
 | TC-A28 | Design pressure, LPG fully pressurised | 1.77 MPa **(Rule pending, #317)** | Sourced default | Owner's Form C particulars of 16 pressurised LPG carriers: 17.65 to 17.7 barg | Profile 138–143 | Unknown |
 | TC-A29 | Design pressure, LPG semi-pressurised | 1.0 MPa **(Rule pending, #317)** | Estimate | One trade-press report: 9.97 bar at −48 °C, condition not stated | Profile 145–150 | Unknown |
-| TC-A30 | Design pressure, LPG fully refrigerated | 0.4 MPa **(Rule pending, #317)** | Estimate | Taken as for LNG | Profile 152–156 | May be below the IGC 4.23.1.2 minimum (see Questions) |
+| TC-A30 | Design pressure, LPG fully refrigerated | The IGC 4.23.1.2 minimum of each tank (`null`, worked out for the design; #577) | Estimate | The IGC minimum sets it | Profile 152–156 | May be below the IGC 4.23.1.2 minimum (see Questions) |
 | TC-A31 | Design temperature, LNG and LNG/ethane | −163 °C **(Rule pending, #317)** | Sourced default | Owner's Form B particulars of a 2022 LNG bunker vessel | Profile 168–174; recorded only | No effect today |
 | TC-A32 | Design temperature, LPG fully pressurised | 0 °C **(Rule pending, #317)** | Sourced default | Owner's Form C sheet of a 2007 pressurised LPG carrier (0 to 45 °C) | Profile 176–181; recorded only | No effect today |
 | TC-A33 | Design temperature, LPG semi-pressurised | −48 °C **(Rule pending, #317)** | Estimate | One trade-press report | Profile 183–188; recorded only | No effect today |
