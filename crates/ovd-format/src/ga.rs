@@ -133,6 +133,11 @@ const LEADER_TEXT_GAP_MM: f64 = 0.9;
 const LABEL_CLEAR_MM: f64 = 3.5;
 /// The most passes of the swap that uncrosses the leaders of a column.
 const UNCROSS_PASSES: usize = 100;
+/// The distance that an arrowhead is kept from every other leader where a target can slide, in millimetres.
+const TIP_CLEAR_MM: f64 = 1.5;
+/// The most passes of the slide of targets along their Spaces, and the steps of one slide.
+const SLIDE_PASSES: usize = 8;
+const SLIDE_STEPS: usize = 40;
 /// Room kept under the drawing for the scale bar, in millimetres.
 const BAR_ROOM_MM: f64 = 26.0;
 /// The shortest dimension line that has room for its arrowheads, in millimetres (clause 12.4.3 asks
@@ -1193,21 +1198,44 @@ impl Canvas {
     /// of two crossing leaders always makes their total length shorter, so the loop ends, and when
     /// it ends no two leaders of the column cross.
     fn label_column(&mut self, x: f64, labels: &mut [(String, [f64; 2])]) {
-        labels.sort_by(|a, b| {
+        let none = vec![None; labels.len()];
+        self.label_column_ranged(x, labels, &none);
+    }
+
+    /// As [`Self::label_column`], and a label that has a range `(lo, hi)` of x may have its target slide along
+    /// that range (the target is a point on a Space that is long in x): after the labels have their slots,
+    /// each such target takes the x at which no leader crosses another and its arrowhead stands furthest
+    /// from every other leader, up to `TIP_CLEAR_MM`, nearest its first x among equals. `ranges[i]` goes with
+    /// `labels[i]` as the caller gave them.
+    fn label_column_ranged(
+        &mut self,
+        x: f64,
+        labels: &mut [(String, [f64; 2])],
+        ranges: &[Option<(f64, f64)>],
+    ) {
+        let mut rows: Vec<(String, [f64; 2], Option<(f64, f64)>)> = labels
+            .iter()
+            .zip(ranges)
+            .map(|(l, r)| (l.0.clone(), l.1, *r))
+            .collect();
+        rows.sort_by(|a, b| {
             b.1[1]
                 .partial_cmp(&a.1[1])
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
-        let wanted: Vec<f64> = labels.iter().map(|l| l.1[1]).collect();
+        for (l, r) in labels.iter_mut().zip(&rows) {
+            *l = (r.0.clone(), r.1);
+        }
+        let wanted: Vec<f64> = rows.iter().map(|l| l.1[1]).collect();
         let slots = spread_slots(&wanted, LABEL_STEP_MM * self.k);
-        let mut order: Vec<usize> = (0..labels.len()).collect();
+        let mut order: Vec<usize> = (0..rows.len()).collect();
         // order[i] is the label that stands at slot i
         for _ in 0..UNCROSS_PASSES {
             let mut swapped = false;
             for i in 0..order.len() {
                 for j in i + 1..order.len() {
-                    let a = (labels[order[i]].1, [x, slots[i]]);
-                    let b = (labels[order[j]].1, [x, slots[j]]);
+                    let a = (rows[order[i]].1, [x, slots[i]]);
+                    let b = (rows[order[j]].1, [x, slots[j]]);
                     if segments_cross(a, b) {
                         order.swap(i, j);
                         swapped = true;
@@ -1218,11 +1246,72 @@ impl Canvas {
                 break;
             }
         }
+        // the end of each leader at the label column, by label
+        let mut end = vec![[x, 0.0]; rows.len()];
         for (slot, &label) in order.iter().enumerate() {
-            let (text, target) = &labels[label];
-            self.leader(text, *target, [x, slots[slot]]);
+            end[label][1] = slots[slot];
+        }
+        let mut target: Vec<[f64; 2]> = rows.iter().map(|r| r.1).collect();
+        let first: Vec<f64> = target.iter().map(|t| t[0]).collect();
+        let clear = TIP_CLEAR_MM * self.k;
+        // How leader i stands: its crossings, and the least distance of an arrowhead from another leader.
+        let stand = |target: &[[f64; 2]], i: usize| -> (usize, f64) {
+            let mut crossings = 0;
+            let mut least = clear;
+            for j in 0..target.len() {
+                if j == i {
+                    continue;
+                }
+                crossings += usize::from(segments_cross((target[i], end[i]), (target[j], end[j])));
+                least = least
+                    .min(point_to_segment(target[i], target[j], end[j]))
+                    .min(point_to_segment(target[j], target[i], end[i]));
+            }
+            (crossings, least)
+        };
+        for _ in 0..SLIDE_PASSES {
+            let mut moved = false;
+            for i in 0..rows.len() {
+                let Some((lo, hi)) = rows[i].2 else { continue };
+                let keep = target[i][0];
+                let mut best = (stand(&target, i), keep);
+                for step in 0..=SLIDE_STEPS {
+                    let cand = lo + (hi - lo) * (0.05 + 0.9 * step as f64 / SLIDE_STEPS as f64);
+                    target[i][0] = cand;
+                    let now = stand(&target, i);
+                    let better = now.0 < best.0.0
+                        || (now.0 == best.0.0
+                            && (now.1 > best.0.1 + 1e-9
+                                || (now.1 >= best.0.1 - 1e-9
+                                    && (cand - first[i]).abs()
+                                        < (best.1 - first[i]).abs() - 1e-9)));
+                    if better {
+                        best = (now, cand);
+                    }
+                }
+                target[i][0] = best.1;
+                moved |= (best.1 - keep).abs() > 1e-9;
+            }
+            if !moved {
+                break;
+            }
+        }
+        for (slot, &label) in order.iter().enumerate() {
+            self.leader(&rows[label].0, target[label], [x, slots[slot]]);
         }
     }
+}
+
+/// How far the point `p` is from the segment `a`-`b`.
+fn point_to_segment(p: [f64; 2], a: [f64; 2], b: [f64; 2]) -> f64 {
+    let (dx, dy) = (b[0] - a[0], b[1] - a[1]);
+    let len2 = dx * dx + dy * dy;
+    let t = if len2 > 0.0 {
+        (((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    libm::hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy)
 }
 
 /// The width of a label text on paper, in millimetres, from the width table of the standard

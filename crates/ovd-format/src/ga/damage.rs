@@ -51,7 +51,7 @@ struct Governing {
     waterplane: Option<(f64, f64, f64)>,
     flooded: Vec<Flooded>,
     /// The longitudinal extent of the damage (`x_m`), and for a bottom damage the athwartships one (`y_m`).
-    x_m: Option<(f64, f64)>,
+    x_m: (f64, f64),
     y_m: Option<(f64, f64)>,
 }
 
@@ -106,9 +106,15 @@ fn read_governing(block: &Value) -> Result<(String, Vec<Governing>), String> {
             });
         }
         let wp = &g["waterplane"];
+        let case = text_at(g, "case");
+        let x_m = pair(&g["x_m"]).ok_or_else(|| {
+            format!(
+                "the governing case '{case}' has no x_m extent: its damage cannot be dimensioned"
+            )
+        })?;
         out.push(Governing {
             condition: text_at(g, "condition"),
-            case: text_at(g, "case"),
+            case,
             ok: g["ok"].as_bool().unwrap_or(false),
             floats: text_at(g, "floats"),
             heel_deg: g["heel_deg"].as_f64().unwrap_or(0.0),
@@ -122,7 +128,7 @@ fn read_governing(block: &Value) -> Result<(String, Vec<Governing>), String> {
                 _ => None,
             },
             flooded,
-            x_m: pair(&g["x_m"]),
+            x_m,
             y_m: pair(&g["y_m"]),
         });
     }
@@ -162,7 +168,7 @@ fn damage_canvas(h: &Hull, g: &Governing, n: u32) -> Canvas {
     let mut c = Canvas::new(n);
     let half = h.beam / 2.0;
     let mut labels: Vec<(String, [f64; 2])> = Vec::new();
-    let mut extents: Vec<(f64, f64)> = Vec::new();
+    let mut extents: Vec<Option<(f64, f64)>> = Vec::new();
     // The plan: the hull, its rakes, the centre line; each flooded Space hatched over its extent across.
     c.polyline(
         "OUTLINE",
@@ -197,19 +203,20 @@ fn damage_canvas(h: &Hull, g: &Governing, n: u32) -> Canvas {
         c.polyline("OBJECT", &rect, true);
         c.hatch("HATCH", &rect, "lines");
         labels.push((f.name.clone(), [0.5 * (f.x.0 + f.x.1), 0.5 * (p0 + p1)]));
-        extents.push(f.x);
+        extents.push(Some(f.x));
     }
     // Each leader lands at its own x along its Space, the highest Space's furthest from the label column
     // and the lowest's nearest, so no two arrowheads meet and no leader runs over another (issue #928).
     let mut by_height: Vec<usize> = (0..labels.len()).collect();
     by_height.sort_by(|&a, &b| labels[b].1[1].total_cmp(&labels[a].1[1]));
     for (rank, &i) in by_height.iter().enumerate() {
-        let (a, b) = extents[i];
+        let Some((a, b)) = extents[i] else { continue };
         labels[i].1[0] = a + (b - a) * (1.0 - stagger_fraction(rank, by_height.len()));
     }
     // The extent of the damage, as the results give it: along the hull below the plan, and for a bottom damage
     // across the hull too, at the aft end of the damage.
-    if let Some((lo, hi)) = g.x_m {
+    {
+        let (lo, hi) = g.x_m;
         c.try_dim_horizontal([lo, -half], [hi, -half], -DAMAGE_ZONE_OFFSET_MM);
         if let Some((y0, y1)) = g.y_m {
             c.try_dim_vertical([lo, -y1], [lo, -y0], -DAMAGE_ZONE_OFFSET_MM);
@@ -255,7 +262,9 @@ fn damage_canvas(h: &Hull, g: &Governing, n: u32) -> Canvas {
         ));
     }
     let column = c.max[0] + 6.0 * c.k;
-    c.label_column(column, &mut labels);
+    // The waterline's label has no range: its target is a point.
+    extents.resize(labels.len(), None);
+    c.label_column_ranged(column, &mut labels, &extents);
     c
 }
 
