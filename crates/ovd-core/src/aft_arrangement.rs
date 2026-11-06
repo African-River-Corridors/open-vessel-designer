@@ -36,7 +36,9 @@ pub const DEFAULT_WHEELHOUSE_LENGTH_M: f64 = 3.60;
 pub const DEFAULT_WHEELHOUSE_WIDTH_M: f64 = 6.40;
 pub const DEFAULT_WHEELHOUSE_HEIGHT_M: f64 = 3.40;
 pub const DEFAULT_WHEELHOUSE_GAP_M: f64 = 0.30;
-pub const DEFAULT_WHEELHOUSE_EYE_ABOVE_FLOOR_M: f64 = 1.50;
+/// The helmsman's eye above the wheelhouse floor at the steering position: 1.65 m, as ES-TRIN 2025/1
+/// Art. 7.02(3) states (issue #990). Before, 1.50 m, an estimate of the original engine.
+pub const DEFAULT_WHEELHOUSE_EYE_ABOVE_FLOOR_M: f64 = 1.65;
 pub const DEFAULT_SIGHTLINE_MARGIN_M: f64 = 0.50;
 pub const DEFAULT_WHEELHOUSE_MAX_LIFT_M: f64 = 6.00;
 
