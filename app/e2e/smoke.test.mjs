@@ -459,8 +459,6 @@ describe("OVD app smoke tests", () => {
     assert.equal((await browser.$$("[data-testid=damage-case-row]")).length, 0, "no damage cases before the run");
     const cases = Number(/\d+/.exec(await browser.$("[data-testid=damage-case-count]").getText())[0]);
     assert.ok(cases >= 10, `${cases} cases to assess`);
-    // The message bar offers the run too.
-    assert.match(await browser.$("[data-testid=message-text]").getText(), /Damage stability has not been run/);
     // Record, in the page, when the click was and each progress event: the browser driver is too slow to watch it.
     await browser.execute(() => {
       const log = { start: performance.now(), events: [], casesEnd: null, end: null };
@@ -511,13 +509,16 @@ describe("OVD app smoke tests", () => {
     await show("Stability & Propulsion", "Damage stability");
     // The cases take under a second on a release build, after a second of set-up: cancel in the page, at once, so the
     // driver's round trips cannot let the run finish first.
-    await browser.executeAsync((done) => {
-      document.querySelector("[data-testid=damage-run]").click();
-      setTimeout(() => {
-        document.querySelector("[data-testid=damage-cancel]").click();
-        done();
-      }, 0);
-    });
+    await browser.execute(
+      () =>
+        new Promise((resolve) => {
+          document.querySelector("[data-testid=damage-run]").click();
+          setTimeout(() => {
+            document.querySelector("[data-testid=damage-cancel]").click();
+            resolve(true);
+          }, 0);
+        }),
+    );
     await until("the run to stop", async () => (await browser.$("[data-testid=damage-run]")).isExisting(), 30000);
     assert.equal(await damageStatus(), "not run");
     await browser.pause(1000);

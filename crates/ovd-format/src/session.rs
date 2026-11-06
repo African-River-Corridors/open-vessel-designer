@@ -25,7 +25,8 @@ use crate::damage::DamageControl;
 use crate::profile::Profile;
 use crate::rule_set::Library;
 use crate::run::{
-    HashStatus, RunOutcome, canonical_json, results_hash, run_design, run_option_with_damage,
+    HashStatus, RunOutcome, canonical_json, results_hash, run_design_with_damage,
+    run_option_with_damage,
 };
 use crate::text_ids::msg_json;
 use crate::vdesign::{
@@ -646,7 +647,12 @@ impl DesignSession {
         for (o, raw_option) in stored.options.iter_mut().zip(&raw_options) {
             o.results_hash = raw_option["results_hash"].as_str().map(String::from);
         }
-        let hash_status = run_design(&stored)
+        // Damage is outside the hash, so the check runs without it (issue #924).
+        let no_damage = DamageControl {
+            run: false,
+            progress: None,
+        };
+        let hash_status = run_design_with_damage(&stored, &Library::built_in(), &[], &no_damage)
             .into_iter()
             .map(|r| (r.name, r.hash_status))
             .collect();

@@ -232,7 +232,13 @@ export async function createWebPlatform(): Promise<Platform> {
       change(() => session.set_formation(option, kind, abreast ?? undefined, inLine ?? undefined)),
     addOption: () => change(() => session.add_option()),
     duplicateOption: (option) => change(() => session.duplicate_option(option)),
-    renameOption: (option, newName) => change(() => session.rename_option(option, newName)),
+    renameOption: (option, newName) =>
+      change(() => {
+        const snap = session.rename_option(option, newName);
+        // A damage run under way follows the new name, as on the desktop (the fingerprint leaves the name out).
+        if (damageRun?.option === option) damageRun.option = newName.trim();
+        return snap;
+      }),
     deleteOption: (option) => change(() => session.delete_option(option)),
     loadProfile: async () => {
       const file = await pickFile(".json");

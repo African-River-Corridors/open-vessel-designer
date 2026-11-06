@@ -458,7 +458,11 @@ pub fn option_vessel_run(option: &DesignOption) -> Result<VesselRun, String> {
     let rules = RunRules {
         sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
         inputs: rule_inputs(option),
-        ..RunRules::default()
+        // The Vessel Model and the waterlines do not read damage: skip it (issue #924).
+        damage: DamageControl {
+            run: false,
+            progress: None,
+        },
     };
     let (outcome, measured) = simulate_params_measured(&params, &rules);
     match outcome {

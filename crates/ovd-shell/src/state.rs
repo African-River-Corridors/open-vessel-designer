@@ -990,6 +990,39 @@ mod tests {
         (calls, kept)
     }
 
+    /// Issue #924: only a run the user asks for works damage out. Every path of the app that reaches the
+    /// engine runs without it: open, evaluate, save and the drawing and 3D calls.
+    #[test]
+    fn open_evaluate_and_save_run_no_damage() {
+        let text = views::tests::gas_damage_design_text();
+        let before = ovd_format::damage::damage_runs_started();
+        let state = AppState::open(Path::new("/x/gas.vdesign"), &text).unwrap();
+        assert_eq!(
+            ovd_format::damage::damage_runs_started(),
+            before,
+            "open ran damage"
+        );
+        let runs = || ovd_format::damage::damage_runs_started();
+        state.evaluate_json();
+        assert_eq!(runs(), before, "evaluate ran damage");
+        state.save_text().unwrap();
+        assert_eq!(runs(), before, "save ran damage");
+        let mut state = state;
+        let name = state.session().design().options[0].name.clone();
+        state.mesh_buffers(&name).unwrap();
+        assert_eq!(runs(), before, "the 3D mesh ran damage");
+        state.waterlines(&name).unwrap();
+        state.deck_items(&name).unwrap();
+        assert_eq!(
+            ovd_format::damage::damage_runs_started(),
+            before,
+            "evaluate or save ran damage"
+        );
+        // The counter does move when damage runs, so the check above can fail.
+        run_damage(&mut state);
+        assert!(ovd_format::damage::damage_runs_started() > before);
+    }
+
     #[test]
     fn an_evaluation_runs_no_damage_until_it_is_asked_for() {
         let mut state = gas_state();
