@@ -27,7 +27,10 @@ fn a_result_with_no_thickness_is_drawn_with_the_design_thickness() {
     assert_eq!(gi.inputs.insulation_thickness, 123.0);
     // The cargo space is the outer diameter less the insulation and the steel, both sides.
     let inner = gr.tanks.unwrap().inner_diameter;
-    assert!((inner - (od - 2.0 * 0.123 - 2.0 * 0.025)).abs() < 1e-12, "{inner}");
+    assert!(
+        (inner - (od - 2.0 * 0.123 - 2.0 * 0.025)).abs() < 1e-12,
+        "{inner}"
+    );
 }
 
 #[test]

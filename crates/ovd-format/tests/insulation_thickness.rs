@@ -15,8 +15,12 @@ fn results_with(thickness_mm: f64) -> Value {
     );
     let text = std::fs::read_to_string(path).unwrap();
     let mut s = DesignSession::open(&text, Profile::built_in()).unwrap().0;
-    s.set_input("A basis", "tank_insulation_thickness_mm", json!(thickness_mm))
-        .unwrap();
+    s.set_input(
+        "A basis",
+        "tank_insulation_thickness_mm",
+        json!(thickness_mm),
+    )
+    .unwrap();
     match s.evaluate().options[0].outcome.as_ref().expect("it ran") {
         RunOutcome::Results { results, .. } => results.clone(),
         other => panic!("{other:?}"),
@@ -52,7 +56,10 @@ fn a_typed_thickness_is_the_one_every_result_uses() {
     let rho = num(&t["insulation_density_kg_m3"]);
     let want_t = n * area * 0.123 * rho / 1000.0;
     let got_t = num(&r["cost_masses"]["masses"]["insulation_t"]);
-    assert!((got_t - want_t).abs() < 1e-9 * want_t, "{got_t} vs {want_t}");
+    assert!(
+        (got_t - want_t).abs() < 1e-9 * want_t,
+        "{got_t} vs {want_t}"
+    );
 }
 
 #[test]
