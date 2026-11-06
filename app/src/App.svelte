@@ -10,6 +10,8 @@
   import MessageBar, { type BarMessage } from "./lib/MessageBar.svelte";
   import { loadPanels, savePanels } from "./lib/panels";
   import { list, say, schemaText, setInputLabels, t } from "./lib/i18n.svelte";
+  import { damageRun } from "./lib/damageRun.svelte";
+  import { damageStatus, saveSecondsPerCase, secondsLeft, secondsPerCase, wholeSeconds } from "./lib/damage";
 
   // Display state only: the Design, its checks and its results all come from Rust.
   let snap = $state<Snapshot | null>(null);
@@ -59,6 +61,49 @@
     }
     evaluation = result;
   }
+
+  /** What the last damage run said when it did not leave results (cancelled, dropped, refused), for the message bar. */
+  let damageNote = $state<string | null>(null);
+
+  /**
+   * Issue #924: run the damage cases of an Option, with progress, then evaluate again. Edits sent first, so
+   * the run is for the inputs on screen. An edit during the run cancels it (Rust does that on the desktop,
+   * the platform on the web): its results would be for inputs that are gone.
+   */
+  async function runDamage(option: string) {
+    if (damageRun.active) return;
+    damageNote = null;
+    await guard(async () => {
+      await flush();
+      const started = performance.now();
+      const outcome = evaluation?.options.find((o) => o.name === option)?.outcome;
+      const cases = damageStatus(outcome?.status === "results" ? outcome.results : null).cases;
+      damageRun.active = { option, done: 0, total: cases ?? 0, startedAt: started, lastAt: started };
+      try {
+        const end = await api.runDamage(option, (p) => {
+          const a = damageRun.active;
+          if (!a || a.option !== p.option) return;
+          a.done = p.done;
+          a.total = p.total;
+          a.lastAt = performance.now();
+        });
+        const total = damageRun.active?.total ?? 0;
+        if (end.outcome === "done") {
+          const per = secondsPerCase(total, performance.now() - started);
+          if (per !== null) {
+            damageRun.secondsPerCase = per;
+            saveSecondsPerCase(per);
+          }
+        } else if (end.outcome === "failed") error = t("app-damage-did-not-run", { reason: end.message ?? "" });
+        else damageNote = t(end.outcome === "cancelled" ? "app-damage-cancelled" : "app-damage-dropped");
+      } finally {
+        damageRun.active = null;
+      }
+      await runEvaluation();
+    });
+  }
+
+  const cancelDamage = () => guard(api.cancelDamage);
 
   /** Take a new Design state: forget the last good results of a different Design. */
   async function adopt(next: Snapshot | null | undefined, newDesign = false, redraw = newDesign) {
@@ -185,6 +230,8 @@
     return typeof v === "number" ? v : null;
   });
   let activeEval = $derived(evaluation?.options.find((o) => o.name === active));
+  /** Whether damage stability was run for the active Option's shown results (issue #924). */
+  let activeStatus = $derived(activeEval?.outcome.status === "results" ? damageStatus(activeEval.outcome.results).status : null);
   /**
    * Every message the app shows, for the message bar, worked out from the state each time (issue
    * #436): an app error, the file's messages, the notes of a changed old file and the hash warning.
@@ -201,6 +248,22 @@
       const dismiss = () => (notesDismissed = [...notesDismissed, note]);
       out.push({ key: `note:${note}`, severity: "note", text: say(note, null, snap?.migration_note_msgs?.[i]), dismiss });
     });
+    // Issue #924: damage runs on demand. The line shows the run under way, or offers one.
+    const run = damageRun.active;
+    if (run) {
+      const left = secondsLeft(run.done, run.total, run.lastAt - run.startedAt);
+      const count = t("app-damage-progress", { done: run.done, total: run.total });
+      out.push({
+        key: "damage-run",
+        severity: "note",
+        text: `${t("app-damage-running")}: ${count}${left === null ? "" : `, ${t("app-damage-left", { seconds: wholeSeconds(left) })}`}`,
+        progress: { done: run.done, total: run.total, label: t("app-damage-progress-label") },
+        action: { label: t("app-damage-cancel"), run: cancelDamage },
+      });
+    } else if (activeStatus === "not run") {
+      out.push({ key: "damage-not-run", severity: "note", text: t("app-damage-not-run"), action: { label: t("app-damage-run"), run: () => runDamage(active) } });
+    }
+    if (damageNote) out.push({ key: "damage-note", severity: "note", text: damageNote, dismiss: () => (damageNote = null) });
     if (snap && snap.hash_changed.length > 0 && !bannerDismissed) {
       out.push({ key: "hash-changed", severity: "note", text: t("app-hash-changed", { options: list(snap.hash_changed, "unit") }), dismiss: () => (bannerDismissed = true) });
     }
@@ -271,7 +334,7 @@
       }}
       onOption={optionAction} /></section>
     <div class="handle v" hidden={!showInput} role="separator" aria-orientation="vertical" onpointerdown={drag("x")}></div>
-    <section class="main"><MainPanel {evaluation} {active} {lastGood} {blockers} {designSpeed} /></section>
+    <section class="main"><MainPanel {evaluation} {active} {lastGood} {blockers} {designSpeed} onRunDamage={() => runDamage(active)} onCancelDamage={cancelDamage} /></section>
     <div class="handle h" hidden={!showOutputs} role="separator" aria-orientation="horizontal" onpointerdown={drag("y")}></div>
     <section class="bottom" hidden={!showOutputs}><BottomPanel {evaluation} {active} {lastGood} {blockers} onActivate={(name) => command(() => api.setActiveOption(name))} /></section>
   </div>
