@@ -21,8 +21,8 @@
 //! what was typed; [`evaluate`](DesignSession::evaluate) then reports the error, and the Option
 //! is not run.
 
-use crate::profile::Profile;
 use crate::damage::DamageControl;
+use crate::profile::Profile;
 use crate::rule_set::Library;
 use crate::run::{
     HashStatus, RunOutcome, canonical_json, results_hash, run_design, run_option_with_damage,

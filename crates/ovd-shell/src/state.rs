@@ -9,10 +9,10 @@ use crate::damage::{self, End, Job, Kept, Running};
 use crate::{vessel, views};
 use ovd_core::text::{Arg, Msg};
 use ovd_format::{DesignSession, HashStatus, Profile, RunOutcome, check, msg_json};
-use std::collections::HashMap;
-use std::sync::atomic::Ordering;
 use serde_json::{Value, json};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::Ordering;
 
 pub struct AppState {
     session: DesignSession,
@@ -402,7 +402,12 @@ impl AppState {
             fingerprint: fingerprint.clone(),
             cancel: cancel.clone(),
         });
-        Ok(Job::new(option.to_string(), fingerprint, run_option, cancel))
+        Ok(Job::new(
+            option.to_string(),
+            fingerprint,
+            run_option,
+            cancel,
+        ))
     }
 
     /// A damage run ended. Its results are kept only when it finished and the Option's inputs and the
@@ -892,7 +897,11 @@ mod tests {
 
         // Issue #924: an evaluation runs no damage, so the drawings come after a damage run.
         let mut state = gas_state();
-        assert!(state.evaluate_json()["options"][0]["outcome"].get("damage_views").is_none());
+        assert!(
+            state.evaluate_json()["options"][0]["outcome"]
+                .get("damage_views")
+                .is_none()
+        );
         run_damage(&mut state);
         let eval = state.evaluate_json();
         let outcome = &eval["options"][0]["outcome"];
@@ -1023,7 +1032,12 @@ mod tests {
         let mut state = gas_state();
         run_damage(&mut state);
         let mut profile: Value = serde_json::from_str(Profile::built_in_text()).unwrap();
-        let (_, entry) = profile["inputs"].as_object_mut().unwrap().iter_mut().next().unwrap();
+        let (_, entry) = profile["inputs"]
+            .as_object_mut()
+            .unwrap()
+            .iter_mut()
+            .next()
+            .unwrap();
         entry["basis"] = json!("a changed basis");
         state.load_profile(&profile.to_string()).unwrap();
         assert_eq!(results_of(&state)["damage_status"], "not run");

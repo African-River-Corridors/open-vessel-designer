@@ -178,7 +178,11 @@ fn run_damage(app: AppHandle, option: String, state: State<Shared>) -> Result<()
             Ok(mut guard) => guard.finish_damage(&job, end),
             Err(_) => false,
         };
-        let outcome = if outcome == "done" && !kept { "stale" } else { outcome };
+        let outcome = if outcome == "done" && !kept {
+            "stale"
+        } else {
+            outcome
+        };
         let _ = app.emit(
             "damage-done",
             serde_json::json!({ "option": name, "outcome": outcome, "message": message }),
