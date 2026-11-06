@@ -6,6 +6,7 @@ import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { remote } from "webdriverio";
 import { serve } from "./web-server.mjs";
@@ -20,10 +21,11 @@ const CLI = process.env.OVD_CLI;
 assert.ok(CLI, "OVD_CLI must be set (run e2e/run-web.sh)");
 const SHOTS = process.env.OVD_WEB_SHOTS;
 
-const nativeHashes = () =>
-  JSON.parse(execFileSync(CLI, ["run", "--json", FIXTURE], { encoding: "utf8", maxBuffer: 1 << 28 })).options.map(
+const nativeHashesOf = (file) =>
+  JSON.parse(execFileSync(CLI, ["run", "--json", file], { encoding: "utf8", maxBuffer: 1 << 28 })).options.map(
     (o) => [o.name, o.results_hash],
   );
+const nativeHashes = () => nativeHashesOf(FIXTURE);
 
 const nativeMeshHashes = (file) =>
   execFileSync(CLI, ["mesh", "--hash", file], { encoding: "utf8" })
@@ -1093,6 +1095,93 @@ describe("OVD web smoke tests", () => {
     const limited = await read();
     assert.equal(limited.limit.length, limited.air.conditions.length);
     assert.ok(limited.air.conditions.every((c) => c.river_ok === true));
+  });
+
+  /** A coastal gas Design with damage cases, filled by the native CLI as the desktop smoke test does (issue #924). */
+  function coastalGasDesign() {
+    const inputs = {
+      cargo: { value: "LNG", source: "typed" },
+      hull_form: { value: "raked_box", source: "typed" },
+      formation: { value: { kind: "self_propelled" }, source: "typed" },
+      length_overall_m: { value: 110.0, source: "typed" },
+      beam_m: { value: 11.4, source: "typed" },
+      moulded_depth_m: { value: 6.0, source: "typed" },
+      loading_conditions: { value: "is_code_2008", source: "typed" },
+      service_area: { value: "coastal-and-river", source: "typed" },
+    };
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ovd-web-damage-"));
+    const bare = path.join(dir, "bare.vdesign");
+    const filled = path.join(dir, "gas-damage-coastal.vdesign");
+    fs.writeFileSync(bare, JSON.stringify({ format: "vdesign", format_version: 3, engine_version: "0.2.4", units: "SI", options: [{ name: "Option 1", inputs }] }));
+    execFileSync(CLI, ["fill", "--as-new", bare, filled], { stdio: "ignore" });
+    return filled;
+  }
+
+  it("runs damage in a worker with progress, keeps the results; a cancel leaves it not run; an edit drops the run (issue #924)", async () => {
+    const b = await start();
+    await b.url(`${origin}/ovd/app`);
+    await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
+    await (await b.$("button=I understand")).click();
+    await ready(b);
+    await openDesign(b, coastalGasDesign());
+    const tab = (label) => b.$(`//button[@role="tab" and normalize-space()="${label}"]`);
+    await (await tab("Stability & Propulsion")).click();
+    await (await tab("Damage stability")).click();
+    const status = async () => (await b.$("[data-testid=damage-status]")).getAttribute("data-status");
+    await until(b, "the status", async () => (await b.$("[data-testid=damage-status]")).isExisting());
+    assert.equal(await status(), "not run", "an open runs no damage");
+    const total = Number(/\d+/.exec(await (await b.$("[data-testid=damage-case-count]")).getText())[0]);
+    assert.ok(total >= 10, `${total} cases`);
+
+    // Cancel: terminate the worker; the status stays not run and the page stays live.
+    await (await b.$("[data-testid=damage-run]")).click();
+    await until(b, "the progress bar", async () => (await b.$("[data-testid=damage-progress]")).isExisting());
+    await (await b.$("[data-testid=damage-cancel]")).click();
+    await until(b, "the run to stop", async () => (await b.$("[data-testid=damage-run]")).isExisting());
+    assert.equal(await status(), "not run");
+    assert.equal((await b.$$("[data-testid=damage-case-row]")).length, 0);
+
+    // Run: progress moves (seen in the page), then the cases and the drawing appear. The page records the click, the
+    // first progress event with cases done (and the time it then says is left) and the end, for the estimate.
+    await b.execute(() => {
+      const log = { start: performance.now(), max: 0, first: null, casesEnd: null, end: null };
+      window.__damageLog = log;
+      new MutationObserver(() => {
+        const bar = document.querySelector("[data-testid=damage-progress]");
+        const eta = document.querySelector("[data-testid=damage-eta]");
+        if (bar) log.max = Math.max(log.max, Number(bar.dataset.done));
+        if (bar && log.casesEnd === null && Number(bar.dataset.done) >= Number(bar.dataset.total) && Number(bar.dataset.total) > 0) log.casesEnd = performance.now();
+        if (bar && eta && log.first === null && Number(bar.dataset.done) > 0) log.first = { at: performance.now(), done: Number(bar.dataset.done), total: Number(bar.dataset.total), left: Number(eta.dataset.leftSeconds) };
+        if (log.end === null && document.querySelector("[data-testid=damage-status]")?.dataset.status === "run") log.end = performance.now();
+      }).observe(document.body, { subtree: true, attributes: true, childList: true, characterData: true });
+      document.querySelector("[data-testid=damage-run]").click();
+    });
+    await until(b, "damage to have run", async () => (await status()) === "run", 240000);
+    const log = await b.execute(() => window.__damageLog);
+    assert.ok(log.max > 0 && log.first !== null && log.end !== null, "the progress bar never moved");
+    // The time left that the first event says, against the time that was left (issue #924: within a factor of 2).
+    // (The run then evaluates again and draws the sheets, which takes a second or two of its own: the cases end at the last progress event.)
+    const actualLeft = ((log.casesEnd ?? log.end) - log.first.at) / 1000;
+    const ratio = log.first.left / actualLeft;
+    console.log(`DIAG web damage estimate: first event at ${Math.round(log.first.at - log.start)} ms with ${log.first.done}/${log.first.total} done; said ${log.first.left.toFixed(2)} s left, actual ${actualLeft.toFixed(2)} s, ratio ${ratio.toFixed(2)}; run took ${Math.round(log.end - log.start)} ms, cases ended at ${Math.round((log.casesEnd ?? log.end) - log.start)} ms`);
+    assert.ok((ratio >= 0.5 && ratio <= 2) || Math.abs(log.first.left - actualLeft) <= 0.25, "the estimate is not within a factor of 2");
+    await until(b, "the cases", async () => (await b.$$("[data-testid=damage-case-row]")).length >= 10);
+    await until(b, "the damage drawing", async () => (await b.$$("[data-testid=damage-drawing] svg")).length === 1);
+    assert.equal((await b.$$("[data-testid=damage-case-row][data-governing=true]")).length, 1);
+
+    // The results hash is the engine's with damage too: the run moved no hash.
+    const same = await b.execute(async () => {
+      const ev = await window.__ovdPlatform.evaluate();
+      return ev.options[0].outcome.results_hash;
+    });
+    assert.equal(same, nativeHashesOf(coastalGasDesign())[0][1]);
+
+    // An edit makes it not run again.
+    await b.execute(async () => {
+      await window.__ovdPlatform.setInput("Option 1", "beam_m", 11.5);
+    });
+    const ev = await b.execute(async () => (await window.__ovdPlatform.evaluate()).options[0].outcome.results.damage_status);
+    assert.equal(ev, "not run");
   });
 
   it("still loads when browser storage is blocked", async () => {

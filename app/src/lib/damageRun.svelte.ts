@@ -7,8 +7,9 @@ export interface ActiveDamageRun {
   option: string;
   done: number;
   total: number;
-  /** performance.now() at the start, and at the last progress event. */
+  /** performance.now() at the click, at the first progress event (when the cases start: the set-up before it is not a case's time), and at the last one. */
   startedAt: number;
+  baseAt: number | null;
   lastAt: number;
 }
 

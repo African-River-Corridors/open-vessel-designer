@@ -175,13 +175,21 @@ export function damageStatus(results: { damage_status?: unknown; damage_cases?: 
 }
 
 /**
- * Seconds left in a run: the cases left times the time per case so far (elapsed over done). null until a case
- * is done, or where the total or the time is not usable. 0 when every case is done.
+ * The cases that must be done before the time left is shown: a few, or 5 % of the total. The first cases of a
+ * run are cheaper than the rest (measured in the e2e run: the first case took a quarter of the average), so
+ * a time per case from one or two of them is too short by a factor of 3 or more.
+ */
+export const minSample = (total: number): number => Math.max(3, Math.ceil(total * 0.05));
+
+/**
+ * Seconds left in a run: the cases left times the time per case so far (elapsed over done, with `elapsedMs`
+ * counted from the first progress event, so the set-up before the cases is not in it). null until `minSample`
+ * cases are done, or where the total or the time is not usable. 0 when every case is done.
  */
 export function secondsLeft(done: number, total: number, elapsedMs: number): number | null {
   if (!(total > 0) || !(done >= 0) || !(elapsedMs >= 0)) return null;
   if (done >= total) return 0;
-  if (done <= 0 || elapsedMs <= 0) return null;
+  if (done < minSample(total) || elapsedMs <= 0) return null;
   return ((total - done) * (elapsedMs / done)) / 1000;
 }
 

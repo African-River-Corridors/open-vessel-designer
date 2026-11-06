@@ -99,11 +99,16 @@ impl Session {
             .ok_or_else(|| err("damage stability gave no results".into()))
     }
 
-    /// Keep the damage results a worker ran (`run_damage`), if the Option's inputs are still those it ran
-    /// for. Gives whether they were kept.
-    pub fn keep_damage(&mut self, option: &str, fingerprint: &str, results_json: &str) -> Js<bool> {
-        let results: Value = serde_json::from_str(results_json)
-            .map_err(|e| err(format!("the damage results are not JSON: {e}")))?;
+    /// Keep the damage run a worker gave (`run_damage`'s `{ fingerprint, results }`), if the Option's
+    /// inputs are still those it ran for. Gives whether it was kept.
+    pub fn keep_damage(&mut self, option: &str, run_json: &str) -> Js<bool> {
+        let run: Value = serde_json::from_str(run_json)
+            .map_err(|e| err(format!("the damage run is not JSON: {e}")))?;
+        let fingerprint = run["fingerprint"].as_str().unwrap_or_default();
+        let results = run["results"].clone();
+        if !results.is_object() {
+            return Err(err("the damage run holds no results".into()));
+        }
         let hash = ovd_format::results_hash(&results);
         Ok(self.state.keep_damage(
             option,

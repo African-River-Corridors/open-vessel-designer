@@ -26,7 +26,7 @@
 
   const status = $derived(damageStatus(results as { damage_status?: unknown; damage_cases?: unknown }));
   const run = $derived(damageRun.active?.option === option ? damageRun.active : null);
-  const left = $derived(run ? secondsLeft(run.done, run.total, run.lastAt - run.startedAt) : null);
+  const left = $derived(run ? secondsLeft(run.done, run.total, run.lastAt - (run.baseAt ?? run.lastAt)) : null);
   const before = $derived(secondsBefore(status.cases, damageRun.secondsPerCase));
   const STATUS_TEXT: Record<string, string> = {
     run: "app-damage-status-run",
@@ -81,7 +81,7 @@
       {#if run}
         <progress aria-label={t("app-damage-progress-label")} value={run.done} max={run.total} data-testid="damage-progress" data-done={run.done} data-total={run.total}></progress>
         <span data-testid="damage-count">{t("app-damage-progress", { done: run.done, total: run.total })}</span>
-        {#if left !== null}<span class="dim" data-testid="damage-eta">{t("app-damage-left", { seconds: wholeSeconds(left) })}</span>{/if}
+        {#if left !== null}<span class="dim" data-testid="damage-eta" data-left-seconds={left}>{t("app-damage-left", { seconds: wholeSeconds(left) })}</span>{/if}
         <button type="button" data-testid="damage-cancel" onclick={onCancel}>{t("app-damage-cancel")}</button>
       {:else if status.status === "not run"}
         {#if before !== null}<span class="dim" data-testid="damage-estimate">{t("app-damage-estimate", { seconds: wholeSeconds(before) })}</span>{/if}

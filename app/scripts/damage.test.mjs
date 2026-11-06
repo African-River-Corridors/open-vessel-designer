@@ -135,7 +135,7 @@ test("a damage_by_rule set marks the engine's governing case of every condition 
 
 // ---- Damage on demand (issue #924) ----
 import { readFileSync } from "node:fs";
-import { REPORT_DAMAGE_PROMPT, damageStatus, secondsBefore, secondsLeft, secondsPerCase, wholeSeconds } from "../src/lib/damage.ts";
+import { REPORT_DAMAGE_PROMPT, minSample, damageStatus, secondsBefore, secondsLeft, secondsPerCase, wholeSeconds } from "../src/lib/damage.ts";
 
 test("damageStatus reads the engine's status and case count, and null for results with none", () => {
   assert.deepEqual(damageStatus({ damage_status: "not run", damage_cases: 158 }), { status: "not run", cases: 158 });
@@ -149,6 +149,9 @@ test("secondsLeft: no total, no time, first event, last event", () => {
   assert.equal(secondsLeft(0, 0, 0), null, "no total");
   assert.equal(secondsLeft(5, 0, 1000), null, "no total, some done");
   assert.equal(secondsLeft(0, 100, 500), null, "nothing done yet: no time per case");
+  assert.equal(secondsLeft(1, 100, 500), null, "one case is too few for a time per case");
+  assert.equal(secondsLeft(4, 100, 500), null, "under 5 % of the cases");
+  assert.equal(secondsLeft(5, 100, 1000), 19, "5 % of 100 cases in 1 s: 0.2 s a case, 95 left");
   assert.equal(secondsLeft(3, 100, 0), null, "no time has passed");
   assert.equal(secondsLeft(NaN, 100, 1000), null);
   // First event: 10 of 100 done in 2 s, so 0.2 s a case and 90 cases left: 18 s.
@@ -156,6 +159,12 @@ test("secondsLeft: no total, no time, first event, last event", () => {
   // Last event: nothing left.
   assert.equal(secondsLeft(100, 100, 20000), 0);
   assert.equal(secondsLeft(101, 100, 20000), 0);
+});
+
+test("the time left waits for a few cases: 3, or 5 % of the total", () => {
+  assert.equal(minSample(10), 3);
+  assert.equal(minSample(100), 5);
+  assert.equal(minSample(158), 8);
 });
 
 test("the estimate before a run needs a measured time per case, and the case count", () => {

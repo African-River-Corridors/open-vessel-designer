@@ -78,7 +78,7 @@
       const started = performance.now();
       const outcome = evaluation?.options.find((o) => o.name === option)?.outcome;
       const cases = damageStatus(outcome?.status === "results" ? outcome.results : null).cases;
-      damageRun.active = { option, done: 0, total: cases ?? 0, startedAt: started, lastAt: started };
+      damageRun.active = { option, done: 0, total: cases ?? 0, startedAt: started, baseAt: null, lastAt: started };
       try {
         const end = await api.runDamage(option, (p) => {
           const a = damageRun.active;
@@ -86,10 +86,12 @@
           a.done = p.done;
           a.total = p.total;
           a.lastAt = performance.now();
+          a.baseAt ??= a.lastAt;
         });
-        const total = damageRun.active?.total ?? 0;
+        const last = damageRun.active;
         if (end.outcome === "done") {
-          const per = secondsPerCase(total, performance.now() - started);
+          // The time per case of a whole run: the first progress event (the cases start) to the last.
+          const per = last?.baseAt != null ? secondsPerCase(last.total, last.lastAt - last.baseAt) : null;
           if (per !== null) {
             damageRun.secondsPerCase = per;
             saveSecondsPerCase(per);
@@ -251,7 +253,7 @@
     // Issue #924: damage runs on demand. The line shows the run under way, or offers one.
     const run = damageRun.active;
     if (run) {
-      const left = secondsLeft(run.done, run.total, run.lastAt - run.startedAt);
+      const left = secondsLeft(run.done, run.total, run.lastAt - (run.baseAt ?? run.lastAt));
       const count = t("app-damage-progress", { done: run.done, total: run.total });
       out.push({
         key: "damage-run",
