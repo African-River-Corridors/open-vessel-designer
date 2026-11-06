@@ -239,6 +239,11 @@ impl Profile {
         Profile::from_json(BUILT_IN).expect("the built-in Defaults Profile is valid")
     }
 
+    /// The profile as JSON (`name` and `inputs`, which is all `from_json` reads), for a fingerprint.
+    pub fn to_value(&self) -> Value {
+        serde_json::json!({ "name": self.name, "inputs": self.inputs })
+    }
+
     /// The built-in profile's text, for a user to copy and edit.
     pub fn built_in_text() -> &'static str {
         BUILT_IN

@@ -19,3 +19,5 @@ serde_json.workspace = true
 # Exact pin: the wasm-bindgen CLI that makes the JS glue must be the same version
 # (tools/build_web.sh checks it, and so does CI).
 wasm-bindgen = "=0.2.129"
+# The progress function of a damage run (issue #924). Cargo.lock holds the js-sys that this wasm-bindgen needs.
+js-sys = "0.3"

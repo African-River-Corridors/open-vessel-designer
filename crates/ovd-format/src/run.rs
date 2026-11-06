@@ -388,6 +388,12 @@ pub const UNHASHED_KEYS: [&str; 22] = [
     "damage_cases",
 ];
 
+/// SHA-256 of a text, as lower-case hex.
+pub fn sha256_hex(text: &str) -> String {
+    let digest = Sha256::digest(text.as_bytes());
+    digest.iter().map(|b| format!("{b:02x}")).collect()
+}
+
 /// SHA-256 of the canonical JSON of `results`, without the [`UNHASHED_KEYS`].
 pub fn results_hash(results: &Value) -> String {
     let mut hashed = results.clone();
@@ -452,7 +458,11 @@ pub fn option_vessel_run(option: &DesignOption) -> Result<VesselRun, String> {
     let rules = RunRules {
         sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
         inputs: rule_inputs(option),
-        ..RunRules::default()
+        // The Vessel Model and the waterlines do not read damage: skip it (issue #924).
+        damage: DamageControl {
+            run: false,
+            progress: None,
+        },
     };
     let (outcome, measured) = simulate_params_measured(&params, &rules);
     match outcome {

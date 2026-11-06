@@ -17,13 +17,16 @@
 
   // The hull views are SVG drawn in Rust to the Drawing Format Standard (ADR 0009, spec 0003); the
   // panel only places and zooms them.
-  let { evaluation, active, lastGood, blockers, designSpeed }: {
+  let { evaluation, active, lastGood, blockers, designSpeed, onRunDamage, onCancelDamage }: {
     evaluation: Evaluation | null;
     active: string;
     lastGood: Record<string, OptionEvaluation>;
     blockers: { name: string; label: string }[];
     /** The active Option's `max_speed_kn` input, from the Design session. */
     designSpeed: number | null;
+    /** Issue #924: run the active Option's damage cases, or stop the run. */
+    onRunDamage: () => void;
+    onCancelDamage: () => void;
   } = $props();
 
   // Two levels of tabs: a group, then a view of that group. Each label is a Message Id. The panel never scrolls: a drawing is
@@ -217,8 +220,8 @@
         <p class="note">{t("app-no-results-show")}</p>
       {:else}
         <!-- New results build a new view, with the first set and condition shown. -->
-        {#key JSON.stringify([active, outcome?.status === "results" ? outcome.results_hash : null])}
-          <Damage results={results as DamageResults} {ids} drawings={damageViews} />
+        {#key JSON.stringify([active, outcome?.status === "results" ? outcome.results_hash : null, (results as { damage_status?: string }).damage_status])}
+          <Damage results={results as DamageResults} {ids} drawings={damageViews} option={active} onRun={onRunDamage} onCancel={onCancelDamage} />
         {/key}
       {/if}
     {:else if current === "rules"}

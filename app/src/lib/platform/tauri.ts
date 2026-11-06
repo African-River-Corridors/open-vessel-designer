@@ -2,7 +2,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Evaluation, Schema, Snapshot } from "../api";
-import type { DeckItems, MeshGroup, Platform, PropulsorPart, SectionOutline, SpaceInfo, Waterline } from "./types";
+import type { DamageEnd, DamageProgress, DeckItems, MeshGroup, Platform, PropulsorPart, SectionOutline, SpaceInfo, Waterline } from "./types";
 
 /** What the webview gives for a raw response: an ArrayBuffer, or (when the IPC falls back to JSON) an array of bytes. */
 function asBuffer(raw: ArrayBuffer | ArrayLike<number>): ArrayBuffer {
@@ -22,11 +22,36 @@ function splitBuffers(raw: ArrayBuffer | ArrayLike<number>): { positions: Float3
   };
 }
 
+/** Issue #924: start the run, then wait for its `damage-done`; progress arrives as `damage-progress`. */
+/** A cancel asked for before the run had started in Rust: it has nothing to stop yet, so it is sent again once the run is going. */
+let cancelWanted = false;
+
+async function runDamage(option: string, onProgress: (p: DamageProgress) => void): Promise<DamageEnd> {
+  cancelWanted = false;
+  const unlisten: Array<() => void> = [];
+  try {
+    const finished = new Promise<DamageEnd>((resolve) => {
+      listen<DamageEnd>("damage-done", (e) => e.payload.option === option && resolve(e.payload)).then((u) => unlisten.push(u));
+    });
+    unlisten.push(await listen<DamageProgress>("damage-progress", (e) => e.payload.option === option && onProgress(e.payload)));
+    await invoke<void>("run_damage", { option });
+    if (cancelWanted) await invoke<void>("cancel_damage");
+    return await finished;
+  } finally {
+    unlisten.forEach((u) => u());
+  }
+}
+
 export const tauriPlatform: Platform = {
   kind: "tauri",
   snapshot: () => invoke<Snapshot>("snapshot"),
   inputSchema: () => invoke<Schema>("input_schema"),
   evaluate: () => invoke<Evaluation>("evaluate"),
+  runDamage,
+  cancelDamage: () => {
+    cancelWanted = true;
+    return invoke<void>("cancel_damage");
+  },
   newFile: () => invoke<Snapshot | null>("new_file"),
   openFile: () => invoke<Snapshot | null>("open_file"),
   onOpenedFromOutside: async (opened, failed) => {
