@@ -322,10 +322,13 @@ pub fn blind_limits(rules: &[RuleSet], inputs: &RuleInputs) -> crate::wheelhouse
         {
             continue;
         }
-        let condition = measure.args.iter().find_map(|(k, v)| match (k.as_str(), v) {
-            ("condition", ArgValue::Text(t)) => Some(t.as_str()),
-            _ => None,
-        });
+        let condition = measure
+            .args
+            .iter()
+            .find_map(|(k, v)| match (k.as_str(), v) {
+                ("condition", ArgValue::Text(t)) => Some(t.as_str()),
+                _ => None,
+            });
         let (slot, source) = match condition {
             Some("light") => (&mut out.light_m, &mut out.light_rule),
             Some("laden") => (&mut out.laden_m, &mut out.laden_rule),

@@ -2344,7 +2344,9 @@ fn sightline_limits_of(
 
 /// The Rule Sets and inputs [`sightline_limits_of`] reads when the run has no Option: the default stack of
 /// the Service Area (issue #989), and the few inputs the Blind Distance Rules read.
-fn default_sightline_rules(p: &Map<String, Value>) -> (Vec<ovd_core::rules::RuleSet>, ga::RuleInputs) {
+fn default_sightline_rules(
+    p: &Map<String, Value>,
+) -> (Vec<ovd_core::rules::RuleSet>, ga::RuleInputs) {
     let area = p
         .get("service_area")
         .and_then(Value::as_str)
@@ -2370,9 +2372,11 @@ fn default_sightline_rules(p: &Map<String, Value>) -> (Vec<ovd_core::rules::Rule
         ));
         let id = "input.length_overall_m";
         if let Some(info) = crate::trace::measure_info(id) {
-            inputs
-                .measures
-                .push((id.to_string(), info, ovd_core::rule_trace::MeasureValue::Number(loa)));
+            inputs.measures.push((
+                id.to_string(),
+                info,
+                ovd_core::rule_trace::MeasureValue::Number(loa),
+            ));
         }
     }
     (sets, inputs)
