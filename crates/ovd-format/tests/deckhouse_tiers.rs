@@ -146,18 +146,18 @@ fn a_container_block_option_is_unchanged() {
 #[test]
 fn the_river_only_house_has_the_tiers_this_change_gives_it() {
     // Printed by the engine at this change. Room floor 63.42 m2 + 20 m2 service allowance = 83.42 m2
-    // on one room tier: 3.04 m long, so the 3.6 m wheelhouse length governs (98.64 m2). Three access
-    // tiers of 3.6 x 6.4 m plus a 1.6 m2 stair (23.04 m2 each).
+    // on one room tier: 3.04 m long, so the 3.6 m wheelhouse length governs (3.6 x 27.4 = 98.64 m2).
+    // Three access tiers, each the 3.6 x 6.4 m wheelhouse plan plus a 1.6 m2 stair (24.64 m2 each).
     let r = river();
     let d = house(&r);
     assert_eq!(d["room_tiers"], json!(1));
     assert_eq!(d["access_tiers"], json!(3));
     assert!(
-        (num(&d["area_m2"]) - 167.76).abs() < 1e-6,
+        (num(&d["area_m2"]) - 172.56).abs() < 1e-6,
         "{}",
         d["area_m2"]
     );
-    assert!((num(&d["volume_m3"]) - 436.176).abs() < 1e-6);
+    assert!((num(&d["volume_m3"]) - 448.656).abs() < 1e-6);
     assert!((num(&d["x_aft_m"]) - 14.232).abs() < 1e-9);
     // Lightship falls from 5588.72 t on main; cargo is volume-bound and does not move.
     assert!((num(&r["results"]["lightship_t"]) - 5_313.233_59).abs() < 1e-4);

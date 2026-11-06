@@ -1195,10 +1195,7 @@ fn size_deckhouse(inp: &AftArrangementInputs, x_fwd: f64) -> Deckhouse {
     // An access tier: the wheelhouse plan and a stairway, front-aligned under the wheelhouse.
     let access_w = py_min(inp.wheelhouse_width_m, width);
     let access_len = if access_w > 0.0 {
-        py_min(
-            inp.wheelhouse_length_m + ACCESS_STAIR_M2 / access_w,
-            room_len,
-        )
+        py_min(inp.wheelhouse_length_m + ACCESS_STAIR_M2 / access_w, length)
     } else {
         0.0
     };
@@ -1624,6 +1621,13 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
     ];
     let mut warnings: Vec<Text> = Vec::new();
     if let Some(d) = &deckhouse {
+        let n_kind = |k: TierKind| d.tiers_plan.iter().filter(|t| t.kind == k).count();
+        let area_of = |k: TierKind| {
+            d.tiers_plan
+                .iter()
+                .find(|t| t.kind == k)
+                .map_or(0.0, TierPlan::area_m2)
+        };
         // No unit stands on deck unless a battery does: the two unit checks have nothing to say.
         if n_units == 0 {
             checks.retain(|c| c.name != "containers_fit_beam" && c.name != "units_fit_in_one_row");
@@ -1644,9 +1648,12 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
             d.tiers <= deckhouse_sizes::MAX_TIERS,
             text!(
                 "check-deckhouse-tier-count",
-                "{tiers} tier(s) of {tier_area} m2 hold the {required} m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over {max} tiers is a tall house over a short machinery space (ESTIMATE limit)",
+                "{tiers} tier(s): {room_tiers} for rooms ({room_area} m2 each, holding the {required} m2 of accommodation floor) and {access_tiers} for access ({access_area} m2 each, lifting the wheelhouse eye over the cargo); over {max} tiers is a tall house over a short machinery space (ESTIMATE limit)",
                 tiers = d.tiers,
-                tier_area = Arg::fixed(d.tier_area_m2, 1),
+                room_tiers = n_kind(TierKind::Rooms),
+                room_area = Arg::fixed(area_of(TierKind::Rooms), 1),
+                access_tiers = n_kind(TierKind::Access),
+                access_area = Arg::fixed(area_of(TierKind::Access), 1),
                 required = Arg::fixed(d.required_area_m2, 1),
                 max = deckhouse_sizes::MAX_TIERS,
             ),
