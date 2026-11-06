@@ -567,6 +567,10 @@ impl MeasureSource for OptionMeasures<'_> {
             // Issue #740: the scantling Rules of `abs-steel-barges` size the hull steel; each is a
             // `not evaluated` row with its gap.
             id if id.starts_with("hull_steel.") => true,
+            // Issue #913: the IGC 3.2.4 rows on the placed openings. A hull with none placed (a
+            // container-block stern) has the rows, `not evaluated` with the reason (`missing`), never
+            // `not applicable` and never `pass`.
+            id if id.starts_with("opening.") => true,
             _ => self.measured.has(measure),
         }
     }
@@ -594,6 +598,12 @@ impl MeasureSource for OptionMeasures<'_> {
             == Some("type_c_tanks");
         if object == ObjectType::Tank && gas && self.measured.tank.is_none() {
             return Some("no tank fits the hull, so there is no tank to check".to_string());
+        }
+        if object == ObjectType::Opening && self.measured.openings.is_none() {
+            return Some(
+                "the Option has no deckhouse stern, so the engine places no openings to check"
+                    .to_string(),
+            );
         }
         if object == ObjectType::OilOutflow && self.measured.oil_outflow.is_none() {
             return Some(
