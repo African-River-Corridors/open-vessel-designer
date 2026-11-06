@@ -153,6 +153,57 @@ impl Space {
     }
 }
 
+/// The object inputs of an opening, with their values (issue #913). A Rule's Applicability names them
+/// to pick the openings it governs; the values are the keys of [`Kind`], [`Space`] and [`Face`], and
+/// `yes`/`no` for the two flags. One list, so the vocabulary the Rule files read and the values the
+/// engine answers cannot drift.
+pub const OPENING_INPUTS: &[(&str, &[&str])] = &[
+    (
+        "opening_kind",
+        &["entrance", "window", "air_inlet", "air_intake"],
+    ),
+    (
+        "opening_space",
+        &[
+            "accommodation",
+            "service",
+            "machinery",
+            "control_station",
+            "wheelhouse",
+        ],
+    ),
+    ("opening_face", &["front", "side", "aft"]),
+    ("opening_openable", &["yes", "no"]),
+    ("opening_gas_tight", &["yes", "no"]),
+];
+
+/// The values an opening object input may take, `None` for a name that is not one.
+pub fn opening_input_values(name: &str) -> Option<&'static [&'static str]> {
+    OPENING_INPUTS
+        .iter()
+        .find(|(n, _)| *n == name)
+        .map(|(_, v)| *v)
+}
+
+fn yes_no(b: bool) -> &'static str {
+    if b { "yes" } else { "no" }
+}
+
+impl Opening {
+    /// The value of the object input `name` for this opening (`opening_kind`, `opening_space`,
+    /// `opening_face`, `opening_openable`, `opening_gas_tight`); `None` for another name.
+    pub fn input(&self, name: &str) -> Option<&'static str> {
+        match name {
+            "opening_kind" => Some(self.kind.key()),
+            "opening_space" => Some(self.space.key()),
+            "opening_face" => Some(self.face.key()),
+            "opening_openable" => Some(yes_no(self.openable)),
+            "opening_gas_tight" => Some(yes_no(self.gas_tight)),
+            _ => None,
+        }
+    }
+}
+
 /// One opening as given (a typed row) or as placed by default. x is metres forward of the stern, y
 /// metres to starboard of the centreline, z metres above the keel.
 #[derive(Debug, Clone, PartialEq)]

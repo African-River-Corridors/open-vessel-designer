@@ -622,6 +622,15 @@ pub static MEASURES: &[MeasureDef] = &[
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {
+        id: "opening.clear_of_cargo_face",
+        unit: "-",
+        object: ObjectType::Opening,
+        value: ValueKind::Bool,
+        args: &[],
+        method: "True when the opening is not on the deckhouse end that faces the cargo area: the negation of `opening.faces_cargo_area`, so a `check` Rule passes on it (IGC 3.2.4.1)",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
         id: "opening.in_zone",
         unit: "-",
         object: ObjectType::Opening,
