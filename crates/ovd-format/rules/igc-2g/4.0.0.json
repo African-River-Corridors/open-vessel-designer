@@ -1421,7 +1421,7 @@
     },
     {
       "id": "igc/3.2.4.2/wheelhouse-gas-tight",
-      "title": "A wheelhouse door or openable window on a side within 4 % of L (ICLL length; not less than 3 m, not more than 5 m) of the deckhouse end is allowed only if the wheelhouse can be made gas and vapour tight rapidly and efficiently",
+      "title": "A wheelhouse door or openable window on the front or on a side within 4 % of L (ICLL length; not less than 3 m, not more than 5 m) of the deckhouse end is allowed only if the wheelhouse can be made gas and vapour tight rapidly and efficiently",
       "origin": "regulation",
       "source": {
         "document": "IGC Code, resolution MSC.370(93), as amended",
@@ -1445,6 +1445,7 @@
           "window"
         ],
         "opening_face": [
+          "front",
           "side"
         ],
         "opening_openable": [
@@ -1475,6 +1476,171 @@
       "evaluated": true,
       "finding": "#913",
       "since": "4.0.0"
+    },
+    {
+      "id": "igc/3.2.4.1/front-openings",
+      "title": "Entrances, air inlets and openings of the deckhouse do not face the cargo area",
+      "origin": "regulation",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "edition": "IGC Code as adopted by MSC.370(93), amended by MSC.411(97), MSC.441(99), MSC.476(102), MSC.492(104), MSC.523(106) and MSC.566(109); none changes 2.3, 2.4 or 4.23; MSC.492(104) replaces 2.7.1.1",
+        "locator": "3.2.4.1",
+        "page": "MSC.370-93.pdf, annex pp. 32-33",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#417"
+      },
+      "verified": false,
+      "applies_when": {
+        "arrangement_style": [
+          "container_block"
+        ]
+      },
+      "kind": "check",
+      "measure": {
+        "id": "openings.front_clear"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": "#417",
+      "since": "1.1.0"
+    },
+    {
+      "id": "igc/3.2.4.1/side-opening-distance",
+      "title": "Side openings at least 4 % of L (not less than 3 m, not more than 5 m) from the deckhouse end facing the cargo area",
+      "origin": "regulation",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "edition": "IGC Code as adopted by MSC.370(93), amended by MSC.411(97), MSC.441(99), MSC.476(102), MSC.492(104), MSC.523(106) and MSC.566(109); none changes 2.3, 2.4 or 4.23; MSC.492(104) replaces 2.7.1.1",
+        "locator": "3.2.4.1",
+        "page": "MSC.370-93.pdf, annex pp. 32-33",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-10-22",
+        "review": "#417"
+      },
+      "verified": false,
+      "applies_when": {
+        "arrangement_style": [
+          "container_block"
+        ]
+      },
+      "kind": "formula",
+      "measure": {
+        "id": "input.deckhouse_side_opening_distance_m"
+      },
+      "compare": "ge",
+      "limit": {
+        "shape": "clamp",
+        "x": "input.length_overall_m",
+        "a": 0.0,
+        "b": 0.04,
+        "c": 1.0,
+        "lo": 3.0,
+        "hi": 5.0,
+        "unit": "m"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": "#417",
+      "since": "1.1.0"
+    },
+    {
+      "id": "igc/3.2.4.1/opening-setback",
+      "title": "Entrances at least 4 % of L (not less than 3 m, not more than 5 m) aft of the deckhouse end facing the cargo area",
+      "origin": "regulation",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "edition": "IGC Code as adopted by MSC.370(93), amended by MSC.411(97), MSC.441(99), MSC.476(102), MSC.492(104), MSC.523(106) and MSC.566(109); none changes 2.3, 2.4 or 4.23; MSC.492(104) replaces 2.7.1.1",
+        "locator": "3.2.4.1",
+        "page": "MSC.370-93.pdf, annex pp. 32-33",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-01",
+        "review": "#776"
+      },
+      "verified": false,
+      "applies_when": {
+        "arrangement_style": [
+          "container_block"
+        ]
+      },
+      "kind": "formula",
+      "measure": {
+        "id": "input.entrance_distance_m"
+      },
+      "compare": "ge",
+      "limit": {
+        "shape": "clamp",
+        "x": "input.length_overall_m",
+        "a": 0.0,
+        "b": 0.04,
+        "c": 1.0,
+        "lo": 3.0,
+        "hi": 5.0,
+        "unit": "m"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "3.1.0"
+    },
+    {
+      "id": "igc/3.2.4.1/air-inlet-setback",
+      "title": "Machinery space air inlets at least 4 % of L (not less than 3 m, not more than 5 m) aft of the deckhouse end facing the cargo area",
+      "origin": "regulation",
+      "source": {
+        "document": "IGC Code, resolution MSC.370(93), as amended",
+        "edition": "IGC Code as adopted by MSC.370(93), amended by MSC.411(97), MSC.441(99), MSC.476(102), MSC.492(104), MSC.523(106) and MSC.566(109); none changes 2.3, 2.4 or 4.23; MSC.492(104) replaces 2.7.1.1",
+        "locator": "3.2.4.1",
+        "page": "MSC.370-93.pdf, annex pp. 32-33",
+        "access": "free"
+      },
+      "codified": {
+        "by": "agent",
+        "date": "2026-11-01",
+        "review": "#776"
+      },
+      "verified": false,
+      "applies_when": {
+        "arrangement_style": [
+          "container_block"
+        ]
+      },
+      "kind": "formula",
+      "measure": {
+        "id": "input.engine_room_vent_inlet_distance_m"
+      },
+      "compare": "ge",
+      "limit": {
+        "shape": "clamp",
+        "x": "input.length_overall_m",
+        "a": 0.0,
+        "b": 0.04,
+        "c": 1.0,
+        "lo": 3.0,
+        "hi": 5.0,
+        "unit": "m"
+      },
+      "tolerance": 0,
+      "consequence": "block",
+      "sizes": false,
+      "evaluated": true,
+      "finding": null,
+      "since": "3.1.0"
     },
     {
       "id": "igc/8.2.10.3/vent-exit-height",

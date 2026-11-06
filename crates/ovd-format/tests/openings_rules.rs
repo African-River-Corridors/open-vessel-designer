@@ -215,6 +215,10 @@ fn a_new_gas_option_meets_the_opening_rules_and_names_the_ones_the_model_cannot_
             "{sets}"
         );
         for id in [
+            "igc/3.2.4.1/front-openings",
+            "igc/3.2.4.1/side-opening-distance",
+            "igc/3.2.4.1/opening-setback",
+            "igc/3.2.4.1/air-inlet-setback",
             "igc/3.1.2/hold-machinery-segregation",
             "lr-inland/3.3.7/entrance-setback",
             "lr-inland/3.3.8/vent-inlet-setback",
@@ -243,6 +247,16 @@ fn a_new_gas_option_meets_the_opening_rules_and_names_the_ones_the_model_cannot_
 fn a_typed_opening_that_breaks_a_rule_fails_that_rule_only() {
     for (input, value, rule) in [
         (
+            "deckhouse_front_opening",
+            json!(true),
+            "igc/3.2.4.1/front-openings",
+        ),
+        (
+            "deckhouse_side_opening_distance_m",
+            json!(4.0),
+            "igc/3.2.4.1/side-opening-distance",
+        ),
+        (
             "entrance_distance_m",
             json!(1.5),
             "lr-inland/3.3.11/opening-setback",
@@ -262,8 +276,17 @@ fn a_typed_opening_that_breaks_a_rule_fails_that_rule_only() {
             json!(0.5),
             "lr-inland/3.4.1/funnel-setback",
         ),
-        // Issue #913: the typed distances no longer feed IGC 3.2.4.1 (`igc-2g` 4.0.0 reads the placed
-        // openings; see `igc_openings.rs`).
+        // Spec 0011 (D17): 2.5 m meets the inland 2.00 m but not IGC 3.2.4.1 (at least 3 m).
+        (
+            "entrance_distance_m",
+            json!(2.5),
+            "igc/3.2.4.1/opening-setback",
+        ),
+        (
+            "engine_room_vent_inlet_distance_m",
+            json!(2.5),
+            "igc/3.2.4.1/air-inlet-setback",
+        ),
     ] {
         let design = new_gas_design("LNG", json!({ input: value }));
         let results = results_of(&design);
