@@ -214,8 +214,8 @@ pub(crate) fn inputs_of(params: &Map<String, Value>) -> Result<Map<String, Value
             }
         }
     }
-    // The Formation: the glossary object, or the old flags (neither is a pushed barge, as the old
-    // engine took it).
+    // The Formation: the glossary object, or the old flags (neither flag, in an old dict, is a pushed
+    // barge, as the old engine took it).
     let flag = |k: &str| params.get(k).and_then(Value::as_bool).unwrap_or(false);
     let (self_propelled, atb) = (flag("self_propelled"), flag("atb"));
     for k in ["self_propelled", "atb"] {
@@ -243,7 +243,9 @@ pub(crate) fn inputs_of(params: &Map<String, Value>) -> Result<Map<String, Value
                 "give the Formation as `formation`, or as `self_propelled` or `atb`, not both",
             ));
         }
-    } else {
+    } else if old_name {
+        // Only the old dict has a Formation to map: neither flag was a pushed barge there. A dict in
+        // glossary names gives `formation`, as a file must; left out, the reader says so.
         let kind = if self_propelled {
             "self_propelled"
         } else if atb {
@@ -489,16 +491,25 @@ mod tests {
     #[test]
     fn the_formation_comes_from_the_flags_or_the_object() {
         let kind = |p: Value| {
-            inputs_of(&obj(p)).expect("ok")["formation"]["kind"]
-                .as_str()
-                .map(str::to_string)
+            inputs_of(&obj(p))
+                .expect("ok")
+                .get("formation")
+                .and_then(|f| f["kind"].as_str().map(str::to_string))
         };
         assert_eq!(
             kind(json!({ "self_propelled": true })).as_deref(),
             Some("self_propelled")
         );
         assert_eq!(kind(json!({ "atb": true })).as_deref(), Some("atb"));
-        assert_eq!(kind(json!({})).as_deref(), Some("pushed_barge"));
+        assert_eq!(
+            kind(json!({})).as_deref(),
+            None,
+            "a glossary dict gives its Formation"
+        );
+        assert_eq!(
+            kind(json!({ "vessel": "box_barge" })).as_deref(),
+            Some("pushed_barge")
+        );
         assert_eq!(
             kind(json!({ "self_propelled": false, "atb": false })).as_deref(),
             Some("pushed_barge")
@@ -738,5 +749,83 @@ mod tests {
                 "{class}"
             );
         }
+    }
+    #[test]
+    fn a_glossary_dict_without_a_formation_raises_the_readers_message_and_an_old_dict_is_a_pushed_barge()
+     {
+        // One path: the file path raises "missing required input `formation`" for the same inputs, so a
+        // new caller who forgets it gets that error. Only an old dict (an old name in it) has the
+        // pushed barge the old engine assumed (design 3).
+        let profile = Profile::built_in();
+        let mut glossary = obj(gas());
+        glossary.remove("formation");
+        let e = refused(option_of(&glossary, &profile));
+        assert!(
+            e.iter()
+                .any(|m| m.contains("missing required input `formation`")),
+            "{e:?}"
+        );
+        let out = inputs_of(&glossary).expect("renames only");
+        assert!(!out.contains_key("formation"), "{out:?}");
+        let old = obj(
+            json!({ "vessel": "box_barge", "cargo": "bauxite", "loa_m": 76.5, "beam_m": 11.4,
+                              "service_area": "river-only" }),
+        );
+        assert_eq!(
+            inputs_of(&old).expect("ok")["formation"],
+            json!({ "kind": "pushed_barge" })
+        );
+    }
+
+    #[test]
+    fn inputs_of_adds_no_key_but_the_old_dicts_formation_and_hull_form() {
+        // Parity guard: `inputs_of` renames and re-shapes. A new default written here would be a second
+        // path. The output keys are the input keys, renamed, and `formation` and `hull_form` only for an
+        // old dict.
+        let names: Vec<&str> = INPUTS
+            .iter()
+            .map(|s| s.name)
+            .filter(|n| !CREW_KEYS.contains(n))
+            .collect();
+        let glossary: Map<String, Value> =
+            names.iter().map(|n| (n.to_string(), json!(1.0))).collect();
+        let out = inputs_of(&glossary).expect("glossary names");
+        let mut got: Vec<&String> = out.keys().collect();
+        let mut want: Vec<&String> = glossary.keys().collect();
+        got.sort();
+        want.sort();
+        assert_eq!(got, want, "a glossary dict gains or loses no key");
+
+        let old = obj(json!({
+            "loa_m": 80.0, "depth_m": 4.0, "freeboard_min_m": 0.3, "eta_d": 0.5, "speed_max_kn": 8.0,
+            "lightship_k_t_per_m3": 0.1, "vessel": "box_barge", "self_propelled": false,
+            "channel": { "depth_m": 3.0, "ukc_m": 0.5, "bottom_width_m": 40.0, "bank_slope": 3.0, "current_kn": 1.0 },
+            "cargo": "bauxite", "beam_m": 11.4,
+        }));
+        let out = inputs_of(&old).expect("old names");
+        let mut want: Vec<String> = [
+            "length_overall_m",
+            "moulded_depth_m",
+            "min_freeboard_m",
+            "propulsive_efficiency",
+            "max_speed_kn",
+            "lightship_factor_t_per_m3",
+            "cargo_containment",
+            "cargo",
+            "beam_m",
+            "channel_depth_m",
+            "channel_under_keel_clearance_m",
+            "channel_bottom_width_m",
+            "channel_bank_slope",
+            "channel_current_kn",
+            "formation",
+            "hull_form",
+        ]
+        .map(String::from)
+        .to_vec();
+        want.sort();
+        let mut got: Vec<String> = out.keys().cloned().collect();
+        got.sort();
+        assert_eq!(got, want);
     }
 }

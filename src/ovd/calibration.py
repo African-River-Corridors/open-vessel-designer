@@ -792,7 +792,7 @@ def _installed_power(c: dict, kappa: float) -> float:
     """The Installed Power the engine sizes for the case (kW), at the efficiency factor `kappa`."""
     # The old engine entry, by name (issue #937): the fit still runs on the engine call it was made on.
     # Moving it to `simulate`, which builds an Option as `ovd fill` does, changes the fitted factor and
-    # needs its own re-fit; see the follow-up ticket.
+    # needs its own re-fit: issue #974.
     from ovd._bridge import call
     out = call("simulate", "simulate", {"params": {
         "vessel": "hopper_barge", "cargo": "bauxite", "self_propelled": True,

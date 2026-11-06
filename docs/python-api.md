@@ -25,7 +25,7 @@ result["damage_status"]       # "not run": damage is off unless you ask for it
 
 - **A key you give** is a typed input of the Option.
 - **A key you leave out** takes the Defaults Profile value, by Cargo, by Formation and by Service Area. It is marked `default` in the Option, as in a file. Nothing else is invented: there is no starter length, beam or Cargo.
-- **A required input you leave out** is an error. The required inputs are `cargo`, `hull_form`, `formation`, `length_overall_m`, `beam_m` and `service_area`. The Service Area has no default: give `river-only` or `coastal-and-river`.
+- **A required input you leave out** is an error. The required inputs are `cargo`, `hull_form`, `formation`, `length_overall_m`, `beam_m` and `service_area`. The Service Area has no default: give `river-only` or `coastal-and-river`. A dict in glossary names must give `formation` and `hull_form`, as a file must; a dict that uses an old name need not (see Names).
 - **The Option is built once.** The Rule Sets, the Rules of the stack and the Spaces come from the Option, as `ovd run` takes them.
 
 ## Names
@@ -47,11 +47,11 @@ Use the glossary names of the inputs (the table at the end), as a file does. The
 | `vessel: "tank_barge"` | `cargo_containment: "integral_tanks"` |
 | `self_propelled: true` | `formation: {"kind": "self_propelled"}` |
 | `atb: true` | `formation: {"kind": "atb"}` |
-| neither flag | `formation: {"kind": "pushed_barge"}` |
+| neither flag (an old dict only) | `formation: {"kind": "pushed_barge"}` |
 
 The nested `channel` object is flattened to the five channel inputs. Give one name for an input, not both: `loa_m` with `length_overall_m` is an error.
 
-A dict that uses an old name (`loa_m`, `vessel`, `self_propelled` or `atb`) and gives no `hull_form` is built with `raked_box`, the hull the old engine made. A dict in glossary names must give `hull_form`.
+A dict that uses an old name (`loa_m`, `vessel`, `self_propelled` or `atb`) and gives no `hull_form` is built with `raked_box`, the hull the old engine made. In the same way, an old dict with neither `formation` nor a flag is a pushed barge, as the old engine took it. A dict in glossary names must give `formation` and `hull_form`: left out, the error is the one a file gets, `missing required input`.
 
 Two readings of the old API are kept: a number written as text (`"80"`, `"8e1"`) is read as Python `float()` reads it, and `None` for an input that has no `null` value of its own means "left out". The four tank inputs that take `null` for "use the rule" (`tank_wall_thickness_mm`, `tank_dome_height_m`, `tank_dome_diameter_m`, `tank_design_pressure_mpa`) keep it. To fix one, give the number.
 
