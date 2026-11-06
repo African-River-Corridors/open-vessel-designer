@@ -73,6 +73,7 @@ pub const ENTRY_POINTS: &[&str] = &[
     "ga_adapter",
     "vessel_standards",
     "simulate",
+    "api",
 ];
 
 /// Parse a case or an answer. `serde_json` keeps every number as written (`arbitrary_precision`),
@@ -101,6 +102,7 @@ pub fn eval(entry_point: &str, input: &Value) -> Result<Value, EvalError> {
         "design_grid" => design_grid(function, args),
         "ga_adapter" => ga_adapter(function, args),
         "simulate" => crate::simulate::run(function, args),
+        "api" => crate::api::run(function, args),
         "squat" => squat(function, args),
         "waves" => waves(function, args),
         "resistance" => resistance(function, args),

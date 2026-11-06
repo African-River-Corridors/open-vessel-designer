@@ -1,12 +1,11 @@
 """One-call barge simulation for the simulator.
 
-    simulate(params: dict) -> dict      # JSON in, JSON out
+    simulate(params: dict, damage: bool = False) -> dict      # JSON in, JSON out
 
-Adds the weight limit the core leaves out: the core sizes cargo by HOLD VOLUME; a real barge
-also stops at its draught limit. Cargo = the smaller of the two, and the result says which
-governed. Pushed barges only for now; the pusher is a separate vessel and is not included.
-The calculation runs in the Rust core (`ovd._native`); this module only passes the
-parameters through. Pure calculation, no I/O.
+One path (issue #937): the dict becomes one Option the way `ovd fill --as-new` builds it (a key left out
+takes the Defaults Profile value; a required input left out is an error), and the Option is run the way
+`ovd run` runs it. The result is `run`'s results. The calculation runs in the Rust core
+(`ovd._native`); this module only passes the parameters through. Pure calculation, no I/O.
 """
 from __future__ import annotations
 
@@ -38,6 +37,13 @@ def cargo_options() -> list[dict]:
     return _call("simulate", "cargo_options", {})
 
 
-def simulate(p: dict) -> dict:
-    """Run the one-call simulation on the parameters ``p`` and return the result as a dict."""
-    return _call("simulate", "simulate", {"params": p})
+def simulate(p: dict, damage: bool = False) -> dict:
+    """Run the one-call simulation on the parameters ``p`` and return the result as a dict.
+
+    ``p`` gives the inputs of one Option, by their glossary names or by the engine names of the old
+    dict (``loa_m``, ``vessel``, ``channel`` and so on); see ``docs/python-api.md``. A key left out
+    takes the Defaults Profile value. An input that is refused (unknown, not used, out of range, a
+    required one left out) raises ``TypeError`` naming every one. ``damage=True`` also runs the damage
+    stability cases; by default they are not run and ``damage_status`` is ``"not run"``.
+    """
+    return _call("api", "simulate", {"params": p, "damage": damage})

@@ -100,7 +100,8 @@ fn typed_row(name: &str, kind: &str, space: &str, face: &str, x: f64, extra: Val
 }
 
 #[test]
-fn the_default_layout_of_the_reference_design_meets_the_rows_and_no_old_row_is_left() {
+fn the_default_layout_of_the_reference_design_meets_the_rows_and_the_typed_input_rows_do_not_apply()
+{
     let r = reference(json!({}));
     assert!(
         r["rule_trace"]["rule_sets"]
@@ -109,6 +110,7 @@ fn the_default_layout_of_the_reference_design_meets_the_rows_and_no_old_row_is_l
         "{}",
         r["rule_trace"]["rule_sets"]
     );
+    // The four typed-input rows are kept for a container-block stern only: on a deckhouse they are `not applicable`.
     for id in OLD_ROWS {
         assert!(rows(&r, id).is_empty(), "{id}");
     }
@@ -191,9 +193,9 @@ fn a_side_entrance_inside_the_zone_fails_and_the_failing_row_names_the_door() {
     let far = side.iter().find(|x| x["object"] == "far door").unwrap();
     assert_eq!(near["outcome"], "fail");
     assert_eq!(far["outcome"], "pass");
-    // The kernel marks the governing row of each (Measure, object): every opening's row governs that
-    // opening, so the worst opening is the failing row, and the margin tells how far each is.
+    // Only the worst opening of the Rule is the governing row.
     assert_eq!(near["governing"], true);
+    assert_eq!(far["governing"], false);
     assert!(near["margin"].as_f64().unwrap() < 0.0 && far["margin"].as_f64().unwrap() > 0.0);
 }
 
@@ -268,9 +270,92 @@ fn a_gas_tight_wheelhouse_side_door_passes_and_one_not_gas_tight_fails_in_the_zo
 }
 
 #[test]
-fn a_container_block_option_has_the_new_rows_not_evaluated_and_none_pass() {
-    let text = reference_text(json!({ "arrangement_style": "container_block" }));
-    let r = run_text(text);
+fn a_front_opening_non_gas_tight_wheelhouse_window_fails() {
+    // IGC 3.2.4.2: a wheelhouse window may open within the limits only if the wheelhouse can be made
+    // gas-tight; on the front it is at distance 0, so it fails when not designed so, and passes when it is.
+    let window = |tight: bool| {
+        typed_row(
+            "wheelhouse window",
+            "window",
+            "wheelhouse",
+            "front",
+            0.0,
+            json!({"openable": true, "gas_tight": tight}),
+        )
+    };
+    let r = reference(json!({ "deckhouse_openings": [window(false)] }));
+    assert_eq!(outcomes(&r, WHEELHOUSE), ["fail"]);
+    let r = reference(json!({ "deckhouse_openings": [window(true)] }));
+    assert!(outcomes(&r, WHEELHOUSE).is_empty());
+    // A fixed one is not covered.
+    let fixed = typed_row(
+        "fixed",
+        "window",
+        "wheelhouse",
+        "front",
+        0.0,
+        json!({"openable": false}),
+    );
+    let r = reference(json!({ "deckhouse_openings": [fixed] }));
+    assert!(outcomes(&r, WHEELHOUSE).is_empty());
+}
+
+#[test]
+fn only_the_worst_opening_of_a_rule_is_governing_and_no_other_rule_changes() {
+    let xf = x_front(&reference(json!({})));
+    let doors = [
+        typed_row(
+            "a",
+            "entrance",
+            "accommodation",
+            "side",
+            xf - 9.0,
+            json!({}),
+        ),
+        typed_row(
+            "b",
+            "entrance",
+            "accommodation",
+            "side",
+            xf - 6.0,
+            json!({}),
+        ),
+        typed_row(
+            "c",
+            "entrance",
+            "accommodation",
+            "side",
+            xf - 7.0,
+            json!({}),
+        ),
+    ];
+    let r = reference(json!({ "deckhouse_openings": doors }));
+    let side = rows(&r, SIDE_ENTRANCE);
+    let governing: Vec<&str> = side
+        .iter()
+        .filter(|x| x["governing"] == true)
+        .map(|x| x["object"].as_str().unwrap())
+        .collect();
+    assert_eq!(governing, ["b"], "the smallest margin governs");
+    // Rows of other objects (the tanks, say) keep the kernel's marking: one governing row each.
+    let tank_rows: Vec<&Value> = r["rule_trace"]["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|x| x["object_type"] != "opening" && x["governing"] == true)
+        .collect();
+    assert!(!tank_rows.is_empty());
+}
+
+#[test]
+fn a_container_block_option_has_the_new_rows_not_evaluated_and_is_checked_on_its_typed_inputs() {
+    // The typed distances at the 5 m the rule never exceeds, and no opening on the front.
+    let ok = json!({
+        "arrangement_style": "container_block", "entrance_distance_m": 5.0,
+        "engine_room_vent_inlet_distance_m": 5.0, "deckhouse_side_opening_distance_m": 5.0,
+        "deckhouse_front_opening": false
+    });
+    let r = run_text(reference_text(ok));
     assert!(r["stern_arrangement"].get("openings").is_none());
     for id in NEW_ROWS {
         assert!(outcomes(&r, id).iter().all(|x| x != "pass"), "{id}");
@@ -278,4 +363,13 @@ fn a_container_block_option_has_the_new_rows_not_evaluated_and_none_pass() {
     for id in [FRONT_DOOR, SIDE_ENTRANCE] {
         assert_eq!(outcomes(&r, id), ["not evaluated"], "{id}");
     }
+    // The four typed-input rows of 3.3.0 still check what the Option types (design choice B, #913).
+    for id in OLD_ROWS {
+        assert_eq!(outcomes(&r, id), ["pass"], "{id}");
+    }
+    // 2.5 m of entrance distance met the old inland 2.00 m but not IGC 3.2.4.1 (at least 3 m; 5 m at L = 140 m).
+    let r = run_text(reference_text(
+        json!({ "arrangement_style": "container_block", "entrance_distance_m": 2.5 }),
+    ));
+    assert_eq!(outcomes(&r, "igc/3.2.4.1/opening-setback"), ["fail"]);
 }
