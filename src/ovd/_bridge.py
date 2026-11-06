@@ -184,3 +184,17 @@ def call(entry_point: str, fn: str, args: dict, result=None, int_ok=()):
     if "error" in out:
         _raise(out["error"])
     return decode(result, out["ok"])
+
+
+def call_with_progress(args: dict, progress=None, cancel=None, int_ok=()):
+    """Run the `simulate_damage` function of the `api` entry with a progress callable and a cancel
+    callable (issue #940). `_native.simulate_damage` runs that one function only.
+
+    The core calls both on this thread, never on one of its workers. An exception from either, or a
+    pending signal such as Ctrl-C, stops the run and is raised from here; `cancel()` returning true
+    stops it and gives the results of a run without damage."""
+    case = json.dumps({"fn": "simulate_damage", "args": encode_args(args, int_ok)}, allow_nan=False)
+    out = json.loads(_native.simulate_damage(case, progress, cancel))
+    if "error" in out:
+        _raise(out["error"])
+    return out["ok"]

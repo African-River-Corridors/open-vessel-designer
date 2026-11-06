@@ -137,6 +137,11 @@ const BUILT_IN: &[(&str, &str)] = &[
         "rules/igc-2g/3.3.0.json",
         include_str!("../rules/igc-2g/3.3.0.json"),
     ),
+    // Issue #913: the IGC 3.2.4.1 and 3.2.4.2 rows on the placed openings.
+    (
+        "rules/igc-2g/4.0.0.json",
+        include_str!("../rules/igc-2g/4.0.0.json"),
+    ),
     // Issue #781: the MLC 2006 accommodation Standard, for a Service Area that reaches sea.
     (
         "rules/mlc-2006/1.0.0.json",
@@ -180,6 +185,10 @@ const BUILT_IN: &[(&str, &str)] = &[
     (
         "rules/ovd/3.1.0.json",
         include_str!("../rules/ovd/3.1.0.json"),
+    ),
+    (
+        "rules/ovd/3.2.0.json",
+        include_str!("../rules/ovd/3.2.0.json"),
     ),
 ];
 
