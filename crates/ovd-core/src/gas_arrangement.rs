@@ -81,10 +81,13 @@ pub struct FitOptions {
     pub stern_geometry: Option<crate::stern_form::SternGeometry>,
     /// Issue #352: the machinery of a specified Propulsor (`BargeCapacityInputs::machinery`).
     pub machinery: Option<crate::machinery::MachineryInputs>,
-    /// Issue #354: the Blind Distance limit (`BargeCapacityInputs::sightline_limit_m`).
+    /// Issue #354: the Blind Distance limit (`BargeCapacityInputs::sightline_limit_m`). Issue #989: read
+    /// from the Rule Sets of the stack by [`blind_limits`], the limit the Rule Trace checks.
     pub sightline_limit_m: Option<f64>,
-    /// Issue #779: size a fixed deckhouse wheelhouse to SOLAS V/22.1.1 as well (a coastal Option).
-    pub solas_v22_sizing: bool,
+    /// Issue #989: the laden limit (`BargeCapacityInputs::sightline_limit_laden_m`).
+    pub sightline_limit_laden_m: Option<f64>,
+    /// Issue #989: the id of the Rule that gives the light limit.
+    pub sightline_limit_source: Option<String>,
     pub self_propelled: bool,
     pub depths: Vec<f64>,
     pub tanks_wide: Vec<i64>,
@@ -271,6 +274,71 @@ impl MeasureSource for CandidateSource<'_> {
     }
 }
 
+/// Issue #989: the Blind Distance limits of a design, read from the Rule Sets of its stack. A Rule gives
+/// a limit when it measures `wheelhouse.blind_distance`, blocks, and applies to the design (its
+/// Applicability and its set's, as the Rule Trace reads them); the limit is the Rule's own, worked from
+/// the design's inputs (SOLAS V/22.1.1 reads the length overall). The least limit of each condition
+/// binds, and the id of its Rule says where it came from. A stack with no such Rule gives no limit, and
+/// a Rule that only warns gives none.
+///
+/// This is the one reading the arrangement search sizes the wheelhouse to and the Rule Trace checks the
+/// result against: the Trace evaluates the same Rules, so the limit it shows is the one used here. The
+/// limit is worked by evaluating the Rules with a Blind Distance of 0, which passes, so only the limit
+/// is read from the row.
+pub fn blind_limits(rules: &[RuleSet], inputs: &RuleInputs) -> crate::wheelhouse::BlindLimits {
+    use crate::rules::Consequence;
+    let sets: Vec<RuleSet> = rules
+        .iter()
+        .filter_map(|set| {
+            let mut one = set.clone();
+            one.rules
+                .retain(|r| r.measure.id == "wheelhouse.blind_distance");
+            (!one.rules.is_empty()).then_some(one)
+        })
+        .collect();
+    let mut out = crate::wheelhouse::BlindLimits::default();
+    if sets.is_empty() {
+        return out;
+    }
+    let measured = Measured {
+        blind_distance_light_m: Some(0.0),
+        blind_distance_laden_m: Some(0.0),
+        ..Measured::default()
+    };
+    let refs: Vec<&RuleSet> = sets.iter().collect();
+    let trace = evaluate(
+        &refs,
+        &CandidateSource {
+            measured: &measured,
+            inputs,
+        },
+    );
+    for row in &trace.rows {
+        let (Some(measure), Some(limit), Some(rule)) = (&row.measure, row.limit, &row.rule) else {
+            continue;
+        };
+        if row.consequence != Some(Consequence::Block)
+            || !matches!(row.outcome, Outcome::Pass | Outcome::Fail)
+        {
+            continue;
+        }
+        let condition = measure.args.iter().find_map(|(k, v)| match (k.as_str(), v) {
+            ("condition", ArgValue::Text(t)) => Some(t.as_str()),
+            _ => None,
+        });
+        let (slot, source) = match condition {
+            Some("light") => (&mut out.light_m, &mut out.light_rule),
+            Some("laden") => (&mut out.laden_m, &mut out.laden_rule),
+            _ => continue,
+        };
+        if slot.is_none_or(|least| limit < least) {
+            *slot = Some(limit);
+            *source = Some(rule.clone());
+        }
+    }
+    out
+}
+
 /// What the Rule Trace of a candidate reads: its checks (named as a result lists them), its
 /// stability conditions (none before the costly stage) and its tank and separation values.
 fn candidate_measured(
@@ -366,7 +434,8 @@ impl Default for FitOptions {
             stern_geometry: None,
             machinery: None,
             sightline_limit_m: None,
-            solas_v22_sizing: false,
+            sightline_limit_laden_m: None,
+            sightline_limit_source: None,
             self_propelled: true,
             depths: DEFAULT_DEPTHS_M.to_vec(),
             tanks_wide: DEFAULT_TANKS_WIDE.to_vec(),
@@ -1160,7 +1229,8 @@ impl Search<'_> {
         inp.stern_geometry = self.o.stern_geometry.clone();
         inp.machinery = self.o.machinery.clone();
         inp.sightline_limit_m = self.o.sightline_limit_m;
-        inp.solas_v22_sizing = self.o.solas_v22_sizing;
+        inp.sightline_limit_laden_m = self.o.sightline_limit_laden_m;
+        inp.sightline_limit_source = self.o.sightline_limit_source.clone();
         inp.block_coefficient = self.o.block_coefficient;
         inp.n_tanks_wide = Some(nw);
         inp.n_tanks_long = nl;

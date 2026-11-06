@@ -51,6 +51,16 @@ struct TugInputs {
     blind_distance: bool,
     /// The tug's wheelhouse lifts (`tug_wheelhouse_type`).
     elevating: bool,
+    /// Issue #989: the light Blind Distance limit of the Option's stack of Rule Sets, the one its Rule
+    /// Trace checks. `None`: no blocking Rule of the stack limits it, so no sightline is worked.
+    blind_limit_m: Option<f64>,
+}
+
+/// The light Blind Distance limit the Rule Sets of the Option's stack give (issue #989).
+fn blind_limit_of(option: &DesignOption) -> Option<f64> {
+    let selection = crate::trace::stack_for(crate::rule_set::built_in(), option, &[]).ok()?;
+    let sets: Vec<ovd_core::rules::RuleSet> = selection.sets.iter().map(|s| (*s).clone()).collect();
+    ovd_core::gas_arrangement::blind_limits(&sets, &crate::trace::rule_inputs(option)).light_m
 }
 
 fn number(option: &DesignOption, name: &str) -> Option<f64> {
@@ -87,6 +97,7 @@ fn tug_inputs(option: &DesignOption) -> Result<TugInputs, String> {
         allowance: number(option, "formation_resistance_allowance").unwrap_or(1.0),
         blind_distance: text_of("tug_sightline_method").as_deref() == Some("blind_distance"),
         elevating: text_of("tug_wheelhouse_type").as_deref() != Some("fixed"),
+        blind_limit_m: blind_limit_of(option),
     })
 }
 
@@ -631,7 +642,7 @@ fn build(
 /// The sightline of a pusher or an ATB tug over its barges (issue #360, spec 0007 "Wheelhouse,
 /// sightline and air draft"): the eye at the forward face of the wheelhouse, at mid-length of the tug
 /// (an Estimate), the floor lowered on the tug's deck; each barge's highest point light and laden
-/// (its air draft) at its forward end; the ES-TRIN 7.02(2) limit, light. `None` for a tow (the tug
+/// (its air draft) at its forward end; the light limit of the Rule Sets of the stack (issue #989). `None` for a tow (the tug
 /// is ahead of its barge). With `notes` the warning when the lift is not enough.
 fn sightline(
     tug: &TugInputs,
@@ -647,7 +658,6 @@ fn sightline(
     use ovd_core::formation::{
         ConvoySight, PUSHER_WHEELHOUSE_AT, convoy_obstructions, convoy_sightline,
     };
-    use ovd_core::wheelhouse::ES_TRIN_BLIND_DISTANCE_M;
     let (first_aft_x, in_line) = match join {
         Join::Pushed { counts } => (dims.length_m, counts.1),
         Join::Atb { notch_depth_m, .. } => (dims.length_m - notch_depth_m, 1),
@@ -683,7 +693,9 @@ fn sightline(
         max_lift_m: max_lift,
         bow_x_m: first_aft_x + in_line as f64 * barge_length_m,
     };
-    let limit = ES_TRIN_BLIND_DISTANCE_M;
+    let Some(limit) = tug.blind_limit_m else {
+        return Ok(None);
+    };
     let (s, laden_m) = convoy_sightline(&sight, &light, &laden, limit);
     if !s.enough && s.blind_distance_m.is_finite() {
         notes.push(text!(

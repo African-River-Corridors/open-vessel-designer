@@ -43,8 +43,8 @@ check-deckhouse-clear-height = tier height { $tier } m less { $allowance } m for
 ## crates/ovd-core/src/barge_capacity.rs
 
 warn-barge-bulk-gm = Bulk GM is first-order (assumed lightship KG); cargo-shift/angle-of-repose not modelled — confirm with a full intact-stability booklet.
-check-wheelhouse-blind-distance = blind distance ahead of the bow { $blind } m <= { $limit } m, light (ES-TRIN 7.02(2)); lift used { $lift } m of { $max_lift } m
-check-wheelhouse-blind-distance-fails = blind distance ahead of the bow over { $limit } m, light (ES-TRIN 7.02(2)): lift needed { $needed } m of { $max_lift } m
+check-wheelhouse-blind-distance = blind distance ahead of the bow { $blind } m <= { $limit } m, light (limit from the Rule Sets of the stack: { $source }); lift used { $lift } m of { $max_lift } m
+check-wheelhouse-blind-distance-fails = blind distance ahead of the bow over { $limit } m, light (limit from the Rule Sets of the stack: { $source }): lift needed { $needed } m of { $max_lift } m
 warn-aft-blind-distance-lift = The blind distance needs { $needed } m of lift; the column gives { $max_lift } m. Raise the column or lower the cargo top.
 check-feasible-geometry = cargo volume must be positive (tank/hold fits)
 check-name-feasible-geometry = feasible geometry
@@ -267,8 +267,8 @@ note-atb-method-unverified = The ATB's resistance is that of its Equivalent Hull
 note-formation-method-unverified = The Formation's resistance is that of its Equivalent Hull (the barges and the pusher as one hull) by the single-hull method, times the Formation resistance allowance. The method is unverified.
 note-formation-coupling-force = Coupling force between the pusher and the pushed craft: { $force } kN (ES-TRIN 2025/1, ESI-III-6 2.1: 270 x P_B x L_S / B_S, with P_B { $power } kW, L_S { $ls } m taken as the pusher length, B_S { $bs } m).
 note-formation-service-margins = Service margins, shown and not used to size the tug: the still-water power in deep water at the design speed, { $p0 } kW, x the sea margin 1.15 x the engine margin 1/0.90 (MAN B&W, Basic Principles of Ship Propulsion, p. 27 and Fig. 17) = { $total } kW, for an installed power of { $installed } kW.
-warn-formation-blind-distance-lift = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. The Blind Distance light is { $blind } m, more than { $limit } m (ES-TRIN 7.02(2)).
-warn-formation-blind-distance-hidden = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. At that height the barges hide the water ahead (ES-TRIN 7.02(2): at most { $limit } m).
+warn-formation-blind-distance-lift = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. The Blind Distance light is { $blind } m, more than { $limit } m (limit from the Rule Sets of the stack).
+warn-formation-blind-distance-hidden = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. At that height the barges hide the water ahead (limit from the Rule Sets of the stack: at most { $limit } m).
 
 ## crates/ovd-format/src/gas_fuel.rs
 

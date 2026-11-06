@@ -1490,8 +1490,10 @@ fn simulate_once_inner(
         t_design,
         (&hull, rho),
     )?;
-    inp.sightline_limit_m = sightline_limit_of(p, self_propelled);
-    inp.solas_v22_sizing = solas_v22_sizing_of(p);
+    let blind = sightline_limits_of(p, self_propelled, rules);
+    inp.sightline_limit_m = blind.light_m;
+    inp.sightline_limit_laden_m = blind.laden_m;
+    inp.sightline_limit_source = blind.light_rule;
     // The hold design values. A key left out keeps the core default, which is the value the engine
     // used before these were inputs.
     inp.wing_void_width = get_or(p, "hold_wing_void_width_m", inp.wing_void_width)?;
@@ -2317,18 +2319,63 @@ fn powering_json(
     })))
 }
 
-/// Whether the Option reaches the sea, so a fixed deckhouse wheelhouse is also sized to SOLAS V/22
-/// (issue #779): its Service Area is `coastal-and-river`. River-only keeps ES-TRIN alone.
-fn solas_v22_sizing_of(p: &Map<String, Value>) -> bool {
-    p.get("service_area").and_then(Value::as_str) == Some("coastal-and-river")
+/// Issue #354, #989: the Blind Distance limits of a self-propelled hull whose sightline is checked as a
+/// distance, read from the Rule Sets of the stack by [`ovd_core::gas_arrangement::blind_limits`]: the
+/// blocking Rules that measure `wheelhouse.blind_distance` and apply to the design. The stack follows the
+/// Service Area (ES-TRIN 7.02(2) is in both default stacks, SOLAS V/22.1.1 in the coastal one), so the
+/// limit does too. The margin method has none (`None`). A run reads the stack of its Option; the Python
+/// API gives `simulate` no Option, so it reads the default stack of the Service Area at the highest
+/// built-in versions, as a new Option stores it. No constant sets a limit.
+fn sightline_limits_of(
+    p: &Map<String, Value>,
+    self_propelled: bool,
+    rules: &RunRules,
+) -> ovd_core::wheelhouse::BlindLimits {
+    let method = p.get("sightline_method").and_then(Value::as_str);
+    if !(self_propelled && method == Some("blind_distance")) {
+        return ovd_core::wheelhouse::BlindLimits::default();
+    }
+    if !rules.inputs.applicability.is_empty() {
+        return ovd_core::gas_arrangement::blind_limits(&rules.sets, &rules.inputs);
+    }
+    let (sets, inputs) = default_sightline_rules(p);
+    ovd_core::gas_arrangement::blind_limits(&sets, &inputs)
 }
 
-/// Issue #354: the Blind Distance limit of a self-propelled hull whose sightline is checked as a
-/// distance (ES-TRIN 7.02(2), 250 m until the Rule Sets of #355); `None` for the margin method.
-fn sightline_limit_of(p: &Map<String, Value>, self_propelled: bool) -> Option<f64> {
-    let method = p.get("sightline_method").and_then(Value::as_str);
-    (self_propelled && method == Some("blind_distance"))
-        .then_some(ovd_core::wheelhouse::ES_TRIN_BLIND_DISTANCE_M)
+/// The Rule Sets and inputs [`sightline_limits_of`] reads when the run has no Option: the default stack of
+/// the Service Area (issue #989), and the few inputs the Blind Distance Rules read.
+fn default_sightline_rules(p: &Map<String, Value>) -> (Vec<ovd_core::rules::RuleSet>, ga::RuleInputs) {
+    let area = p
+        .get("service_area")
+        .and_then(Value::as_str)
+        .unwrap_or("river-only");
+    let gas = p.get("vessel").and_then(Value::as_str) == Some("gas_barge");
+    let library = crate::rule_set::built_in();
+    let ids = crate::profile::Profile::built_in()
+        .default_stack(area, gas)
+        .unwrap_or_default();
+    let sets: Vec<ovd_core::rules::RuleSet> = ids
+        .iter()
+        .filter_map(|id| library.latest(id))
+        .cloned()
+        .collect();
+    let mut inputs = ga::RuleInputs::default();
+    inputs
+        .applicability
+        .push(("service_area".to_string(), area.to_string()));
+    if let Some(loa) = p.get("loa_m").and_then(Value::as_f64) {
+        inputs.applicability.push((
+            "length_band".to_string(),
+            ovd_core::measured::length_band(loa).to_string(),
+        ));
+        let id = "input.length_overall_m";
+        if let Some(info) = crate::trace::measure_info(id) {
+            inputs
+                .measures
+                .push((id.to_string(), info, ovd_core::rule_trace::MeasureValue::Number(loa)));
+        }
+    }
+    (sets, inputs)
 }
 
 /// The machinery of a specified Propulsor (issue #352), or `None` for an `unspecified` one (today's
@@ -2886,7 +2933,7 @@ fn machinery_steel_json(m: &ovd_core::aft_arrangement::MachinerySummary) -> Valu
 /// results keep their hash).
 fn sightline_json(r: &BargeCapacityResult) -> Option<Value> {
     let s = r.sightline.as_ref()?;
-    Some(json!({
+    let mut block = json!({
         "method": "blind_distance",
         "limit_m": num(s.limit_m),
         "blind_distance_light_m": num(s.blind_distance_m),
@@ -2896,7 +2943,13 @@ fn sightline_json(r: &BargeCapacityResult) -> Option<Value> {
         "eye_raised_m": num(s.eye_raised_m),
         "floor_raised_m": num(s.floor_raised_m),
         "lift_enough": s.enough,
-    }))
+    });
+    // Issue #989: the laden limit, only when a Rule of the stack gives one, so a design with none keeps
+    // its block as it was.
+    if let (Some(limit), Some(o)) = (r.blind_limit_laden_m, block.as_object_mut()) {
+        o.insert("limit_laden_m".to_string(), num(limit));
+    }
+    Some(block)
 }
 
 /// The `powering` block (issue #353) joins a machinery's results only, and the `sightline` block
@@ -3042,6 +3095,7 @@ fn simulate_gas(
     } else {
         None
     };
+    let blind = sightline_limits_of(p, self_propelled, rules);
     let options = FitOptions {
         // Issue #741: the `structure` block of the Hull, for the panel model of each arrangement.
         structure: structure_block(p)?,
@@ -3156,8 +3210,9 @@ fn simulate_gas(
         rules: rules.sets.clone(),
         rule_inputs: rules.inputs.clone(),
         machinery: gas_machinery,
-        sightline_limit_m: sightline_limit_of(p, self_propelled),
-        solas_v22_sizing: solas_v22_sizing_of(p),
+        sightline_limit_m: blind.light_m,
+        sightline_limit_laden_m: blind.laden_m,
+        sightline_limit_source: blind.light_rule.clone(),
         is_code: is_code_options,
         ..FitOptions::default()
     };

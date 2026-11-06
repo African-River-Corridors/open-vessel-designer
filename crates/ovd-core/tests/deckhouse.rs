@@ -289,21 +289,16 @@ fn the_second_pass_on_the_light_waterline_never_adds_a_tier_and_keeps_the_sightl
 }
 
 #[test]
-fn on_a_hull_under_125_m_solas_governs_the_fixed_wheelhouse_and_adds_a_tier() {
-    // Issue #779, maintainer decision: a coastal deckhouse is sized to the stricter of the 250 m
-    // ES-TRIN Blind Distance and SOLAS V/22.1.1, min(2 L, 500 m). Under 125 m, 2 L is under 250 m, so
-    // SOLAS governs; at and over 125 m ES-TRIN does.
+fn a_tighter_blind_distance_limit_adds_a_tier_to_the_fixed_wheelhouse() {
+    // Issue #989: the limit is an input, read from the Rule Sets of the stack (ES-TRIN 250 m, and under
+    // 125 m SOLAS V/22.1.1: 2 L). The wheelhouse is sized to the one it is given, the least that binds.
+    // On a 60 m hull the 250 m limit leaves a light Blind Distance of 234.7 m; 2 L = 120 m adds a tier.
     use ovd_core::barge_capacity::{BargeCapacityInputs, compute as capacity};
-    use ovd_core::wheelhouse::solas_v22_limit_m;
-    assert_eq!(solas_v22_limit_m(44.9), None);
-    assert_eq!(solas_v22_limit_m(110.0), Some(220.0));
-    assert_eq!(solas_v22_limit_m(300.0), Some(500.0));
-    let run = |loa: f64, solas: bool| {
-        let mut i = BargeCapacityInputs::new(loa, 11.4, 6.0);
+    let run = |limit: f64| {
+        let mut i = BargeCapacityInputs::new(60.0, 11.4, 6.0);
         i.cargo_type = "LPG_propane".to_string();
         i.self_propelled = true;
-        i.sightline_limit_m = Some(250.0);
-        i.solas_v22_sizing = solas;
+        i.sightline_limit_m = Some(limit);
         i.aft_design.arrangement_style = ArrangementStyle::Deckhouse;
         i.aft_design.wheelhouse_max_lift_m = 0.0;
         let r = capacity(&i).unwrap();
@@ -317,15 +312,11 @@ fn on_a_hull_under_125_m_solas_governs_the_fixed_wheelhouse_and_adds_a_tier() {
             .tiers;
         (tiers, r.sightline.as_ref().unwrap().blind_distance_m)
     };
-    // 60 m: the ES-TRIN sizing leaves a light Blind Distance of 234.7 m, over 2 L = 120 m; SOLAS adds
-    // the tier that brings it to 105.0 m.
-    let (es_trin_tiers, es_trin_blind) = run(60.0, false);
-    let (solas_tiers, blind) = run(60.0, true);
-    assert_eq!((es_trin_tiers, solas_tiers), (3, 4));
+    let (loose_tiers, loose_blind) = run(250.0);
+    let (tight_tiers, tight_blind) = run(120.0);
+    assert_eq!((loose_tiers, tight_tiers), (3, 4));
     assert!(
-        es_trin_blind > 120.0 && blind <= 120.0 + 1e-9,
-        "{es_trin_blind}, {blind}"
+        loose_blind > 120.0 && tight_blind <= 120.0 + 1e-9,
+        "{loose_blind}, {tight_blind}"
     );
-    // At 125 m and over the two limits are the same, so the tiers are too.
-    assert_eq!(run(130.0, true).0, run(130.0, false).0);
 }
