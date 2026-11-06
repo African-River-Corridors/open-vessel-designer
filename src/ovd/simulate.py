@@ -58,13 +58,17 @@ def simulate_damage(params: dict, progress=None, cancel=None) -> dict:
 
     ``progress(done, total)`` is called as cases finish: first with ``done`` 0, last with ``done == total``.
     ``cancel()`` returning true stops the run, and the call *returns* the results of a run without damage
-    (``damage_status`` is ``"not run"``). Both are called on the thread that called ``simulate_damage``
-    (the engine's worker threads never call Python), one at a time; keep them short. A ``threading.Event``
-    is passed as ``event.is_set``. An exception raised by either, or Ctrl-C (``KeyboardInterrupt``),
-    stops the run and is raised from this call. A hull with no damage Rule Set gives
-    ``"not applicable"`` and never calls ``progress``.
+    (``damage_status`` is ``"not run"``). To get them the core runs the Option again without damage
+    before it returns (about 45 % of a coastal run), so a cancel does not return at once.
+    Both callables run on the thread that called ``simulate_damage`` (the engine's worker threads never
+    call Python), one at a time; keep them short. They run only when the count of finished damage cases
+    changes (no timer), so ``cancel()`` and Ctrl-C are not seen during the first part of the run that
+    works out no damage, nor inside one long case, nor during that rerun. A ``threading.Event`` is passed
+    as ``event.is_set``. An exception raised by either, or Ctrl-C (``KeyboardInterrupt``), stops the run
+    and is raised from this call. A hull with no damage Rule Set gives ``"not applicable"`` and never
+    calls ``progress``.
     """
     for name, f in (("progress", progress), ("cancel", cancel)):
         if f is not None and not callable(f):
             raise TypeError(f"`{name}` must be a callable or None, not {type(f).__name__}")
-    return _call_with_progress("simulate_damage", {"params": params}, progress, cancel)
+    return _call_with_progress({"params": params}, progress, cancel)

@@ -171,7 +171,7 @@ def test_another_python_thread_runs_while_the_core_calculates(coastal, monkeypat
     finally:
         stop.set()
         thread.join()
-    assert during > 1000, during
+    assert during > 100_000, during
 
 
 def test_ctrl_c_in_a_callable_stops_the_run_with_keyboard_interrupt(coastal):
