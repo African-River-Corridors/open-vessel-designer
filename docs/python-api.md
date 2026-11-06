@@ -78,6 +78,28 @@ The `damage` argument is `False` by default.
 
 `simulate(p)` does not run the damage stability cases, and gives `damage_status: "not run"`. This keeps sweeps fast. `simulate(p, damage=True)` runs them in the same call, as `ovd run` does, and gives `damage_status: "run"`.
 
+## Two stages
+
+Damage stability is the slow part of a run, so it is a second stage. `simulate(p)` is the first stage (`damage_status` is `"not run"`). `simulate_damage(p, progress=None, cancel=None)` runs the damage cases too:
+
+```python
+from ovd.simulate import simulate, simulate_damage
+
+def show(done, total):
+    print(f"{done} of {total} damage cases")
+
+result = simulate_damage(p, progress=show)
+result["damage_status"]      # "run"
+```
+
+- **Same answer.** `simulate_damage(p)` equals `simulate(p, damage=True)`, on the whole value, and equals what `ovd run` gives. There is one build path.
+- **Stateless.** The call builds the Option again, so the part that `simulate(p)` does runs again (about 45 % of a coastal run). Keep the first stage's result if you have it; do not expect the call to reuse it.
+- **`progress(done, total)`** is called as cases finish: first with `done` 0, last with `done == total`. `total` is the same on every call and `done` never falls. A hull with no damage Rule Set gives `damage_status` `"not applicable"` and never calls it.
+- **`cancel()`** returning true stops the run. The call then *returns* the results of a run without damage, `damage_status` `"not run"`, equal to `simulate(p)`. No new case starts; cases under way finish. To cancel from a `threading.Event`, pass `event.is_set`.
+- **Where the callables run.** The core's worker threads never call Python. `progress` and `cancel` run on the thread that called `simulate_damage`, one at a time. Keep them short: the run waits for them.
+- **Errors and Ctrl-C.** An exception raised in `progress` or `cancel` stops the run and is raised from `simulate_damage`. Ctrl-C raises `KeyboardInterrupt` the same way, if `simulate_damage` was called from the main thread. A plain `simulate(p)` has no callable, so Ctrl-C waits for it to return.
+- **The GIL.** The compiled core lets go of the GIL while it calculates, in `simulate`, `simulate_damage` and every other call. Other Python threads run during a call, so a sweep can use threads.
+
 ## Result
 
 The result is what `ovd run --json` stores for one Option. These keys come from `run`, beside the keys of the old `simulate` result (`results`, `dims`, `hydrostatics`, `stability`, `checks`, `arrangement` and the rest): `rule_trace`, `cost`, `calibration`, `gross_tonnage`, `crew`, `rooms`, `stern_arrangement`, `spaces`, `gas_fuel`, `holding_time`, `damage_status` and `damage_cases`, and the convoy, lock and pusher blocks for a Formation that has them. A key is there when the run gives it for the Option. The result holds no results hash and no Option inputs: the hash belongs to a saved file.
