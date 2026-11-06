@@ -44,7 +44,9 @@ def test_gas_optimised_depth_matches_snapshot():
     # was 1694.8.
     # Re-pinned (issue #937: the Defaults Profile fills the tank, arrangement and powering inputs, as above;
     # the stability conditions are the run's); was 1767.6.
-    assert abs(o["results"]["cargo_t"] - 1977.2) < 1.0
+    # Re-pinned (issue #926: a coastal LNG tank takes the IGC 4.23.1.2 minimum as its design pressure,
+    # below 0.40 MPa for this tank, so the walls are thinner; printed 2016.7821962259627); was 1977.2.
+    assert abs(o["results"]["cargo_t"] - 2016.8) < 1.0
     assert o["arrangement"]["fill_ratio"] == 0.98          # ruleset-driven default
 
 

@@ -4816,7 +4816,7 @@ fn read_option(
             ));
             continue;
         }
-        let default = match default_for(spec.name, &inputs, profile) {
+        let default = match default_for(spec.name, &inputs, raw, profile) {
             Ok(Some(d)) => d,
             // The input it depends on is missing or wrong; that error is already reported.
             Ok(None) => continue,
@@ -5008,6 +5008,7 @@ fn read_option(
 fn default_for(
     name: &str,
     inputs: &[(String, StoredInput)],
+    raw: &Map<String, Value>,
     profile: &Profile,
 ) -> Result<Option<Value>, Text> {
     let got = |n: &str| {
@@ -5030,7 +5031,7 @@ fn default_for(
             .map(|c| crate::trace::default_rule_sets(profile, &area, Some(c.as_str()))));
     }
     if TABLE_DEFAULTS.contains(&name) {
-        return table_default_for(name, inputs, profile);
+        return table_default_for(name, inputs, raw, profile);
     }
     let (value, case) = match KEYED_DEFAULTS.iter().find(|(n, _, _)| *n == name) {
         Some((_, by, _)) => {
@@ -5092,6 +5093,7 @@ fn default_for(
 fn table_default_for(
     name: &str,
     inputs: &[(String, StoredInput)],
+    raw: &Map<String, Value>,
     profile: &Profile,
 ) -> Result<Option<Value>, Text> {
     let got = |n: &str| {
@@ -5113,8 +5115,14 @@ fn table_default_for(
         ("cargo", cargo),
         ("lpg_carriage_condition", carriage.unwrap_or("")),
     ];
-    // The Service Area, once it is known (issue #926): a row that names it fits only that area.
-    if let Some(area) = got("service_area") {
+    // The Service Area, once it is known (issue #926): a row that names it fits only that area. The
+    // Service Area comes after the tank inputs in `INPUTS`, so it may not be resolved yet: read the
+    // file's own value then.
+    let raw_area = raw
+        .get("service_area")
+        .and_then(|v| unmark(v).ok())
+        .and_then(|i| i.value.as_str().map(String::from));
+    if let Some(area) = got("service_area").or(raw_area.as_deref()) {
         context.push(("service_area", area));
     }
     match profile.table_default(name, &context) {

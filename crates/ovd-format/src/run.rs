@@ -13,7 +13,7 @@ use crate::damage::DamageControl;
 use crate::rule_set::Library;
 use crate::simulate::{Outcome, RunRules, simulate_params_measured};
 use crate::trace::{rule_inputs, stack_for, trace_json, trace_of};
-use crate::vdesign::{Design, DesignOption};
+use crate::vdesign::{Design, DesignOption, Source};
 use ovd_core::pyfmt::fixed;
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
@@ -296,6 +296,16 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         if get(name).is_some_and(|v| v.is_null()) {
             p.insert(name.to_string(), Value::Null);
         }
+    }
+    // Issue #926: how the design pressure was set, for the results: a value the file only holds as a
+    // default says so; a null is the IGC minimum whatever its source (`simulate` decides that).
+    if let Some(i) = option.input("tank_design_pressure_mpa") {
+        let basis = if i.source == Source::Default {
+            "default"
+        } else {
+            "typed"
+        };
+        p.insert("tank_design_pressure_basis".into(), json!(basis));
     }
     let vessel = match get("cargo_containment").as_ref().and_then(Value::as_str) {
         Some("box_hold") => "box_barge",

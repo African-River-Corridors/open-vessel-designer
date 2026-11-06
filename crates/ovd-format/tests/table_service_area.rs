@@ -69,7 +69,13 @@ fn a_row_that_names_the_service_area_loads_and_fits_only_that_area() {
 #[test]
 fn a_profile_with_the_three_older_keys_still_loads_and_fits_any_service_area() {
     let profile = profile_with(|v| {
-        table(v)["by"] = json!(["cargo_containment", "cargo", "lpg_carriage_condition"]);
+        let t = table(v);
+        t["by"] = json!(["cargo_containment", "cargo", "lpg_carriage_condition"]);
+        // An older profile has no row that names the Service Area.
+        t["rows"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|r| r["when"].get("service_area").is_none());
     })
     .expect("an older three-key `by` list loads");
     for area in ["river-only", "coastal-and-river"] {

@@ -356,7 +356,10 @@ fn table_summary(table: &Value) -> Value {
         .flatten()
     {
         let when = row.get("when").cloned().unwrap_or(Value::Null);
-        let mut parts = names(&when, "cargo");
+        // The Service Area first, when the row names it (issue #926): two rows of one Cargo can
+        // differ only by it.
+        let mut parts = names(&when, "service_area");
+        parts.extend(names(&when, "cargo"));
         parts.extend(names(&when, "lpg_carriage_condition"));
         let key = if parts.is_empty() {
             "any".to_string()
