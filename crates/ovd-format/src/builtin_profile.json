@@ -1136,7 +1136,7 @@
     "deckhouse_front_opening": {
       "default": false,
       "status": "estimate",
-      "basis": "Whether the deckhouse front, the end facing the cargo area, has an entrance, air inlet or opening (IGC 3.2.4.1; inland class rules 3.3.10). The engine does not place openings: type what the general arrangement shows. false is the aim of both rules. A file saved before reads false"
+      "basis": "Whether the deckhouse front, the end facing the cargo area, has an entrance, air inlet or opening (IGC 3.2.4.1, for a container-block stern; a deckhouse stern has its placed openings checked instead; inland class rules 3.3.10). The engine does not place openings on a container-block stern: type what the general arrangement shows. false is the aim of both rules. A file saved before reads false"
     },
     "deckhouse_side_opening_distance_m": {
       "default": 5.0,
@@ -1150,7 +1150,7 @@
         "max": 20.0
       },
       "status": "estimate",
-      "basis": "The distance of the first entrance, air inlet or opening on the side of the deckhouse from the deckhouse end facing the cargo area. IGC 3.2.4.1 asks for at least 4 % of the ship length L, not less than 3 m, and no more than 5 m. 5 m is the most the rule ever asks, so the default meets it; the engine does not place openings. A file saved before reads 5 m"
+      "basis": "The distance of the first entrance, air inlet or opening on the side of the deckhouse from the deckhouse end facing the cargo area. IGC 3.2.4.1 asks for at least 4 % of the ship length L, not less than 3 m, and no more than 5 m; `igc-2g` 4.0.0 reads this input for a container-block stern only (a deckhouse stern has its placed openings checked). 5 m is the most the rule ever asks, so the default meets it; the engine does not place openings on a container-block stern. A file saved before reads 5 m"
     },
     "entrance_distance_m": {
       "default": 5.0,
@@ -1164,7 +1164,7 @@
         "max": 30.0
       },
       "status": "estimate",
-      "basis": "The distance from the cargo area of the nearest entrance, or openable window, of the engine room, the accommodation and the wheelhouse (inland class rules 3.3.7 and 3.3.11 ask for at least 2.00 m). On a gas hull IGC 3.2.4.1 also asks for at least 4 % of the ship length L from the deckhouse end facing the cargo area, not less than 3 m and no more than 5 m; with no setback length in the hull (spec 0011 D17) that end stands at the cargo area. 5 m is the most either rule asks, so the default meets both; the engine does not place openings. Type the distance the general arrangement shows. A file saved before reads 2 m"
+      "basis": "The distance from the cargo area of the nearest entrance, or openable window, of the engine room, the accommodation and the wheelhouse (inland class rules 3.3.7 and 3.3.11 ask for at least 2.00 m). On a gas hull with a container-block stern IGC 3.2.4.1 also asks for at least 4 % of the ship length L from the deckhouse end facing the cargo area, not less than 3 m and no more than 5 m (a deckhouse stern has its placed openings checked instead); with no setback length in the hull (spec 0011 D17) that end stands at the cargo area. 5 m is the most either rule asks, so the default meets both; the engine does not place openings. Type the distance the general arrangement shows. A file saved before reads 2 m"
     },
     "engine_room_vent_inlet_distance_m": {
       "default": 5.0,
@@ -1178,7 +1178,7 @@
         "max": 30.0
       },
       "status": "estimate",
-      "basis": "The distance from the cargo area of the engine room ventilation inlets, and of the engine air intakes when the engines do not take air from the engine room (inland class rules 3.3.8 ask for at least 2.00 m). On a gas hull IGC 3.2.4.1 also asks for at least 4 % of the ship length L from the deckhouse end facing the cargo area, not less than 3 m and no more than 5 m; with no setback length in the hull (spec 0011 D17) that end stands at the cargo area. 5 m is the most either rule asks, so the default meets both; the engine does not place openings. A file saved before reads 2 m"
+      "basis": "The distance from the cargo area of the engine room ventilation inlets, and of the engine air intakes when the engines do not take air from the engine room (inland class rules 3.3.8 ask for at least 2.00 m). On a gas hull with a container-block stern IGC 3.2.4.1 also asks for at least 4 % of the ship length L from the deckhouse end facing the cargo area, not less than 3 m and no more than 5 m (a deckhouse stern has its placed openings checked instead); with no setback length in the hull (spec 0011 D17) that end stands at the cargo area. 5 m is the most either rule asks, so the default meets both; the engine does not place openings. A file saved before reads 2 m"
     },
     "vent_stub_m": {
       "default": 1.0,

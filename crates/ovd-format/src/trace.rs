@@ -567,6 +567,10 @@ impl MeasureSource for OptionMeasures<'_> {
             // Issue #740: the scantling Rules of `abs-steel-barges` size the hull steel; each is a
             // `not evaluated` row with its gap.
             id if id.starts_with("hull_steel.") => true,
+            // Issue #913: the IGC 3.2.4 rows on the placed openings. A hull with none placed (a
+            // container-block stern) has the rows, `not evaluated` with the reason (`missing`), never
+            // `not applicable` and never `pass`.
+            id if id.starts_with("opening.") => true,
             _ => self.measured.has(measure),
         }
     }
@@ -594,6 +598,12 @@ impl MeasureSource for OptionMeasures<'_> {
             == Some("type_c_tanks");
         if object == ObjectType::Tank && gas && self.measured.tank.is_none() {
             return Some("no tank fits the hull, so there is no tank to check".to_string());
+        }
+        if object == ObjectType::Opening && self.measured.openings.is_none() {
+            return Some(
+                "the Option has no deckhouse stern, so the engine places no openings to check"
+                    .to_string(),
+            );
         }
         if object == ObjectType::OilOutflow && self.measured.oil_outflow.is_none() {
             return Some(
@@ -768,7 +778,42 @@ fn bare(id: &str) -> MeasureRef {
 /// The Rule Trace of a computed Option.
 pub fn trace_of(selection: &Selection, option: &DesignOption, measured: &Measured) -> Trace {
     let source = OptionMeasures { option, measured };
-    evaluate(&selection.sets, &source)
+    let mut trace = evaluate(&selection.sets, &source);
+    worst_opening_governs(&mut trace);
+    trace
+}
+
+/// Issue #913: a Rule on the openings has one row for each opening, and the opening furthest inside its
+/// limit is the row value of the Rule. The kernel marks the governing row of each (Measure, object), so
+/// every opening's row would be governing for itself; here only the row with the least Margin of each Rule
+/// stays governing (the first of equals). Only rows of the `opening` object are touched, so no other Rule
+/// Set's trace changes. A `check` Rule has no limit and no governing row.
+fn worst_opening_governs(trace: &mut Trace) {
+    let is_opening =
+        |r: &TraceRow| r.object_type.as_deref() == Some("opening") && r.limit.is_some();
+    let mut seen: Vec<String> = Vec::new();
+    for i in 0..trace.rows.len() {
+        let Some(rule) = trace.rows[i].rule.clone() else {
+            continue;
+        };
+        if !is_opening(&trace.rows[i]) || seen.contains(&rule) {
+            continue;
+        }
+        seen.push(rule.clone());
+        let group: Vec<usize> = (i..trace.rows.len())
+            .filter(|&j| is_opening(&trace.rows[j]) && trace.rows[j].rule.as_deref() == Some(&rule))
+            .collect();
+        let mut worst = group[0];
+        for &j in &group[1..] {
+            let (a, b) = (trace.rows[j].margin, trace.rows[worst].margin);
+            if a.zip(b).is_some_and(|(a, b)| a < b) {
+                worst = j;
+            }
+        }
+        for &j in &group {
+            trace.rows[j].governing = j == worst;
+        }
+    }
 }
 
 fn value_json(v: &MeasureValue) -> Value {
