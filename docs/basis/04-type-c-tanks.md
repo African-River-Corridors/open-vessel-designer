@@ -206,7 +206,7 @@ Cargo Containment, Cargo and LPG Carriage Condition (see TC-A26 to TC-A48).
 | `tank_insulation_type` | panel / none / pu_foam by row | – | – | Recorded only: it does not set the two values below |
 | `tank_insulation_thickness_mm` | 330 / 0 / 200 by row | mm | 0–1000; 0–400 | Table rows TC-A40 to TC-A42 |
 | `tank_insulation_conductivity_w_per_mk` | 0.026 (foam; the pressurised LPG row is not used) | W/m.K | > 0, ≤ 10; 0.001–0.06 | Estimate (#919): Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3. The heat leak, the boil-off and the holding time read it. Old files keep 0.026 |
-| `tank_insulation_density_kg_m3` | 60 / 0 by row | kg/m3 | 0–2000; 0–300 | Estimate (#919); the insulation mass reads it. Old files keep 60 |
+| `tank_insulation_density_kg_m3` | 96 / 0 by row | kg/m3 | 0–2000; 0–300 | Estimate (#919): 96 kg/m3 is the foam of the conductivity (Lee et al. 2021); the insulation mass reads it. The engine used 60 before; old files keep 60 |
 | `tank_structure_factor` | 1.30 / 1.12 by row | – | 1–3; 1.0–1.6 | Table rows TC-A62, TC-A63 |
 | `tank_wall_thickness_mm` | none (formula) | mm | > 0, ≤ 200; 10–50 | A typed value is an override for shell and heads |
 | `max_tank_od_m` | 16.0 | m | > 0, ≤ 50; 4–20 | Tool limit |

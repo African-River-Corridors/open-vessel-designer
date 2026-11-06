@@ -128,21 +128,21 @@
   }
  },
  "results": {
-  "air_draft_light_m": 21.531443877079777,
-  "air_draft_loaded_m": 19.13479939909294,
+  "air_draft_light_m": 21.504241364891453,
+  "air_draft_loaded_m": 19.109081458250934,
   "cargo_t": 8070.899599838365,
   "cargo_volume_bound_t": 8070.899599838365,
   "cargo_volume_m3": 17935.332444085256,
-  "cargo_weight_bound_t": 33137.55169223627,
+  "cargo_weight_bound_t": 33048.09683897557,
   "deadweight_t": 8106.274425039019,
-  "displacement_t": 13481.194277518194,
-  "draught_m": 4.0652006009070565,
+  "displacement_t": 13570.649130778891,
+  "draught_m": 4.090918541749064,
   "draught_max_m": 10.6,
-  "freeboard_m": 7.9347993990929435,
+  "freeboard_m": 7.909081458250936,
   "governs": "tank volume",
   "h_over_T": null,
-  "light_draught_m": 1.6685561229202217,
-  "lightship_t": 5374.919852479175,
+  "light_draught_m": 1.6957586351085463,
+  "lightship_t": 5464.374705739871,
   "vent_distance_to_accommodation_m": 104.96799999999999,
   "vent_distance_to_openings_m": 104.96799999999999,
   "vent_exit_above_deck_m": 9.666666666666666,
@@ -805,70 +805,70 @@
    "args": {},
    "id": "name-check-feasible-arrangement"
   },
-  "GM 13.55 m (fluid), max GZ 5.78 m at 35\u00b0": {
+  "GM 13.45 m (fluid), max GZ 5.76 m at 35\u00b0": {
    "args": {
     "angle": {
      "num": "35",
      "value": 35.0
     },
     "gm": {
-     "num": "13.55",
-     "value": 13.549917625154439
+     "num": "13.45",
+     "value": 13.44698537215043
     },
     "max_gz": {
-     "num": "5.78",
-     "value": 5.776214513121037
+     "num": "5.76",
+     "value": 5.762822737173781
     }
    },
    "id": "check-stability"
   },
-  "GM 13.57 m (fluid), max GZ 5.77 m at 35\u00b0": {
+  "GM 13.46 m (fluid), max GZ 5.76 m at 35\u00b0": {
    "args": {
     "angle": {
      "num": "35",
      "value": 35.0
     },
     "gm": {
-     "num": "13.57",
-     "value": 13.565513413302002
+     "num": "13.46",
+     "value": 13.462233931178408
     },
     "max_gz": {
-     "num": "5.77",
-     "value": 5.773267563008076
+     "num": "5.76",
+     "value": 5.759971680983004
     }
    },
    "id": "check-stability"
   },
-  "GM 24.04 m (fluid), max GZ 7.30 m at 35\u00b0": {
+  "GM 23.75 m (fluid), max GZ 7.27 m at 35\u00b0": {
    "args": {
     "angle": {
      "num": "35",
      "value": 35.0
     },
     "gm": {
-     "num": "24.04",
-     "value": 24.035250003811033
+     "num": "23.75",
+     "value": 23.751492805625023
     },
     "max_gz": {
-     "num": "7.30",
-     "value": 7.296306978205431
+     "num": "7.27",
+     "value": 7.271015087117949
     }
    },
    "id": "check-stability"
   },
-  "GM 24.10 m (fluid), max GZ 7.29 m at 35\u00b0": {
+  "GM 23.81 m (fluid), max GZ 7.27 m at 35\u00b0": {
    "args": {
     "angle": {
      "num": "35",
      "value": 35.0
     },
     "gm": {
-     "num": "24.10",
-     "value": 24.095591229421064
+     "num": "23.81",
+     "value": 23.810303670742858
     },
     "max_gz": {
-     "num": "7.29",
-     "value": 7.291351582841164
+     "num": "7.27",
+     "value": 7.266064297658123
     }
    },
    "id": "check-stability"
@@ -937,11 +937,11 @@
    },
    "id": "check-aft-end-bulkhead-space"
   },
-  "blind distance ahead of the bow 220.3 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 0.00 m of 0.00 m": {
+  "blind distance ahead of the bow 219.8 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 0.00 m of 0.00 m": {
    "args": {
     "blind": {
-     "num": "220.3",
-     "value": 220.29029570919158
+     "num": "219.8",
+     "value": 219.81936315134044
     },
     "lift": {
      "num": "0.00",
@@ -1052,11 +1052,11 @@
    },
    "id": "check-fwd-end-bulkhead-space"
   },
-  "freeboard 7.94 m >= required 1.4 m": {
+  "freeboard 7.92 m >= required 1.4 m": {
    "args": {
     "freeboard": {
-     "num": "7.94",
-     "value": 7.944973690132534
+     "num": "7.92",
+     "value": 7.919249789421194
     },
     "required": {
      "num": "1.4",
@@ -1065,15 +1065,15 @@
    },
    "id": "check-freeboard-ok"
   },
-  "freeboard 7.94 m at the carried draught 4.06 m >= required 1.4 m": {
+  "freeboard 7.92 m at the carried draught 4.08 m >= required 1.4 m": {
    "args": {
     "draught": {
-     "num": "4.06",
-     "value": 4.055026309867466
+     "num": "4.08",
+     "value": 4.080750210578806
     },
     "freeboard": {
-     "num": "7.94",
-     "value": 7.944973690132534
+     "num": "7.92",
+     "value": 7.919249789421194
     },
     "required": {
      "num": "1.4",

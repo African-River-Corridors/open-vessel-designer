@@ -44,7 +44,10 @@ def test_gas_optimised_depth_matches_snapshot():
     # was 1694.8.
     # Re-pinned (issue #937: the Defaults Profile fills the tank, arrangement and powering inputs, as above;
     # the stability conditions are the run's); was 1767.6.
-    assert abs(o["results"]["cargo_t"] - 1977.2) < 1.0
+    # Re-pinned (issue #919: the insulation density of the LNG tanks defaults to 96 kg/m3, was 60; the
+    # insulation weighs 60 % more, so the lightship rises and the cargo falls; printed 1960.135251493092
+    # by this test's failing run); was 1977.2.
+    assert abs(o["results"]["cargo_t"] - 1960.1) < 1.0
     assert o["arrangement"]["fill_ratio"] == 0.98          # ruleset-driven default
 
 
