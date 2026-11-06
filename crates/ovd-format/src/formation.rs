@@ -641,9 +641,7 @@ fn sightline(
     v: &Value,
     notes: &mut Vec<ovd_core::text::Text>,
 ) -> Result<Option<Value>, String> {
-    use ovd_core::aft_arrangement::{
-        DEFAULT_WHEELHOUSE_EYE_ABOVE_FLOOR_M, DEFAULT_WHEELHOUSE_MAX_LIFT_M,
-    };
+    use ovd_core::aft_arrangement::{DEFAULT_WHEELHOUSE_MAX_LIFT_M, ES_TRIN_EYE_ABOVE_FLOOR_M};
     use ovd_core::formation::{
         ConvoySight, PUSHER_WHEELHOUSE_AT, convoy_obstructions, convoy_sightline,
     };
@@ -670,7 +668,8 @@ fn sightline(
         in_line,
         air("air_draft_loaded_m")?,
     );
-    let eye_height = DEFAULT_WHEELHOUSE_EYE_ABOVE_FLOOR_M;
+    // ES-TRIN 2025/1 Art. 7.02(3): 1.65 m above the floor (issue #990).
+    let eye_height = ES_TRIN_EYE_ABOVE_FLOOR_M;
     let max_lift = if tug.elevating {
         DEFAULT_WHEELHOUSE_MAX_LIFT_M
     } else {

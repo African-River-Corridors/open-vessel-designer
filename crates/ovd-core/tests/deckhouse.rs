@@ -233,13 +233,13 @@ fn more_accommodation_never_means_fewer_tiers_or_less_steel() {
 
 #[test]
 fn a_fixed_wheelhouse_gets_tiers_until_its_eye_clears_the_cargo() {
-    // Eye 1.65 m above the floor, margin 0.5 m, cargo top 20 m: the floor must reach 18.85 m, which is
-    // 12.85 m over the 6.0 m deck, so ceil(12.85 / 2.6) = 5 tiers.
+    // Eye 1.5 m above the floor, margin 0.5 m, cargo top 20 m: the floor must reach 19.0 m, which is
+    // 13.0 m over the 6.0 m deck, so ceil(13.0 / 2.6) = 5 tiers (top 19.0 m).
     let mut i = deckhouse_inputs();
     i.sightline_obstruction_m = Some(20.0);
     let r = compute(&i).unwrap();
     assert_eq!(r.deckhouse.as_ref().unwrap().tiers, 5);
-    let eye = r.wheelhouse_floor_raised_m + 1.65;
+    let eye = r.wheelhouse_floor_raised_m + 1.5;
     assert!(eye >= 20.5 - 1e-9, "{eye}");
     assert!(
         r.checks
