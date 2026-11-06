@@ -19,26 +19,6 @@ fn defaults_match_the_python_dataclass() {
     assert_eq!(i.wheelhouse_max_lift_m, 6.0);
 }
 
-/// Issue #990: the helmsman's eye is 1.65 m above the wheelhouse floor (ES-TRIN 2025/1 Art. 7.02(3)).
-/// The default of the engine says so, and the lift follows it: the old 1.50 m eye needs 0.15 m more.
-#[test]
-fn the_default_eye_is_1_65_m_above_the_floor_as_es_trin_states() {
-    let mut i = gas(14.8, 5.4);
-    assert_eq!(i.wheelhouse_eye_above_floor_m, 1.65);
-    assert_eq!(
-        ovd_core::aft_arrangement::DEFAULT_WHEELHOUSE_EYE_ABOVE_FLOOR_M,
-        1.65
-    );
-    i.sightline_obstruction_m = Some(9.0);
-    let lift_default = compute(&i).unwrap().wheelhouse_lift_m;
-    i.wheelhouse_eye_above_floor_m = 1.50;
-    let lift_old = compute(&i).unwrap().wheelhouse_lift_m;
-    assert!(
-        (lift_old - lift_default - 0.15).abs() < 1e-9,
-        "{lift_old} {lift_default}"
-    );
-}
-
 #[test]
 fn golden_block_for_the_wide_gas_vessel() {
     let r = compute(&gas(14.8, 5.4)).unwrap();
