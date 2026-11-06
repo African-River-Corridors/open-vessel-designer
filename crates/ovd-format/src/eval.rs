@@ -534,6 +534,24 @@ pub(crate) fn aft_json(r: &AftArrangementResult) -> Value {
     if let Some(d) = &r.deckhouse {
         v["deckhouse"] = deckhouse_json(d);
     }
+    // Issue #994: the forward house, for `wheelhouse_forward` only.
+    if let Some(f) = &r.forward_house {
+        v["forward_house"] = json!({
+            "x_aft_m": num(f.x_aft_m),
+            "x_fwd_m": num(f.x_fwd_m),
+            "width_m": num(f.width_m),
+            "base_m": num(f.base_m),
+            "tiers": f.tiers,
+            "tier_height_m": num(f.tier_height_m),
+            "top_m": num(f.top_m),
+            "tier_area_m2": num(f.tier_area_m2),
+            "area_m2": num(f.area_m2),
+            "volume_m3": num(f.volume_m3),
+            "cargo_length_lost_m": num(f.cargo_length_lost_m),
+            "holds": ovd_core::aft_arrangement::forward_house_sizes::HOLDS,
+            "size_status": "estimate",
+        });
+    }
     v
 }
 

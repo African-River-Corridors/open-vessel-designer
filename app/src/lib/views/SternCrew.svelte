@@ -21,7 +21,7 @@
     <table>
       <tbody>
         <tr data-row="style"><th>{t("app-stern-style")}</th><td data-cell="value">{f.style ? t(`app-stern-style-${f.style}`) : "–"}</td></tr>
-        {#if f.style === "deckhouse"}
+        {#if f.style === "deckhouse" || f.style === "wheelhouse_forward"}
           <tr data-row="tiers"><th>{t("app-stern-tiers")}</th><td data-cell="value">{n(f.tiers, 0)}</td></tr>
         {/if}
         <tr data-row="wheelhouse">

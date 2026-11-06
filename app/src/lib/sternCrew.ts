@@ -51,7 +51,7 @@ export interface RoomsFigures {
 }
 
 export interface SternCrewFigures {
-  style: "container_block" | "deckhouse" | null;
+  style: "container_block" | "deckhouse" | "wheelhouse_forward" | null;
   tiers: number | null;
   wheelhouse: "fixed" | "elevating" | null;
   /** Why the wheelhouse is of that type (`stern_arrangement.wheelhouse_basis`). */
@@ -132,7 +132,8 @@ export function sternCrewFigures(
 ): SternCrewFigures | null {
   const a = obj(results?.stern_arrangement);
   if (!results || !a) return null;
-  const style = a.style === "deckhouse" || a.style === "container_block" ? a.style : null;
+  const style =
+    a.style === "deckhouse" || a.style === "wheelhouse_forward" || a.style === "container_block" ? a.style : null;
   const warnings = Array.isArray(results.warnings) ? (results.warnings as unknown[]) : [];
   const outfit = warnings.find((w): w is string => typeof w === "string" && ids?.[w]?.id === OUTFIT_WARNING_ID) ?? null;
   return {
@@ -140,7 +141,7 @@ export function sternCrewFigures(
     tiers: numOf(a.tiers),
     wheelhouse: a.wheelhouse === "fixed" || a.wheelhouse === "elevating" ? a.wheelhouse : null,
     wheelhouseBasis: strOf(a.wheelhouse_basis),
-    outfitWarning: style === "deckhouse" ? outfit : null,
+    outfitWarning: style === "deckhouse" || style === "wheelhouse_forward" ? outfit : null,
     crew: crewOf(results.crew),
     gas: gasOf(results),
     rooms: roomsOf(results.rooms),
