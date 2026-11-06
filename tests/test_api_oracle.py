@@ -99,6 +99,11 @@ KNOWN_DIFFERENCES: dict = {
     "simulate.hopper_channel": "issue #418: every check is listed; the full-volume ones as warnings; "
                                "issues #396, #397: one midship section B x T and the Schijf first "
                                "critical speed",
+    # Issue #937: the Python `simulate` builds an Option as `ovd fill --as-new` does, so a Cargo the
+    # Containment cannot carry is a fill error (a `TypeError`), where 0.1.0 returned `{"error": ...}`.
+    # `tests/data/api_ce96e66.json` is the record of 0.1.0 and is not re-printed.
+    "simulate.wrong_vessel_for_cargo": "issue #937: a Cargo the Containment cannot carry is a fill "
+                                       "error (TypeError), not an error dict",
     "resistance": "issues #396, #397: one midship section B x T and the Schijf first critical speed",
     # Issue #526: one g (9.80665 m/s^2) and one knot (1852/3600 m/s) in the resistance, squat and
     # wave modules. 0.1.0 used 9.81 and 0.5144 in the resistance, and 0.514444 in squat and waves.

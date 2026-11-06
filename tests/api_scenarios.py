@@ -162,8 +162,8 @@ def bulk_capacity(c, **over):
     return inp, b.compute(inp)
 
 
-CN_II = dict(vessel="gas_barge", cargo="LPG_propane", cb=0.85, freeboard_min_m=0.3,
-             self_propelled=True, ruleset="IGC_2G", fill_ratio=0.95,
+CN_II = dict(vessel="gas_barge", cargo="LPG_propane", freeboard_min_m=0.3,
+             self_propelled=True, fill_ratio=0.95,
              service_area="coastal-and-river")   # issue #925: required; coastal applies no Rule Sets, as left out did
 
 
@@ -564,13 +564,13 @@ def _(c):
 
 @scenario("simulate.gas_igc_channel", covers=["simulate.simulate"])
 def _(c):
-    return sim(c, ruleset="IGC_2G", fill_ratio=None, draught_limit_m=None,
+    return sim(c, fill_ratio=None, draught_limit_m=None,
                channel=dict(depth_m=c.n(5), ukc_m=c.n(0.5), bottom_width_m=c.n(40)))
 
 
 @scenario("simulate.gas_optimise_depth", covers=["simulate.simulate"])
 def _(c):
-    return sim(c, cargo="LNG", ruleset="IGC_2G", fill_ratio=None, draught_limit_m=c.n(3),
+    return sim(c, cargo="LNG", fill_ratio=None, draught_limit_m=c.n(3),
                optimise_depth=True)
 
 
@@ -578,7 +578,7 @@ def _(c):
 def _(c):
     return c.mod("simulate").simulate(dict(
         vessel="box_barge", cargo="bauxite", loa_m=c.n(76.5), beam_m=c.n(11.4), depth_m=c.n(3.5),
-        cb=c.n(0.928), lightship_k_t_per_m3=c.n(0.1093), freeboard_min_m=c.n(0.3),
+        lightship_k_t_per_m3=c.n(0.1093), freeboard_min_m=c.n(0.3),
         service_area="river-only"))
 
 
@@ -586,14 +586,14 @@ def _(c):
 def _(c):
     return c.mod("simulate").simulate(dict(
         vessel="hopper_barge", cargo="bauxite", loa_m=c.n(80), beam_m=c.n(12), depth_m=c.n(4),
-        cb=c.n(0.9), channel=dict(depth_m=c.n(5), ukc_m=c.n(1), bottom_width_m=c.n(40)),
+        channel=dict(depth_m=c.n(5), ukc_m=c.n(1), bottom_width_m=c.n(40)),
         air_draft_limit_m=c.n(6), speed_max_kn=c.n(6), service_area="river-only"))
 
 
 @scenario("simulate.wrong_vessel_for_cargo", covers=["simulate.simulate"])
 def _(c):
     return c.mod("simulate").simulate(dict(
-        vessel="box_barge", cargo="LNG", loa_m=c.n(80), beam_m=c.n(12), depth_m=c.n(4), cb=c.n(0.9),
+        vessel="box_barge", cargo="LNG", loa_m=c.n(80), beam_m=c.n(12), depth_m=c.n(4),
         service_area="river-only"))
 
 

@@ -225,6 +225,20 @@ check-bow-length-supplied = L_BWL not given, assumed { $bow_length } m = 0.2 x L
 warn-waves-period-estimated = no wave period given; T_p estimated at { $tp } s from H_s, which sets only the validity check, not the resistance
 warn-waves-beam-seas-floor = beam-ish seas: this module returns a FLOOR, because drift, rudder and course-keeping loss is not modelled and it dominates off the bow
 
+## crates/ovd-format/src/api.rs
+
+msg-api-cb = `cb` is a result, not an input: the hull gives it (issue #448)
+msg-api-midship-coefficient = `midship_coefficient` is not an input: the hull gives its own midship area
+msg-api-ruleset = `ruleset` is replaced by `service_area` and `rule_sets`
+msg-api-crew-key = `{ $key }` is worked out by the run; it is not an input
+msg-api-both-names = give one of `{ $old }` and `{ $new }`: they are the same input
+msg-api-channel-key = unknown key `{ $key }` in `channel`; it takes { $keys }
+msg-api-channel-object = `channel` must be an object, or left out
+msg-api-vessel = `vessel` = { $value } must be one of: { $ids }
+msg-bool = `{ $input }` must be true or false
+msg-api-formation-flags = `self_propelled` and `atb` are both true; a vessel is one or the other
+msg-api-formation-both = give the Formation as `formation`, or as `self_propelled` or `atb`, not both
+
 ## crates/ovd-format/src/class_input.rs
 
 msg-class-scheme = `{ $input }` { $class } belongs to the scheme { $family }, not { $scheme }
@@ -410,7 +424,6 @@ msg-currency = `{ $input }` must be a three-letter currency code in capitals, su
 msg-price-base-date = `{ $input }` must be a date as YYYY, YYYY-MM or YYYY-MM-DD, or null (none)
 msg-string = `{ $input }` must be a string
 msg-number-or-null = `{ $input }` must be a number or null (none)
-msg-bool = `{ $input }` must be true or false
 msg-hull-form-not-built = `{ $input }` = { $value } is not built yet: the engine computes raked_box, v_bottom, chine, offsets and shipd for now (spec 0008)
 msg-parameter-set = `{ $input }` must be an object of named numbers, or null
 msg-offsets-table = `{ $input }` must be a list of rows with `station_x_m`, `y_m` and `z_m` in metres, or null
