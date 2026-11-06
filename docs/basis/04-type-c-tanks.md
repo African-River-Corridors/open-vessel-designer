@@ -203,8 +203,10 @@ Cargo Containment, Cargo and LPG Carriage Condition (see TC-A26 to TC-A48).
 | `tank_design_temperature_c` | −163 / 0 / −48 / −48 by row | °C | > −273.15, ≤ 200; −170–60 | Table rows TC-A31 to TC-A34; recorded only |
 | `tank_material` | 9Ni / S690QL1 by row | – | 304L, 316L, 9Ni, S690QL1 | Table rows TC-A35 to TC-A38 |
 | `tank_allowable_stress_mpa` | none | MPa | > 0, ≤ 1000; 100–400 | none means the material's stress |
-| `tank_insulation_type` | panel / none / pu_foam by row | – | – | Recorded only |
+| `tank_insulation_type` | panel / none / pu_foam by row | – | – | Recorded only: it does not set the two values below |
 | `tank_insulation_thickness_mm` | 330 / 0 / 200 by row | mm | 0–1000; 0–400 | Table rows TC-A40 to TC-A42 |
+| `tank_insulation_conductivity_w_per_mk` | 0.026 (foam; the pressurised LPG row is not used) | W/m.K | > 0, ≤ 10; 0.001–0.06 | Estimate (#919): Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3. The heat leak, the boil-off and the holding time read it. Old files keep 0.026 |
+| `tank_insulation_density_kg_m3` | 60 / 0 by row | kg/m3 | 0–2000; 0–300 | Estimate (#919); the insulation mass reads it. Old files keep 60 |
 | `tank_structure_factor` | 1.30 / 1.12 by row | – | 1–3; 1.0–1.6 | Table rows TC-A62, TC-A63 |
 | `tank_wall_thickness_mm` | none (formula) | mm | > 0, ≤ 200; 10–50 | A typed value is an override for shell and heads |
 | `max_tank_od_m` | 16.0 | m | > 0, ≤ 50; 4–20 | Tool limit |

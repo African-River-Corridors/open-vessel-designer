@@ -136,6 +136,8 @@ The inputs are those of `ovd schema`. Run `ovd schema` for the units, the choice
 | `tank_allowable_stress_mpa` | Tank allowable stress (override) | number |  |
 | `tank_insulation_type` | Tank insulation type | choice |  |
 | `tank_insulation_thickness_mm` | Tank insulation thickness | number |  |
+| `tank_insulation_conductivity_w_per_mk` | Tank insulation conductivity | number |  |
+| `tank_insulation_density_kg_m3` | Tank insulation density | number |  |
 | `holding_profile` | Holding-time profile | operation_profile |  |
 | `holding_preset` | Holding-time preset | choice |  |
 | `holding_adn_min_use_kg_h` | Minimum guaranteed gas use (ADN) | number |  |

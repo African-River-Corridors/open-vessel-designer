@@ -526,7 +526,7 @@
           }
         ]
       },
-      "basis": "The kind of insulation on the tank. The engine uses one density for every kind (60 kg/m3, carried over from the original engine); the type is recorded and shown with the results. The default depends on the Cargo and the carriage condition"
+      "basis": "The kind of insulation on the tank. The type is recorded and shown with the results; it does not set the conductivity or the density, which are their own inputs (Tank insulation conductivity, Tank insulation density). The default depends on the Cargo and the carriage condition"
     },
     "tank_insulation_thickness_mm": {
       "default_by_table": {
@@ -558,6 +558,54 @@
       "hard": { "ge": 0, "le": 1000 },
       "soft": { "min": 0, "max": 400 },
       "basis": "The insulation on the tank, in mm. The tank outer diameter is measured to the outside of this layer: the clearances and the drawing use that face, and the steel diameter is the outer diameter less twice this thickness. The default depends on the Cargo and the carriage condition"
+    },
+    "tank_insulation_conductivity_w_per_mk": {
+      "default_by_table": {
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "rows": [
+          {
+            "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
+            "value": 0.026,
+            "status": "estimate",
+            "basis": "Not used: this tank has no insulation, so no heat leak is worked out. The value is the foam value, as a stand-in if you add insulation"
+          },
+          {
+            "when": {},
+            "value": 0.026,
+            "status": "estimate",
+            "source": "Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3: polyurethane foam of 96 kg/m3, 0.0266 W/m.K at 200 K and 0.0248 at 230 K (the table prints mW/m.K; its values show W/m.K). Hand check of the example's tank in issue #918",
+            "basis": "Polyurethane foam, at the mean of the cargo and the ambient temperature (about 215 K). It is also the basis for an insulation panel: no maker's data was found for the panel. Foam without a vacuum is 0.035 to 0.055 W/m.K and vacuum perlite 0.001 to 0.016 W/m.K, so type your own value for another system"
+          }
+        ]
+      },
+      "unit": "W/m.K",
+      "hard": { "gt": 0, "le": 10 },
+      "soft": { "min": 0.001, "max": 0.06 },
+      "basis": "The thermal conductivity of the tank insulation. The heat leak (and so the boil-off) and the holding time read it. It is the value for the default insulation type of the Cargo; if you type another Insulation type, type its value too. The default depends on the Cargo and the carriage condition"
+    },
+    "tank_insulation_density_kg_m3": {
+      "default_by_table": {
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "rows": [
+          {
+            "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
+            "value": 0.0,
+            "status": "sourced",
+            "source": "Owner's published Form C sheet and general arrangement drawing of a pressurised LPG carrier built 2007: 17.65 barg, 0 to 45 C, tanks not insulated",
+            "basis": "None"
+          },
+          {
+            "when": {},
+            "value": 60.0,
+            "status": "estimate",
+            "basis": "Carried over from the original engine: one density for every kind of insulation. The foam of the conductivity value is 96 kg/m3"
+          }
+        ]
+      },
+      "unit": "kg/m3",
+      "hard": { "ge": 0, "le": 2000 },
+      "soft": { "min": 0, "max": 300 },
+      "basis": "The density of the tank insulation. The insulation mass is its volume times this. The default depends on the Cargo and the carriage condition"
     },
     "tank_structure_factor": {
       "default_by_table": {

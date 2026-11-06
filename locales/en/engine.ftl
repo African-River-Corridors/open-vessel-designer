@@ -447,6 +447,7 @@ msg-containment-cargo = `{ $input }` = { $containment } cannot carry { $cargo } 
 msg-freeboard-depth = `{ $input }` = { $freeboard } must be less than `{ $depth_input }` = { $depth } (hard limit)
 msg-whole-number = `{ $input }` = { $value } must be a whole number (hard limit)
 msg-insulation-disagree = `{ $input }` is { $kind } but `{ $thickness_input }` is { $thickness }: the type and the thickness disagree (soft check); accepted
+msg-insulation-defaults-of-other-type = `{ $input }` is { $typed }, but `{ $conductivity }` and `{ $density }` still hold the defaults for { $default }: type the values for { $typed } (soft check); accepted
 msg-loading-above-marvs = `{ $input }` = { $value }: the vapour pressure of { $cargo } there is { $pressure } bar, above the MARVS of { $marvs } bar absolute; the tank is loaded to the filling limit, not above (soft check); accepted
 msg-stress-from-input = `{ $input }`
 msg-stress-from-basis = the `published_design` allowable stress basis
