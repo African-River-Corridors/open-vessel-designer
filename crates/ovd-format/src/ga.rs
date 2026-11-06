@@ -1210,7 +1210,7 @@ impl Canvas {
     /// that range (the target is a point on a Space that is long in x): after the labels have their slots,
     /// each such target takes the x at which no leader crosses another and its arrowhead stands furthest
     /// from every other leader, up to `TIP_CLEAR_MM`, and among equals the shortest leader (the arrowhead on the
-    /// part of its Space nearest the column). A leader that must run far over the hatching of the other Spaces
+    /// part of its Space nearest the column; this assumes the column is to the right of the hull). A leader that must run far over the hatching of the other Spaces
     /// is aimed at a label height that gives it at least `LEADER_MIN_SLOPE` over that run, on the side of the
     /// hull its target is on, so it crosses hatch lines and Space outlines and does not run along them (issue
     /// #963). `ranges[i]` goes with `labels[i]` as the caller gave them.
@@ -1220,12 +1220,9 @@ impl Canvas {
         labels: &mut [(String, [f64; 2])],
         ranges: &[Option<(f64, f64)>],
     ) {
-        // The hatched stretch along x: where the leaders of the Spaces run over hatching.
-        let zone_hi = ranges
-            .iter()
-            .flatten()
-            .map(|r| r.1)
-            .fold(f64::NEG_INFINITY, f64::max);
+        // The leaders run over lines (hatching, Space outlines, the hull side and the centre line) out to the
+        // column, so the slope rule holds all the way to it.
+        let zone_hi = x;
         let mut rows: Vec<SlidingLabel> = labels
             .iter()
             .zip(ranges)
@@ -1307,6 +1304,7 @@ impl Canvas {
                     let better = now.0 < best.0.0
                         || (now.0 == best.0.0
                             && (now.1 > best.0.1 + 1e-9
+                                // the column is to the right: the larger x is the shorter leader
                                 || (now.1 >= best.0.1 - 1e-9 && cand > best.1 + 1e-9)));
                     if better {
                         best = (now, cand);

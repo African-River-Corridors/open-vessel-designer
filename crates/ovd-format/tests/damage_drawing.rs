@@ -393,12 +393,13 @@ fn svg_of(doc: &Value) -> String {
 }
 
 /// The segments a leader must not run along, in sheet millimetres: the hatch lines and the outlines of the
-/// Spaces (the `OBJECT` layer: lines and the sides of closed paths).
+/// Spaces and of the hull (the `OBJECT` and `OUTLINE` layers: lines and the sides of closed paths), and the
+/// centre line.
 fn guide_segments(svg: &str) -> Vec<([f64; 2], [f64; 2])> {
     let mut out = Vec::new();
     for l in svg.lines() {
-        let hatch = l.contains("data-layer=\"HATCH\"");
-        let object = l.contains("data-layer=\"OBJECT\"");
+        let hatch = l.contains("data-layer=\"HATCH\"") || l.contains("data-layer=\"CENTRE\"");
+        let object = l.contains("data-layer=\"OBJECT\"") || l.contains("data-layer=\"OUTLINE\"");
         if l.starts_with("<line") && (hatch || object) {
             let g = |n| attr(l, n).unwrap();
             out.push(([g("x1"), g("y1")], [g("x2"), g("y2")]));
