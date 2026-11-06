@@ -283,7 +283,11 @@ pub fn assemble(inp: &VesselModelInputs) -> VesselModel {
             .iter()
             .rposition(|s| s.kind == SpaceKind::CargoHold)
             .map_or(0, |i| i + 1);
-        let tanks = tank_spaces(layout, g.tanks.volume_per_tank);
+        let tanks = tank_spaces(
+            layout,
+            g.tanks.volume_per_tank,
+            g.inputs.insulation_thickness / 1000.0,
+        );
         spaces.splice(at..at, tanks);
     }
     VesselModel {
@@ -746,7 +750,11 @@ fn weather_shield(r: &BargeCapacityResult) -> Option<WeatherShield> {
 /// Empty for any other result.
 pub fn tank_spaces_of(c: &BargeCapacityInputs, r: &BargeCapacityResult) -> Vec<ClippedSpace> {
     match (gas_tank_layout(c, r), r.gas_basis.as_ref()) {
-        (Some(layout), Some(g)) => tank_spaces(&layout, g.tanks.volume_per_tank)
+        (Some(layout), Some(g)) => tank_spaces(
+            &layout,
+            g.tanks.volume_per_tank,
+            g.inputs.insulation_thickness / 1000.0,
+        )
             .into_iter()
             .map(ClippedSpace::prism)
             .collect(),

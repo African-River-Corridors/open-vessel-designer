@@ -41,6 +41,7 @@ fn tank(name: &str, x: (f64, f64), y: f64, z: f64, d: f64) -> Space {
             y,
             z,
             outer_diameter: d,
+            insulation_m: 0.0,
             head: TankHead {
                 kind: HeadKind::Hemisphere,
                 length_m: 0.5 * d,
@@ -268,6 +269,79 @@ fn a_side_damage_breaches_a_type_c_tank_only_when_it_reaches_the_tank() {
         side_inboard_m: 4.1,
         ..ext
     }));
+}
+
+/// IGC 2.4.2 measures the bottom clearance to the tank's shell, not to its insulation (issue #987). A tank of
+/// outer diameter 4.0 m with 0.3 m of insulation has its steel 1.7 m in radius. At z 2.5 m its insulation face is
+/// 0.5 m above the base line and its steel 0.8 m. A bottom damage 0.7 m high reaches the insulation but not the
+/// steel: the tank is intact. One 0.9 m high reaches the steel: the tank is breached.
+#[test]
+fn a_bottom_damage_that_reaches_the_insulation_but_not_the_steel_leaves_the_tank_intact() {
+    let mut spaces = vec![
+        space(
+            "H1C",
+            SpaceKind::CargoHold,
+            (8.0, 60.0),
+            (-4.5, 4.5),
+            (1.0, 6.0),
+        ),
+        space(
+            "DB1C",
+            SpaceKind::DoubleBottomBallast,
+            (8.0, 60.0),
+            (-6.0, 6.0),
+            (0.0, 1.0),
+        ),
+        space(
+            "M1C",
+            SpaceKind::Machinery,
+            (0.0, 8.0),
+            (-6.0, 6.0),
+            (0.0, 6.0),
+        ),
+    ];
+    let mut t = tank("CT1C", (9.0, 59.0), 0.0, 2.5, 4.0);
+    if let SpaceShape::Tank { insulation_m, .. } = &mut t.shape {
+        *insulation_m = 0.3;
+    }
+    spaces.push(t);
+    let breached = |height: f64| -> bool {
+        igc_damage_cases(
+            &spaces,
+            60.0,
+            12.0,
+            &BoxExtents {
+                bottom_height_m: height,
+                ..igc_extents()
+            },
+            &StandardOfDamage::igc_2g(&spaces, 60.0, true),
+            &|_| 0.95,
+        )
+        .iter()
+        .filter(|c| c.name.starts_with("bottom"))
+        .any(|c| c.flooded.iter().any(|f| f.name == "CT1C"))
+    };
+    assert!(!breached(0.7), "damage short of the steel");
+    assert!(breached(0.9), "damage past the steel");
+    // The ADN-style generator (gas, type G) uses the same test.
+    let adn = |height: f64| -> bool {
+        ovd_core::damage_cases::adn_damage_cases(
+            &spaces,
+            60.0,
+            12.0,
+            &ovd_core::damage_cases::AdnExtents {
+                side_inboard_m: 2.4,
+                bottom_width_m: 2.0,
+                bottom_height_m: height,
+            },
+            &|_| 0.95,
+        )
+        .iter()
+        .filter(|c| c.name.starts_with("bottom"))
+        .any(|c| c.flooded.iter().any(|f| f.name == "CT1C"))
+    };
+    assert!(!adn(0.7));
+    assert!(adn(0.9));
 }
 
 /// The IGC bottom damage is B/15 high, here 0.8 m: in the cargo zone it floods the double bottom, not the hold
