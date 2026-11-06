@@ -3,6 +3,7 @@
 //! one of `ovd_core::barge_capacity::compute`, with the liquid layout (`ovd_core::liquid_bulk`) as its
 //! volume branch. Nothing here runs for a gas or a dry bulk Cargo, so their results keep every key.
 
+use crate::damage::{Cancelled, Gauge};
 use crate::eval::num;
 use ovd_core::barge_capacity::BargeCapacityResult;
 use ovd_core::compartments::{Space, SpaceKind};
@@ -221,17 +222,17 @@ pub(crate) fn damage_verdicts(
     density: f64,
     conditions: &[ovd_core::loading_conditions::LoadedCondition],
     marpol: bool,
-) -> (
-    Vec<ovd_core::measured::DamageVerdict>,
-    Vec<ovd_core::measured::DamageVerdict>,
-) {
-    use ovd_core::damage_cases::{AdnExtents, DamageCase, adn_damage_cases, marpol_damage_cases};
+    gauge: &Gauge,
+) -> Result<
+    (
+        Vec<ovd_core::measured::DamageVerdict>,
+        Vec<ovd_core::measured::DamageVerdict>,
+    ),
+    Cancelled,
+> {
+    use ovd_core::damage_cases::DamageCase;
     use ovd_core::damage_stability::{DamageCriteria, assess};
-    let adn = crate::trace::adn_vessel_type_of(cargo_key);
-    if adn.is_none() && !marpol {
-        return (Vec::new(), Vec::new());
-    }
-    let none = || (Vec::new(), Vec::new());
+    let none = || Ok((Vec::new(), Vec::new()));
     let Some(Laden {
         mass,
         g,
@@ -241,14 +242,19 @@ pub(crate) fn damage_verdicts(
     else {
         return none();
     };
+    let (by_adn_cases, by_marpol_cases) = adn_marpol_cases(hull, liquid, cargo_key, marpol);
     // MARPOL Annex I 28.4.1 (spec 0012 D20, issue #764): "any outflow of liquids from damaged compartments"
     // is accounted for, so a breached cargo tank's oil leaves the condition. The cargo tanks are filled alike;
     // the slop tanks are empty in the loading conditions, so they lose nothing. ADN keeps the mass (its cargo
     // tanks are not breached: their permeability is 0).
-    let verdicts = |cases: Vec<DamageCase>, criteria: &DamageCriteria, outflow: bool| {
-        cases
-            .into_iter()
-            .map(|case| {
+    // Issue #961: the cases run through the same ordered runner as the gas ones, so they count, cancel and
+    // spread over worker threads alike; the results are in case order.
+    let verdicts = |cases: &[DamageCase], criteria: &DamageCriteria, outflow: bool| {
+        crate::damage::run_ordered(
+            cases,
+            crate::damage::damage_workers(cases.len()),
+            gauge,
+            |case| {
                 let (m, gd) = if outflow {
                     let breached: Vec<String> = case
                         .flooded
@@ -274,16 +280,36 @@ pub(crate) fn damage_verdicts(
                 ovd_core::measured::DamageVerdict {
                     flooded: case.flooded.iter().map(|f| f.name.clone()).collect(),
                     outcome: assess(&hull.table, &case.flooded, m, gd, density, start, criteria),
-                    name: case.name,
+                    name: case.name.clone(),
                     stages: Vec::new(),
                 }
-            })
-            .collect::<Vec<_>>()
+            },
+        )
     };
+    let by_adn = verdicts(&by_adn_cases, &DamageCriteria::ADN_2025, false)?;
+    let by_marpol = verdicts(&by_marpol_cases, &DamageCriteria::MARPOL_I_28, true)?;
+    Ok((by_adn, by_marpol))
+}
+
+/// The ADN and the MARPOL damage cases of a liquid bulk hull (empty for a rule that does not apply).
+fn adn_marpol_cases(
+    hull: &ovd_core::hydrostatics::Hull,
+    liquid: &LiquidBulkResult,
+    cargo_key: &str,
+    marpol: bool,
+) -> (
+    Vec<ovd_core::damage_cases::DamageCase>,
+    Vec<ovd_core::damage_cases::DamageCase>,
+) {
+    use ovd_core::damage_cases::{AdnExtents, adn_damage_cases, marpol_damage_cases};
+    let adn = crate::trace::adn_vessel_type_of(cargo_key);
+    if adn.is_none() && !marpol {
+        return (Vec::new(), Vec::new());
+    }
     // ADN 9.3.2.15.1 (c) and 9.3.3.15.1 (c): the permeabilities are the `adn-tank` set's table (spec 0012 D9).
     let Ok(adn_permeability) = crate::damage::built_in_permeability("adn-tank", "adn-permeability")
     else {
-        return none();
+        return (Vec::new(), Vec::new());
     };
     let by_adn = adn.map_or_else(Vec::new, |t| {
         let extents = if t == adn_vessel_type::AdnVesselType::C {
@@ -291,28 +317,44 @@ pub(crate) fn damage_verdicts(
         } else {
             AdnExtents::TYPE_N
         };
-        verdicts(
-            adn_damage_cases(
-                &liquid.spaces,
-                hull.spec.loa,
-                hull.spec.beam,
-                &extents,
-                &|kind| adn_permeability.of(kind, 0.0).unwrap_or(0.0),
-            ),
-            &DamageCriteria::ADN_2025,
-            false,
+        adn_damage_cases(
+            &liquid.spaces,
+            hull.spec.loa,
+            hull.spec.beam,
+            &extents,
+            &|kind| adn_permeability.of(kind, 0.0).unwrap_or(0.0),
         )
     });
     let by_marpol = if marpol {
-        verdicts(
-            marpol_damage_cases(&liquid.spaces, hull.spec.loa, hull.spec.beam),
-            &DamageCriteria::MARPOL_I_28,
-            true,
-        )
+        marpol_damage_cases(&liquid.spaces, hull.spec.loa, hull.spec.beam)
     } else {
         Vec::new()
     };
     (by_adn, by_marpol)
+}
+
+/// Issue #961: how many damage cases a full run works out on a liquid bulk hull: the ADN and MARPOL cases, and
+/// those of each rule with a table in `tables`, all on the laden departure condition (none without one). A run
+/// that skips damage still gives this count (`damage_cases`), and it is the total of the progress hook.
+pub(crate) fn case_count(
+    hull: &ovd_core::hydrostatics::Hull,
+    liquid: &LiquidBulkResult,
+    cargo_key: &str,
+    density: f64,
+    conditions: &[ovd_core::loading_conditions::LoadedCondition],
+    marpol: bool,
+    tables: &[(LiquidRule, &ovd_core::damage_cases::PermeabilityTable)],
+) -> usize {
+    if laden_departure(hull, conditions, density).is_none() {
+        return 0;
+    }
+    let (adn, marpol) = adn_marpol_cases(hull, liquid, cargo_key, marpol);
+    adn.len()
+        + marpol.len()
+        + tables
+            .iter()
+            .map(|(rule, table)| rule_cases(*rule, hull, liquid, table).len())
+            .sum::<usize>()
 }
 
 /// Which rule's damage a liquid bulk hull is run through (issue #763).
@@ -322,6 +364,42 @@ pub(crate) enum LiquidRule {
     EsTrin,
     /// NORMAM-202/DPC 5.23.8 and 5.23.9: the final stage.
     Normam,
+}
+
+/// The damage cases of `rule` on a liquid bulk hull. `table` is the rule's Permeability Table; the cargo tanks
+/// are full at the laden departure, so they flood at their full value and every other space at its empty one.
+fn rule_cases(
+    rule: LiquidRule,
+    hull: &ovd_core::hydrostatics::Hull,
+    liquid: &LiquidBulkResult,
+    table: &ovd_core::damage_cases::PermeabilityTable,
+) -> Vec<ovd_core::damage_cases::DamageCase> {
+    use ovd_core::damage_cases::{
+        AdnExtents, CaseOptions, adn_damage_cases_with, es_trin_longitudinal_extent_m,
+        machinery_bulkheads_intact, normam_damage_cases,
+    };
+    let (loa, beam) = (hull.spec.loa, hull.spec.beam);
+    let by_function = |kind: SpaceKind| {
+        // The cargo tanks are full at the laden departure; the slop tanks are empty in the loading conditions
+        // (see `damage_verdicts`), so they flood at their empty value like the ballast spaces.
+        let full = kind == SpaceKind::CargoTank;
+        table.of(kind, if full { 1.0 } else { 0.0 }).unwrap_or(0.0)
+    };
+    match rule {
+        LiquidRule::EsTrin => adn_damage_cases_with(
+            &liquid.spaces,
+            loa,
+            beam,
+            &AdnExtents::ES_TRIN_28_03,
+            &CaseOptions {
+                long_m: es_trin_longitudinal_extent_m(loa),
+                cut: true,
+                intact_bulkheads_m: &machinery_bulkheads_intact(&liquid.spaces, loa),
+            },
+            &by_function,
+        ),
+        LiquidRule::Normam => normam_damage_cases(&liquid.spaces, loa, beam, &by_function),
+    }
 }
 
 /// Issue #763: the assumed damages of ES-TRIN 28.03(4) or NORMAM 5.23.8 on the laden departure condition of a
@@ -336,38 +414,16 @@ pub(crate) fn liquid_rule_damage(
     density: f64,
     conditions: &[ovd_core::loading_conditions::LoadedCondition],
     table: &ovd_core::damage_cases::PermeabilityTable,
-) -> Vec<ovd_core::measured::DamageVerdict> {
-    use ovd_core::damage_cases::{
-        AdnExtents, CaseOptions, adn_damage_cases_with, deck_edge_immersed,
-        es_trin_longitudinal_extent_m, machinery_bulkheads_intact, normam_damage_cases,
-    };
+    gauge: &Gauge,
+) -> Result<Vec<ovd_core::measured::DamageVerdict>, Cancelled> {
+    use ovd_core::damage_cases::deck_edge_immersed;
     use ovd_core::damage_stability::{DamageCriteria, assess, intermediate_stages};
     use ovd_core::sections::Waterplane;
     let Some(Laden { mass, g, start, .. }) = laden_departure(hull, conditions, density) else {
-        return Vec::new();
+        return Ok(Vec::new());
     };
     let (loa, beam) = (hull.spec.loa, hull.spec.beam);
-    let by_function = |kind: SpaceKind| {
-        // The cargo tanks are full at the laden departure; the slop tanks are empty in the loading conditions
-        // (see `damage_verdicts`), so they flood at their empty value like the ballast spaces.
-        let full = kind == SpaceKind::CargoTank;
-        table.of(kind, if full { 1.0 } else { 0.0 }).unwrap_or(0.0)
-    };
-    let cases = match rule {
-        LiquidRule::EsTrin => adn_damage_cases_with(
-            &liquid.spaces,
-            loa,
-            beam,
-            &AdnExtents::ES_TRIN_28_03,
-            &CaseOptions {
-                long_m: es_trin_longitudinal_extent_m(loa),
-                cut: true,
-                intact_bulkheads_m: &machinery_bulkheads_intact(&liquid.spaces, loa),
-            },
-            &by_function,
-        ),
-        LiquidRule::Normam => normam_damage_cases(&liquid.spaces, loa, beam, &by_function),
-    };
+    let cases = rule_cases(rule, hull, liquid, table);
     let (criteria, stage_criteria) = match rule {
         LiquidRule::EsTrin => (
             DamageCriteria::ES_TRIN_28_03_FINAL,
@@ -375,9 +431,12 @@ pub(crate) fn liquid_rule_damage(
         ),
         LiquidRule::Normam => (DamageCriteria::NORMAM_5_23_9, DamageCriteria::NORMAM_5_23_9),
     };
-    cases
-        .into_iter()
-        .map(|case| {
+    // Issue #961: through the ordered runner, as the gas cases.
+    crate::damage::run_ordered(
+        &cases,
+        crate::damage::damage_workers(cases.len()),
+        gauge,
+        |case| {
             let mut outcome = assess(
                 &hull.table,
                 &case.flooded,
@@ -421,11 +480,11 @@ pub(crate) fn liquid_rule_damage(
             ovd_core::measured::DamageVerdict {
                 flooded: case.flooded.iter().map(|f| f.name.clone()).collect(),
                 outcome,
-                name: case.name,
+                name: case.name.clone(),
                 stages,
             }
-        })
-        .collect()
+        },
+    )
 }
 
 /// The `damage` block of the results: what each assumed damage does (unhashed, with the rest of the

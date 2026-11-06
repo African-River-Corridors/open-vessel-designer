@@ -655,7 +655,7 @@ pub fn set_damage_workers(n: usize) {
 }
 
 /// The worker count for `cases` cases: at least 1, at most one per case.
-fn damage_workers(cases: usize) -> usize {
+pub(crate) fn damage_workers(cases: usize) -> usize {
     #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
     {
         let set = DAMAGE_WORKERS.load(core::sync::atomic::Ordering::Relaxed);
@@ -799,7 +799,7 @@ impl Gauge {
 /// item, so the order of the results does not depend on which worker ran which item. This is the one place a
 /// per-case progress call or a cancel check belongs (issue #923): after `f` returns, or before a worker takes
 /// its next item.
-fn run_ordered<T, R, F>(
+pub(crate) fn run_ordered<T, R, F>(
     items: &[T],
     workers: usize,
     gauge: &Gauge,
