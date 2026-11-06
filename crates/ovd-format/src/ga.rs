@@ -1213,7 +1213,7 @@ impl Canvas {
         labels: &mut [(String, [f64; 2])],
         ranges: &[Option<(f64, f64)>],
     ) {
-        let mut rows: Vec<(String, [f64; 2], Option<(f64, f64)>)> = labels
+        let mut rows: Vec<SlidingLabel> = labels
             .iter()
             .zip(ranges)
             .map(|(l, r)| (l.0.clone(), l.1, *r))
@@ -1301,6 +1301,9 @@ impl Canvas {
         }
     }
 }
+
+/// A label, its target, and the range of x its target may slide along.
+type SlidingLabel = (String, [f64; 2], Option<(f64, f64)>);
 
 /// How far the point `p` is from the segment `a`-`b`.
 fn point_to_segment(p: [f64; 2], a: [f64; 2], b: [f64; 2]) -> f64 {

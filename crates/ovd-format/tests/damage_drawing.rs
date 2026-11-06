@@ -286,7 +286,8 @@ fn cross(a: ([f64; 2], [f64; 2]), b: ([f64; 2], [f64; 2])) -> bool {
     let side = |o: [f64; 2], p: [f64; 2], q: [f64; 2]| {
         (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0])
     };
-    side(b.0, b.1, a.0) * side(b.0, b.1, a.1) < 0.0 && side(a.0, a.1, b.0) * side(a.0, a.1, b.1) < 0.0
+    side(b.0, b.1, a.0) * side(b.0, b.1, a.1) < 0.0
+        && side(a.0, a.1, b.0) * side(a.0, a.1, b.1) < 0.0
 }
 
 /// Issue #957: on a damage sheet no two leaders cross, and no arrowhead lands on another leader. Measured on
@@ -311,7 +312,9 @@ fn no_two_leaders_of_a_damage_sheet_cross() {
                     }
                     // the tip of leader i on leader j
                     if dist_to_segment(ls[i].1, ls[j].0, ls[j].1) < 0.3 {
-                        bad.push(format!("{area} {set:?} {stem}: the arrowhead of {i} is on leader {j}"));
+                        bad.push(format!(
+                            "{area} {set:?} {stem}: the arrowhead of {i} is on leader {j}"
+                        ));
                     }
                 }
             }
