@@ -29,7 +29,11 @@ fn results(extra: Value) -> Value {
     });
     let filled = fill_as_new(&file.to_string(), &Profile::built_in());
     assert_eq!(filled.report.errors, Vec::<String>::new());
-    match run_option_with(&filled.design.unwrap().options[0], &Library::built_in(), &[]) {
+    match run_option_with(
+        &filled.design.unwrap().options[0],
+        &Library::built_in(),
+        &[],
+    ) {
         RunOutcome::Results { results, .. } => results,
         other => panic!("{other:?}"),
     }
@@ -57,7 +61,9 @@ fn the_report_agrees_with_the_results_and_names_the_highest_point() {
     );
     assert!(report["highest_point"]["label"].as_str().unwrap().len() > 3);
     // The light air draft is the top less the light draught, so the top less the laden draught is the laden one.
-    let top = report["highest_point"]["top_above_keel_m"].as_f64().unwrap();
+    let top = report["highest_point"]["top_above_keel_m"]
+        .as_f64()
+        .unwrap();
     let light = report["light_m"].as_f64().unwrap();
     let laden = report["laden_m"].as_f64().unwrap();
     assert!(top >= laden && light >= laden, "{top} {light} {laden}");
@@ -86,7 +92,10 @@ fn a_bridge_clearance_under_the_air_draft_warns_and_names_the_highest_point_and_
 #[test]
 fn a_bridge_clearance_over_the_air_draft_gives_no_warning() {
     let r = results(json!({ "bridge_clearance_m": 100.0 }));
-    assert_eq!(r["air_draft_report"]["bridge_limit"]["exceeded"], json!(false));
+    assert_eq!(
+        r["air_draft_report"]["bridge_limit"]["exceeded"],
+        json!(false)
+    );
     assert!(warnings(&r).iter().all(|w| !w.contains("bridge limit")));
 }
 
@@ -107,5 +116,8 @@ fn the_design_stands_when_the_bridge_clearance_is_exceeded() {
             .collect()
     };
     assert_eq!(failed(&with), failed(&without));
-    assert_eq!(with["rule_trace"]["verdict"], without["rule_trace"]["verdict"]);
+    assert_eq!(
+        with["rule_trace"]["verdict"],
+        without["rule_trace"]["verdict"]
+    );
 }

@@ -14,7 +14,11 @@ use ovd_format::trace::measure_info;
 fn stack(ids: &[(&str, &str)]) -> Vec<RuleSet> {
     let lib = Library::built_in();
     ids.iter()
-        .map(|(id, v)| lib.find(id, v).unwrap_or_else(|| panic!("{id}@{v}")).clone())
+        .map(|(id, v)| {
+            lib.find(id, v)
+                .unwrap_or_else(|| panic!("{id}@{v}"))
+                .clone()
+        })
         .collect()
 }
 
@@ -45,36 +49,63 @@ fn a_river_stack_limits_the_light_blind_distance_to_250_m_and_the_laden_one_not_
     let l = blind_limits(&stack(&[ES_TRIN]), &inputs("river-only", 140.0));
     assert_eq!(l.light_m, Some(250.0));
     assert_eq!(l.laden_m, None);
-    assert_eq!(l.light_rule.as_deref(), Some("es-trin/7.02(2)/blind-zone-unladen"));
+    assert_eq!(
+        l.light_rule.as_deref(),
+        Some("es-trin/7.02(2)/blind-zone-unladen")
+    );
 }
 
 #[test]
 fn a_coastal_stack_takes_the_stricter_limit_in_each_condition() {
     // 140 m: SOLAS gives 280 m, so ES-TRIN's 250 m is stricter in the light condition; SOLAS alone
     // limits the laden one.
-    let l = blind_limits(&stack(&[ES_TRIN, SOLAS]), &inputs("coastal-and-river", 140.0));
+    let l = blind_limits(
+        &stack(&[ES_TRIN, SOLAS]),
+        &inputs("coastal-and-river", 140.0),
+    );
     assert_eq!((l.light_m, l.laden_m), (Some(250.0), Some(280.0)));
-    assert_eq!(l.light_rule.as_deref(), Some("es-trin/7.02(2)/blind-zone-unladen"));
-    assert_eq!(l.laden_rule.as_deref(), Some("solas/V.22.1.1/blind-zone-laden"));
+    assert_eq!(
+        l.light_rule.as_deref(),
+        Some("es-trin/7.02(2)/blind-zone-unladen")
+    );
+    assert_eq!(
+        l.laden_rule.as_deref(),
+        Some("solas/V.22.1.1/blind-zone-laden")
+    );
     // 100 m: 2 L = 200 m is stricter than 250 m in both conditions.
-    let l = blind_limits(&stack(&[ES_TRIN, SOLAS]), &inputs("coastal-and-river", 100.0));
+    let l = blind_limits(
+        &stack(&[ES_TRIN, SOLAS]),
+        &inputs("coastal-and-river", 100.0),
+    );
     assert_eq!((l.light_m, l.laden_m), (Some(200.0), Some(200.0)));
-    assert_eq!(l.light_rule.as_deref(), Some("solas/V.22.1.1/blind-zone-light"));
+    assert_eq!(
+        l.light_rule.as_deref(),
+        Some("solas/V.22.1.1/blind-zone-light")
+    );
     // 300 m: the 500 m cap, so ES-TRIN is stricter in the light condition.
-    let l = blind_limits(&stack(&[ES_TRIN, SOLAS]), &inputs("coastal-and-river", 300.0));
+    let l = blind_limits(
+        &stack(&[ES_TRIN, SOLAS]),
+        &inputs("coastal-and-river", 300.0),
+    );
     assert_eq!((l.light_m, l.laden_m), (Some(250.0), Some(500.0)));
 }
 
 #[test]
 fn a_ship_under_45_m_is_outside_solas_so_only_es_trin_limits_it() {
-    let l = blind_limits(&stack(&[ES_TRIN, SOLAS]), &inputs("coastal-and-river", 44.9));
+    let l = blind_limits(
+        &stack(&[ES_TRIN, SOLAS]),
+        &inputs("coastal-and-river", 44.9),
+    );
     assert_eq!((l.light_m, l.laden_m), (Some(250.0), None));
 }
 
 #[test]
 fn a_rule_that_only_warns_gives_no_limit() {
     // solas-v22 1.1.0 warns; a warning blocks nothing, so it sizes nothing.
-    let l = blind_limits(&stack(&[SOLAS_WARNING]), &inputs("coastal-and-river", 100.0));
+    let l = blind_limits(
+        &stack(&[SOLAS_WARNING]),
+        &inputs("coastal-and-river", 100.0),
+    );
     assert!(l.is_none(), "{l:?}");
 }
 
