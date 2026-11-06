@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Damage case sheets (issue #957): the leaders of the flooded-Space labels no longer cross, and no arrowhead lands on another leader (the arrowheads slide along their Spaces to clear them). A governing damage case with no `x_m` extent is now an error that names the case; before, the sheet lost its extent dimension without a word. `ovd draw` reports it too. Results and hashes do not change.
