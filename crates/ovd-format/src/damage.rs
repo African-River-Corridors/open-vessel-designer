@@ -138,6 +138,18 @@ pub fn gas_damage_verdicts(
     conditions: &[ovd_core::loading_conditions::LoadedCondition],
     density: f64,
 ) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), String> {
+    let plan = gas_damage_plan(set, spaces, hull)?;
+    run_gas_damage(&plan, spaces, hull, conditions, density, &Gauge::none())
+        .map_err(|Cancelled| "cancelled".to_string())
+}
+
+/// The cases and tables of [`gas_damage_verdicts`], not yet run (issue #923: a run that skips damage still
+/// counts them).
+pub(crate) fn gas_damage_plan(
+    set: &RuleSet,
+    spaces: &[ovd_core::compartments::Space],
+    hull: &ovd_core::hydrostatics::Hull,
+) -> Result<GasRun, String> {
     use ovd_core::damage_cases::{StandardOfDamage, igc_damage_cases};
     use ovd_core::damage_stability::DamageCriteria;
     let (loa, beam) = (hull.spec.loa, hull.spec.beam);
@@ -147,21 +159,15 @@ pub fn gas_damage_verdicts(
     let cases = igc_damage_cases(spaces, loa, beam, &data.extents, &standard, &|k| {
         table.of(k, 0.0).unwrap_or(0.95)
     });
-    run_gas_damage(
-        &GasRun {
-            cases,
-            table,
-            criteria: DamageCriteria::IGC_2_7,
-            stage_criteria: DamageCriteria::IGC_2_7,
-            set_key: set.key(),
-            method: "lost buoyancy, final stage of flooding (IGC 2.7.1.2, 2.7.2.1)",
-            full_load_only: false,
-        },
-        spaces,
-        hull,
-        conditions,
-        density,
-    )
+    Ok(GasRun {
+        cases,
+        table,
+        criteria: DamageCriteria::IGC_2_7,
+        stage_criteria: DamageCriteria::IGC_2_7,
+        set_key: set.key(),
+        method: "lost buoyancy, final stage of flooding (IGC 2.7.1.2, 2.7.2.1)",
+        full_load_only: false,
+    })
 }
 
 /// What a gas damage run is given: the cases, the Permeability Table, the criteria of the final stage and of the
@@ -178,6 +184,64 @@ pub(crate) struct GasRun {
     pub full_load_only: bool,
 }
 
+/// The mass, the centre of gravity and the intact floating position (draught at the origin, trim) of a loading
+/// condition that a damage run damages; `None` for a condition it leaves out: not the full load departure when
+/// only that is damaged, no mass, or one that does not float intact.
+fn afloat(
+    full_load_only: bool,
+    c: &ovd_core::loading_conditions::LoadedCondition,
+    hull: &ovd_core::hydrostatics::Hull,
+    density: f64,
+) -> Option<(f64, ovd_core::sections::Gravity, (f64, f64))> {
+    use ovd_core::sections::Gravity;
+    if full_load_only && c.role != ovd_core::loading_conditions::Role::FullLoadDeparture {
+        return None;
+    }
+    let mass: f64 = c.weights.iter().map(|(_, i)| i.mass_t).sum();
+    if mass.is_nan() || mass <= 0.0 {
+        return None;
+    }
+    let tcg_moment: f64 = c.ballast.iter().map(|t| t.mass_t * t.tcg_m).sum();
+    let g = Gravity {
+        lcg_m: c
+            .weights
+            .iter()
+            .map(|(_, i)| i.mass_t * i.lcg_m)
+            .sum::<f64>()
+            / mass,
+        tcg_m: tcg_moment / mass,
+        kg_m: c
+            .weights
+            .iter()
+            .map(|(_, i)| i.mass_t * i.kcg_m)
+            .sum::<f64>()
+            / mass,
+    };
+    let float = hull.float(mass, g, density).ok()?;
+    let start = (
+        float.equilibrium.waterplane.c,
+        float.equilibrium.waterplane.trim_deg,
+    );
+    Some((mass, g, start))
+}
+
+impl GasRun {
+    /// How many damage cases [`run_gas_damage`] works out on `conditions`: the cases of the run on each condition
+    /// it damages. It works out no case itself (issue #923: the count a run that skips damage still gives).
+    pub(crate) fn case_count(
+        &self,
+        hull: &ovd_core::hydrostatics::Hull,
+        conditions: &[ovd_core::loading_conditions::LoadedCondition],
+        density: f64,
+    ) -> usize {
+        conditions
+            .iter()
+            .filter(|c| afloat(self.full_load_only, c, hull, density).is_some())
+            .count()
+            * self.cases.len()
+    }
+}
+
 /// The damage cases of `run` on every loading condition of a gas hull, as [`gas_damage_verdicts`] gives them for
 /// IGC (spec 0012, issues #759, #760, #763).
 pub(crate) fn run_gas_damage(
@@ -186,7 +250,8 @@ pub(crate) fn run_gas_damage(
     hull: &ovd_core::hydrostatics::Hull,
     conditions: &[ovd_core::loading_conditions::LoadedCondition],
     density: f64,
-) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), String> {
+    gauge: &Gauge,
+) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), Cancelled> {
     use ovd_core::damage_cases::{deck_edge_immersed, gas_flooding, without_breached_cargo};
     use ovd_core::damage_stability::{
         Floats, INTERMEDIATE_FRACTIONS, assess, intermediate_stages, righting_lever_at,
@@ -201,36 +266,9 @@ pub(crate) fn run_gas_damage(
     let workers = damage_workers(cases.len());
     let mut out: Vec<ovd_core::measured::DamageVerdict> = Vec::new();
     for c in conditions {
-        if run.full_load_only && c.role != ovd_core::loading_conditions::Role::FullLoadDeparture {
-            continue;
-        }
-        let mass: f64 = c.weights.iter().map(|(_, i)| i.mass_t).sum();
-        if mass.is_nan() || mass <= 0.0 {
-            continue;
-        }
-        let tcg_moment: f64 = c.ballast.iter().map(|t| t.mass_t * t.tcg_m).sum();
-        let g = Gravity {
-            lcg_m: c
-                .weights
-                .iter()
-                .map(|(_, i)| i.mass_t * i.lcg_m)
-                .sum::<f64>()
-                / mass,
-            tcg_m: tcg_moment / mass,
-            kg_m: c
-                .weights
-                .iter()
-                .map(|(_, i)| i.mass_t * i.kcg_m)
-                .sum::<f64>()
-                / mass,
-        };
-        let Ok(float) = hull.float(mass, g, density) else {
+        let Some((mass, g, start)) = afloat(run.full_load_only, c, hull, density) else {
             continue;
         };
-        let start = (
-            float.equilibrium.waterplane.c,
-            float.equilibrium.waterplane.trim_deg,
-        );
         let cargo = c
             .weights
             .iter()
@@ -254,7 +292,7 @@ pub(crate) fn run_gas_damage(
         // Every case is independent of the others (issue #921), so they run on worker threads; each worker keeps
         // its own cuts of the hull. The results come back in case order and the choice of the governing case
         // below runs over them in that order, so the output is the serial one, bit for bit.
-        let runs = run_ordered(cases, workers, |case| {
+        let runs = run_ordered(cases, workers, gauge, |case| {
             let f = gas_flooding(case, spaces, table, &filling);
             let (m, gd) = without_breached_cargo(mass, g, cargo, spaces, &f.breached);
             let outcome = assess(
@@ -330,7 +368,7 @@ pub(crate) fn run_gas_damage(
                 m,
                 gd,
             }
-        });
+        })?;
         // `runs` is in case order, so each result pairs with its case (the governing case's extent, issue #928).
         for (case, r) in cases.iter().zip(runs) {
             let worse = match &worst {
@@ -442,6 +480,18 @@ pub fn gas_box_damage_verdicts(
     conditions: &[ovd_core::loading_conditions::LoadedCondition],
     density: f64,
 ) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), String> {
+    let plan = gas_box_damage_plan(rule, set, spaces, hull)?;
+    run_gas_damage(&plan, spaces, hull, conditions, density, &Gauge::none())
+        .map_err(|Cancelled| "cancelled".to_string())
+}
+
+/// The cases and tables of [`gas_box_damage_verdicts`], not yet run (issue #923).
+pub(crate) fn gas_box_damage_plan(
+    rule: GasBoxRule,
+    set: &RuleSet,
+    spaces: &[ovd_core::compartments::Space],
+    hull: &ovd_core::hydrostatics::Hull,
+) -> Result<GasRun, String> {
     use ovd_core::damage_cases::{
         AdnExtents, CaseOptions, adn_damage_cases_with, es_trin_longitudinal_extent_m,
         longitudinal_extent_m, machinery_bulkheads_intact,
@@ -494,21 +544,86 @@ pub fn gas_box_damage_verdicts(
             "lost buoyancy, final stage; intermediate stages by added mass at 25, 50 and 75 % (ES-TRIN 2025/1 28.03(3) to (6)); full load departure",
         ),
     };
-    run_gas_damage(
-        &GasRun {
-            cases,
-            table,
-            criteria,
-            stage_criteria,
-            set_key: set.key(),
-            method,
-            full_load_only: rule == GasBoxRule::EsTrin,
-        },
-        spaces,
-        hull,
-        conditions,
-        density,
-    )
+    Ok(GasRun {
+        cases,
+        table,
+        criteria,
+        stage_criteria,
+        set_key: set.key(),
+        method,
+        full_load_only: rule == GasBoxRule::EsTrin,
+    })
+}
+
+/// What the damage stages of a gas hull give (issue #923): the IGC list and block, the ADN and ES-TRIN lists, their
+/// `damage_by_rule` blocks, and the number of cases of the stages (counted even when the run skips them).
+#[derive(Default)]
+pub(crate) struct GasStages {
+    pub igc: Vec<ovd_core::measured::DamageVerdict>,
+    pub igc_block: serde_json::Value,
+    pub adn: Vec<ovd_core::measured::DamageVerdict>,
+    pub es_trin: Vec<ovd_core::measured::DamageVerdict>,
+    pub by_rule: serde_json::Map<String, serde_json::Value>,
+    pub cases: usize,
+}
+
+/// The three damage stages of a gas hull on its IS Code conditions: IGC 2.7, ADN 9.3.1.15 and ES-TRIN 28.03 (spec
+/// 0012), each when its Rule Set is given. With `control.run` false no case is worked out, but the cases are
+/// counted (`cases`). The hook of `control` is called on this thread, from the first call with 0 done, and a
+/// Break from it gives `Err(Cancelled)`.
+pub(crate) fn gas_damage_stages(
+    sets: (Option<&RuleSet>, Option<&RuleSet>, Option<&RuleSet>),
+    spaces: &[ovd_core::compartments::Space],
+    hull: &ovd_core::hydrostatics::Hull,
+    conditions: &[ovd_core::loading_conditions::LoadedCondition],
+    density: f64,
+    control: &DamageControl,
+) -> Result<GasStages, Cancelled> {
+    let (igc, adn, es_trin) = sets;
+    let mut out = GasStages {
+        igc_block: serde_json::Value::Null,
+        ..GasStages::default()
+    };
+    if conditions.is_empty() {
+        return Ok(out);
+    }
+    // A stage whose cases cannot be built (a Rule Set version without the tables) gives nothing, as before.
+    let mut plans: Vec<(Option<GasBoxRule>, &RuleSet, GasRun)> = Vec::new();
+    if let Some(set) = igc
+        && let Ok(plan) = gas_damage_plan(set, spaces, hull)
+    {
+        plans.push((None, set, plan));
+    }
+    for (rule, set) in [(GasBoxRule::AdnGas, adn), (GasBoxRule::EsTrin, es_trin)] {
+        if let Some(set) = set
+            && let Ok(plan) = gas_box_damage_plan(rule, set, spaces, hull)
+        {
+            plans.push((Some(rule), set, plan));
+        }
+    }
+    out.cases = plans
+        .iter()
+        .map(|(_, _, p)| p.case_count(hull, conditions, density))
+        .sum();
+    if !control.run {
+        return Ok(out);
+    }
+    let gauge = Gauge::new(control.progress.clone(), out.cases);
+    gauge.report();
+    for (rule, set, plan) in &plans {
+        let (v, block) = run_gas_damage(plan, spaces, hull, conditions, density, &gauge)?;
+        match rule {
+            None => (out.igc, out.igc_block) = (v, block),
+            Some(r) => {
+                match r {
+                    GasBoxRule::AdnGas => out.adn = v,
+                    GasBoxRule::EsTrin => out.es_trin = v,
+                }
+                out.by_rule.insert(set.id.clone(), block);
+            }
+        }
+    }
+    Ok(out)
 }
 
 /// How the `damage_by_rule` block names the method of the ES-TRIN 28.03 damage cases on a liquid bulk hull.
@@ -558,41 +673,187 @@ fn damage_workers(cases: usize) -> usize {
     }
 }
 
+/// Issue #923: whether a run works out damage stability. A run that skips it still counts the cases
+/// (`damage_cases` in the results), for a time estimate.
+#[derive(Clone)]
+pub struct DamageControl {
+    /// Work out the damage cases. Default: true. False gives `damage_status` `not run`.
+    pub run: bool,
+    /// Called with the cases done and the total as the cases finish. See [`DamageProgress`].
+    pub progress: Option<ProgressHook>,
+}
+
+impl Default for DamageControl {
+    fn default() -> Self {
+        Self {
+            run: true,
+            progress: None,
+        }
+    }
+}
+
+impl core::fmt::Debug for DamageControl {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("DamageControl")
+            .field("run", &self.run)
+            .field("progress", &self.progress.as_ref().map(|_| "hook"))
+            .finish()
+    }
+}
+
+/// How far a damage run is: `done` of `total` cases, over every damage Rule Set of the run (issue #923).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DamageProgress {
+    pub done: usize,
+    pub total: usize,
+}
+
+/// The progress hook. It is called on the thread that called the run, never on a worker thread (a Python
+/// callback, and the Ctrl-C of the Python main thread, need that): first with `done` 0, then whenever the count
+/// of finished cases changes, at most about every 5 ms, and last when the run ends. Damage runs in one pass
+/// only: the passes that size the default propeller or settle the rooms of a deckhouse stern skip it (it feeds
+/// neither), so the count never falls. It returns
+/// [`ControlFlow::Break`] to cancel: no new case starts, the cases under way finish, and the run stops with
+/// [`DAMAGE_CANCELLED`]. Not `Send`: it stays on the calling thread.
+pub type ProgressHook = std::rc::Rc<dyn Fn(DamageProgress) -> ControlFlow<()>>;
+
+/// The message of a run that the progress hook cancelled (the `Raised` kind is `Cancelled`).
+pub const DAMAGE_CANCELLED: &str = "damage stability was cancelled";
+
+pub use core::ops::ControlFlow;
+
+/// A damage run was cancelled by its progress hook.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Cancelled;
+
+/// Counts the cases done over the whole run, holds the cancel flag, and calls the hook (on the calling thread
+/// only: the worker threads touch the two atomics, never the hook).
+pub(crate) struct Gauge {
+    hook: Option<ProgressHook>,
+    total: usize,
+    done: core::sync::atomic::AtomicUsize,
+    cancelled: core::sync::atomic::AtomicBool,
+}
+
+impl Gauge {
+    /// No hook, no count: the run works as it did before issue #923.
+    pub(crate) fn none() -> Self {
+        Self::new(None, 0)
+    }
+
+    pub(crate) fn new(hook: Option<ProgressHook>, total: usize) -> Self {
+        Self {
+            hook,
+            total,
+            done: core::sync::atomic::AtomicUsize::new(0),
+            cancelled: core::sync::atomic::AtomicBool::new(false),
+        }
+    }
+
+    #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
+    pub(crate) fn has_hook(&self) -> bool {
+        self.hook.is_some()
+    }
+
+    pub(crate) fn done(&self) -> usize {
+        self.done.load(core::sync::atomic::Ordering::Relaxed)
+    }
+
+    pub(crate) fn is_cancelled(&self) -> bool {
+        self.cancelled.load(core::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// [`Gauge::report`] for the thread that waits on workers: if the hook panics, the cancel flag is set before
+    /// the panic goes on, so the workers stop at their next case and do not run every case that is left.
+    #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
+    pub(crate) fn report_guarded(&self) {
+        if let Err(panic) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| self.report()))
+        {
+            self.cancelled
+                .store(true, core::sync::atomic::Ordering::Relaxed);
+            std::panic::resume_unwind(panic);
+        }
+    }
+
+    /// Call the hook with the count now; a Break sets the cancel flag. Calling thread only. After a cancel the
+    /// hook is not called again.
+    pub(crate) fn report(&self) {
+        if self.is_cancelled() {
+            return;
+        }
+        if let Some(h) = &self.hook
+            && h(DamageProgress {
+                done: self.done(),
+                total: self.total,
+            })
+            .is_break()
+        {
+            self.cancelled
+                .store(true, core::sync::atomic::Ordering::Relaxed);
+        }
+    }
+}
+
 /// Run `f` on every item and return the results in the order of the items. With `workers` above 1 the items
 /// are shared between scoped threads (std only), each taking the next item not yet taken. `f` is pure in its
 /// item, so the order of the results does not depend on which worker ran which item. This is the one place a
 /// per-case progress call or a cancel check belongs (issue #923): after `f` returns, or before a worker takes
 /// its next item.
-fn run_ordered<T, R, F>(items: &[T], workers: usize, f: F) -> Vec<R>
+fn run_ordered<T, R, F>(
+    items: &[T],
+    workers: usize,
+    gauge: &Gauge,
+    f: F,
+) -> Result<Vec<R>, Cancelled>
 where
     T: Sync,
     R: Send,
     F: Fn(&T) -> R + Sync,
 {
+    use core::sync::atomic::Ordering;
+    if gauge.is_cancelled() {
+        return Err(Cancelled);
+    }
     #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
     if workers > 1 && items.len() > 1 {
-        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::sync::atomic::AtomicUsize;
         let next = AtomicUsize::new(0);
-        let (next, f) = (&next, &f);
+        // The workers see the two atomics and nothing else of the gauge: the hook stays on this thread.
+        let (next, f, done, cancelled) = (&next, &f, &gauge.done, &gauge.cancelled);
         let mut slots: Vec<Option<R>> = items.iter().map(|_| None).collect();
         std::thread::scope(|scope| {
             let handles: Vec<_> = (0..workers)
                 .map(|_| {
                     scope.spawn(move || {
-                        let mut done: Vec<(usize, R)> = Vec::new();
-                        loop {
+                        let mut out: Vec<(usize, R)> = Vec::new();
+                        while !cancelled.load(Ordering::Relaxed) {
                             let i = next.fetch_add(1, Ordering::Relaxed);
                             let Some(item) = items.get(i) else { break };
-                            done.push((i, f(item)));
+                            out.push((i, f(item)));
+                            done.fetch_add(1, Ordering::Relaxed);
                         }
-                        done
+                        out
                     })
                 })
                 .collect();
+            // This thread polls the counter while the workers run, and calls the hook (issue #923).
+            if gauge.has_hook() {
+                let mut last = gauge.done();
+                while !handles.iter().all(|h| h.is_finished()) {
+                    if gauge.done() != last {
+                        last = gauge.done();
+                        gauge.report_guarded();
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(5));
+                }
+                if gauge.done() != last {
+                    gauge.report_guarded();
+                }
+            }
             for h in handles {
                 match h.join() {
-                    Ok(done) => {
-                        for (i, r) in done {
+                    Ok(out) => {
+                        for (i, r) in out {
                             slots[i] = Some(r);
                         }
                     }
@@ -600,12 +861,54 @@ where
                 }
             }
         });
-        return slots
+        if gauge.is_cancelled() {
+            return Err(Cancelled);
+        }
+        return Ok(slots
             .into_iter()
             .map(|r| r.expect("every case ran once"))
-            .collect();
+            .collect());
     }
     #[cfg(not(all(feature = "parallel", not(target_arch = "wasm32"))))]
     let _ = workers;
-    items.iter().map(f).collect()
+    let mut out = Vec::with_capacity(items.len());
+    for item in items {
+        out.push(f(item));
+        gauge.done.fetch_add(1, Ordering::Relaxed);
+        gauge.report();
+        if gauge.is_cancelled() {
+            return Err(Cancelled);
+        }
+    }
+    Ok(out)
+}
+
+#[cfg(all(test, feature = "parallel", not(target_arch = "wasm32")))]
+mod tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    /// Issue #923: a hook that panics stops the workers at their next case; they do not run every case left.
+    #[test]
+    fn a_panicking_hook_stops_the_workers() {
+        let ran = AtomicUsize::new(0);
+        let items: Vec<usize> = (0..400).collect();
+        let hook: ProgressHook = std::rc::Rc::new(|p| {
+            if p.done >= 2 {
+                panic!("hook failed");
+            }
+            ControlFlow::Continue(())
+        });
+        let gauge = Gauge::new(Some(hook), items.len());
+        let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            run_ordered(&items, 4, &gauge, |_| {
+                ran.fetch_add(1, Ordering::Relaxed);
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            })
+        }));
+        assert!(caught.is_err(), "the panic did not reach the caller");
+        assert!(gauge.is_cancelled());
+        let n = ran.load(Ordering::Relaxed);
+        assert!(n < 100, "{n} of 400 cases ran after the hook panicked");
+    }
 }

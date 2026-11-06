@@ -1243,6 +1243,7 @@ fn unstored_rules(p: &Map<String, Value>) -> RunRules {
         Ok(selection) => RunRules {
             sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
             inputs: ga::RuleInputs::default(),
+            damage: crate::damage::DamageControl::default(),
         },
         Err(_) => RunRules::default(),
     }
@@ -1254,6 +1255,8 @@ fn unstored_rules(p: &Map<String, Value>) -> RunRules {
 pub struct RunRules {
     pub sets: Vec<ovd_core::rules::RuleSet>,
     pub inputs: ga::RuleInputs,
+    /// Issue #923: whether to work out damage stability, and the progress hook. Default: run, no hook.
+    pub damage: crate::damage::DamageControl,
 }
 
 /// The step a default propeller diameter sized to the light draught is rounded down to (m).
@@ -1285,11 +1288,21 @@ fn simulate_measured(
     } else {
         ovd_core::powering::IMMERSION_OPEN
     };
+    // Issue #923: damage does not feed the sizing (it is an output of the pass, read by the Rule Trace only),
+    // so the passes that only size skip it, and the pass that settles runs it once. One clean progress count,
+    // and damage is worked out once, not once a pass.
+    let quiet_owned;
+    let sizing = if rules.damage.run {
+        quiet_owned = quiet_rules(rules);
+        &quiet_owned
+    } else {
+        rules
+    };
     let mut q = p.clone();
     let mut run = 0;
     loop {
         let mut m = Measured::default();
-        let v = simulate_once(&q, &mut m, rules)?;
+        let v = simulate_once(&q, &mut m, sizing)?;
         run += 1;
         // The shaft axis is half a diameter above the base: D + D x limit <= T_aft at the light draught.
         let fit = lightest_aft_draught(&v)
@@ -1302,10 +1315,25 @@ fn simulate_measured(
                 q.insert("propeller_diameter_m".to_string(), json!(fit));
             }
             _ => {
+                if rules.damage.run && m.damage_status == ovd_core::measured::DamageStatus::NotRun {
+                    // The settled pass again, with damage.
+                    return simulate_once(&q, measured, rules);
+                }
                 *measured = m;
                 return Ok(v);
             }
         }
+    }
+}
+
+/// The rules of a run with damage skipped and no progress hook: for a pass that only sizes (issue #923).
+pub(crate) fn quiet_rules(rules: &RunRules) -> RunRules {
+    RunRules {
+        damage: crate::damage::DamageControl {
+            run: false,
+            progress: None,
+        },
+        ..rules.clone()
     }
 }
 
@@ -1338,6 +1366,27 @@ fn lightest_aft_draught(v: &Value) -> Option<f64> {
 }
 
 fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRules) -> R<Value> {
+    let mut v = simulate_once_inner(p, measured, rules)?;
+    // Issue #923: whether damage stability was run, and how many cases it has. Unhashed.
+    if v.get("error").is_none()
+        && let Some(o) = v.as_object_mut()
+    {
+        o.insert(
+            "damage_status".to_string(),
+            json!(measured.damage_status.key()),
+        );
+        if let Some(n) = measured.damage_cases {
+            o.insert("damage_cases".to_string(), json!(n));
+        }
+    }
+    Ok(v)
+}
+
+fn simulate_once_inner(
+    p: &Map<String, Value>,
+    measured: &mut Measured,
+    rules: &RunRules,
+) -> R<Value> {
     let vessel_id = match p.get("vessel") {
         None => "box_barge",
         Some(Value::String(s)) => s.as_str(),
@@ -1681,63 +1730,79 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
             // Issue #341: the assumed damages of ADN 9.3.x.15 on the laden departure condition.
             if let Some(liquid) = r.liquid.as_ref() {
                 let marpol = rules.sets.iter().any(|s| s.id == "marpol-i");
-                (measured.damage, measured.marpol_damage) =
-                    crate::liquid::damage_verdicts(&hull, liquid, cargo_key, rho, &conds, marpol);
-                // Issue #763: the damage of ES-TRIN 28.03 (a craft over 110 m) and of NORMAM 5.23.8, when the
-                // stack holds a Rule set that evaluates it. Unhashed, in `damage_by_rule`.
-                let mut by_rule = serde_json::Map::new();
                 let es_trin_set = rules.sets.iter().find(|s| {
                     s.id == "es-trin-2025"
                         && s.rule("es-trin/28.03(4)/damage-stability")
                             .is_some_and(|r| r.evaluated)
                 });
-                if let Some(set) = es_trin_set.filter(|_| hull.spec.loa > 110.0)
-                    && let Ok(table) =
-                        crate::damage::permeability_table(set, "es-trin-permeability")
-                {
-                    measured.es_trin_damage = crate::liquid::liquid_rule_damage(
-                        crate::liquid::LiquidRule::EsTrin,
-                        &hull,
-                        liquid,
-                        rho,
-                        &conds,
-                        &table,
-                    );
-                    by_rule.insert(
-                        set.id.clone(),
-                        crate::liquid::rule_damage_json(
-                            &set.key(),
-                            crate::damage::ES_TRIN_METHOD,
-                            &measured.es_trin_damage,
-                        ),
-                    );
-                }
                 let normam_set = rules.sets.iter().find(|s| {
                     s.id == "normam-202"
                         && s.rule("normam/5.23.8/standard-damage-cases")
                             .is_some_and(|r| r.evaluated)
                 });
-                if let Some(set) = normam_set
-                    && let Ok(table) = crate::damage::permeability_table(set, "normam-permeability")
-                {
-                    measured.normam_damage = crate::liquid::liquid_rule_damage(
-                        crate::liquid::LiquidRule::Normam,
-                        &hull,
-                        liquid,
-                        rho,
-                        &conds,
-                        &table,
-                    );
-                    by_rule.insert(
-                        set.id.clone(),
-                        crate::liquid::rule_damage_json(
-                            &set.key(),
-                            crate::damage::NORMAM_METHOD,
-                            &measured.normam_damage,
-                        ),
-                    );
+                // Issue #923: damage applies when a Rule Set of the stack asks for it; a run may skip it.
+                let applies = crate::trace::adn_vessel_type_of(cargo_key).is_some()
+                    || marpol
+                    || es_trin_set.is_some_and(|_| hull.spec.loa > 110.0)
+                    || normam_set.is_some();
+                if applies {
+                    measured.damage_status = if rules.damage.run {
+                        ovd_core::measured::DamageStatus::Run
+                    } else {
+                        ovd_core::measured::DamageStatus::NotRun
+                    };
                 }
-                liquid_damage_by_rule = Value::Object(by_rule);
+                if rules.damage.run {
+                    (measured.damage, measured.marpol_damage) = crate::liquid::damage_verdicts(
+                        &hull, liquid, cargo_key, rho, &conds, marpol,
+                    );
+                    // Issue #763: the damage of ES-TRIN 28.03 (a craft over 110 m) and of NORMAM 5.23.8, when the
+                    // stack holds a Rule set that evaluates it. Unhashed, in `damage_by_rule`.
+                    let mut by_rule = serde_json::Map::new();
+                    if let Some(set) = es_trin_set.filter(|_| hull.spec.loa > 110.0)
+                        && let Ok(table) =
+                            crate::damage::permeability_table(set, "es-trin-permeability")
+                    {
+                        measured.es_trin_damage = crate::liquid::liquid_rule_damage(
+                            crate::liquid::LiquidRule::EsTrin,
+                            &hull,
+                            liquid,
+                            rho,
+                            &conds,
+                            &table,
+                        );
+                        by_rule.insert(
+                            set.id.clone(),
+                            crate::liquid::rule_damage_json(
+                                &set.key(),
+                                crate::damage::ES_TRIN_METHOD,
+                                &measured.es_trin_damage,
+                            ),
+                        );
+                    }
+                    if let Some(set) = normam_set
+                        && let Ok(table) =
+                            crate::damage::permeability_table(set, "normam-permeability")
+                    {
+                        measured.normam_damage = crate::liquid::liquid_rule_damage(
+                            crate::liquid::LiquidRule::Normam,
+                            &hull,
+                            liquid,
+                            rho,
+                            &conds,
+                            &table,
+                        );
+                        by_rule.insert(
+                            set.id.clone(),
+                            crate::liquid::rule_damage_json(
+                                &set.key(),
+                                crate::damage::NORMAM_METHOD,
+                                &measured.normam_damage,
+                            ),
+                        );
+                    }
+                    liquid_damage_by_rule = Value::Object(by_rule);
+                }
             }
             // Issue #341: the mean oil outflow of MARPOL Annex I regulation 23, at the draught of the full load.
             if let Some(liquid) = r.liquid.as_ref()
@@ -3272,79 +3337,80 @@ fn simulate_gas(
         structure,
     };
     // Issue #759 (spec 0012): the IGC damage cases on every IS Code condition, when the stack's `igc-2g`
-    // evaluates IGC 2.7 and holds the damage tables. Unhashed (D21).
-    let (gas_damage, gas_damage_block) = match rules.sets.iter().find(|s| {
+    // evaluates IGC 2.7 and holds the damage tables. Issue #763 (spec 0012 D2, D3): the damage of ADN 9.3.1.15
+    // (`adn-gas`) and of ES-TRIN 28.03 (a craft over 110 m), when the stack holds a Rule set that evaluates it.
+    // Unhashed (D21). Issue #923: a run may skip them (`rules.damage.run`), and still counts the cases.
+    let igc_set = rules.sets.iter().find(|s| {
         s.id == "igc-2g"
             && s.rule("igc/2.7/damage-survival")
                 .is_some_and(|r| r.evaluated)
-    }) {
-        Some(set) if !damaged_conditions.is_empty() => {
-            let model = ovd_core::vessel_model::assemble(&vessel_inputs);
-            let spaces: Vec<ovd_core::compartments::Space> =
-                model.spaces.iter().map(|c| c.space.clone()).collect();
-            match crate::damage::gas_damage_verdicts(
-                set,
-                &spaces,
-                &fit_hull,
-                &damaged_conditions,
-                rho,
-            ) {
-                Ok((v, block)) => (v, block),
-                Err(_) => (Vec::new(), Value::Null),
-            }
-        }
-        _ => (Vec::new(), Value::Null),
-    };
-    // Issue #763 (spec 0012 D2, D3): the damage of ADN 9.3.1.15 (`adn-gas`) and of ES-TRIN 28.03 (a craft over
-    // 110 m) on every IS Code condition, when the stack holds a Rule set that evaluates it. Unhashed.
-    let mut by_rule = serde_json::Map::new();
-    let (mut adn_gas_damage, mut es_trin_damage) = (Vec::new(), Vec::new());
-    if !damaged_conditions.is_empty() {
-        let adn_set = rules.sets.iter().find(|s| {
-            s.id == "adn-gas"
-                && s.rule("adn/9.3.1.15.1/damage-stability")
+    });
+    let adn_set = rules.sets.iter().find(|s| {
+        s.id == "adn-gas"
+            && s.rule("adn/9.3.1.15.1/damage-stability")
+                .is_some_and(|r| r.evaluated)
+    });
+    let es_trin_set = rules
+        .sets
+        .iter()
+        .find(|s| {
+            s.id == "es-trin-2025"
+                && s.rule("es-trin/28.03(4)/damage-stability")
                     .is_some_and(|r| r.evaluated)
-        });
-        let es_trin_set = rules
-            .sets
-            .iter()
-            .find(|s| {
-                s.id == "es-trin-2025"
-                    && s.rule("es-trin/28.03(4)/damage-stability")
-                        .is_some_and(|r| r.evaluated)
-            })
-            .filter(|_| l > 110.0);
-        if adn_set.is_some() || es_trin_set.is_some() {
-            let model = ovd_core::vessel_model::assemble(&vessel_inputs);
-            let spaces: Vec<ovd_core::compartments::Space> =
-                model.spaces.iter().map(|c| c.space.clone()).collect();
-            for (rule, set, out) in [
-                (
-                    crate::damage::GasBoxRule::AdnGas,
-                    adn_set,
-                    &mut adn_gas_damage,
-                ),
-                (
-                    crate::damage::GasBoxRule::EsTrin,
-                    es_trin_set,
-                    &mut es_trin_damage,
-                ),
-            ] {
-                let Some(set) = set else { continue };
-                if let Ok((v, block)) = crate::damage::gas_box_damage_verdicts(
-                    rule,
-                    set,
-                    &spaces,
-                    &fit_hull,
-                    &damaged_conditions,
-                    rho,
-                ) {
-                    *out = v;
-                    by_rule.insert(set.id.clone(), block);
-                }
-            }
-        }
+        })
+        .filter(|_| l > 110.0);
+    let mut stages = crate::damage::GasStages::default();
+    if !damaged_conditions.is_empty()
+        && (igc_set.is_some() || adn_set.is_some() || es_trin_set.is_some())
+    {
+        let model = ovd_core::vessel_model::assemble(&vessel_inputs);
+        let spaces: Vec<ovd_core::compartments::Space> =
+            model.spaces.iter().map(|c| c.space.clone()).collect();
+        stages = crate::damage::gas_damage_stages(
+            (igc_set, adn_set, es_trin_set),
+            &spaces,
+            &fit_hull,
+            &damaged_conditions,
+            rho,
+            &rules.damage,
+        )
+        .map_err(|_| {
+            Stop::Raised(
+                "Cancelled".to_string(),
+                crate::damage::DAMAGE_CANCELLED.to_string(),
+            )
+        })?;
     }
+    // A damage Rule in the stack that its set does not evaluate is `not evaluated`, not `not applicable`.
+    let unevaluated = |id: &str, set: &str, over_110: bool| {
+        (!over_110 || l > 110.0)
+            && rules
+                .sets
+                .iter()
+                .any(|s| s.id == set && s.rule(id).is_some_and(|r| !r.evaluated))
+    };
+    let damage_status = if igc_set.is_none() && adn_set.is_none() && es_trin_set.is_none() {
+        if unevaluated("igc/2.7/damage-survival", "igc-2g", false)
+            || unevaluated("adn/9.3.1.15.1/damage-stability", "adn-gas", false)
+            || unevaluated("es-trin/28.03(4)/damage-stability", "es-trin-2025", true)
+        {
+            ovd_core::measured::DamageStatus::NotEvaluated
+        } else {
+            ovd_core::measured::DamageStatus::NotApplicable
+        }
+    } else if rules.damage.run {
+        ovd_core::measured::DamageStatus::Run
+    } else {
+        ovd_core::measured::DamageStatus::NotRun
+    };
+    let crate::damage::GasStages {
+        igc: gas_damage,
+        igc_block: gas_damage_block,
+        adn: adn_gas_damage,
+        es_trin: es_trin_damage,
+        by_rule,
+        cases: damage_cases,
+    } = stages;
     // Issue #742: the panel model and its plate model (the steel list).
     let steel = r
         .gas_basis
@@ -3467,6 +3533,12 @@ fn simulate_gas(
                 damage: gas_damage,
                 adn_gas_damage,
                 es_trin_damage,
+                damage_status,
+                damage_cases: matches!(
+                    damage_status,
+                    ovd_core::measured::DamageStatus::Run | ovd_core::measured::DamageStatus::NotRun
+                )
+                .then_some(damage_cases),
                 deadweight_t: Some(deadweight),
                 tank: r.tank_rules.clone(),
                 separation: r.separation.clone().map(|s| {

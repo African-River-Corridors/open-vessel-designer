@@ -450,6 +450,11 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
     // run's own inputs and the stern block; the plain `simulate` call does not answer it.
     assert_eq!(results["stern_arrangement"]["style"], "container_block");
     results.as_object_mut().unwrap().remove("stern_arrangement");
+    // And whether damage ran (issue #923), outside the results hash: `run` reads the Rule Sets of the file, the
+    // plain `simulate` call has none, so only `run` can say `run` and count the cases.
+    assert!(results["damage_status"].is_string());
+    results.as_object_mut().unwrap().remove("damage_status");
+    results.as_object_mut().unwrap().remove("damage_cases");
     // And the tank Spaces table (issue #687), inside the results hash: one row per Type C tank.
     let spaces = results.as_object_mut().unwrap().remove("spaces").unwrap();
     assert!(spaces.as_array().is_some_and(|rows| !rows.is_empty()));
@@ -470,6 +475,8 @@ fn json_results_are_what_simulate_answers_for_a_self_propelled_gas_hull() {
         "funnel_outlet_distance_m": 2.0
     }));
     expected["drawing"].as_object_mut().unwrap().remove("tank");
+    expected.as_object_mut().unwrap().remove("damage_status");
+    expected.as_object_mut().unwrap().remove("damage_cases");
     assert_eq!(results, &expected);
     // Pinned values: the original Python, re-pinned (issue #237) to what the current code prints;
     // were 2058.228164213275 and 1813.9027562650056 under the stepped IGC_2G. `cargo_t` re-pinned

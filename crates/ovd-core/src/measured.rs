@@ -67,6 +67,13 @@ pub struct Measured {
     pub immersion_over_limit: Option<f64>,
     /// The blade load at the Installed Power over the limit of the type; `None` with no Propulsor.
     pub blade_load_over_limit: Option<f64>,
+    /// Issue #923: whether damage stability applied to this hull and was run. `NotRun`: the run was told to skip
+    /// it, so every list of damage cases below is empty on purpose, and the Rules on those lists are `not run`,
+    /// not `not evaluated`.
+    pub damage_status: DamageStatus,
+    /// Issue #923: how many damage cases a run works out, counted even when it skips them; `None` when the
+    /// engine does not count them (a liquid bulk hull has a few cases on one condition).
+    pub damage_cases: Option<usize>,
     /// The assumed damages of a liquid bulk hull and what the damaged hull does (issue #341); empty for
     /// every other Cargo.
     pub damage: Vec<DamageVerdict>,
@@ -97,6 +104,33 @@ pub struct Measured {
     /// The cargo vent mast of a gas hull (issue #822), for the `vent.*` Measures; `None` for every
     /// other hull.
     pub vent_mast: Option<crate::vent_mast::VentMast>,
+}
+
+/// Issue #923: whether the run worked out damage stability (`damage_status` in the results).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum DamageStatus {
+    /// The hull has no damage Rule in the run's stack: nothing to run.
+    #[default]
+    NotApplicable,
+    /// The stack holds a damage Rule for this hull, but the Rule Set version does not evaluate it (an engine
+    /// gap, not a choice): the damage Rule reads `not evaluated`.
+    NotEvaluated,
+    /// Damage stability was worked out.
+    Run,
+    /// The run was told to skip it (`--no-damage`).
+    NotRun,
+}
+
+impl DamageStatus {
+    /// The text the results carry.
+    pub const fn key(self) -> &'static str {
+        match self {
+            DamageStatus::NotApplicable => "not applicable",
+            DamageStatus::NotEvaluated => "not evaluated",
+            DamageStatus::Run => "run",
+            DamageStatus::NotRun => "not run",
+        }
+    }
 }
 
 /// One assumed damage and the outcome: the Measure `stability.damage` is `ok`.

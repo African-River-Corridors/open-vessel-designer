@@ -1,9 +1,10 @@
 <script lang="ts">
   // The Rule Trace of the Option (spec 0004, "Rule Trace"): one row per Rule per object, as the
-  // engine gives it. Failures first, then warnings, passes, notes, not evaluated and not applicable;
+  // engine gives it. Failures first, then warnings, passes, notes, not evaluated, not run and not applicable;
   // the trace's order within each group. The app computes nothing: every field comes from the trace.
   // Units are the trace's. Only the table body scrolls, when the list is longer than the panel.
   import { t } from "../i18n.svelte";
+  import { OUTCOMES, outcomeRank, type Outcome } from "../ruleOutcomes";
 
   interface Row {
     rule: string | null;
@@ -26,31 +27,28 @@
     gap: string | null;
     finding: string | null;
   }
-  type Outcome = "pass" | "fail" | "warn" | "note" | "not evaluated" | "not applicable";
   export interface RuleTrace {
     rule_sets: string[];
     rows: Row[];
-    verdict: { passes: boolean; failing_rows: number; blocking_not_evaluated: { rule: string; title: string }[]; summary: string };
+    verdict: {
+      /** Only that no row fails. It does not say damage ran: read `damage_status` of the results too (issue #923). */
+      passes: boolean;
+      failing_rows: number;
+      blocking_not_evaluated: { rule: string; title: string }[];
+      blocking_not_run?: { rule: string; title: string }[];
+      summary: string;
+    };
   }
 
   let { trace }: { trace: RuleTrace | null } = $props();
 
   const COLUMNS = ["result", "rule", "object", "value", "limit", "margin", "citation", "status"] as const;
 
-  // The display order of the outcomes, and each one's tag: a word and a shape, never colour only.
-  const OUTCOMES: Record<Outcome, { rank: number; mark: string; label: string; tone: string }> = {
-    fail: { rank: 0, mark: "✕", label: "app-fail", tone: "fail" },
-    warn: { rank: 1, mark: "!", label: "app-rules-warn", tone: "warn" },
-    pass: { rank: 2, mark: "✓", label: "app-pass", tone: "ok" },
-    note: { rank: 3, mark: "i", label: "app-rules-note", tone: "plain" },
-    "not evaluated": { rank: 4, mark: "○", label: "app-rules-not-evaluated", tone: "open" },
-    "not applicable": { rank: 5, mark: "–", label: "app-rules-not-applicable", tone: "plain" },
-  };
   const COMPARE = { ge: "≥", gt: ">", le: "≤", lt: "<" } as const;
 
   let rows = $derived(trace?.rows ?? []);
   let ordered = $derived(
-    rows.map((r, i) => ({ r, i })).sort((a, b) => OUTCOMES[a.r.outcome].rank - OUTCOMES[b.r.outcome].rank || a.i - b.i).map((x) => x.r),
+    rows.map((r, i) => ({ r, i })).sort((a, b) => outcomeRank(a.r.outcome) - outcomeRank(b.r.outcome) || a.i - b.i).map((x) => x.r),
   );
   let failing = $derived(rows.filter((r) => r.outcome === "fail").length);
 
@@ -81,7 +79,7 @@
         </thead>
         <tbody>
           {#each ordered as r, i (i)}
-            {@const o = OUTCOMES[r.outcome]}
+            {@const o = OUTCOMES[r.outcome] ?? OUTCOMES["not evaluated"]}
             <tr class={o.tone} data-testid="rule-check-row" data-outcome={r.outcome} data-ok={r.outcome !== "fail"} data-governing={r.governing}>
               <td data-testid="rule-cell-result">
                 <span class="tag {o.tone}"><span aria-hidden="true">{o.mark}</span> {t(o.label)}</span>

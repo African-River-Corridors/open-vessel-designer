@@ -571,6 +571,20 @@ impl MeasureSource for OptionMeasures<'_> {
         }
     }
 
+    fn not_run(&self, object: &str) -> Option<String> {
+        let m = &self.measured;
+        let left_out = match ObjectType::from_key(object)? {
+            ObjectType::DamageCase => m.damage.is_empty(),
+            ObjectType::MarpolDamageCase => m.marpol_damage.is_empty(),
+            ObjectType::AdnGasDamageCase => m.adn_gas_damage.is_empty(),
+            ObjectType::EsTrinDamageCase => m.es_trin_damage.is_empty(),
+            ObjectType::NormamDamageCase => m.normam_damage.is_empty(),
+            _ => false,
+        };
+        (m.damage_status == ovd_core::measured::DamageStatus::NotRun && left_out)
+            .then(|| DAMAGE_NOT_RUN.to_string())
+    }
+
     fn missing(&self, object: &str) -> Option<String> {
         let object = ObjectType::from_key(object)?;
         let gas = self
@@ -808,6 +822,9 @@ fn row_json(r: &TraceRow) -> Value {
     })
 }
 
+/// Why a damage Rule is `not run` (issue #923): the run skipped damage stability (`--no-damage`).
+pub const DAMAGE_NOT_RUN: &str = "damage stability was not run: the run skipped it. Run it again with damage on to evaluate this Rule";
+
 /// The two IGC 2.4.1.2 rows that size the tank clearance on a stack with `adn-gas` and `igc-tank-clearance` and no `igc-2g`.
 const IGC_CLEARANCE_RULES: [&str; 2] =
     ["igc/2.4.1.2/side-clearance", "igc/2.4.1.2/bottom-clearance"];
@@ -824,8 +841,34 @@ pub fn trace_json(t: &Trace, service_area: &str, warnings: &[String]) -> Value {
         .map(|r| json!({"rule": r.rule, "title": r.title}))
         .collect();
     let failing = t.rows.iter().filter(|r| r.outcome == Outcome::Fail).count();
+    // Issue #923: a Rule the run left out on purpose is never part of "meets every evaluated blocking Rule".
+    let not_run = t.blocking_not_run();
+    let not_run_json: Vec<Value> = not_run
+        .iter()
+        .map(|r| json!({"rule": r.rule, "title": r.title}))
+        .collect();
     let summary = if !t.passes() {
         format!("fails {failing} blocking Rule check(s)")
+    } else if !not_run.is_empty() {
+        let names: Vec<String> = not_run.iter().map(|r| r.title.clone()).collect();
+        let mut s = format!(
+            "no evaluated blocking Rule fails, but damage stability was not run, so {} blocking Rule(s) were not run: {}",
+            names.len(),
+            names.join(", ")
+        );
+        if !not_evaluated.is_empty() {
+            let gaps: Vec<String> = t
+                .blocking_not_evaluated()
+                .iter()
+                .map(|r| r.title.clone())
+                .collect();
+            s.push_str(&format!(
+                "; {} more blocking Rule(s) not evaluated: {}",
+                gaps.len(),
+                gaps.join(", ")
+            ));
+        }
+        s
     } else if not_evaluated.is_empty() {
         "meets every evaluated blocking Rule; no blocking Rule is left not evaluated".to_string()
     } else {
@@ -877,6 +920,7 @@ pub fn trace_json(t: &Trace, service_area: &str, warnings: &[String]) -> Value {
             "passes": t.passes(),
             "failing_rows": failing,
             "blocking_not_evaluated": not_evaluated,
+            "blocking_not_run": not_run_json,
             "summary": summary,
         },
     })

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { num, say, t, type TextIds } from "../i18n.svelte";
   import HullView from "../HullView.svelte";
+  import { outcomeTag } from "../ruleOutcomes";
   import type { DamageViews } from "../api";
   import { conditionsOf, damageNotes, damageSets, governingCase, passes, type DamageCase, type DamageResults } from "../damage";
 
@@ -54,7 +55,7 @@
       <ul class="notes" data-testid="damage-not-evaluated">
         {#each notes as n, i (i)}
           <li data-outcome={n.outcome}>
-            <span class="tag {n.outcome === 'not evaluated' ? 'open' : 'plain'}">{t(n.outcome === "not evaluated" ? "app-rules-not-evaluated" : "app-rules-not-applicable")}</span>
+            <span class="tag {outcomeTag(n.outcome).tone}">{t(outcomeTag(n.outcome).label ?? "app-rules-not-evaluated")}</span>
             <strong>{n.title}</strong> <span class="id">{n.rule} {n.sets.join(", ")}</span>
             {#if n.gap}<span class="why" data-testid="damage-reason">{tr(n.gap)}</span>{/if}
           </li>
@@ -171,7 +172,7 @@
       <ul class="notes small" data-testid="damage-not-evaluated">
         {#each notes as n, i (i)}
           <li data-outcome={n.outcome}>
-            <span class="tag {n.outcome === 'not evaluated' ? 'open' : 'plain'}">{t(n.outcome === "not evaluated" ? "app-rules-not-evaluated" : "app-rules-not-applicable")}</span>
+            <span class="tag {outcomeTag(n.outcome).tone}">{t(outcomeTag(n.outcome).label ?? "app-rules-not-evaluated")}</span>
             <strong>{n.title}</strong>
             {#if n.gap}<span class="why">{tr(n.gap)}</span>{/if}
           </li>
