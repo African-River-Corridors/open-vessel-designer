@@ -16,7 +16,10 @@ from ovd.simulate import simulate, simulate_damage
 
 ROOT = Path(__file__).resolve().parents[1]
 GAS = ROOT / "examples" / "gas-140x29-coastal-lng" / "gas-140x29-coastal-lng.vdesign"
-DRY_BULK = ROOT / "crates" / "ovd-format" / "tests" / "fixtures" / "dry_bulk_box_hold.vdesign"
+# A dry bulk box barge: no damage Rule Set applies to it.
+DRY_BULK = {"cargo": "bauxite", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
+            "length_overall_m": 76.5, "beam_m": 11.4, "moulded_depth_m": 3.5,
+            "service_area": "river-only"}
 
 
 def typed(path: Path) -> dict:
@@ -104,7 +107,7 @@ def test_an_exception_in_a_callable_stops_the_run_and_is_raised(coastal):
 
 def test_a_hull_with_no_damage_rule_set_is_not_applicable_and_never_calls_progress():
     """Label: property"""
-    p = typed(DRY_BULK)
+    p = dict(DRY_BULK)
     calls = []
     result = simulate_damage(p, progress=lambda d, t: calls.append((d, t)))
     assert result["damage_status"] == "not applicable"
