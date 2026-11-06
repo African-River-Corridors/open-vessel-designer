@@ -22,7 +22,11 @@
 //! is not run.
 
 use crate::profile::Profile;
-use crate::run::{HashStatus, RunOutcome, results_hash, run_design, run_option};
+use crate::damage::DamageControl;
+use crate::rule_set::Library;
+use crate::run::{
+    HashStatus, RunOutcome, canonical_json, results_hash, run_design, run_option_with_damage,
+};
 use crate::text_ids::msg_json;
 use crate::vdesign::{
     AppliesTo, CARGO_CONTAINMENTS, Design, DesignOption, ENGINE_VERSION, FORMATION_KINDS, Group,
@@ -670,6 +674,26 @@ impl DesignSession {
         &self.profile
     }
 
+    /// A fingerprint of what an Option's results depend on (issue #924): its inputs, as stored, and the
+    /// Defaults Profile's content (not only its name: a loaded profile can change under one name, and
+    /// an input left on `default` then takes a new value). The name is left out, so a rename keeps it.
+    pub fn option_fingerprint(&self, option: &str) -> Result<String, String> {
+        let i = self.index_of(option)?;
+        let o = &self.design.options[i];
+        let inputs: Map<String, Value> = o
+            .inputs
+            .iter()
+            .map(|(n, s)| {
+                (
+                    n.clone(),
+                    json!({ "value": s.value, "source": s.source.as_str() }),
+                )
+            })
+            .collect();
+        let whole = json!({ "inputs": inputs, "profile": self.profile.to_value() });
+        Ok(crate::run::sha256_hex(&canonical_json(&whole)))
+    }
+
     /// The input schema for the session's Defaults Profile.
     pub fn input_schema(&self) -> Value {
         input_schema(&self.profile)
@@ -1078,8 +1102,15 @@ impl DesignSession {
         Ok(())
     }
 
-    /// Validate and run every Option, as `ovd validate` and `ovd run` do.
+    /// Validate and run every Option, as `ovd validate` and `ovd run` do (damage stability on).
     pub fn evaluate(&self) -> Evaluation {
+        self.evaluate_with_damage(&DamageControl::default())
+    }
+
+    /// [`DesignSession::evaluate`] with the damage switch (issue #924): the app evaluates with damage off,
+    /// so an edit stays quick, and runs damage on demand.
+    pub fn evaluate_with_damage(&self, damage: &DamageControl) -> Evaluation {
+        let library = Library::built_in();
         let checked = check(&self.design.to_text(), &self.profile);
         let names: Vec<&str> = self
             .design
@@ -1094,7 +1125,10 @@ impl DesignSession {
             .map(|(i, messages)| {
                 let has_error = messages.iter().any(|m| m.severity == Severity::Error);
                 let outcome = match (&checked.design, has_error) {
-                    (Some(d), false) => d.options.get(i).map(run_option),
+                    (Some(d), false) => d
+                        .options
+                        .get(i)
+                        .map(|o| run_option_with_damage(o, &library, &[], damage)),
                     _ => None,
                 };
                 OptionEvaluation {
@@ -1129,8 +1163,14 @@ impl DesignSession {
         }
         let mut design = checked.design.ok_or("the Design cannot be read")?;
         design.engine_version = ENGINE_VERSION.into();
+        let library = Library::built_in();
+        let no_damage = DamageControl {
+            run: false,
+            progress: None,
+        };
         for o in &mut design.options {
-            o.results_hash = match run_option(o) {
+            // Damage is outside the hash (`UNHASHED_KEYS`), so a save runs without it (issue #924).
+            o.results_hash = match run_option_with_damage(o, &library, &[], &no_damage) {
                 RunOutcome::Results { results, .. } => Some(results_hash(&results)),
                 _ => o.results_hash.take(),
             };

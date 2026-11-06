@@ -388,6 +388,12 @@ pub const UNHASHED_KEYS: [&str; 22] = [
     "damage_cases",
 ];
 
+/// SHA-256 of a text, as lower-case hex.
+pub fn sha256_hex(text: &str) -> String {
+    let digest = Sha256::digest(text.as_bytes());
+    digest.iter().map(|b| format!("{b:02x}")).collect()
+}
+
 /// SHA-256 of the canonical JSON of `results`, without the [`UNHASHED_KEYS`].
 pub fn results_hash(results: &Value) -> String {
     let mut hashed = results.clone();
