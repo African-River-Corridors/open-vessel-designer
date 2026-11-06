@@ -246,3 +246,136 @@ fn each_governing_case_carries_its_extent_and_the_sheet_dimensions_it() {
     assert!(side > 0 && bottom > 0, "side {side}, bottom {bottom}");
     println!("governing cases: side {side}, bottom {bottom}, with a width {across}");
 }
+
+/// The attribute `name="value"` of an SVG tag.
+fn attr(tag: &str, name: &str) -> Option<f64> {
+    let key = format!(" {name}=\"");
+    let at = tag.find(&key)? + key.len();
+    tag[at..].split('"').next()?.parse().ok()
+}
+
+/// The leader lines of a sheet as it renders: (label end, target tip), in sheet millimetres.
+fn leader_lines(doc: &Value) -> Vec<([f64; 2], [f64; 2])> {
+    let norm = match ovd_draw::run_value(doc, &ovd_draw::NoFiles) {
+        ovd_draw::RunResult::Ok(n) => n,
+        ovd_draw::RunResult::Errors(set) => panic!("breaks the standard: {set:?}"),
+    };
+    let svg = ovd_draw::render::svg::to_svg(
+        &norm,
+        &ovd_draw::render::svg::SvgOptions { embed_font: false },
+    );
+    let lines: Vec<([f64; 2], [f64; 2])> = svg
+        .lines()
+        .filter(|l| l.contains("viewport.main.leader") && l.starts_with("<line"))
+        .map(|l| {
+            let g = |n| attr(l, n).unwrap_or_else(|| panic!("{n} in {l}"));
+            ([g("x1"), g("y1")], [g("x2"), g("y2")])
+        })
+        .collect();
+    // Every label of the sheet has one straight leader line: a leader drawn another way (a path, an elbow)
+    // would not be measured, so the counts must agree.
+    let labels = doc["viewports"][0]["entities"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["type"] == "leader")
+        .count();
+    assert_eq!(
+        lines.len(),
+        labels,
+        "leader lines against labels of the sheet"
+    );
+    lines
+}
+
+/// How far the point `p` is from the segment `a`-`b`.
+fn dist_to_segment(p: [f64; 2], a: [f64; 2], b: [f64; 2]) -> f64 {
+    let (dx, dy) = (b[0] - a[0], b[1] - a[1]);
+    let len2 = dx * dx + dy * dy;
+    let t = (((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2).clamp(0.0, 1.0);
+    libm::hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy)
+}
+
+/// Do two segments cross each other (a proper crossing)?
+fn cross(a: ([f64; 2], [f64; 2]), b: ([f64; 2], [f64; 2])) -> bool {
+    let side = |o: [f64; 2], p: [f64; 2], q: [f64; 2]| {
+        (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0])
+    };
+    side(b.0, b.1, a.0) * side(b.0, b.1, a.1) < 0.0
+        && side(a.0, a.1, b.0) * side(a.0, a.1, b.1) < 0.0
+}
+
+/// Issue #957: on a damage sheet no two leaders cross, and no arrowhead lands on another leader. Measured on
+/// the rendered SVG of every sheet of the 130 m river-only (ADN, ES-TRIN) and coastal (IGC, ES-TRIN) hulls.
+#[test]
+fn no_two_leaders_of_a_damage_sheet_cross() {
+    let mut bad = Vec::new();
+    let mut sheets = 0;
+    for area in ["river-only", "coastal-and-river"] {
+        let r = gas_results(130.0, 16.0, 7.5, area);
+        for (set, stem, doc) in all_sheets(&r) {
+            sheets += 1;
+            let ls = leader_lines(&doc);
+            assert!(ls.len() >= 2, "{area} {stem}: {} leaders", ls.len());
+            for i in 0..ls.len() {
+                for j in 0..ls.len() {
+                    if i == j {
+                        continue;
+                    }
+                    if i < j && cross(ls[i], ls[j]) {
+                        bad.push(format!("{area} {set:?} {stem}: leaders {i} and {j} cross"));
+                    }
+                    // the tip of leader i on leader j
+                    if dist_to_segment(ls[i].1, ls[j].0, ls[j].1) < 0.3 {
+                        bad.push(format!(
+                            "{area} {set:?} {stem}: the arrowhead of {i} is on leader {j}"
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    assert!(sheets >= 4, "{sheets} sheets");
+    assert!(bad.is_empty(), "{} faults:\n{}", bad.len(), bad.join("\n"));
+}
+
+/// Issue #957: a governing case with no `x_m` is an error that names the case, not a sheet without its extent
+/// dimension. The same for the sheets of a Rule Set.
+#[test]
+fn a_governing_case_without_x_m_is_an_error() {
+    let mut r = gas_results(130.0, 16.0, 7.5, "coastal-and-river");
+    let case = r["damage"]["governing"][0]["case"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    r["damage"]["governing"][0]
+        .as_object_mut()
+        .unwrap()
+        .remove("x_m");
+    let err = damage_drawings_for(&r, Some("Option 1")).unwrap_err();
+    assert!(err.contains("x_m") && err.contains(&case), "{err}");
+    let mut r = gas_results(130.0, 16.0, 7.5, "river-only");
+    let sets = r["damage_by_rule"].as_object_mut().unwrap();
+    let block = sets.values_mut().find(|b| b.is_object()).unwrap();
+    block["governing"][0].as_object_mut().unwrap().remove("x_m");
+    let err = ovd_format::damage_drawings_by_rule(&r, Some("Option 1")).unwrap_err();
+    assert!(err.contains("x_m"), "{err}");
+}
+
+/// Issue #957: the leaders of the 110 m hull's sheets (the `damage` block, two Spaces to a stack) do not cross.
+#[test]
+fn the_leaders_of_the_110_m_sheets_do_not_cross() {
+    let r = results(Some("is_code_2008"));
+    for (stem, doc) in damage_drawings_for(&r, Some("Option 1")).unwrap() {
+        let ls = leader_lines(&doc);
+        for i in 0..ls.len() {
+            for j in 0..ls.len() {
+                assert!(i == j || !cross(ls[i], ls[j]), "{stem}: {i} x {j}");
+                assert!(
+                    i == j || dist_to_segment(ls[i].1, ls[j].0, ls[j].1) >= 0.3,
+                    "{stem}: arrowhead {i} on {j}"
+                );
+            }
+        }
+    }
+}
