@@ -122,9 +122,9 @@ fn a_profile_row_that_claims_a_source_it_does_not_give_is_refused() {
         f(&mut p);
         Profile::from_json(&p.to_string())
     };
-    // Sourced, no source.
+    // Sourced, no source (row 1 is the LNG row; row 0 is the coastal IGC minimum, an estimate).
     let err = edit(&|p| {
-        let row = &mut p["inputs"]["tank_design_pressure_mpa"]["default_by_table"]["rows"][0];
+        let row = &mut p["inputs"]["tank_design_pressure_mpa"]["default_by_table"]["rows"][1];
         row.as_object_mut().unwrap().remove("source");
     })
     .unwrap_err();

@@ -496,6 +496,7 @@
           "tank": {
             "lpg_carriage_condition": null,
             "design_pressure_mpa": 0.4,
+            "design_pressure_basis": "default",
             "liquid_pressure": "static",
             "liquid_pressure_accel": 1.0,
             "liquid_pressure_density_kg_m3": 450.0,
@@ -12317,6 +12318,7 @@
           "tank": {
             "lpg_carriage_condition": null,
             "design_pressure_mpa": 0.4,
+            "design_pressure_basis": "default",
             "liquid_pressure": "static",
             "liquid_pressure_accel": 1.0,
             "liquid_pressure_density_kg_m3": 450.0,
@@ -24138,6 +24140,7 @@
           "tank": {
             "lpg_carriage_condition": null,
             "design_pressure_mpa": 0.4,
+            "design_pressure_basis": "default",
             "liquid_pressure": "static",
             "liquid_pressure_accel": 1.0,
             "liquid_pressure_density_kg_m3": 450.0,
