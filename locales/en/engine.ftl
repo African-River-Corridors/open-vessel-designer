@@ -447,3 +447,13 @@ msg-hold-height = `{ $input }` = { $depth } leaves a hold height of { $height } 
 msg-number = `{ $input }` must be a number
 msg-input-error = `{ $input }`: { $error }
 msg-option = Option '{ $option }': { $message }
+msg-api-cb = `cb` is a result, not an input: the hull gives it (issue #448)
+msg-api-midship-coefficient = `midship_coefficient` is not an input: the hull gives its own midship area
+msg-api-ruleset = `ruleset` is replaced by `service_area` and `rule_sets`
+msg-api-crew-key = `{ $key }` is worked out by the run; it is not an input
+msg-api-both-names = give one of `{ $old }` and `{ $new }`: they are the same input
+msg-api-channel-key = unknown key `{ $key }` in `channel`; it takes { $keys }
+msg-api-channel-object = `channel` must be an object, or left out
+msg-api-vessel = `vessel` = { $value } must be one of: { $ids }
+msg-api-formation-flags = `self_propelled` and `atb` are both true; a vessel is one or the other
+msg-api-formation-both = give the Formation as `formation`, or as `self_propelled` or `atb`, not both

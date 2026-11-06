@@ -627,14 +627,26 @@ pub fn run_option_with_damage(
     extra: &[(String, String)],
     damage: &DamageControl,
 ) -> RunOutcome {
+    run_option_detail(option, library, extra, damage).0
+}
+
+/// [`run_option_with_damage`], and with it the class and message of an error the engine raised, which
+/// the outcome holds only as text (`Failed("ValueError: ...")`). The Python `simulate` gives the
+/// class back (issue #937).
+pub(crate) fn run_option_detail(
+    option: &DesignOption,
+    library: &Library,
+    extra: &[(String, String)],
+    damage: &DamageControl,
+) -> (RunOutcome, Option<(String, String)>) {
     let params = match simulate_params_of(option) {
         Ok(p) => p,
-        Err(m) => return RunOutcome::Failed(m),
+        Err(m) => return (RunOutcome::Failed(m), None),
     };
     // The Rule Sets of the run: the gas arrangement search keeps only candidates that meet them.
     let selection = match stack_for(library, option, extra) {
         Ok(s) => s,
-        Err(m) => return RunOutcome::Failed(m),
+        Err(m) => return (RunOutcome::Failed(m), None),
     };
     let rules = RunRules {
         sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
@@ -646,7 +658,7 @@ pub fn run_option_with_damage(
         settle_rooms(option, library, &mut params, &rules);
     match outcome {
         Outcome::Result(v) => match v.get("error").and_then(Value::as_str) {
-            Some(message) => RunOutcome::Failed(message.to_string()),
+            Some(message) => (RunOutcome::Failed(message.to_string()), None),
             None => {
                 // The capital budget: an output, not hashed, never fed back into the run.
                 let mut v = v;
@@ -809,11 +821,14 @@ pub fn run_option_with_damage(
                     }
                 }
                 let hash = results_hash(&v);
-                RunOutcome::Results { results: v, hash }
+                (RunOutcome::Results { results: v, hash }, None)
             }
         },
-        Outcome::Raised(kind, message) => RunOutcome::Failed(format!("{kind}: {message}")),
-        Outcome::Refused(message) => RunOutcome::Failed(message),
+        Outcome::Raised(kind, message) => (
+            RunOutcome::Failed(format!("{kind}: {message}")),
+            Some((kind, message)),
+        ),
+        Outcome::Refused(message) => (RunOutcome::Failed(message), None),
     }
 }
 

@@ -1,6 +1,7 @@
 //! The `.vdesign` format, the Defaults Profile and validation, running a Design, and the `eval`
 //! dispatch over every entry point of the calculation core (the Python package's seam).
 
+mod api;
 pub mod class_input;
 mod convoy;
 mod cost;
