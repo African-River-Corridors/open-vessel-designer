@@ -59,6 +59,59 @@ impl Session {
         self.state.session().input_schema().to_string()
     }
 
+    /// The Design as the session holds it (`.vdesign` JSON), for a damage worker (issue #924).
+    pub fn design_text(&self) -> String {
+        self.state.session().design().to_text()
+    }
+
+    /// The Defaults Profile as JSON, for a damage worker.
+    pub fn profile_text(&self) -> String {
+        self.state.session().profile().to_value().to_string()
+    }
+
+    /// What an Option's damage results depend on (see `DesignSession::option_fingerprint`).
+    pub fn option_fingerprint(&self, option: &str) -> Js<String> {
+        ok(self.state.session().option_fingerprint(option))
+    }
+
+    /// Run the damage cases of an Option here (issue #924). The page calls this in a Web Worker, on a
+    /// session of its own, so the page stays live. `progress(done, total)` is called as cases finish.
+    /// Gives `{ "fingerprint", "results" }` for the page's session to keep with `keep_damage`.
+    pub fn run_damage(&mut self, option: &str, progress: &js_sys::Function) -> Js<String> {
+        let job = ok(self.state.damage_job(option))?;
+        let callback = progress.clone();
+        let end = job.run(move |done, total| {
+            let _ = callback.call2(
+                &JsValue::NULL,
+                &JsValue::from_f64(done as f64),
+                &JsValue::from_f64(total as f64),
+            );
+        });
+        if let ovd_shell::damage::End::Failed(message) = &end {
+            let message = message.clone();
+            self.state.finish_damage(&job, end);
+            return Err(err(message));
+        }
+        self.state.finish_damage(&job, end);
+        self.state
+            .damage_run_json(option)
+            .map(|v| v.to_string())
+            .ok_or_else(|| err("damage stability gave no results".into()))
+    }
+
+    /// Keep the damage results a worker ran (`run_damage`), if the Option's inputs are still those it ran
+    /// for. Gives whether they were kept.
+    pub fn keep_damage(&mut self, option: &str, fingerprint: &str, results_json: &str) -> Js<bool> {
+        let results: Value = serde_json::from_str(results_json)
+            .map_err(|e| err(format!("the damage results are not JSON: {e}")))?;
+        let hash = ovd_format::results_hash(&results);
+        Ok(self.state.keep_damage(
+            option,
+            fingerprint,
+            ovd_shell::damage::End::Done(ovd_format::RunOutcome::Results { results, hash }),
+        ))
+    }
+
     pub fn evaluate(&self) -> String {
         self.state.evaluate_json().to_string()
     }

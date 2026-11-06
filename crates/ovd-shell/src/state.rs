@@ -437,6 +437,18 @@ impl AppState {
         true
     }
 
+    /// The kept damage run of an Option as JSON, `{ fingerprint, results }`, for a worker that ran it
+    /// to hand back (the web build). `None` when the Option has no kept run.
+    pub fn damage_run_json(&self, option: &str) -> Option<Value> {
+        let kept = self.damage.get(option)?;
+        match &kept.outcome {
+            RunOutcome::Results { results, .. } => {
+                Some(json!({ "fingerprint": kept.fingerprint, "results": results }))
+            }
+            _ => None,
+        }
+    }
+
     /// Stop the damage run under way, if any. The Option stays `not run`.
     pub fn cancel_damage(&mut self) {
         if let Some(r) = self.running.take() {
