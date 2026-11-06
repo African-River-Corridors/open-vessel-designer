@@ -1184,6 +1184,27 @@ describe("OVD web smoke tests", () => {
     assert.equal(ev, "not run");
   });
 
+  it("keeps a damage run under the new name when the Option is renamed during the run (issue #924)", async () => {
+    const b = await start();
+    await b.url(`${origin}/ovd/app`);
+    await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
+    await (await b.$("button=I understand")).click();
+    await ready(b);
+    await openDesign(b, coastalGasDesign());
+    const result = await b.execute(async () => {
+      const p = window.__ovdPlatform;
+      const run = p.runDamage("Option 1", () => {});
+      await new Promise((r) => setTimeout(r, 300));
+      await p.renameOption("Option 1", "Renamed");
+      const end = await run;
+      const ev = await p.evaluate();
+      return { end, option: ev.options[0].name, status: ev.options[0].outcome.results.damage_status };
+    });
+    assert.equal(result.end.outcome, "done", JSON.stringify(result));
+    assert.equal(result.end.option, "Renamed");
+    assert.deepEqual([result.option, result.status], ["Renamed", "run"]);
+  });
+
   it("still loads when browser storage is blocked", async () => {
     // Blocking cookies and site data makes `localStorage` throw.
     const b = await start({ prefs: { "profile.default_content_setting_values.cookies": 2 } });

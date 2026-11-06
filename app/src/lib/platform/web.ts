@@ -96,11 +96,13 @@ function runDamage(option: string, onProgress: (p: DamageProgress) => void): Pro
     } catch (e) {
       return resolve({ option, outcome: "failed", message: String(e) });
     }
+    // The Option's name now: a rename during the run moves `damageRun.option`, and the results are kept under it.
     const end = (outcome: DamageEnd["outcome"], message?: string) => {
       if (damageRun?.end !== end) return;
+      const name = damageRun.option;
       damageRun = null;
       worker?.terminate();
-      resolve({ option, outcome, message: message ?? null });
+      resolve({ option: name, outcome, message: message ?? null });
     };
     damageRun = { option, fingerprint, end };
     worker.onmessage = (ev: MessageEvent<DamageMessage>) => {
@@ -109,7 +111,7 @@ function runDamage(option: string, onProgress: (p: DamageProgress) => void): Pro
       else if (m.kind === "failed") end("failed", m.message);
       else {
         try {
-          end(session.keep_damage(option, m.run) ? "done" : "stale");
+          end(session.keep_damage(damageRun?.option ?? option, m.run) ? "done" : "stale");
         } catch (e) {
           end("failed", String(e));
         }
