@@ -790,8 +790,11 @@ _KAPPA_START = 0.8
 
 def _installed_power(c: dict, kappa: float) -> float:
     """The Installed Power the engine sizes for the case (kW), at the efficiency factor `kappa`."""
-    from ovd.simulate import simulate
-    out = simulate({
+    # The old engine entry, by name (issue #937): the fit still runs on the engine call it was made on.
+    # Moving it to `simulate`, which builds an Option as `ovd fill` does, changes the fitted factor and
+    # needs its own re-fit; see the follow-up ticket.
+    from ovd._bridge import call
+    out = call("simulate", "simulate", {"params": {
         "vessel": "hopper_barge", "cargo": "bauxite", "self_propelled": True,
         "loa_m": float(c["loa_m"]), "beam_m": float(c["beam_m"]), "depth_m": float(c["depth_m"]),
         "cb": None, "draught_limit_m": float(c["draught_m"]), "stern_form": "tunnel",
@@ -800,7 +803,7 @@ def _installed_power(c: dict, kappa: float) -> float:
         "design_speed_kn": float(c["design_speed_kn"]), "installed_power_margin": 1.2,
         "propulsor_efficiency_factor": float(kappa), "speed_max_kn": 14.0,
         "service_area": "river-only",   # issue #925: required; these are inland ships
-    })
+    }})
     return float(out["powering"]["installed_power_kw"])
 
 

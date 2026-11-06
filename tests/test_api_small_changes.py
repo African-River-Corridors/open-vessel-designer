@@ -13,20 +13,23 @@ from ovd.simulate import simulate
 
 # `max_tank_od_m` is the 12 m tank diameter cap of 0.1.0: it is an input, 16 m by default, since
 # issue #175, and the numbers in this file were printed by 0.1.0.
-CN_II = dict(vessel="gas_barge", cargo="LPG_propane", loa_m=90, beam_m=14.8, depth_m=6.5, cb=0.85,
-             freeboard_min_m=0.3, draught_limit_m=4.4, self_propelled=True, ruleset="IGC_2G",
+CN_II = dict(vessel="gas_barge", cargo="LPG_propane", loa_m=90, beam_m=14.8, depth_m=6.5,
+             freeboard_min_m=0.3, draught_limit_m=4.4, self_propelled=True,
              fill_ratio=0.95, max_tank_od_m=12.0, service_area="coastal-and-river")
-BOX = dict(vessel="box_barge", cargo="bauxite", loa_m=76.5, beam_m=11.4, depth_m=3.5, cb=0.928,
+BOX = dict(vessel="box_barge", cargo="bauxite", loa_m=76.5, beam_m=11.4, depth_m=3.5,
            lightship_k_t_per_m3=0.1093, freeboard_min_m=0.3, service_area="river-only")
 
 
-@pytest.mark.parametrize("ruleset,text", [
-    (None, "Unknown ruleset None."), (5, "Unknown ruleset 5."), (1.5, "Unknown ruleset 1.5."),
-    (True, "Unknown ruleset True."), (["a", 1], "Unknown ruleset ['a', 1]."),
-])
-def test_simulate_reports_a_ruleset_that_is_not_text_as_unknown(ruleset, text):
-    """Label: property"""
-    assert simulate(dict(CN_II, ruleset=ruleset)) == {"error": text}          # ce96e66
+@pytest.mark.parametrize("ruleset", [None, 5, 1.5, True, ["a", 1], "IGC_2G"])
+def test_simulate_refuses_a_ruleset_with_the_reason(ruleset):
+    """Label: property
+
+    Issue #937: `ruleset` is replaced by `service_area` and `rule_sets`. Every value of it is refused
+    with that message; 0.1.0 answered `{"error": "Unknown ruleset ..."}` (ce96e66) for all but IGC_2G.
+    """
+    with pytest.raises(TypeError) as e:
+        simulate(dict(CN_II, ruleset=ruleset))
+    assert str(e.value) == "`ruleset` is replaced by `service_area` and `rule_sets`"
 
 
 @pytest.mark.parametrize("text", ["80", "  80 ", "8e1", "٨٠"])
@@ -40,7 +43,10 @@ def test_simulate_reads_numbers_written_as_text(text):
     # 1124.1630064872984.
     # Re-pinned (issue #280: the end space defaults to the type G rule); was 1392.4601578818447.
     # Re-pinned (spec 0011 D17, no hull length for the opening setback); was 1396.169296674328.
-    assert out["results"]["cargo_t"] == pytest.approx(1470.3520725239787, rel=1e-9, abs=1e-9)
+    # Re-pinned (issue #937: a key left out takes the Defaults Profile value, the gas tank wall, design
+    # pressure and insulation among them, and the run's rooms and consumables are in the lightship;
+    # #932 rows 3, 5 to 13); was 1470.3520725239787.
+    assert out["results"]["cargo_t"] == pytest.approx(1803.8724019746735, rel=1e-9, abs=1e-9)
 
 
 def test_simulate_reads_every_number_as_text():
@@ -53,7 +59,9 @@ def test_simulate_reads_every_number_as_text():
     # 1405.8516419707348.
     # Re-pinned (issue #280); was 1763.374037130099.
     # Re-pinned (spec 0011 D17, no hull length for the opening setback); was 1767.0831759225819.
-    assert out["results"]["cargo_t"] == pytest.approx(1841.2659517722325, rel=1e-9, abs=1e-9)
+    # Re-pinned (issue #937: the Defaults Profile fills the gas tank inputs and the run adds its rooms
+    # and consumables, as above); was 1841.2659517722325.
+    assert out["results"]["cargo_t"] == pytest.approx(2195.61547681007, rel=1e-9, abs=1e-9)
     out = simulate(dict(BOX, lightship_k_t_per_m3="0.1093"))
     # Re-pinned (#448: the hull's sections give the volume, not the cb input); was 2256.166305 at
     # ce96e66.

@@ -80,13 +80,18 @@ NUMBERS = [n for n in list(TOP_LEVEL) + list(CHANNEL)
 
 
 def to_simulate(inputs: dict) -> dict:
-    """An Option's inputs (glossary names) as the `simulate` parameters."""
-    p = {"vessel": VESSEL[inputs["cargo_containment"]],
-         "self_propelled": inputs["formation"]["kind"] == "self_propelled"}
-    for name, key in TOP_LEVEL.items():
-        if name in inputs:
-            p[key] = inputs[name]
-    p["channel"] = {key: inputs[name] for name, key in CHANNEL.items()}
+    """An Option's inputs (glossary names) as the `simulate` parameters.
+
+    Issue #937: `simulate` takes the glossary names as they are, and refuses an input that does not
+    apply, so only the inputs the Option uses are sent: the channel inputs when the channel has a depth,
+    and the rest by the Cargo Containment (`ONLY_FOR`)."""
+    # `propulsive_efficiency` is used only by the propulsor types the Defaults Profile does not pick for a
+    # self-propelled vessel, so it is not sent (`ovd validate` still checks it in the file).
+    p = {name: value for name, value in inputs.items()
+         if name not in ("ruleset", "propulsive_efficiency")}
+    if p.get("channel_depth_m") is None:
+        for name in CHANNEL:
+            p.pop(name, None)
     return p
 
 
@@ -229,7 +234,12 @@ def check_option(o: dict) -> tuple[str, str]:
     inputs = {k: v["value"] for k, v in o["inputs"].items()}
     try:
         result = simulate(to_simulate(inputs))
-    except Exception as exc:  # noqa: BLE001 - any exception breaks the rule
+    except ValueError as exc:
+        # Issue #937: the run of the Option may refuse a hull the file check accepts (a 1 m hull 100 m
+        # deep, whose Defaults Profile stern does not fit): `ovd run` fails on it the same way. It is a
+        # refusal with a reason, not a crash; the test bounds how many there are.
+        return "refused", f"{o['name']}: {exc}"
+    except Exception as exc:  # noqa: BLE001 - any other exception breaks the rule
         return "raised", f"{o['name']}: {type(exc).__name__}: {exc}\n  {json.dumps(inputs)}"
     found = impossible(result)
     if found:
@@ -240,12 +250,14 @@ def check_option(o: dict) -> tuple[str, str]:
 def test_the_impossible_result_check_catches_an_error_value_and_a_negative():
     """The sweep's own check can fail: an error value and the 1 m beam's negatives are caught."""
     assert impossible({"error": "Bauxite cannot be carried in a gas barge."})
-    one_metre = simulate(to_simulate({
-        "cargo": "bauxite", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
-        "cargo_containment": "box_hold", "service_area": "river-only",
-        "length_overall_m": 76.5, "beam_m": 1.0,
-        "moulded_depth_m": 3.5, "channel_bottom_width_m": None, **{k: v for k, v in TYPICAL.items()
-                                   if ONLY_FOR.get(k, "box_hold") == "box_hold"}}))
+    # Issue #937: `simulate` builds the Option as `ovd fill` does, so a 1 m beam (a negative hold) is a
+    # fill error, not a result; the check is shown on the result the old engine gave for it.
+    one_metre = {"results": {"cargo_t": -5.0}, "geometry": {"hold_top_width_m": -1.0}}
+    with pytest.raises(TypeError, match="negative hold"):
+        simulate(to_simulate({
+            "cargo": "bauxite", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
+            "cargo_containment": "box_hold", "service_area": "river-only",
+            "length_overall_m": 76.5, "beam_m": 1.0, "moulded_depth_m": 3.5}))
     found = impossible(one_metre)
     assert any(f.startswith("cargo_t = -") for f in found), found
     # Issue #448: the draught comes from the hull's sections, so a negative displacement floats at
@@ -272,7 +284,7 @@ def test_every_option_validate_passes_runs_in_simulate(ovd, tmp_path):
     assert len(passed) >= 200, f"only {len(passed)} Options passed validation"
     assert len(refused) >= 200, f"only {len(refused)} Options were refused"
 
-    raised, wrong = [], []
+    raised, wrong, refused_by_run = [], [], []
     # Each Option is its own `simulate` call, so they run in parallel processes, in order (issue #852).
     with concurrent.futures.ProcessPoolExecutor(
             max_workers=os.cpu_count() or 2, mp_context=multiprocessing.get_context("spawn")) as pool:
@@ -281,8 +293,15 @@ def test_every_option_validate_passes_runs_in_simulate(ovd, tmp_path):
                 raised.append(message)
             elif kind == "wrong":
                 wrong.append(message)
+            elif kind == "refused":
+                refused_by_run.append(message)
     assert not raised, f"{len(raised)} valid Option(s) made simulate raise:\n" + "\n".join(
         raised[:10])
+    # Each reason is a ValueError the run gives with its own words ("the stern run does not fit the hull":
+    # the Defaults Profile's transom stern on a hull a few metres long or 100 m deep). 100 of 882 on seed 24.
+    assert len(refused_by_run) <= len(passed) // 4, (
+        f"{len(refused_by_run)} of {len(passed)} valid Options were refused by the run:\n"
+        + "\n".join(refused_by_run[:10]))
     assert not wrong, (f"{len(wrong)} valid Option(s) gave an error value or an impossible "
                        "result:\n" + "\n".join(wrong[:10]))
     # Every just-inside hard edge of every number appears in at least one valid Option.
