@@ -1684,7 +1684,15 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
                     shield_top_m: detail.weather_shield_top_above_keel_m,
                     dome_top_m: cargo_top_above_keel,
                     stub_m: inp.vent_stub_m,
-                    mast_x_m: inp.loa - arr.rake_m,
+                    // Issue #994: with the forward house taking cargo length, the cargo area ends
+                    // at the cargo zone's forward end, not where the rake begins.
+                    mast_x_m: if aft_second.arrangement_style.is_wheelhouse_forward() {
+                        inp.loa
+                            - (arr.bow_void_m
+                                - arr.separation.as_ref().map_or(0.0, |s| s.fwd_separation_m))
+                    } else {
+                        inp.loa - arr.rake_m
+                    },
                     cargo_area_aft_x_m: aft_x,
                     entrance_m: inp.entrance_distance_m,
                     engine_room_vent_inlet_m: inp.engine_room_vent_inlet_distance_m,
