@@ -378,6 +378,7 @@ impl Profile {
                 || key == "formation_abreast"
                 || key == "formation_in_line"
                 || key == "depth_to_beam_ratio"
+                || key == "tank_top_above_deck_default_rule"
                 || key == "length_to_depth_ratio";
             if !known {
                 return Err(format!("profile has an unknown input `{key}`"));
