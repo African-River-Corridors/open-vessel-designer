@@ -2160,8 +2160,15 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
                 },
             )
         } else {
+            // The laden draught may not be worked either (the same failed float); the level draught of
+            // the full load then stands in for it.
+            let laden = if air_draft.is_finite() {
+                air_draft
+            } else {
+                h_top - level(total_weight)?
+            };
             (
-                air_draft,
+                laden,
                 Text::fixed(
                     "check-air-draft-condition-laden-stands-in",
                     "laden (the light draught is not worked)",
@@ -2174,7 +2181,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
                 "The {condition} air draft {governing} m (laden {laden} m) is over the bridge limit {limit} m by {over} m ({source}). The highest point is the {point}, {top} m above the keel. The vessel cannot pass under a bridge of that clearance. The wheelhouse of a tug is not counted for a pushed or ATB design.",
                 condition = condition,
                 governing = Arg::fixed(governing, 2),
-                laden = Arg::fixed(air_draft, 2),
+                laden = Arg::fixed(if air_draft.is_finite() { air_draft } else { governing }, 2),
                 limit = Arg::fixed(limit, 2),
                 over = Arg::fixed(governing - limit, 2),
                 source = Arg::cite(inp.bridge_clearance_source.clone().unwrap_or_default()),
