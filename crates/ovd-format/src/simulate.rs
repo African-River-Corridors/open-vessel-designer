@@ -2077,6 +2077,7 @@ fn with_air_draft_report(
             "exceeded": governing.is_some_and(|g| g > limit + 1e-9),
         })
     });
+    let laden = v["results"]["air_draft_loaded_m"].clone();
     if let Some(o) = v.as_object_mut() {
         o.insert(
             "air_draft_report".to_string(),
@@ -2087,7 +2088,7 @@ fn with_air_draft_report(
                     "top_above_keel_m": num(point.top_above_keel_m),
                 },
                 "light_m": opt_num(r.air_draft_light_m),
-                "laden_m": num(r.air_draft_m),
+                "laden_m": laden,
                 "bridge_limit": bridge_limit,
             }),
         );

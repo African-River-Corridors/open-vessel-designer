@@ -5672,6 +5672,16 @@
             "args": {}
           }
         },
+        "air_draft_report": {
+          "highest_point": {
+            "key": "vent_mast",
+            "label": "vent mast exit",
+            "top_above_keel_m": 21.666666666666664
+          },
+          "light_m": 20.087302738775573,
+          "laden_m": 18.12182180044432,
+          "bridge_limit": null
+        },
         "air_drafts": {
           "river_top_m": 21.666666666666664,
           "sea_top_m": 21.666666666666664,
@@ -17503,6 +17513,16 @@
             "id": "name-check-boil-off-within-gas-use",
             "args": {}
           }
+        },
+        "air_draft_report": {
+          "highest_point": {
+            "key": "vent_mast",
+            "label": "vent mast exit",
+            "top_above_keel_m": 21.666666666666664
+          },
+          "light_m": 20.08478892080703,
+          "laden_m": 18.1044264269529,
+          "bridge_limit": null
         },
         "air_drafts": {
           "river_top_m": 21.666666666666664,
@@ -29357,6 +29377,16 @@
             "id": "name-check-boil-off-within-gas-use",
             "args": {}
           }
+        },
+        "air_draft_report": {
+          "highest_point": {
+            "key": "vent_mast",
+            "label": "vent mast exit",
+            "top_above_keel_m": 25.616666666666667
+          },
+          "light_m": 23.67810106366151,
+          "laden_m": 21.31746136168153,
+          "bridge_limit": null
         },
         "air_drafts": {
           "river_top_m": 25.616666666666667,
