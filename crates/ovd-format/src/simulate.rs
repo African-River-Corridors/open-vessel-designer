@@ -892,7 +892,7 @@ fn tank_design_of(p: &Map<String, Value>) -> R<ovd_core::barge_capacity::TankDes
         insulation_thickness_mm: get_or(
             p,
             "tank_insulation_thickness_mm",
-            b::DEFAULT_TANK_INSULATION_MM,
+            b::LEGACY_SIMULATE_INSULATION_MM,
         )?,
         insulation_conductivity_w_per_mk: get_or(
             p,

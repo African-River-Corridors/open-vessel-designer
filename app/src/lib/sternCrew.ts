@@ -53,6 +53,10 @@ export interface RoomsFigures {
 export interface SternCrewFigures {
   style: "container_block" | "deckhouse" | "wheelhouse_forward" | null;
   tiers: number | null;
+  /** Tiers that hold rooms (`stern_arrangement.room_tiers`, issue #943). */
+  roomTiers: number | null;
+  /** Tiers that only lift the wheelhouse (`stern_arrangement.access_tiers`). */
+  accessTiers: number | null;
   wheelhouse: "fixed" | "elevating" | null;
   /** Why the wheelhouse is of that type (`stern_arrangement.wheelhouse_basis`). */
   wheelhouseBasis: string | null;
@@ -139,6 +143,8 @@ export function sternCrewFigures(
   return {
     style,
     tiers: numOf(a.tiers),
+    roomTiers: numOf(a.room_tiers),
+    accessTiers: numOf(a.access_tiers),
     wheelhouse: a.wheelhouse === "fixed" || a.wheelhouse === "elevating" ? a.wheelhouse : null,
     wheelhouseBasis: strOf(a.wheelhouse_basis),
     outfitWarning: style === "deckhouse" || style === "wheelhouse_forward" ? outfit : null,

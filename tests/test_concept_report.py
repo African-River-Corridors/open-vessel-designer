@@ -195,6 +195,7 @@ READ_BY = {
     "self_propelled": [], "warnings": [], "fit_tried": [], "text_ids": [],
     "gross_tonnage": [], "holding_time": [],   # the holding-time block (#870); a chapter reads it with #871
     "crew": [],   # no chapter reads it yet; #830 maps it to A4
+    "boil_off_detail": [],   # unhashed (#919): the U-value and the heat leak per tank; no chapter reads it yet
     "air_drafts": [],   # unhashed (#888): the app and the side elevation read it; no chapter yet
     "stern_arrangement": [],   # the Stern & crew view reads it (#887); no chapter does yet
     "damage_status": ["a11"],   # whether damage ran (#923): A.11 gives it as its reason; the summary states it too
