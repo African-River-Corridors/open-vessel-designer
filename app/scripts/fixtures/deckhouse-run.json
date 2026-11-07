@@ -943,7 +943,7 @@
    },
    "id": "check-aft-end-bulkhead-space"
   },
-  "blind distance ahead of the bow 221.2 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 0.00 m of 0.00 m": {
+  "blind distance ahead of the bow 221.2 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 0.00 m of 0.00 m": {
    "args": {
     "blind": {
      "num": "221.2",
@@ -960,6 +960,9 @@
     "max_lift": {
      "num": "0.00",
      "value": 0.0
+    },
+    "source": {
+     "cite": "es-trin/7.02(2)/blind-zone-unladen"
     }
    },
    "id": "check-wheelhouse-blind-distance"

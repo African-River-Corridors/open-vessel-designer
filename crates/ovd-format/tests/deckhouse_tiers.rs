@@ -136,10 +136,12 @@ fn a_container_block_option_is_unchanged() {
         "container_block",
     );
     assert!(r["drawing"]["aft_arrangement"]["deckhouse"].is_null());
-    // The container block has no deckhouse, so no result moves: the hash is the one `main` gave.
+    // The container block has no deckhouse, so no number moves. Issue #989: the sightline check's message
+    // now names the Rule that sets the limit, so the hash is re-pinned (it was 67dbe209694b... on `main`);
+    // the blind distance, the lift and the tanks are the same.
     assert_eq!(
         hash,
-        "67dbe209694b8b3aa216ba957cb48f23dd7d73fde6c3fc571b2c5ba80c763833"
+        "6c28eb266b916781c0a8bd1211c79c84a3d63311b576f5e3c1c75a120285693f"
     );
 }
 
