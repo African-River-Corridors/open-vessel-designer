@@ -5,7 +5,7 @@
     {
       "name": "A basis",
       "status": "results",
-      "results_hash": "a6d0aca8294fa0d108f8bf4996af7bf1e3565b1b49428092ac9e6c436e4499e6",
+      "results_hash": "17ec907b346413aaadb1899612f81a2ffa3b0f0522ede3100c65b48ea58ed723",
       "hash_status": "matches",
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
@@ -449,7 +449,7 @@
               {
                 "name": "wheelhouse_sees_over_cargo",
                 "ok": true,
-                "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 5.47 m of 6.00 m",
+                "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 5.47 m of 6.00 m",
                 "severity": "error"
               }
             ],
@@ -737,7 +737,7 @@
           {
             "name": "wheelhouse sees over cargo",
             "ok": true,
-            "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 5.47 m of 6.00 m",
+            "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 5.47 m of 6.00 m",
             "severity": "error"
           },
           {
@@ -5372,7 +5372,7 @@
               }
             }
           },
-          "blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 5.47 m of 6.00 m": {
+          "blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 5.47 m of 6.00 m": {
             "id": "check-wheelhouse-blind-distance",
             "args": {
               "blind": {
@@ -5382,6 +5382,9 @@
               "limit": {
                 "num": "250",
                 "value": 250.0
+              },
+              "source": {
+                "cite": "es-trin/7.02(2)/blind-zone-unladen"
               },
               "lift": {
                 "num": "5.47",
@@ -6634,7 +6637,7 @@
             "Rule Set igc-2g@2.0.0 is used as the file stores it; 4.0.0 is also built in with other content",
             "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.1.0 is also built in with other content",
             "Rule Set icll-freeboard@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
-            "Rule Set solas-v22@1.0.0 is used as the file stores it; 1.1.0 is also built in with other content",
+            "Rule Set solas-v22@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set ovd@3.0.0 is used as the file stores it; 3.2.0 is also built in with other content"
           ],
           "rows": [
@@ -11827,7 +11830,7 @@
     {
       "name": "B profile",
       "status": "results",
-      "results_hash": "1f73394c4d7dd19580365f85baa1fffad1612ce0cb15bfc50d35985e088b6422",
+      "results_hash": "f76933c7bc21c4d23f80e8a309699ee34ef00b4d863ee95f48bcdf421051fe61",
       "hash_status": "matches",
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
@@ -12271,7 +12274,7 @@
               {
                 "name": "wheelhouse_sees_over_cargo",
                 "ok": true,
-                "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 5.49 m of 6.00 m",
+                "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 5.49 m of 6.00 m",
                 "severity": "error"
               }
             ],
@@ -12559,7 +12562,7 @@
           {
             "name": "wheelhouse sees over cargo",
             "ok": true,
-            "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 5.49 m of 6.00 m",
+            "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 5.49 m of 6.00 m",
             "severity": "error"
           },
           {
@@ -17194,7 +17197,7 @@
               }
             }
           },
-          "blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 5.49 m of 6.00 m": {
+          "blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 5.49 m of 6.00 m": {
             "id": "check-wheelhouse-blind-distance",
             "args": {
               "blind": {
@@ -17204,6 +17207,9 @@
               "limit": {
                 "num": "250",
                 "value": 250.0
+              },
+              "source": {
+                "cite": "es-trin/7.02(2)/blind-zone-unladen"
               },
               "lift": {
                 "num": "5.49",
@@ -18456,7 +18462,7 @@
             "Rule Set igc-2g@2.0.0 is used as the file stores it; 4.0.0 is also built in with other content",
             "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.1.0 is also built in with other content",
             "Rule Set icll-freeboard@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
-            "Rule Set solas-v22@1.0.0 is used as the file stores it; 1.1.0 is also built in with other content",
+            "Rule Set solas-v22@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set ovd@3.0.0 is used as the file stores it; 3.2.0 is also built in with other content"
           ],
           "rows": [
@@ -23649,7 +23655,7 @@
     {
       "name": "C deep",
       "status": "results",
-      "results_hash": "8673c19b596bae183b449b848eb4e3f9134db650012c55dc738cb570757a3f76",
+      "results_hash": "177cf18b688862d987a4af422511c7f206ba10a4bcbcb7d1834404b9dfe436e9",
       "hash_status": "matches",
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
@@ -24093,7 +24099,7 @@
               {
                 "name": "wheelhouse_sees_over_cargo",
                 "ok": true,
-                "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 5.08 m of 6.00 m",
+                "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 5.08 m of 6.00 m",
                 "severity": "error"
               }
             ],
@@ -24381,7 +24387,7 @@
           {
             "name": "wheelhouse sees over cargo",
             "ok": true,
-            "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 5.08 m of 6.00 m",
+            "message": "blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 5.08 m of 6.00 m",
             "severity": "error"
           },
           {
@@ -29038,7 +29044,7 @@
               }
             }
           },
-          "blind distance ahead of the bow 250.0 m <= 250 m, light (ES-TRIN 7.02(2)); lift used 5.08 m of 6.00 m": {
+          "blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 5.08 m of 6.00 m": {
             "id": "check-wheelhouse-blind-distance",
             "args": {
               "blind": {
@@ -29048,6 +29054,9 @@
               "limit": {
                 "num": "250",
                 "value": 250.0
+              },
+              "source": {
+                "cite": "es-trin/7.02(2)/blind-zone-unladen"
               },
               "lift": {
                 "num": "5.08",
@@ -30300,7 +30309,7 @@
             "Rule Set igc-2g@2.0.0 is used as the file stores it; 4.0.0 is also built in with other content",
             "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.1.0 is also built in with other content",
             "Rule Set icll-freeboard@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
-            "Rule Set solas-v22@1.0.0 is used as the file stores it; 1.1.0 is also built in with other content",
+            "Rule Set solas-v22@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set ovd@3.0.0 is used as the file stores it; 3.2.0 is also built in with other content"
           ],
           "rows": [
