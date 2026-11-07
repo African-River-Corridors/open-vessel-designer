@@ -904,6 +904,16 @@ fn tank_design_of(p: &Map<String, Value>) -> R<ovd_core::barge_capacity::TankDes
             "tank_insulation_density_kg_m3",
             b::DEFAULT_TANK_INSULATION_DENSITY_KG_M3,
         )?,
+        insulation_conductivity_w_per_mk: get_or(
+            p,
+            "tank_insulation_conductivity_w_per_mk",
+            b::DEFAULT_TANK_INSULATION_CONDUCTIVITY_W_PER_MK,
+        )?,
+        insulation_density_kg_m3: get_or(
+            p,
+            "tank_insulation_density_kg_m3",
+            b::DEFAULT_TANK_INSULATION_DENSITY_KG_M3,
+        )?,
         structure_factor: get_or(p, "tank_structure_factor", b::DEFAULT_TANK_STRUCTURE_FACTOR)?,
     })
 }
