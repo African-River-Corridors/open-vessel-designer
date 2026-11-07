@@ -1,6 +1,7 @@
 """One-call barge simulation for the simulator.
 
     simulate(params: dict, damage: bool = False) -> dict      # JSON in, JSON out
+    simulate_damage(params, progress=None, cancel=None) -> dict   # the damage stage, with progress and cancel
 
 One path (issue #937): the dict becomes one Option the way `ovd fill --as-new` builds it (a key left out
 takes the Defaults Profile value; a required input left out is an error), and the Option is run the way
@@ -9,7 +10,7 @@ takes the Defaults Profile value; a required input left out is an error), and th
 """
 from __future__ import annotations
 
-from ._bridge import call as _call
+from ._bridge import call as _call, call_with_progress as _call_with_progress
 
 # 0.1.0 `simulate` exposed these names (it imported them), and user scripts import them from here.
 # Nothing in this module uses them: the calculation runs in the Rust core.
@@ -47,3 +48,27 @@ def simulate(p: dict, damage: bool = False) -> dict:
     stability cases; by default they are not run and ``damage_status`` is ``"not run"``.
     """
     return _call("api", "simulate", {"params": p, "damage": damage})
+
+
+def simulate_damage(params: dict, progress=None, cancel=None) -> dict:
+    """Run the damage stage: the same Option as ``simulate(params)``, with the damage cases worked out.
+
+    The result equals ``simulate(params, damage=True)``, and ``damage_status`` is ``"run"``. The call is
+    stateless: it builds the Option again, so the part that ``simulate(params)`` does runs again.
+
+    ``progress(done, total)`` is called as cases finish: first with ``done`` 0, last with ``done == total``.
+    ``cancel()`` returning true stops the run, and the call *returns* the results of a run without damage
+    (``damage_status`` is ``"not run"``). To get them the core runs the Option again without damage
+    before it returns (about 45 % of a coastal run), so a cancel does not return at once.
+    Both callables run on the thread that called ``simulate_damage`` (the engine's worker threads never
+    call Python), one at a time; keep them short. They run only when the count of finished damage cases
+    changes (no timer), so ``cancel()`` and Ctrl-C are not seen during the first part of the run that
+    works out no damage, nor inside one long case, nor during that rerun. A ``threading.Event`` is passed
+    as ``event.is_set``. An exception raised by either, or Ctrl-C (``KeyboardInterrupt``), stops the run
+    and is raised from this call. A hull with no damage Rule Set gives ``"not applicable"`` and never
+    calls ``progress``.
+    """
+    for name, f in (("progress", progress), ("cancel", cancel)):
+        if f is not None and not callable(f):
+            raise TypeError(f"`{name}` must be a callable or None, not {type(f).__name__}")
+    return _call_with_progress({"params": params}, progress, cancel)

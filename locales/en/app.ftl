@@ -600,3 +600,31 @@ app-principal-installed-power = Installed power
 app-principal-service-speed = Service speed, deep water
 app-principal-crew-minimum = Crew, minimum
 app-principal-crew-berths = Berths
+
+# Damage stability on demand (issue #924)
+app-damage-status-label = Damage stability
+app-damage-status-run = Run
+app-damage-status-not-run = Not run
+app-damage-status-not-applicable = Not applicable
+app-damage-status-not-evaluated = Not evaluated
+app-damage-not-run = Damage stability has not been run.
+app-damage-not-run-for-inputs = Damage stability has not been run for these inputs.
+app-damage-cases-count = Damage cases to assess: { $count }
+app-damage-estimate = About { $seconds } s, from the last run on this machine.
+app-damage-run = Run damage stability
+app-damage-cancel = Cancel
+app-damage-running = Running damage stability
+app-damage-progress = { $done } of { $total } cases
+app-damage-left = about { $seconds } s left
+app-damage-progress-label = Damage stability progress
+app-damage-did-not-run = Damage stability did not run: { $reason }
+app-damage-cancelled = Damage stability was cancelled. It has not been run.
+app-damage-dropped = The inputs changed while damage stability ran, so the run was dropped. It has not been run.
+
+# The question before a report with damage not run (issue #924; the app has no report yet)
+app-report-damage-title = Damage stability has not been run
+app-report-damage-body-time = Damage stability has not been run (about { $seconds } s). Run it now, or make the report without it?
+app-report-damage-body-cases = Damage stability has not been run ({ $cases } cases). Run it now, or make the report without it?
+app-report-damage-run = Run it now
+app-report-damage-skip = Make the report without it
+app-report-damage-cancel = Cancel

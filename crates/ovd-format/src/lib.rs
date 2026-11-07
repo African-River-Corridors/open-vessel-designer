@@ -32,6 +32,7 @@ mod text_ids;
 pub mod trace;
 pub mod vdesign;
 
+pub use api::simulate_damage_with;
 pub use eval::{ENTRY_POINTS, EvalError, eval, parse_case};
 pub use ga::{
     CONVOY_NO_VIEWS, GaViews, NO_ARRANGEMENT_PLAN, NO_DAMAGE_DRAWING, NO_TUG_GA,

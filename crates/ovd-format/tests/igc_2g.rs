@@ -442,7 +442,12 @@ fn every_default_gas_design_meets_the_new_rules_or_says_why_it_does_not() {
     // their default design pressure, 0.4 MPa, is an estimate (the profile says so) and is below
     // Po = 0.2 + A C (rho_r)^1.5 for a large tank, with sigma_m taken as the allowable stress (#317).
     let mut below: Vec<String> = Vec::new();
-    for [(_, _), (_, cargo), (_, carriage)] in ovd_format::vdesign::table_combinations() {
+    for [(_, _), (_, cargo), (_, carriage), (_, area)] in ovd_format::vdesign::table_combinations()
+    {
+        // The test builds a river-only design; the Service Area key does not change these rows yet.
+        if area != "river-only" {
+            continue;
+        }
         let results = new_gas_results(&cargo, &carriage);
         let rows = results["rule_trace"]["rows"].as_array().unwrap();
         let outcomes = |id: &str| -> Vec<String> {

@@ -439,11 +439,99 @@ describe("OVD app smoke tests", () => {
     return filled;
   }
 
+  // Damage runs on demand (issue #924): an open shows `not run`, and a click on Run gives the cases. The wait for a
+  // whole run, in ms: the coastal gas Design takes 4 to 8 s on a release build (issue #921); a debug build, much longer.
+  const DAMAGE_RUN_MS = Number(process.env.OVD_E2E_DAMAGE_RUN_MS || 60000);
+  const damageStatus = async () => (await browser.$("[data-testid=damage-status]")).getAttribute("data-status");
+
+  /** Show the Damage stability view of the open Design, run damage and wait for the results. */
+  async function runDamage() {
+    await show("Stability & Propulsion", "Damage stability");
+    await until("damage to be offered", async () => (await browser.$("[data-testid=damage-run]")).isExisting());
+    await (await browser.$("[data-testid=damage-run]")).click();
+    await until("damage to have run", async () => (await damageStatus()) === "run", DAMAGE_RUN_MS);
+  }
+
+  it("opens a coastal gas Design with damage not run, runs it with progress, and the governing case appears (issue #924)", async () => {
+    await open(gasDamageDesign(), "gas-damage-coastal-and-river.vdesign", SLOW_OPEN_MS);
+    await show("Stability & Propulsion", "Damage stability");
+    assert.equal(await damageStatus(), "not run");
+    assert.equal((await browser.$$("[data-testid=damage-case-row]")).length, 0, "no damage cases before the run");
+    const cases = Number(/\d+/.exec(await browser.$("[data-testid=damage-case-count]").getText())[0]);
+    assert.ok(cases >= 10, `${cases} cases to assess`);
+    // Record, in the page, when the click was and each progress event: the browser driver is too slow to watch it.
+    await browser.execute(() => {
+      const log = { start: performance.now(), events: [], casesEnd: null, end: null };
+      window.__damageLog = log;
+      const look = () => {
+        const bar = document.querySelector("[data-testid=damage-progress]");
+        const eta = document.querySelector("[data-testid=damage-eta]");
+        if (bar && eta) {
+          const done = Number(bar.dataset.done);
+          const prior = log.events[log.events.length - 1];
+          if (done > 0 && (!prior || prior.done !== done)) log.events.push({ at: performance.now(), done, total: Number(bar.dataset.total), left: Number(eta.dataset.leftSeconds) });
+        }
+        if (bar && log.casesEnd === null && Number(bar.dataset.total) > 0 && Number(bar.dataset.done) >= Number(bar.dataset.total)) log.casesEnd = performance.now();
+        if (log.end === null && document.querySelector("[data-testid=damage-status]")?.dataset.status === "run") log.end = performance.now();
+      };
+      new MutationObserver(look).observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
+      document.querySelector("[data-testid=damage-run]").click();
+    });
+    await until("damage to have run", async () => (await damageStatus()) === "run", DAMAGE_RUN_MS);
+    const log = await browser.execute(() => window.__damageLog);
+    assert.ok(log.end !== null, "the page did not see the run end");
+    // Progress moved: at least one event with some cases done, never going backwards.
+    assert.ok(log.events.length >= 1, "no progress event was seen");
+    for (let i = 1; i < log.events.length; i++) assert.ok(log.events[i].done >= log.events[i - 1].done, "progress went back");
+    // The time left that the first event with cases done says, against the time that was left (issue #924: within a factor of 2).
+    const first = log.events[0];
+    // (The run then evaluates again and draws the sheets, which takes time of its own: the cases end at the last progress event.)
+    const actualLeft = ((log.casesEnd ?? log.end) - first.at) / 1000;
+    const ratio = first.left / actualLeft;
+    console.log(`DIAG damage estimate: ${log.events.length} events; first at ${Math.round(first.at - log.start)} ms with ${first.done}/${first.total} done; said ${first.left.toFixed(2)} s left, actual ${actualLeft.toFixed(2)} s, ratio ${ratio.toFixed(2)}; run took ${Math.round(log.end - log.start)} ms, cases ended at ${Math.round((log.casesEnd ?? log.end) - log.start)} ms`);
+    // (On a fast engine the cases take well under a second, and a factor of 2 of a few hundredths of a second means nothing: a quarter of a second is close enough then.)
+    assert.ok((ratio >= 0.5 && ratio <= 2) || Math.abs(first.left - actualLeft) <= 0.25, `the estimate (${first.left.toFixed(2)} s left) is not within a factor of 2 of the time left (${actualLeft.toFixed(2)} s)`);
+    // The governing case and the drawing are there, and the message bar no longer offers the run.
+    await until("the damage drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1, SLOW_OPEN_MS);
+    assert.equal((await browser.$$("[data-testid=damage-case-row][data-governing=true]")).length, 1);
+    assert.ok((await browser.$$("[data-testid=damage-case-row]")).length >= 10);
+    const bar = (await browser.$("[data-testid=message-bar]").isExisting()) ? await browser.$("[data-testid=message-bar]").getText() : "";
+    assert.doesNotMatch(bar, /has not been run/);
+    // The time per case is kept: a later open names the time before a run.
+    await open(gasDamageDesign(), "gas-damage-coastal-and-river.vdesign", SLOW_OPEN_MS);
+    await show("Stability & Propulsion", "Damage stability");
+    assert.equal(await damageStatus(), "not run", "a new open runs no damage");
+    await until("the estimate before a run", async () => (await browser.$("[data-testid=damage-estimate]")).isExisting());
+  });
+
+  it("cancels a damage run, and the status stays not run (issue #924)", async () => {
+    await open(gasDamageDesign(), "gas-damage-coastal-and-river.vdesign", SLOW_OPEN_MS);
+    await show("Stability & Propulsion", "Damage stability");
+    // The cases take under a second on a release build, after a second of set-up: cancel in the page, at once, so the
+    // driver's round trips cannot let the run finish first.
+    await browser.execute(
+      () =>
+        new Promise((resolve) => {
+          document.querySelector("[data-testid=damage-run]").click();
+          setTimeout(() => {
+            document.querySelector("[data-testid=damage-cancel]").click();
+            resolve(true);
+          }, 0);
+        }),
+    );
+    await until("the run to stop", async () => (await browser.$("[data-testid=damage-run]")).isExisting(), 30000);
+    assert.equal(await damageStatus(), "not run");
+    await browser.pause(1000);
+    assert.equal(await damageStatus(), "not run", "a cancelled run left results");
+    assert.equal((await browser.$$("[data-testid=damage-case-row]")).length, 0);
+    assert.equal((await browser.$$("[data-testid=damage-progress]")).length, 0);
+  });
+
   it("shows the damage cases, the governing case of each condition and the damage drawing of a gas Design (issue #886)", async () => {
     // The coastal-and-river design computes the IGC damage cases and the stern arrangement: about 6 s on the CI build,
     // so the open and the drawing get a little more than the usual 15 s (issues #850, #922).
     await open(gasDamageDesign(), "gas-damage-coastal-and-river.vdesign", SLOW_OPEN_MS);
-    await show("Stability & Propulsion", "Damage stability");
+    await runDamage();
     await until("the damage drawing", async () => (await browser.$$("[data-testid=damage-drawing] svg")).length === 1, SLOW_OPEN_MS);
     const rows = await browser.$$("[data-testid=damage-case-row]");
     assert.ok(rows.length >= 10, `${rows.length} damage cases`);
@@ -475,7 +563,7 @@ describe("OVD app smoke tests", () => {
 
   it("marks the engine's governing case and draws it for each condition of a river-only gas Design (issues #850, #886, #928)", async () => {
     await open(gasDamageDesign("river-only"), "gas-damage-river-only.vdesign", SLOW_OPEN_MS);
-    await show("Stability & Propulsion", "Damage stability");
+    await runDamage();
     await until("the case table", async () => (await browser.$$("[data-testid=damage-case-row]")).length >= 1);
     // The first set is the ADN one: in each of its conditions one case is marked governing and one drawing is shown.
     const count = Math.max((await browser.$$("[data-testid=damage-condition]")).length, 1);
@@ -495,7 +583,7 @@ describe("OVD app smoke tests", () => {
   it("shows the damage cases of a liquid hull, and says there is no drawing for it (issue #886)", async () => {
     const fixture = "crude_integral_tanks_self_propelled.vdesign";
     await open(path.join(FIXTURES, fixture), fixture);
-    await show("Stability & Propulsion", "Damage stability");
+    await runDamage();
     await until("the case table", async () => (await browser.$$("[data-testid=damage-case-row]")).length >= 1);
     assert.equal((await browser.$$("[data-testid=damage-drawing] svg")).length, 0);
     assert.equal((await browser.$$("[data-testid=damage-no-drawing]")).length, 1);
@@ -519,7 +607,8 @@ describe("OVD app smoke tests", () => {
         for (const hidden of [false, true]) {
           await setPanel("Input", !hidden);
           await setPanel("Outputs", !hidden);
-          await show("Stability & Propulsion", "Damage stability");
+          if (!hidden) await runDamage();
+          else await show("Stability & Propulsion", "Damage stability");
           await until("the case table", async () => (await browser.$$("[data-testid=damage-case-row]")).length >= 1);
           await browser.pause(300);
           assert.ok((await overflow()) <= 0, `the Damage stability view scrolls (${what}, panels ${hidden ? "hidden" : "shown"})`);

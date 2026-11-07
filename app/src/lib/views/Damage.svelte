@@ -3,13 +3,37 @@
   import HullView from "../HullView.svelte";
   import { outcomeTag } from "../ruleOutcomes";
   import type { DamageViews } from "../api";
-  import { conditionsOf, damageNotes, damageSets, governingCase, passes, type DamageCase, type DamageResults } from "../damage";
+  import { conditionsOf, damageNotes, damageSets, damageStatus, governingCase, passes, secondsBefore, secondsLeft, wholeSeconds, type DamageCase, type DamageResults } from "../damage";
+  import { damageRun } from "../damageRun.svelte";
 
   // The damage cases of the Option, as the engine gives them (the `damage`, `damage_by_rule` and
   // `marpol_damage` blocks of the results), the governing case of each loading condition as the Rule
   // Trace shows it, the intermediate stages where the Rule Set has them, and the damage drawing drawn in
   // Rust. The panel computes nothing. Where there are no damage cases, it gives the reason the trace gives.
-  let { results, ids, drawings }: { results: DamageResults; ids: TextIds | null; drawings: DamageViews | null | undefined } = $props();
+  // Issue #924: damage runs on demand. The status line says whether it was run for these inputs, and
+  // offers the run (with the case count and, once a run has been timed on this machine, the time it
+  // takes), or shows the run's progress and Cancel. The panel computes nothing: the status and the case
+  // count are the engine's, the time left is worked out in damage.ts from the progress it reports.
+  let { results, ids, drawings, option, onRun, onCancel }: {
+    results: DamageResults;
+    ids: TextIds | null;
+    drawings: DamageViews | null | undefined;
+    /** The Option shown, to tell whether the run under way is its own. */
+    option: string;
+    onRun: () => void;
+    onCancel: () => void;
+  } = $props();
+
+  const status = $derived(damageStatus(results as { damage_status?: unknown; damage_cases?: unknown }));
+  const run = $derived(damageRun.active?.option === option ? damageRun.active : null);
+  const left = $derived(run ? secondsLeft(run.done, run.total, run.lastAt - (run.baseAt ?? run.lastAt)) : null);
+  const before = $derived(secondsBefore(status.cases, damageRun.secondsPerCase));
+  const STATUS_TEXT: Record<string, string> = {
+    run: "app-damage-status-run",
+    "not run": "app-damage-status-not-run",
+    "not applicable": "app-damage-status-not-applicable",
+    "not evaluated": "app-damage-status-not-evaluated",
+  };
 
   const trace = $derived(results.rule_trace ?? null);
   const sets = $derived(damageSets(results));
@@ -49,8 +73,28 @@
 </script>
 
 <div class="damage" data-testid="damage-stability">
+  {#if status.status}
+    <div class="runline" data-testid="damage-run-panel">
+      <span class="label">{t("app-damage-status-label")}</span>
+      <span class="tag {status.status === 'run' ? 'ok' : 'open'}" data-testid="damage-status" data-status={status.status}>{t(STATUS_TEXT[status.status])}</span>
+      {#if status.cases !== null}<span class="dim" data-testid="damage-case-count">{t("app-damage-cases-count", { count: status.cases })}</span>{/if}
+      {#if run}
+        <progress aria-label={t("app-damage-progress-label")} value={run.done} max={run.total} data-testid="damage-progress" data-done={run.done} data-total={run.total}></progress>
+        <span data-testid="damage-count">{t("app-damage-progress", { done: run.done, total: run.total })}</span>
+        {#if left !== null}<span class="dim" data-testid="damage-eta" data-left-seconds={left}>{t("app-damage-left", { seconds: wholeSeconds(left) })}</span>{/if}
+        <button type="button" data-testid="damage-cancel" onclick={onCancel}>{t("app-damage-cancel")}</button>
+      {:else if status.status === "not run"}
+        {#if before !== null}<span class="dim" data-testid="damage-estimate">{t("app-damage-estimate", { seconds: wholeSeconds(before) })}</span>{/if}
+        <button type="button" data-testid="damage-run" onclick={onRun}>{t("app-damage-run")}</button>
+      {/if}
+    </div>
+  {/if}
   {#if !set}
-    <p class="note" data-testid="damage-none">{t("app-damage-none")}</p>
+    {#if status.status === "not run"}
+      <p class="note" data-testid="damage-not-run">{t("app-damage-not-run-for-inputs")}</p>
+    {:else}
+      <p class="note" data-testid="damage-none">{t("app-damage-none")}</p>
+    {/if}
     {#if notes.length > 0}
       <ul class="notes" data-testid="damage-not-evaluated">
         {#each notes as n, i (i)}
@@ -185,6 +229,9 @@
 <style>
   .damage { height: 100%; display: flex; flex-direction: column; gap: var(--sp-2); min-height: 0; }
   .note { color: var(--ink-3); margin: 0; }
+  .runline { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+  .runline .label { font-weight: 600; }
+  .runline progress { width: 12em; height: 0.8em; }
   .bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); }
   .setname { font-weight: 600; }
   .dim { color: var(--ink-3); font-size: var(--fs-12, 12px); }
