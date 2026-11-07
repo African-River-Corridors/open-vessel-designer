@@ -1414,9 +1414,7 @@ fn arrangement(inp: &BargeCapacityInputs, class: CargoClass) -> Result<Arrangeme
             a.arrangement_style = d.arrangement_style;
             // Issue #780: the berths the deckhouse rooms are sized from.
             a.rooms_basis = d.rooms_basis;
-            if d.arrangement_style == crate::aft_arrangement::ArrangementStyle::Deckhouse
-                && inp.air_draft_limit_m.is_none()
-            {
+            if d.arrangement_style.has_aft_deckhouse() && inp.air_draft_limit_m.is_none() {
                 a.wheelhouse_max_lift_m = 0.0;
             }
             a.propulsion = inp.propulsion.clone();
@@ -1486,8 +1484,24 @@ fn arrangement(inp: &BargeCapacityInputs, class: CargoClass) -> Result<Arrangeme
         CargoClass::LiquidBulk => (0.0, 0.0, None),
     };
 
+    // Issue #994: the forward house stands over the forepeak, the length of the bow rake. If the
+    // rake is too short for the house and the clear deck ahead of it, the house takes cargo length
+    // (D1 B), and the site says how much.
+    let mut bow_void_m = rake + fwd_sep;
+    if inp.self_propelled && aft_in.arrangement_style.is_wheelhouse_forward() {
+        use crate::aft_arrangement::{ForwardHouseSite, forward_house_sizes as fh};
+        let needed = fh::LENGTH_M + fh::BOW_CLEAR_M;
+        let lost = (needed - rake).max(0.0);
+        bow_void_m = rake + lost + fwd_sep;
+        aft_in.forward_house_site = Some(ForwardHouseSite {
+            x_aft_m: inp.loa - fh::BOW_CLEAR_M - fh::LENGTH_M,
+            x_fwd_m: inp.loa - fh::BOW_CLEAR_M,
+            cargo_length_lost_m: lost,
+        });
+    }
+
     Ok(Arrangement {
-        bow_void_m: rake + fwd_sep,
+        bow_void_m,
         stern_void_m: block_len + aft_sep,
         rake_m: rake,
         aft_inputs: aft_in,
@@ -1740,7 +1754,15 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
                     shield_top_m: detail.weather_shield_top_above_keel_m,
                     dome_top_m: cargo_top_above_keel,
                     stub_m: inp.vent_stub_m,
-                    mast_x_m: inp.loa - arr.rake_m,
+                    // Issue #994: with the forward house taking cargo length, the cargo area ends
+                    // at the cargo zone's forward end, not where the rake begins.
+                    mast_x_m: if aft_second.arrangement_style.is_wheelhouse_forward() {
+                        inp.loa
+                            - (arr.bow_void_m
+                                - arr.separation.as_ref().map_or(0.0, |s| s.fwd_separation_m))
+                    } else {
+                        inp.loa - arr.rake_m
+                    },
                     cargo_area_aft_x_m: aft_x,
                     entrance_m: inp.entrance_distance_m,
                     engine_room_vent_inlet_m: inp.engine_room_vent_inlet_distance_m,

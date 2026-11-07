@@ -14,13 +14,13 @@ One PR per phase to `main`. Each test fails on `main` first.
 
 ## Implementation Overview
 
+Five PRs, stacked (the Service Area gate folds into PR 4; re-pins go into each PR's changelog fragment).
+
 - [ ] PR 1: the style key and the forward layout (D1, D2)
 - [ ] PR 2: sightline from the forward eye and the wing check (D3)
 - [ ] PR 3: openings with the cargo face aft, and the new Rule rows (D4)
-- [ ] PR 4: the hazard-study flag in results and report (D5)
-- [ ] PR 5: Service Area gate (D6)
-- [ ] PR 6: weight, trim and drawings (D7)
-- [ ] PR 7: re-pins and design impact (D8)
+- [ ] PR 4: the hazard-study flag in results and report, and the coastal warning (D5, D6)
+- [ ] PR 5: weight, trim and drawings (D7)
 
 ## PR 1: key and layout
 
@@ -47,14 +47,14 @@ Files: `crates/ovd-core/src/deckhouse_openings.rs`, `crates/ovd-format/rules/igc
 Files: `crates/ovd-format/src/run.rs`, report writer.
 - Test: results hold `hazard_study_required: true` with at least one reason; the report's first section names it; other styles hold `false`.
 
-## PR 5: Service Area gate
+## PR 4 (continued): coastal warning
 
-Test: coastal with this style gives a named failure; river and estuary pass.
+Test: coastal with this style gives a named warning and a hazard-study reason (bow motions); river and estuary give neither. No Service Area fails the style (maintainer's choice at the gate).
 
-## PR 6: weight, trim, drawings
+## PR 5: weight, trim, drawings
 
-Test: the longitudinal centre moves forward by the house mass moment; total mass unchanged to rounding; drawing shows the house forward (snapshot).
+Test: the longitudinal centre moves forward by the house mass moment; total mass unchanged to rounding; the drawing shows the house under the wheelhouse (snapshot).
 
-## PR 7: re-pins
+## Re-pins
 
-Run `python3 tools/design_impact.py changelog`; expect no moved Option; re-pin only new snapshots by running the code.
+Each PR runs `python3 tools/design_impact.py changelog`; expect no moved Option; re-pin only new snapshots by running the code.

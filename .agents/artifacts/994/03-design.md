@@ -2,7 +2,7 @@
 ticket: 994
 phase: design
 date: 2026-11-06
-status: draft
+status: approved
 repos:
   - identifier: African-River-Corridors/open-vessel-designer
     sha: 3559dc191479a633bd06b48bceb772cf020a1e25
@@ -12,7 +12,7 @@ repos:
 
 ## Summary of the Request
 
-Add a fourth style, flagged for a hazard study. River and estuary first. Machinery and (most) accommodation stay aft. IGC 3.2.4 is read strictly (maintainer's decision): no door on a face toward the cargo area.
+Add a fourth style, flagged for a hazard study. Every Service Area is allowed (maintainer's choice at the gate), with a warning on a coastal design. Machinery and (most) accommodation stay aft. IGC 3.2.4 is read strictly (maintainer's decision): no door on a face toward the cargo area.
 
 ## Decisions
 
@@ -58,10 +58,10 @@ Recommend A. The verdict line may say rules met but never "approved"; it names t
 
 ### D6. Service Areas
 
-- A. River and estuary only; other Service Areas fail the style with a clear reason. Recommended.
+- A. River and estuary only; other Service Areas fail the style with a clear reason.
 - B. Coastal allowed with a warning (bow acceleration about 1.2 times the stern's, IGC 4.28.2.1; ICLL 39 not binding).
 
-Recommend A for v1. B is one config change later once the bow-motion check exists.
+**Maintainer's choice at the gate: all Service Areas allowed, with a warning on coastal designs (bow motions).** This overrides the first recommendation ("river and estuary only"). No Service Area fails the style; a design whose Service Area reaches sea gets the bow-motion warning, and the bow-motion reason joins the hazard-study reasons.
 
 ### D7. Weight, trim and drawings
 
@@ -71,6 +71,12 @@ Recommend A for v1. B is one config change later once the bow-motion check exist
 
 - New style only; existing styles unchanged, so no fixture should move.
 - A new Rule Set version moves nothing pinned to an older version. Run `tools/design_impact.py changelog` to prove no Option moved; re-pin only new snapshots by running the code.
+
+## Maintainer's choices at the gate (2026-11-06)
+
+- Service Areas: all allowed, with a warning on coastal designs (D6 above).
+- Everything else follows the recommendations: D1 A (wheelhouse over the forepeak), D2 A (machinery and main accommodation aft), D3 A (eye forward, wing view-aft check, no camera credit), D4 A (new `igc-2g` rows for 3.2.4 on the aft face, 8.2.11.1 and 8.2.10.3 vent distances, a 3.2.5 A-60 note; new Rule Set versions follow the repo's immutability rules), D5 A (flag in results and report).
+- IGC 3.2.4.2 is read strictly (standing decision): no door on a face toward the cargo area.
 
 ## Out of Scope
 

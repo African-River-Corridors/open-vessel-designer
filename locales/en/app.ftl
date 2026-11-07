@@ -331,6 +331,7 @@ app-stern-arrangement = Stern arrangement
 app-stern-style = Arrangement style
 app-stern-style-container_block = Container block
 app-stern-style-deckhouse = Deckhouse
+app-stern-style-wheelhouse_forward = Wheelhouse forward
 app-stern-tiers = Deckhouse tiers
 app-stern-room-tiers = Tiers that hold rooms
 app-stern-access-tiers = Tiers that lift the wheelhouse

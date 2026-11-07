@@ -636,6 +636,7 @@ input-arrangement-style = Arrangement Style
 input-arrangement-style-default-by = service_area
 choice-arrangement-style-container-block = Container block
 choice-arrangement-style-deckhouse = Deckhouse
+choice-arrangement-style-wheelhouse-forward = Wheelhouse forward
 
 input-crew = Crew
 

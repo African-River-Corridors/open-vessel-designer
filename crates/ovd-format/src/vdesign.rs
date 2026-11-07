@@ -185,7 +185,7 @@ pub const WHEELHOUSE_TYPES: &[&str] = &["elevating", "fixed"];
 /// How the stern is laid out (spec 0011 D3, issue #779): today's container block, or a deckhouse of
 /// tiers over the machinery space. Held in step with `ovd_core::aft_arrangement::ARRANGEMENT_STYLES`
 /// by a test.
-pub const ARRANGEMENT_STYLES: &[&str] = &["container_block", "deckhouse"];
+pub const ARRANGEMENT_STYLES: &[&str] = &["container_block", "deckhouse", "wheelhouse_forward"];
 /// The manning Rule Sets the crew model runs on (spec 0011 D13, issue #778): `liberia-man-001`
 /// (the coastal default), `uk-msn-1868` (officers from the UK guidance) and `ccnr-rpn-19` (the
 /// river-only default). Held in step with `ovd_core::crew::MANNING_RULE_SETS` by a test.
@@ -1948,6 +1948,7 @@ pub const CHOICE_LABELS: &[(&str, &str)] = &[
     ("bv_nr467", "BV NR467"),
     ("bv_nr217", "BV NR217"),
     ("deckhouse", "Deckhouse"),
+    ("wheelhouse_forward", "Wheelhouse forward"),
     ("fixed", "Fixed"),
     ("margin", "Margin over the obstruction"),
     ("blind_distance", "Blind distance (ES-TRIN 7.02)"),
