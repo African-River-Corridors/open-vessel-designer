@@ -170,6 +170,9 @@ OPTIONAL_INPUT_CASES = (
      {"tanks_across": None}),
     ("min_side_space_m", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"min_side_space_m": 0.0}),
+    # The tank top above the deck (issue #992), left at none: the depth is the one given, as before.
+    ("tank_top_above_deck_m", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"tank_top_above_deck_m": None}),
     ("tank_wall_thickness_mm", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"tank_wall_thickness_mm": 25.0}),
     # The weather shield (issue #410, part 1b), set to its defaults: the same results as leaving it out.
