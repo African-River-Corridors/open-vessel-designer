@@ -1860,17 +1860,10 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // limit needs, up to its maximum; the check of the margin method gives way to it.
     let mut sightline = None;
     let mut blind_distance_laden_m = None;
-    // Issue #994: a forward wheelhouse always gets the Blind Distance of its eye ahead of the cargo,
-    // on the ES-TRIN limit where none is typed: only what stands ahead of the eye (the bow) counts.
-    let forward_style = aft_second.arrangement_style.is_wheelhouse_forward();
-    let sight_limit = inp
-        .sightline_limit_m
-        .or(if forward_style && inp.self_propelled {
-            Some(crate::wheelhouse::ES_TRIN_BLIND_DISTANCE_M)
-        } else {
-            None
-        });
-    if let (Some(limit), Some(a)) = (sight_limit, aft.as_mut()) {
+    // Issue #994: a forward wheelhouse always has its Blind Distance worked (the format layer reads the
+    // limits of the stack for it, as for the blind-distance method): only what stands ahead of the eye
+    // (the bow) counts.
+    if let (Some(limit), Some(a)) = (inp.sightline_limit_m, aft.as_mut()) {
         let waterline = |name: &str, t: f64| match trim_conditions.iter().find(|(n, _)| *n == name)
         {
             Some((_, tr)) => crate::wheelhouse::Waterline {

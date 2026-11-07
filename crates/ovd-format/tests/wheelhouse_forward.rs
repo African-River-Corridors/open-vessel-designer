@@ -235,3 +235,27 @@ fn the_vent_mast_is_never_inside_the_forward_house_at_any_rake() {
         );
     }
 }
+
+#[test]
+fn the_forward_eye_is_checked_against_the_limit_of_the_stack_of_its_service_area() {
+    let limit = |area: &str, method: &str| {
+        let r = results_of(&design(
+            110.0,
+            11.4,
+            6.0,
+            json!({
+                "arrangement_style": "wheelhouse_forward",
+                "bow_rake_length_m": 20.0,
+                "service_area": area,
+                "sightline_method": method
+            }),
+        ));
+        f(&r["sightline"]["limit_m"])
+    };
+    // River and estuary: ES-TRIN 7.02(2), 250 m. Coastal: SOLAS V/22.1.1 asks two lengths (220 m of a
+    // 110 m ship), the least of the stack's limits. The margin method changes neither: the forward eye
+    // is always checked as a distance.
+    assert_eq!(limit("river-only", "margin"), 250.0);
+    assert_eq!(limit("river-only", "blind_distance"), 250.0);
+    assert_eq!(limit("coastal-and-river", "margin"), 220.0);
+}
