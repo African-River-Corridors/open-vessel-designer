@@ -814,6 +814,27 @@ pub fn gas_flooding(
     GasFlooding { flooded, breached }
 }
 
+/// The mass and centre of gravity of a condition at the fraction `fraction` (0 to 1) of the flood, when the
+/// breached tanks have let out that fraction of their cargo (issue #988, spec 0012 D18): [`without_breached_cargo`]
+/// with `fraction` of the cargo. At 0 nothing has left; at 1 it is [`without_breached_cargo`]. A breached tank
+/// then holds sea water to the same fraction of its flood and its cargo for the rest.
+pub fn breached_cargo_at_stage(
+    fraction: f64,
+    mass_t: f64,
+    g: crate::sections::Gravity,
+    (cargo_t, cargo_kg_m): (f64, f64),
+    spaces: &[Space],
+    breached: &[String],
+) -> (f64, crate::sections::Gravity) {
+    without_breached_cargo(
+        mass_t,
+        g,
+        (cargo_t * fraction.clamp(0.0, 1.0), cargo_kg_m),
+        spaces,
+        breached,
+    )
+}
+
 /// The mass and centre of gravity of a condition after the cargo of the breached tanks leaves it (IGC 2.5.3,
 /// spec 0012 D8; MARPOL Annex I 28.4.1, D20). The cargo of `cargo_t` at height `cargo_kg_m` is shared between
 /// the cargo tanks by their volume (a Type C tank's interior volume, a prism tank's volume: the tanks are
