@@ -132,3 +132,63 @@ test("a damage_by_rule set marks the engine's governing case of every condition 
   assert.equal(governingCase(s, "Full load", results.rule_trace).name, "b");
   assert.equal(governingCase(s, "Ballast", results.rule_trace).name, "a");
 });
+
+// ---- Damage on demand (issue #924) ----
+import { readFileSync } from "node:fs";
+import { REPORT_DAMAGE_PROMPT, minSample, damageStatus, secondsBefore, secondsLeft, secondsPerCase, wholeSeconds } from "../src/lib/damage.ts";
+
+test("damageStatus reads the engine's status and case count, and null for results with none", () => {
+  assert.deepEqual(damageStatus({ damage_status: "not run", damage_cases: 158 }), { status: "not run", cases: 158 });
+  assert.deepEqual(damageStatus({ damage_status: "run", damage_cases: 0 }), { status: "run", cases: 0 });
+  assert.deepEqual(damageStatus({ damage_status: "not applicable" }), { status: "not applicable", cases: null });
+  assert.deepEqual(damageStatus({ damage_status: "something new", damage_cases: "x" }), { status: null, cases: null });
+  assert.deepEqual(damageStatus(null), { status: null, cases: null });
+});
+
+test("secondsLeft: no total, no time, first event, last event", () => {
+  assert.equal(secondsLeft(0, 0, 0), null, "no total");
+  assert.equal(secondsLeft(5, 0, 1000), null, "no total, some done");
+  assert.equal(secondsLeft(0, 100, 500), null, "nothing done yet: no time per case");
+  assert.equal(secondsLeft(1, 100, 500), null, "one case is too few for a time per case");
+  assert.equal(secondsLeft(4, 100, 500), null, "under 5 % of the cases");
+  assert.equal(secondsLeft(5, 100, 1000), 19, "5 % of 100 cases in 1 s: 0.2 s a case, 95 left");
+  assert.equal(secondsLeft(3, 100, 0), null, "no time has passed");
+  assert.equal(secondsLeft(NaN, 100, 1000), null);
+  // First event: 10 of 100 done in 2 s, so 0.2 s a case and 90 cases left: 18 s.
+  assert.equal(secondsLeft(10, 100, 2000), 18);
+  // Last event: nothing left.
+  assert.equal(secondsLeft(100, 100, 20000), 0);
+  assert.equal(secondsLeft(101, 100, 20000), 0);
+});
+
+test("the time left waits for a few cases: 3, or 5 % of the total", () => {
+  assert.equal(minSample(10), 3);
+  assert.equal(minSample(100), 5);
+  assert.equal(minSample(158), 8);
+});
+
+test("the estimate before a run needs a measured time per case, and the case count", () => {
+  assert.equal(secondsBefore(158, null), null, "no measured time: the case count only");
+  assert.equal(secondsBefore(null, 0.05), null);
+  assert.equal(secondsBefore(0, 0.05), null);
+  assert.equal(secondsBefore(158, 0.05), 7.9);
+  assert.equal(secondsPerCase(100, 5000), 0.05);
+  assert.equal(secondsPerCase(0, 5000), null);
+  assert.equal(secondsPerCase(100, 0), null);
+});
+
+test("seconds show whole, and never as 0", () => {
+  assert.equal(wholeSeconds(0.2), 1);
+  assert.equal(wholeSeconds(7.6), 8);
+  assert.equal(wholeSeconds(90), 90);
+});
+
+test("the report question's words are messages of the English catalogue, as the design fixes them", () => {
+  const ftl = readFileSync(new URL("../../locales/en/app.ftl", import.meta.url), "utf8");
+  for (const id of Object.values(REPORT_DAMAGE_PROMPT)) assert.match(ftl, new RegExp(`^${id} = `, "m"), id);
+  assert.match(ftl, /^app-report-damage-title = Damage stability has not been run$/m);
+  assert.match(ftl, /^app-report-damage-body-time = Damage stability has not been run \(about \{ \$seconds \} s\)\. Run it now, or make the report without it\?$/m);
+  assert.match(ftl, /^app-report-damage-body-cases = Damage stability has not been run \(\{ \$cases \} cases\)\. Run it now, or make the report without it\?$/m);
+  assert.match(ftl, /^app-report-damage-run = Run it now$/m);
+  assert.match(ftl, /^app-report-damage-skip = Make the report without it$/m);
+});

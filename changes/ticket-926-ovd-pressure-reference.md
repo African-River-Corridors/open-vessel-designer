@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Rule Sets (issue #926): `ovd` 3.2.0 adds `ovd/4.23.1.2/min-design-pressure-reference`, for a river-only Type C gas Design: the design vapour pressure against the IGC 4.23.1.2 minimum Po = 0.2 + A C (rho_r)^1.5, as a `warn` row that never blocks (ADN 9.3.1.23.1 gives no number; the authority or the classification society decides). A coastal Design is checked by the IGC row, and the new row is not applicable there. New Designs take `ovd` 3.2.0 by default; a saved file keeps its version.

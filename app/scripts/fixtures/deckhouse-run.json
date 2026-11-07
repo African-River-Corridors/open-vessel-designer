@@ -164,7 +164,7 @@
   "basis": "Spec 0011 D5, section 2: rooms sized from the crew model's berths to ES-TRIN 2025/1 Chapter 15. Areas marked estimate are required by the text but have no floor area in it: each is a stated estimate with its working. Concept and preliminary design only (ADR 0011).",
   "berths": 19,
   "clear_height_m": 2.1,
-  "gt_used": 12883,
+  "gt_used": 12885,
   "headroom_required_m": 2.03,
   "mlc_applied": true,
   "officers": 8,
@@ -180,7 +180,7 @@
     "governing": "mlc",
     "id": "cabin",
     "name": "Sleeping cabin (rating, cook, margin or spare berth)",
-    "note": "MLC A3.1.9(f) single berth floor 7.0 m2. ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 12883 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
+    "note": "MLC A3.1.9(f) single berth floor 7.0 m2. ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 12885 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
    },
    {
     "area_each_m2": 7.0,
@@ -191,7 +191,7 @@
     "governing": "mlc",
     "id": "cabin_senior",
     "name": "Sleeping cabin with day room (master, chief engineer, chief navigating officer)",
-    "note": "A3.1.9(m) gives each of the three an adjoining sitting room or day room, so the single berth floor 7.0 m2 of A3.1.9(f) applies and not the officer floor of A3.1.9(k), which is for \"no private sitting room or day room\". ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 12883 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
+    "note": "A3.1.9(m) gives each of the three an adjoining sitting room or day room, so the single berth floor 7.0 m2 of A3.1.9(f) applies and not the officer floor of A3.1.9(k), which is for \"no private sitting room or day room\". ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 12885 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
    },
    {
     "area_each_m2": 6.0,
@@ -213,7 +213,7 @@
     "governing": "mlc",
     "id": "cabin_officer",
     "name": "Sleeping cabin (officer, no day room)",
-    "note": "MLC A3.1.9(k) officer floor 10.0 m2 where no private sitting room or day room is provided. ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 12883 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
+    "note": "MLC A3.1.9(k) officer floor 10.0 m2 where no private sitting room or day room is provided. ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 12885 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
    },
    {
     "area_each_m2": 38.0,
@@ -327,7 +327,7 @@
    }
   ],
   "rule": "mlc-2006-a3.1 and es-trin-2025-ch15 (the greater, per room)",
-  "rule_note": "The Service Area reaches sea, so each room is sized to the greater of MLC 2006 Standard A3.1 (as amended, 2022 consolidated text) and ES-TRIN 2025/1 Chapter 15; the governing source is on each row. 12883 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over. No exemption is applied: not the under-3,000 GT ones of A3.1.9(a), (h), (m), 10(a), 11(b), 15, nor the under-200 GT ones of A3.1.20, nor the coastal-trade relaxation of A3.1.12; the competent authority grants them, so a concept sizes without them. Berths held by officers are sized to A3.1.9(k) or (m) and all others as ratings.",
+  "rule_note": "The Service Area reaches sea, so each room is sized to the greater of MLC 2006 Standard A3.1 (as amended, 2022 consolidated text) and ES-TRIN 2025/1 Chapter 15; the governing source is on each row. 12885 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over. No exemption is applied: not the under-3,000 GT ones of A3.1.9(a), (h), (m), 10(a), 11(b), 15, nor the under-200 GT ones of A3.1.20, nor the coastal-trade relaxation of A3.1.12; the competent authority grants them, so a concept sizes without them. Berths held by officers are sized to A3.1.9(k) or (m) and all others as ratings.",
   "seafarers": 17,
   "settled": true,
   "status": "estimate",
@@ -748,17 +748,23 @@
    },
    "id": "check-thrusters-fit-beam"
   },
-  "3 tier(s) of 286.8 m2 hold the 266.8 m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over 4 tiers is a tall house over a short machinery space (ESTIMATE limit)": {
+  "3 tier(s): 1 for rooms (286.8 m2 each, holding the 266.8 m2 of accommodation floor) and 2 for access (24.6 m2 each, lifting the wheelhouse eye over the cargo); over 4 tiers is a tall house over a short machinery space (ESTIMATE limit)": {
    "args": {
+    "access_area": {
+     "num": "24.6",
+     "value": 24.64
+    },
+    "access_tiers": 2,
     "max": 4,
     "required": {
      "num": "266.8",
      "value": 266.7684210526316
     },
-    "tier_area": {
+    "room_area": {
      "num": "286.8",
      "value": 286.7684210526316
     },
+    "room_tiers": 1,
     "tiers": 3
    },
    "id": "check-deckhouse-tier-count"

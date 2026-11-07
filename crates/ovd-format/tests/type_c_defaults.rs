@@ -59,11 +59,12 @@ fn results_of(s: &DesignSession) -> Value {
     }
 }
 
-fn context<'a>(cargo: &'a str, carriage: &'a str) -> [(&'a str, &'a str); 3] {
+fn context<'a>(cargo: &'a str, carriage: &'a str) -> [(&'a str, &'a str); 4] {
     [
         ("cargo_containment", "type_c_tanks"),
         ("cargo", cargo),
         ("lpg_carriage_condition", carriage),
+        ("service_area", "river-only"),
     ]
 }
 
@@ -121,9 +122,9 @@ fn a_profile_row_that_claims_a_source_it_does_not_give_is_refused() {
         f(&mut p);
         Profile::from_json(&p.to_string())
     };
-    // Sourced, no source.
+    // Sourced, no source (row 1 is the LNG row; row 0 is the coastal IGC minimum, an estimate).
     let err = edit(&|p| {
-        let row = &mut p["inputs"]["tank_design_pressure_mpa"]["default_by_table"]["rows"][0];
+        let row = &mut p["inputs"]["tank_design_pressure_mpa"]["default_by_table"]["rows"][1];
         row.as_object_mut().unwrap().remove("source");
     })
     .unwrap_err();
@@ -182,6 +183,9 @@ fn a_new_design_takes_the_table_row_of_every_combination_and_marks_it_default() 
     let profile = Profile::built_in();
     let mut combinations = 0;
     for combination in table_combinations() {
+        if combination[3].1 != "river-only" {
+            continue;
+        }
         let cargo = combination[1].1.clone();
         let carriage = combination[2].1.clone();
         let s = new_session(&cargo, &carriage);
@@ -220,6 +224,9 @@ fn a_new_design_takes_the_table_row_of_every_combination_and_marks_it_default() 
 fn the_table_values_reach_the_results_and_the_wall_is_the_formula_on_the_steel_diameter() {
     let profile = Profile::built_in();
     for combination in table_combinations() {
+        if combination[3].1 != "river-only" {
+            continue;
+        }
         let cargo = combination[1].1.clone();
         let carriage = combination[2].1.clone();
         let s = new_session(&cargo, &carriage);

@@ -154,3 +154,87 @@ export function damageNotes(trace: TraceLike | null | undefined): { rule: string
     .filter((r) => (isDamageRule(r.rule) || /damage/.test(r.rule ?? "")) && (r.outcome === "not evaluated" || r.outcome === "not run" || r.outcome === "not applicable"))
     .map((r) => ({ rule: r.rule ?? "", title: r.title, outcome: r.outcome as "not evaluated" | "not run" | "not applicable", sets: r.rule_sets, gap: r.gap }));
 }
+
+// ---- Damage on demand (issue #924) ----
+// The engine runs damage only when asked. The time estimate is measured here, in the front end (the engine
+// reads no clock): time per case = elapsed / cases done, and the time left = cases left x time per case.
+
+/** Whether damage stability was run for the shown results: the engine's `damage_status` (issue #923), with its case count. */
+export interface DamageStatus {
+  status: "run" | "not run" | "not applicable" | "not evaluated" | null;
+  /** The cases the run assesses (counted even when damage is skipped); null where the results give none. */
+  cases: number | null;
+}
+
+/** The status of the damage run in the results; `status` is null for results from an engine that gives none. */
+export function damageStatus(results: { damage_status?: unknown; damage_cases?: unknown } | null | undefined): DamageStatus {
+  const s = results?.damage_status;
+  const known = s === "run" || s === "not run" || s === "not applicable" || s === "not evaluated";
+  const n = results?.damage_cases;
+  return { status: known ? s : null, cases: typeof n === "number" && Number.isFinite(n) ? n : null };
+}
+
+/**
+ * The cases that must be done before the time left is shown: a few, or 5 % of the total. The first cases of a
+ * run are cheaper than the rest (measured in the e2e run: the first case took a quarter of the average), so
+ * a time per case from one or two of them is too short by a factor of 3 or more.
+ */
+export const minSample = (total: number): number => Math.max(3, Math.ceil(total * 0.05));
+
+/**
+ * Seconds left in a run: the cases left times the time per case so far (elapsed over done, with `elapsedMs`
+ * counted from the first progress event, so the set-up before the cases is not in it). null until `minSample`
+ * cases are done, or where the total or the time is not usable. 0 when every case is done.
+ */
+export function secondsLeft(done: number, total: number, elapsedMs: number): number | null {
+  if (!(total > 0) || !(done >= 0) || !(elapsedMs >= 0)) return null;
+  if (done >= total) return 0;
+  if (done < minSample(total) || elapsedMs <= 0) return null;
+  return ((total - done) * (elapsedMs / done)) / 1000;
+}
+
+/** The time a whole run is expected to take, from a time per case measured on this machine; null with no measure or no cases. */
+export function secondsBefore(cases: number | null, secondsPerCase: number | null): number | null {
+  if (cases === null || secondsPerCase === null || !(cases > 0) || !(secondsPerCase > 0)) return null;
+  return cases * secondsPerCase;
+}
+
+/** The time per case of a finished run (seconds); null where it cannot be told. */
+export function secondsPerCase(total: number, elapsedMs: number): number | null {
+  return total > 0 && elapsedMs > 0 ? elapsedMs / total / 1000 : null;
+}
+
+/** Seconds as the app shows them: whole seconds, never less than 1. */
+export const wholeSeconds = (s: number): number => Math.max(1, Math.round(s));
+
+const PER_CASE_KEY = "ovd.damageSecondsPerCase";
+
+/** The time per case kept from the last run on this machine, or null. Storage may be missing or throw. */
+export function loadSecondsPerCase(): number | null {
+  try {
+    const v = Number(window.localStorage.getItem(PER_CASE_KEY));
+    return Number.isFinite(v) && v > 0 ? v : null;
+  } catch {
+    return null;
+  }
+}
+export function saveSecondsPerCase(v: number): void {
+  try {
+    window.localStorage.setItem(PER_CASE_KEY, String(v));
+  } catch {
+    /* not kept: the next run shows the case count only */
+  }
+}
+
+/**
+ * The Message Ids of the question before a report with damage not run (design of issue #924, section 7). The
+ * app has no report yet; the ticket that adds one uses these words as they are.
+ */
+export const REPORT_DAMAGE_PROMPT = {
+  title: "app-report-damage-title",
+  bodyTime: "app-report-damage-body-time",
+  bodyCases: "app-report-damage-body-cases",
+  run: "app-report-damage-run",
+  skip: "app-report-damage-skip",
+  cancel: "app-report-damage-cancel",
+} as const;

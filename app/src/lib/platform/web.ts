@@ -3,8 +3,9 @@
 import init, { Session } from "../../../wasm-pkg/ovd_web.js";
 import wasmUrl from "../../../wasm-pkg/ovd_web_bg.wasm?url";
 import type { Evaluation, Schema, Snapshot } from "../api";
-import type { DeckItems, DrawingFormat, DrawingView, MeshGroup, ModelFormat, Platform, PropulsorPart, SectionOutline, SpaceInfo, Waterline } from "./types";
+import type { DamageEnd, DamageProgress, DeckItems, DrawingFormat, DrawingView, MeshGroup, ModelFormat, Platform, PropulsorPart, SectionOutline, SpaceInfo, Waterline } from "./types";
 import { t } from "../i18n.svelte";
+import type { DamageJob, DamageMessage } from "./damage.worker";
 
 const LAST_DESIGN = "ovd.lastDesign";
 const NOTICE = "ovd.noticeSeen";
@@ -60,8 +61,65 @@ function rememberDesign(snap: Snapshot) {
   }
 }
 
+/** Issue #924: the damage run under way, if any: the worker, and a way to end it. */
+let damageRun: { option: string; fingerprint: string; end: (outcome: DamageEnd["outcome"], message?: string) => void } | null = null;
+
+/** An edit of the Option being run (or of the Design under it) cancels the run: its results would be for inputs that are gone. */
+function cancelStaleDamage() {
+  if (!damageRun) return;
+  let now: string | null = null;
+  try {
+    now = session.option_fingerprint(damageRun.option);
+  } catch {
+    /* the Option is gone */
+  }
+  if (now !== damageRun.fingerprint) damageRun.end("stale");
+}
+
 async function change(run: () => string): Promise<Snapshot> {
-  return follow(await call<Snapshot>(run));
+  const snap = follow(await call<Snapshot>(run));
+  cancelStaleDamage();
+  return snap;
+}
+
+/** Run the damage cases in a Web Worker with a wasm session of its own, so the page stays live and can cancel. */
+function runDamage(option: string, onProgress: (p: DamageProgress) => void): Promise<DamageEnd> {
+  return new Promise<DamageEnd>((resolve) => {
+    if (damageRun) return resolve({ option, outcome: "failed", message: "damage stability is already running" });
+    let worker: Worker | null = null;
+    let fingerprint: string;
+    let job: DamageJob;
+    try {
+      fingerprint = session.option_fingerprint(option);
+      job = { name: JSON.parse(session.snapshot()).file_name, design: session.design_text(), profile: session.profile_text(), option };
+      worker = new Worker(new URL("./damage.worker.ts", import.meta.url), { type: "module" });
+    } catch (e) {
+      return resolve({ option, outcome: "failed", message: String(e) });
+    }
+    // The Option's name now: a rename during the run moves `damageRun.option`, and the results are kept under it.
+    const end = (outcome: DamageEnd["outcome"], message?: string) => {
+      if (damageRun?.end !== end) return;
+      const name = damageRun.option;
+      damageRun = null;
+      worker?.terminate();
+      resolve({ option: name, outcome, message: message ?? null });
+    };
+    damageRun = { option, fingerprint, end };
+    worker.onmessage = (ev: MessageEvent<DamageMessage>) => {
+      const m = ev.data;
+      if (m.kind === "progress") onProgress({ option, done: m.done, total: m.total });
+      else if (m.kind === "failed") end("failed", m.message);
+      else {
+        try {
+          end(session.keep_damage(damageRun?.option ?? option, m.run) ? "done" : "stale");
+        } catch (e) {
+          end("failed", String(e));
+        }
+      }
+    };
+    worker.onerror = (ev) => end("failed", ev.message || "the damage worker stopped");
+    worker.postMessage(job);
+  });
 }
 
 function download(name: string, data: BlobPart, type: string) {
@@ -145,6 +203,8 @@ export async function createWebPlatform(): Promise<Platform> {
     snapshot: async () => follow(await currentSnapshot()),
     inputSchema: () => call<Schema>(() => session.input_schema()),
     evaluate: () => call<Evaluation>(() => session.evaluate()),
+    runDamage,
+    cancelDamage: async () => damageRun?.end("cancelled"),
     newFile: async () => (confirmDiscard() ? change(() => session.new_design()) : null),
     openFile: async () => {
       if (!confirmDiscard()) return null;
@@ -174,7 +234,13 @@ export async function createWebPlatform(): Promise<Platform> {
       change(() => session.set_formation(option, kind, abreast ?? undefined, inLine ?? undefined)),
     addOption: () => change(() => session.add_option()),
     duplicateOption: (option) => change(() => session.duplicate_option(option)),
-    renameOption: (option, newName) => change(() => session.rename_option(option, newName)),
+    renameOption: (option, newName) =>
+      change(() => {
+        const snap = session.rename_option(option, newName);
+        // A damage run under way follows the new name, as on the desktop (the fingerprint leaves the name out).
+        if (damageRun?.option === option) damageRun.option = newName.trim();
+        return snap;
+      }),
     deleteOption: (option) => change(() => session.delete_option(option)),
     loadProfile: async () => {
       const file = await pickFile(".json");
