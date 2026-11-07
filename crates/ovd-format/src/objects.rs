@@ -450,8 +450,9 @@ mod tests {
             // The tank values of the Rule Trace are not written to JSON (issue #271).
             let mut written = result.clone();
             written.tank_rules = None;
-            // Nor is the vent mast (issue #822).
+            // Nor is the vent mast (issue #822), nor the highest point (issue #991).
             written.vent_mast = None;
+            written.highest_point = None;
             // Issue #448: the JSON holds the hull's dimensions only in a gas basis, so a dry
             // result comes back with no hull.
             if written.gas_basis.is_none() {

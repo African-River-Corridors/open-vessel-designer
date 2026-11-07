@@ -1184,6 +1184,12 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
         applies_to: AppliesTo::All,
         value: "null",
     },
+    // Issue #991: a file saved before gives no bridge clearance, so no bridge warning.
+    LegacyFixedJson {
+        name: "bridge_clearance_m",
+        applies_to: AppliesTo::All,
+        value: "null",
+    },
     // Issue #429: a file saved before costs in USD, with no price base date.
     LegacyFixedJson {
         name: "currency",
