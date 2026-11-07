@@ -106,7 +106,7 @@ fn the_default_layout_of_the_reference_design_meets_the_rows_and_the_typed_input
     assert!(
         r["rule_trace"]["rule_sets"]
             .to_string()
-            .contains("igc-2g@4.0.0"),
+            .contains("igc-2g@4.1.0"),
         "{}",
         r["rule_trace"]["rule_sets"]
     );
