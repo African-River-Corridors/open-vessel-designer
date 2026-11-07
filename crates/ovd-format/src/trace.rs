@@ -507,10 +507,15 @@ impl MeasureSource for OptionMeasures<'_> {
     }
 
     fn value(&self, m: &MeasureRef, index: usize) -> Result<MeasureValue, String> {
-        if m.id == "input.length_overall_m"
-            && let Some(unit) = self.measured.unit_length_overall_m
-        {
-            return Ok(MeasureValue::Number(unit));
+        // Issue #989: the length SOLAS V/22.1.1 reads is the ship's: the unit's, for a Formation whose tug
+        // has a sightline. Every other Rule reads the Option's own length overall.
+        if m.id == "wheelhouse.ship_length" {
+            return self
+                .measured
+                .unit_length_overall_m
+                .or_else(|| self.option.input("length_overall_m")?.value.as_f64())
+                .map(MeasureValue::Number)
+                .ok_or_else(|| "the Option has no length overall".to_string());
         }
         if let Some(name) = m.id.strip_prefix("input.") {
             let stored = self
@@ -697,9 +702,6 @@ impl MeasureSource for OptionMeasures<'_> {
                 );
             }
             "length_band" => {
-                if let Some(unit) = self.measured.unit_length_overall_m {
-                    return Some(length_band(unit).to_string());
-                }
                 return self
                     .option
                     .input("length_overall_m")?
@@ -766,9 +768,10 @@ pub fn rule_inputs(option: &DesignOption) -> RuleInputs {
         }
     }
     // Issue #417: the Measures the Option's typed inputs give, which are not `input.<name>`.
-    let front = "openings.front_clear";
-    if let (Some(info), Ok(value)) = (measure_info(front), source.value(&bare(front), 0)) {
-        measures.push((front.to_string(), info, value));
+    for id in ["openings.front_clear", "wheelhouse.ship_length"] {
+        if let (Some(info), Ok(value)) = (measure_info(id), source.value(&bare(id), 0)) {
+            measures.push((id.to_string(), info, value));
+        }
     }
     RuleInputs {
         applicability,

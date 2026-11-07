@@ -638,20 +638,15 @@ fn build(
     Ok(block)
 }
 
-/// The Option's Rule inputs with the length overall of the unit (tug and barges) in place of the barge's: the
-/// length SOLAS V/22.1.1 reads for a Formation (issue #989). The band follows it.
+/// The Option's Rule inputs with the length of the unit (tug and barges) as the ship's length: the one
+/// `wheelhouse.ship_length` that SOLAS V/22.1.1 reads for a Formation (issue #989). No other Measure moves.
 pub(crate) fn unit_rule_inputs(
     base: &ovd_core::gas_arrangement::RuleInputs,
     unit_length_m: f64,
 ) -> ovd_core::gas_arrangement::RuleInputs {
     let mut out = base.clone();
-    for (name, value) in &mut out.applicability {
-        if name == "length_band" {
-            *value = ovd_core::measured::length_band(unit_length_m).to_string();
-        }
-    }
     for (id, _, value) in &mut out.measures {
-        if id == "input.length_overall_m" {
+        if id == "wheelhouse.ship_length" {
             *value = ovd_core::rule_trace::MeasureValue::Number(unit_length_m);
         }
     }

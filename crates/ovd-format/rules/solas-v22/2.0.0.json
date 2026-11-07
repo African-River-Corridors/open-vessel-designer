@@ -51,7 +51,7 @@
       "compare": "le",
       "limit": {
         "shape": "clamp",
-        "x": "input.length_overall_m",
+        "x": "wheelhouse.ship_length",
         "a": 0.0,
         "b": 2.0,
         "c": 1.0,
@@ -98,7 +98,7 @@
       "compare": "le",
       "limit": {
         "shape": "clamp",
-        "x": "input.length_overall_m",
+        "x": "wheelhouse.ship_length",
         "a": 0.0,
         "b": 2.0,
         "c": 1.0,

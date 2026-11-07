@@ -8,6 +8,10 @@ use ovd_format::{Profile, RunOutcome, fill_as_new, run_option_with};
 use serde_json::{Value, json};
 
 fn run(service_area: &str, formation: Value, loa: f64) -> Value {
+    run_with(service_area, formation, loa, "blind_distance")
+}
+
+fn run_with(service_area: &str, formation: Value, loa: f64, method: &str) -> Value {
     let inputs = json!({
         "cargo": { "value": "bauxite", "source": "typed" },
         "service_area": { "value": service_area, "source": "typed" },
@@ -17,7 +21,7 @@ fn run(service_area: &str, formation: Value, loa: f64) -> Value {
         "beam_m": { "value": 11.4, "source": "typed" },
         "moulded_depth_m": { "value": 3.5, "source": "typed" },
         "tug_included": { "value": true, "source": "typed" },
-        "tug_sightline_method": { "value": "blind_distance", "source": "typed" }
+        "tug_sightline_method": { "value": method, "source": "typed" }
     });
     let file = json!({
         "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
@@ -96,4 +100,37 @@ fn a_river_only_formation_is_judged_on_the_es_trin_rule_alone() {
         r["formation"]["sightline"]["blind_distance_light_m"]
     );
     assert!(r["formation"]["sightline"].get("limit_laden_m").is_none());
+}
+
+#[test]
+fn the_unit_length_reaches_the_blind_distance_rules_only() {
+    // The ICLL freeboard belongs to each barge: its row is the same with the tug's sightline switched on and off.
+    let convoy = json!({ "kind": "pushed_convoy", "abreast": 1, "in_line": 3 });
+    let on = run_with("coastal-and-river", convoy.clone(), 76.5, "blind_distance");
+    let off = run_with("coastal-and-river", convoy, 76.5, "margin");
+    let rule = "icll/28(1)/type-a-tabular-freeboard-laden-barge";
+    let (a, b) = (row(&on, rule), row(&off, rule));
+    assert_eq!(a["limit"], b["limit"], "{a} {b}");
+    assert_eq!(a["outcome"], b["outcome"]);
+}
+
+#[test]
+fn solas_two_lengths_of_the_unit_is_capped_at_500_m() {
+    let r = run(
+        "coastal-and-river",
+        json!({ "kind": "pushed_convoy", "abreast": 1, "in_line": 4 }),
+        76.5,
+    );
+    let unit = r["formation"]["equivalent_hull"]["length_m"]
+        .as_f64()
+        .unwrap();
+    assert!(2.0 * unit > 500.0, "{unit}");
+    assert_eq!(
+        row(&r, "solas/V.22.1.1/blind-zone-light")["limit"],
+        json!(500.0)
+    );
+    assert_eq!(
+        row(&r, "solas/V.22.1.1/blind-zone-laden")["limit"],
+        json!(500.0)
+    );
 }

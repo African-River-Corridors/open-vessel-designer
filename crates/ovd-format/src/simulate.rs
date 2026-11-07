@@ -2389,13 +2389,14 @@ fn default_sightline_rules(
             "length_band".to_string(),
             ovd_core::measured::length_band(loa).to_string(),
         ));
-        let id = "input.length_overall_m";
-        if let Some(info) = crate::trace::measure_info(id) {
-            inputs.measures.push((
-                id.to_string(),
-                info,
-                ovd_core::rule_trace::MeasureValue::Number(loa),
-            ));
+        for id in ["input.length_overall_m", "wheelhouse.ship_length"] {
+            if let Some(info) = crate::trace::measure_info(id) {
+                inputs.measures.push((
+                    id.to_string(),
+                    info,
+                    ovd_core::rule_trace::MeasureValue::Number(loa),
+                ));
+            }
         }
     }
     (sets, inputs)
