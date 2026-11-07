@@ -1397,7 +1397,30 @@ fn lightest_aft_draught(v: &Value) -> Option<f64> {
 }
 
 fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRules) -> R<Value> {
-    let mut v = simulate_once_inner(p, measured, rules)?;
+    // Issue #992: with a standing height the depth is a result of the search, but the draught limit
+    // (depth less the freeboard), the design draught and the installed power are worked out from
+    // the depth before it. So run once to find the depth, then again with that depth.
+    if p.get("tank_top_above_deck_m")
+        .is_some_and(|v| v.is_number())
+    {
+        let mut scratch = Measured::default();
+        let first = simulate_once_inner(p, &mut scratch, rules)?;
+        let settled = first
+            .get("dims")
+            .and_then(|d| d.get("depth_m"))
+            .and_then(Value::as_f64);
+        if let Some(depth) = settled
+            && p.get("depth_m").and_then(Value::as_f64) != Some(depth)
+        {
+            let mut q = p.clone();
+            q.insert("depth_m".to_string(), json!(depth));
+            return finish_once(simulate_once_inner(&q, measured, rules)?, measured);
+        }
+    }
+    finish_once(simulate_once_inner(p, measured, rules)?, measured)
+}
+
+fn finish_once(mut v: Value, measured: &mut Measured) -> R<Value> {
     // Issue #923: whether damage stability was run, and how many cases it has. Unhashed.
     if v.get("error").is_none()
         && let Some(o) = v.as_object_mut()
@@ -3135,6 +3158,7 @@ fn simulate_gas(
         limits.push((channel_name.as_str(), v));
     }
     let optimise = p.get("optimise_depth").is_some_and(truthy);
+    let mut external_limit: Option<f64> = None;
     let depths: Vec<f64> = if optimise {
         let cap = if limits.is_empty() {
             None
@@ -3158,6 +3182,9 @@ fn simulate_gas(
             picked
         }
     } else {
+        // Issue #992: the draught the waterway or the user allows, before the hull's own limit; with
+        // a standing height the depth never falls below it plus the freeboard.
+        external_limit = limits.iter().map(|&(_, v)| v).reduce(f64::min);
         limits.push((hull_limit.as_str(), d0 - fb));
         vec![d0]
     };
@@ -3214,6 +3241,9 @@ fn simulate_gas(
         fill_ratio: loading.fill,
         cargo_density_kg_m3: loading.density_kg_m3,
         self_propelled,
+        // Issue #992: the tank top above the deck; the depth of each candidate then follows its tank.
+        tank_top_above_deck_m: opt_float(p, "tank_top_above_deck_m")?,
+        draught_limit_m: external_limit,
         depths: depths.clone(),
         // Issue #675: tanks across fixed by the user, or 1, 2 and 3 tried; and a least side space.
         tanks_wide: match opt_float(p, "tanks_across")? {
@@ -3632,6 +3662,32 @@ fn simulate_gas(
         .gas_basis
         .as_ref()
         .and_then(|b| gas_steel(b, &vessel_inputs));
+    let mut arrangement = json!({
+        "ruleset": ruleset,
+        "fill_ratio": num(fill),
+        "n_wide": f.n_tanks_wide,
+        "n_long": f.n_tanks_long,
+        "tank_od_m": num(f.tank_od_m),
+        "per_tank_m3": num(f.per_tank_volume_m3),
+        "side_clearance_m": num(f.side_clearance_m),
+        "depth_m": num(f.depth_m),
+        "depth_optimised": optimise,
+        "candidates_tried": f.candidates_tried,
+        "feasible": f.feasible,
+    });
+    // Issue #992: only when asked for, so a result without the input is unchanged.
+    if let Some(h) = options.tank_top_above_deck_m {
+        arrangement["tank_top_above_deck_m"] = num(h);
+        arrangement["tank_top_above_keel_m"] = num(ga::tank_top_above_keel_m(r));
+        arrangement["depth_follows_tank"] = json!(true);
+        // Whether the tank or the draught limit plus the freeboard set the depth (issue #992).
+        let by_tank = ga::depth_for_standing_height(ga::tank_top_above_keel_m(r), h);
+        arrangement["depth_set_by"] = json!(if f.depth_m > by_tank + 0.0015 {
+            "freeboard"
+        } else {
+            "tank"
+        });
+    }
     with_blocks_and_text_ids(
         powering_block.clone(),
         sightline_json(r),
@@ -3647,19 +3703,7 @@ fn simulate_gas(
             "hydrostatic_table": hydrostatic_table,
             "geometry": geo,
             "drawing": drawing,
-            "arrangement": {
-                "ruleset": ruleset,
-                "fill_ratio": num(fill),
-                "n_wide": f.n_tanks_wide,
-                "n_long": f.n_tanks_long,
-                "tank_od_m": num(f.tank_od_m),
-                "per_tank_m3": num(f.per_tank_volume_m3),
-                "side_clearance_m": num(f.side_clearance_m),
-                "depth_m": num(f.depth_m),
-                "depth_optimised": optimise,
-                "candidates_tried": f.candidates_tried,
-                "feasible": f.feasible,
-            },
+            "arrangement": arrangement,
             "results": {
                 "cargo_t": num(cargo_t),
                 "cargo_volume_bound_t": num(f.volume_capacity_t),

@@ -635,10 +635,16 @@ impl Hull {
     pub fn hydrostatic_table(&self, density: f64) -> Result<Vec<Upright>, SectionsError> {
         (1..=TABLE_ROWS)
             .map(|i| {
-                self.upright(
-                    self.spec.depth * f64::from(i) / f64::from(TABLE_ROWS),
-                    density,
-                )
+                // The last row is the depth itself. `depth * n / n` can come out an ulp above the
+                // depth for some depths (14.684 m is one), and a draught above the top of the hull
+                // has no waterplane, so the table failed for that hull (issue #992, found when the
+                // depth came from the tank and not from a round ratio).
+                let draught = if i == TABLE_ROWS {
+                    self.spec.depth
+                } else {
+                    self.spec.depth * f64::from(i) / f64::from(TABLE_ROWS)
+                };
+                self.upright(draught, density)
             })
             .collect()
     }

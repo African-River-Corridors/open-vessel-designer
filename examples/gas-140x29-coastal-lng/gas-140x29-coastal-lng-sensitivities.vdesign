@@ -3306,6 +3306,10 @@
           "value": null,
           "source": "default"
         },
+        "tank_top_above_deck_m": {
+          "value": null,
+          "source": "default"
+        },
         "tanks_in_line": {
           "value": 2.0,
           "source": "typed"
@@ -3953,6 +3957,10 @@
           "source": "default"
         },
         "tanks_across": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_top_above_deck_m": {
           "value": null,
           "source": "default"
         },
@@ -4606,6 +4614,10 @@
           "value": null,
           "source": "default"
         },
+        "tank_top_above_deck_m": {
+          "value": null,
+          "source": "default"
+        },
         "tanks_in_line": {
           "value": 2.0,
           "source": "typed"
@@ -5253,6 +5265,10 @@
           "source": "default"
         },
         "tanks_across": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_top_above_deck_m": {
           "value": null,
           "source": "default"
         },
@@ -5906,6 +5922,10 @@
           "value": null,
           "source": "default"
         },
+        "tank_top_above_deck_m": {
+          "value": null,
+          "source": "default"
+        },
         "tanks_in_line": {
           "value": 2.0,
           "source": "typed"
@@ -6553,6 +6573,10 @@
           "source": "default"
         },
         "tanks_across": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_top_above_deck_m": {
           "value": null,
           "source": "default"
         },
@@ -7206,6 +7230,10 @@
           "value": null,
           "source": "default"
         },
+        "tank_top_above_deck_m": {
+          "value": null,
+          "source": "default"
+        },
         "tanks_in_line": {
           "value": 2.0,
           "source": "typed"
@@ -7853,6 +7881,10 @@
           "source": "default"
         },
         "tanks_across": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_top_above_deck_m": {
           "value": null,
           "source": "default"
         },
@@ -8506,6 +8538,10 @@
           "value": null,
           "source": "default"
         },
+        "tank_top_above_deck_m": {
+          "value": null,
+          "source": "default"
+        },
         "tanks_in_line": {
           "value": 2.0,
           "source": "typed"
@@ -9153,6 +9189,10 @@
           "source": "default"
         },
         "tanks_across": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_top_above_deck_m": {
           "value": null,
           "source": "default"
         },
@@ -9806,6 +9846,10 @@
           "value": null,
           "source": "default"
         },
+        "tank_top_above_deck_m": {
+          "value": null,
+          "source": "default"
+        },
         "tanks_in_line": {
           "value": 2.0,
           "source": "typed"
@@ -10453,6 +10497,10 @@
           "source": "default"
         },
         "tanks_across": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_top_above_deck_m": {
           "value": null,
           "source": "default"
         },
@@ -11106,6 +11154,10 @@
           "value": null,
           "source": "default"
         },
+        "tank_top_above_deck_m": {
+          "value": null,
+          "source": "default"
+        },
         "tanks_in_line": {
           "value": 2.0,
           "source": "typed"
@@ -11753,6 +11805,10 @@
           "source": "default"
         },
         "tanks_across": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_top_above_deck_m": {
           "value": null,
           "source": "default"
         },
@@ -12406,6 +12462,10 @@
           "value": null,
           "source": "default"
         },
+        "tank_top_above_deck_m": {
+          "value": null,
+          "source": "default"
+        },
         "tanks_in_line": {
           "value": 2.0,
           "source": "typed"
@@ -13053,6 +13113,10 @@
           "source": "default"
         },
         "tanks_across": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_top_above_deck_m": {
           "value": null,
           "source": "default"
         },
@@ -13706,6 +13770,10 @@
           "value": null,
           "source": "default"
         },
+        "tank_top_above_deck_m": {
+          "value": null,
+          "source": "default"
+        },
         "tanks_in_line": {
           "value": 2.0,
           "source": "typed"
@@ -14353,6 +14421,10 @@
           "source": "default"
         },
         "tanks_across": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_top_above_deck_m": {
           "value": null,
           "source": "default"
         },

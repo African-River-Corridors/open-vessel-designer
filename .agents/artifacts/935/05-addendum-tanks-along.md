@@ -27,7 +27,7 @@ A typed tanks-in-line input still pins the loop to that one value. A typed value
 - Early exits: a candidate that fails the cheap checks never runs damage. Within one (count along, depth, across) triple, stop at the first damage pass. Skip a count along if its best cheap-checked volume cannot beat the best damage-passing volume found so far. The bound uses only the cheap checks, so it is safe.
 - Memo: key the damage verdicts by (tanks along, depth, across, OD to 1 mm). Reuse them in the 0.1 m refinement.
 - Time budget: **recommended** is a cap on damage runs, not on wall time (a wall-time cap gives different answers on different machines). Default 24 runs; on reaching it, return the best pass so far and say "search stopped at the damage-run limit". If nothing has passed, report the closest, as design Risks says. The count stays in `damage_runs`.
-- Open: is 24 the right cap? Measure on the example in PR 2 and report.
+- Decided by the maintainer at the gate (2026-11-06): the cap is 24 damage runs per search. PR 2b still reports the count the example uses.
 
 ## D3. The objective
 

@@ -111,6 +111,8 @@ check-name-air-draft = Air draft
 check-condition-air-draft = { $condition }: air draft { $air } m is above the limit.
 check-name-stability-not-assessed = Stability — not assessed
 check-stability-not-assessed = stability could not be assessed: { $reason }
+fit-refused-standing-height = The tank top is to stand { $h } m above the deck, more than the tank diameter { $od } m.
+fit-refused-depth-not-settled = The depth that follows the tank does not settle, near { $depth } m.
 fit-refused-cap-too-wide = { $n } across at the diameter cap { $cap } m do not fit in the beam.
 fit-refused-min-side-space = No tank fits across the beam with the minimum side space { $min } m.
 fit-refused-no-tank-at-cap = No tank fits at the diameter cap { $cap } m.
@@ -453,6 +455,7 @@ msg-offsets-dimension = `{ $input }` = { $typed } differs from the offsets table
 msg-slender-hull = `{ $input }` = { $length } is { $ratio } times `{ $depth_input }` = { $depth }, over about { $limit }: a very slender hull for its depth (soft limit); accepted
 msg-containment-cargo = `{ $input }` = { $containment } cannot carry { $cargo } ({ $phase }); use { $fits }
 msg-freeboard-depth = `{ $input }` = { $freeboard } must be less than `{ $depth_input }` = { $depth } (hard limit)
+msg-standing-height-typed-depth = `{ $depth_input }` is typed, so `{ $input }` is not used: the depth follows the tank only when `{ $depth_input }` is left out
 msg-whole-number = `{ $input }` = { $value } must be a whole number (hard limit)
 msg-insulation-disagree = `{ $input }` is { $kind } but `{ $thickness_input }` is { $thickness }: the type and the thickness disagree (soft check); accepted
 msg-insulation-defaults-of-other-type = `{ $input }` is { $typed }, but `{ $conductivity }` and `{ $density }` still hold the defaults for { $default }: type the values for { $typed } (soft check); accepted
