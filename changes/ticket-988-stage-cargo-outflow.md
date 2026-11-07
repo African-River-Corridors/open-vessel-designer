@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Damage (issue #988): at the intermediate stages (25, 50 and 75 %) of an IGC damage case, a breached Type C tank holds sea water to the stage's fraction of its flood and keeps its cargo for the rest, as its cargo leaves in step with the inflow (spec 0012 D18a, replacing D18). The method is in the damage block's `method` text and the rule trace. Liquid bulk stages are unchanged. The damage block is outside the results hash, so no hash moves.
