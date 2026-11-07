@@ -1861,7 +1861,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         let blind_message = if s.enough {
             text!(
                 "check-wheelhouse-blind-distance",
-                "blind distance ahead of the bow {blind} m <= {limit} m, light (ES-TRIN 7.02(2)); lift used {lift} m of {max_lift} m",
+                "blind distance ahead of the bow {blind} m <= {limit} m, light (limit from the Rule Sets of the stack: {source}); lift used {lift} m of {max_lift} m",
                 blind = Arg::fixed(s.blind_distance_m, 1),
                 limit = Arg::fixed(limit, 0),
                 source = Arg::cite(inp.sightline_limit_source.clone().unwrap_or_default()),
@@ -1871,7 +1871,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         } else {
             text!(
                 "check-wheelhouse-blind-distance-fails",
-                "blind distance ahead of the bow over {limit} m, light (ES-TRIN 7.02(2)): lift needed {needed} m of {max_lift} m",
+                "blind distance ahead of the bow over {limit} m, light (limit from the Rule Sets of the stack: {source}): lift needed {needed} m of {max_lift} m",
                 limit = Arg::fixed(limit, 0),
                 source = Arg::cite(inp.sightline_limit_source.clone().unwrap_or_default()),
                 needed = Arg::fixed(s.lift_needed_m, 2),
