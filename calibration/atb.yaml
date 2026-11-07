@@ -1,25 +1,86 @@
-# ATB reference vessels (issue #362, spec 0007 "Formations"): the published particulars the ATB powering
-# is compared with. Values stated by the cited source; barge depth and draught are not stated and are
-# the estimates marked below. The Aurora bollard pull (97 short tons at 4,560 hp) stays out: it is far
-# above every other tug (2.6 t / 100 kW) and probably copied from the Aveogan sheet
-# (docs/research/stern-and-tugs.md, 7.3).
-# The comparison is `crates/ovd-format/tests/atb_powering.rs`, `the_atb_powering_against_the_reference_vessels`.
+# ATB reference vessels (issue #362, spec 0007 "Formations"; issue #788, spec 0014 D10, D19): the published
+# particulars the ATB powering is compared with and the ATB Formation allowance is fitted to.
+# Values stated by the cited source; a figure the source does not print is marked as an estimate or as
+# assumed. The Aurora bollard pull (97 short tons at 4,560 hp) stays out: it is far above every other tug
+# (2.6 t / 100 kW) and probably copied from the Aveogan sheet (docs/research/stern-and-tugs.md, 7.3).
+#
+# `tools/atb_calibration.py <ovd> --write` runs each case as an `atb` Design with its tug typed, fits the
+# allowance on the cases without `held_out`, and writes the fit block at the end of this file,
+# calibration/atb_results.md and crates/ovd-format/src/atb_calibration.json. A design that publishes
+# power but no speed is held out of the fit (spec 0014, "Calibration of ATB power"); it is run at the
+# speed stated below. The comparison at the old allowance (1.05) stays in
+# `crates/ovd-format/tests/atb_powering.rs`, `the_atb_powering_against_the_reference_vessels`.
+# `propulsor_type` is the OVD Propulsor type the tug is run as; `confidence` sets the band
+# (calibration/bands.yaml, installed_power_kw).
 atbs:
-  - name: "Aveogan / Oliver Leavitt (AT-12842)"
-    source: "vessels/crowley-atb-12842-40085 (research note sec. 10)"
-    tug: {length_m: 39.0, beam_m: 12.8, draught_m: 5.64, propulsor: "2 Z-drives, 2.8 m (run as ducted)"}
+  - id: aveogan
+    name: "Aveogan / Oliver Leavitt (AT-12842)"
+    source: "vessels/crowley-atb-12842-40085 (research note docs/research/stern-and-tugs.md sec. 10)"
+    tug: {length_m: 39.0, beam_m: 12.8, draught_m: 5.64, propulsor: "2 Z-drives, 2.8 m (run as ducted)",
+          propulsor_type: azimuth_ducted, propeller_diameter_m: 2.8}
     barge: {length_m: 121.9, beam_m: 25.9, depth_m: 7.9}   # depth: estimate
     installed_power_hp: 6700
     service_speed_kn: 11
-  - name: "550 Class"
-    source: "vessels/crowley-550-class-atb (research note sec. 10)"
-    tug: {length_m: 37.1, beam_m: 12.8, propulsor: "twin FPP (run as open)"}
+    speed_kn: 11
+    confidence: medium
+    basis: "published: barge length and beam, tug length, beam and draught, installed power and service speed. estimate: the barge depth (the sheet gives none); the barge draught is the one the convoy fixture's cargo loads to."
+  - id: crowley-550
+    name: "550 Class"
+    source: "vessels/crowley-550-class-atb (research note docs/research/stern-and-tugs.md sec. 10)"
+    tug: {length_m: 37.1, beam_m: 12.8, propulsor: "twin FPP (run as open)", propulsor_type: shaft_open}
     barge: {length_m: 145.4, beam_m: 22.6, depth_m: 7.0}   # depth: estimate
     installed_power_hp: 9280
     service_speed_kn: 12
-  - name: "Kim M. Bouchard"
-    source: "vessels/pm-bouchard-atb-kim-donna (research note sec. 10)"
-    tug: {length_m: 45.7, beam_m: 15.2, propulsor: "twin shaft in nozzles, 3.76 m"}
+    speed_kn: 12
+    confidence: medium
+    basis: "published: barge length and beam, tug length and beam, installed power and service speed. estimate: the barge depth (the sheet gives none); the tug draught is OVD's ratio (beam over 2.33); the barge draught is the one the convoy fixture's cargo loads to."
+  - id: lng-4000
+    name: "4,000 m3 LNG bunker ATB (2021)"
+    source: "Baird Maritime vessel review, 11 May 2021 (research note docs/research/atb-gas-tug-barge.md sec. 4)"
+    tug: {length_m: 39.0, beam_m: 12.8, propulsor: "2 x 1,900 kW diesel with Z-drives (run as ducted)",
+          propulsor_type: azimuth_ducted}
+    barge: {length_m: 98.7, beam_m: 19.5, depth_m: 9.9, draught_m: 4.88}   # draught: assumed
+    installed_power_hp: 5096   # 2 x 2,548 hp (2 x 1,900 kW) as printed
+    service_speed_kn: 10
+    speed_kn: 10
+    confidence: medium
+    basis: "published: barge 324 x 64 x 32.5 ft depth (98.7 x 19.5 x 9.9 m), tug 128 x 42 ft (39 x 12.8 m), a pair of 2,548 hp (1,900 kW) main diesel engines with Z-drives, design speed 10 knots. assumed: the review prints no draught, so the barge draught is the maximum loaded draught of the 5,000 m3 design below (16 ft, 4.88 m: same breadth, same tug length); the tug draught is OVD's ratio (beam over 2.33)."
+  - id: kim-m-bouchard
+    name: "Kim M. Bouchard"
+    source: "vessels/pm-bouchard-atb-kim-donna (research note docs/research/stern-and-tugs.md sec. 10)"
+    tug: {length_m: 45.7, beam_m: 15.2, propulsor: "twin shaft in nozzles, 3.76 m", propulsor_type: shaft_nozzle,
+          propeller_diameter_m: 3.76}
     barge: {length_m: 191.4, beam_m: 27.6, depth_m: 9.0}   # beam: estimate (tug beam over 0.55); depth: estimate
     installed_power_hp: 10000
     service_speed_kn: 12   # estimate: the sheet gives no speed
+    speed_kn: 12
+    confidence: low
+    held_out: "the sheet publishes the installed power but no speed; run at 12 kn, the estimate this file held before."
+    basis: "published: barge length, tug length and beam, propeller diameter, installed power. estimate: the barge beam (tug beam over 0.55), the barge depth and the speed; the tug draught is OVD's ratio (beam over 2.33); the barge draught is the one the convoy fixture's cargo loads to."
+
+# Designs that publish power but cannot be run, and designs that publish no power: listed, held out of the fit.
+listed_not_run:
+  - id: lng-5000-design
+    published: "5,000 m3 LNG bunker ATB design: length tug and barge 372 ft, breadth 64 ft, design draft 13 ft 4 in, max loaded draft 16 ft; tug 128 x 40 ft, design draft 16 ft, displacement 984 tons; main engines 2 x 3,350 hp; 2 azimuthing thrusters (Crowley spec sheet V3, 2024)"
+    not_run: "power but no speed; the sheet prints no barge length or depth, only the length of tug and barge together"
+  - id: lng-6000-design
+    published: "6,000 m3 LNG bunker ATB design: barge 350 x 62 ft, max loaded draft 25 ft; tug 128 x 42 ft, design draft 18 ft; main engines 2 x WABTEC 8L250MDC, 2 x Schottel SRP560FP (Crowley spec sheet V6, 2025)"
+    not_run: "no installed power and no speed are printed (only the engine and thruster models)"
+
+# --- GENERATED by python3 tools/atb_calibration.py --write. Do not edit below this line. ---
+fit:
+  formation_resistance_allowance:
+    atb:
+      value: 2.842
+      status: estimate
+      method: barge_form_factor
+      n: 3
+      evidence:
+      - case: aveogan
+      - case: crowley-550
+      - case: lng-4000
+      basis: 'Fitted to 3 vessels with the barge_form_factor resistance method; in-sample
+        residuals: aveogan +38.8 %, crowley-550 +12.0 %, lng-4000 -37.9 %; held-out
+        residuals: kim-m-bouchard +63.3 %; 4 of 4 cases are outside the method''s
+        range, so the speeds are indicative; barge depths and draughts that the sources
+        do not print are assumed, as each case states.'

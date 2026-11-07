@@ -74,9 +74,12 @@ fn the_tug_defaults_follow_the_formation_kind() {
     );
     let atb = barge("atb");
     assert_eq!(input(&atb, "tug_stern_form").unwrap().0, json!("transom"));
+    // Issue #788: a new ATB takes the allowance fitted to the reference ATBs (calibration/atb.yaml,
+    // written into atb_calibration.json by tools/atb_calibration.py).
+    let fitted: Value = serde_json::from_str(include_str!("../src/atb_calibration.json")).unwrap();
     assert_eq!(
         input(&atb, "formation_resistance_allowance").unwrap().0,
-        json!(1.05)
+        fitted["allowance"]
     );
     assert!(input(&atb, "notch_depth_m").is_some());
     assert!(input(&pusher, "notch_depth_m").is_none());

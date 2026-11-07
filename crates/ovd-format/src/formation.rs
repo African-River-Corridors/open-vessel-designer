@@ -625,7 +625,109 @@ fn build(
     }
     notes.extend(notes2);
     add_tug_drawing(&tug, &r, kind, &block, v);
+    // Issue #788: the ATB allowance's calibration and the method's range check on the Equivalent
+    // Hull, in the unhashed `calibration` block (run.rs keeps it), so no saved hash moves.
+    if atb {
+        let label = atb_calibration(&p2, &tug, &r.hull, rho);
+        if let Some(o) = v.as_object_mut() {
+            let entry = o
+                .entry("calibration")
+                .or_insert_with(|| Value::Object(Map::new()));
+            if let Some(c) = entry.as_object_mut() {
+                c.insert("formation".into(), label);
+            }
+        }
+    }
     Ok(block)
+}
+
+/// The ATB calibration written by `tools/atb_calibration.py --write` from `calibration/atb.yaml`.
+const ATB_CALIBRATION: &str = include_str!("atb_calibration.json");
+
+/// The fitted ATB Formation resistance allowance of `calibration/atb.yaml` (issue #788).
+fn atb_fitted_allowance() -> f64 {
+    atb_calibration_data()["allowance"]
+        .as_f64()
+        .unwrap_or(f64::NAN)
+}
+
+fn atb_calibration_data() -> Value {
+    serde_json::from_str(ATB_CALIBRATION).unwrap_or(Value::Null)
+}
+
+/// The calibration label of an ATB (issue #788, spec 0014 D10, D19): the fitted allowance with each
+/// reference ATB's residual and their range, the allowance this Option uses, and the resistance
+/// method's range check on the Equivalent Hull at the tug's Design Speed. Status `estimate`. Never
+/// an error: a label must not change the hashed result.
+fn atb_calibration(
+    p: &Map<String, Value>,
+    tug: &TugInputs,
+    hull: &EquivalentHull,
+    rho: f64,
+) -> Value {
+    use ovd_core::resistance::{GRAVITY, KNOTS_TO_MS};
+    let data = atb_calibration_data();
+    let fitted = atb_fitted_allowance();
+    let method_range = match crate::simulate::formation_method(
+        p,
+        (hull.length_m, hull.beam_m, hull.draught_m),
+        hull.block_coefficient,
+        hull.displaced_volume_m3 * rho,
+        rho,
+    ) {
+        Ok(Some((method, cm))) => {
+            let cp = hull.block_coefficient / cm;
+            let froude = tug.design_speed_kn * KNOTS_TO_MS / libm::sqrt(GRAVITY * hull.length_m);
+            let (lb, bt) = (hull.length_m / hull.beam_m, hull.beam_m / hull.draught_m);
+            let outside = method.envelope(cp).outside(froude, cp, lb, bt);
+            let list = if outside.is_empty() {
+                "none".to_string()
+            } else {
+                outside
+                    .iter()
+                    .map(|o| {
+                        format!(
+                            "{} {:.3} (range {:.3} to {:.3})",
+                            o.name, o.value, o.low, o.high
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            };
+            json!({
+                "method": method.as_str(),
+                "in_range": outside.is_empty(),
+                "froude": crate::eval::num(froude),
+                "cp": crate::eval::num(cp),
+                "l_over_b": crate::eval::num(lb),
+                "b_over_t": crate::eval::num(bt),
+                "outside": outside.iter().map(|o| o.name).collect::<Vec<_>>(),
+                "message": format!(
+                    "{} on the Equivalent Hull at the Design Speed {:.1} kn: Fn {:.3}, Cp {:.3}, L/B {:.2}, B/T {:.2}; outside its range: {}",
+                    method.as_str(),
+                    tug.design_speed_kn,
+                    froude,
+                    cp,
+                    lb,
+                    bt,
+                    list
+                ),
+            })
+        }
+        // No draught, or a resistance error: no range check (the error shows in the result).
+        Ok(None) | Err(_) => Value::Null,
+    };
+    json!({
+        "state": "estimate",
+        "basis": data["basis"],
+        "fitted_allowance": data["allowance"],
+        "fitted_with_method": data["method"],
+        "allowance": crate::eval::num(tug.allowance),
+        "uses_fitted_allowance": tug.allowance == fitted,
+        "residual_range_pct": data["residual_range_pct"],
+        "cases": data["cases"],
+        "method_range": method_range,
+    })
 }
 
 /// The sightline of a pusher or an ATB tug over its barges (issue #360, spec 0007 "Wheelhouse,
