@@ -219,6 +219,8 @@ impl BargeInputs {
             design_pressure_igc_minimum: false,
             weld_efficiency: 0.95,
             tank_structure_factor: 1.30,
+            // The original engine's thickness, kept for the Python `BargeInputs` of 0.1.0 (pinned). The
+            // capacity run overwrites it from the tank design, so a Design never reads this one.
             insulation_thickness: 350.0,
             insulation_density: 60.0,
             cargo_type: "LNG_ethane".to_string(),

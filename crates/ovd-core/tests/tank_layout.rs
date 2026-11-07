@@ -197,7 +197,7 @@ fn clip_returns_a_tank_space_unchanged() {
     let r = compute(&i).unwrap();
     let g = r.gas_basis.as_ref().unwrap();
     let layout = arrangement_layout(&g.inputs, &g.tanks, None).unwrap();
-    let spaces = tank_spaces(&layout, g.tanks.volume_per_tank);
+    let spaces = tank_spaces(&layout, g.tanks.volume_per_tank, 0.3);
     assert_eq!(spaces.len(), layout.tanks.len());
     for s in &spaces {
         let c = clip(s, &hull);

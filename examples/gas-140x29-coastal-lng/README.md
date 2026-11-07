@@ -27,23 +27,23 @@ Self-propelled gas barge, IGC Type C tanks, LNG, 140.0 m x 29.0 m, raked box hul
 | Stern void (m) | 20.5 | 20.1 | 20.5 |
 | Cargo volume at 0.98 fill (m3) | 14,682 | 14,797 | 16,284 |
 | Cargo (t) | 6,607 | 6,659 | 7,328 |
-| Lightship (t) | 5,084 | 5,092 | 5,688 |
-| Displacement, laden (t) | 11,726 | 11,786 | 13,054 |
-| Draught, laden (m) | 3.55 | 3.57 | 4.31 |
+| Lightship (t) | 5,164 | 5,173 | 5,770 |
+| Displacement, laden (t) | 11,806 | 11,866 | 13,136 |
+| Draught, laden (m) | 3.58 | 3.60 | 4.34 |
 | Draught cap (depth less freeboard) (m) | 10.19 | 10.19 | 14.14 |
-| Freeboard, laden (m) | 8.45 | 8.43 | 11.64 |
-| Air draft, laden (m) | 18.11 | 18.09 | 21.31 |
-| Air draft, light (m) | 20.09 | 20.08 | 23.68 |
-| GM fluid, full load departure (m) | 16.12 | 16.04 | 12.32 |
-| Max GZ, full load departure (m) | 6.18 | 6.17 | 5.58 |
-| GM fluid, ballast departure (m) | 25.35 | 25.26 | 20.91 |
+| Freeboard, laden (m) | 8.42 | 8.40 | 11.61 |
+| Air draft, laden (m) | 18.09 | 18.07 | 21.28 |
+| Air draft, light (m) | 20.06 | 20.06 | 23.65 |
+| GM fluid, full load departure (m) | 16.00 | 15.91 | 12.23 |
+| Max GZ, full load departure (m) | 6.17 | 6.17 | 5.58 |
+| GM fluid, ballast departure (m) | 25.07 | 24.99 | 20.69 |
 | Installed power (design speed 9.7 kn, margin 1.2) (kW) | 1,717 | 1,717 | 2,022 |
 | Service speed, deep water (kn) | 11.4 | 11.4 | 12.0 |
-| Power at the service speed (kW) | 1,431 | 1,431 | 1,626 |
+| Power at the service speed (kW) | 1,431 | 1,431 | 1,629 |
 | Boil-off (IGC 7.2 ambient) (kg/h) | 747 | 752 | 764 |
-| Gas use at the service speed (kg/h) | 261 | 261 | 291 |
+| Gas use at the service speed (kg/h) | 261 | 261 | 292 |
 | Checks | boil-off within gas use | boil-off within gas use | boil-off within gas use |
-| Results hash | 17ec907b3464 | f76933c7bc21 | 177cf18b6888 |
+| Results hash | 63830cce3605 | 23a2b26e238f | 561e72336a1e |
 
 Power curve, deep water (kW at kn): 8 kn 642; 9 kn 907; 10 kn 1,240; 11 kn 1,651; 12 kn 2,148 (A basis).
 
@@ -53,11 +53,11 @@ Every Option meets every evaluated blocking Rule. Four blocking Rules are not ev
 
 | Option | Change from A | Tank OD (m) | Cargo (m3) | Cargo (t) | Draught (m) |
 |---|---|---:|---:|---:|---:|
-| I lift 9 m | wheelhouse lift cap 6 to 9 m | 12.00 | 17,529 | 7,888 | 3.95 |
-| J bow 12 m | bow rake typed 12 m (default 1.6 x depth = 19.2 m) | 11.00 | 15,862 | 7,138 | 3.58 |
-| K both | both of the above | 12.00 | 18,948 | 8,527 | 3.99 |
-| L depth 14 | as K at depth 14 m | 12.00 | 18,948 | 8,527 | 4.18 |
-| M river | Service Area river-only (same tanks as A, lower vent mast) | 11.00 | 14,682 | 6,607 | 3.55 |
+| I lift 9 m | wheelhouse lift cap 6 to 9 m | 12.00 | 17,529 | 7,888 | 3.98 |
+| J bow 12 m | bow rake typed 12 m (default 1.6 x depth = 19.2 m) | 11.00 | 15,862 | 7,138 | 3.60 |
+| K both | both of the above | 12.00 | 18,948 | 8,527 | 4.01 |
+| L depth 14 | as K at depth 14 m | 12.00 | 18,948 | 8,527 | 4.21 |
+| M river | Service Area river-only (same tanks as A, lower vent mast) | 11.00 | 14,682 | 6,607 | 3.58 |
 
 The river blind-distance Rule (ES-TRIN 7.02(2), 250 m) with the 6 m lift cap is what keeps the tank at 11 m instead of the 12 m cap on a 12 m hull. The bow rake default takes 19.2 m of the 140 m. Together they are the difference between 14,682 and 18,948 m3.
 

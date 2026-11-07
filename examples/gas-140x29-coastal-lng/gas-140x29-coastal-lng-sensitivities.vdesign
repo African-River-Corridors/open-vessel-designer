@@ -118,7 +118,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -632,7 +632,7 @@
           "source": "default"
         }
       },
-      "results_hash": "36aeceb48948b8697bd6c71307b8770265f2608fa41bf7257c8c159beecf62e9"
+      "results_hash": "bda7f2e0f9081cb239272f3ac1b970880c46027a47a3d058495a6438eb01fabf"
     },
     {
       "name": "J bow 12 m",
@@ -748,7 +748,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -1262,7 +1262,7 @@
           "source": "default"
         }
       },
-      "results_hash": "d127db6e47377011aa932033580e23fe4445805a1e79558e8e53a33c176c0f00"
+      "results_hash": "55b903afdbb5e6d4dff6e3a96e5b40d7133f3f212ced7fcb63dce7139b9a8b8a"
     },
     {
       "name": "K both",
@@ -1378,7 +1378,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -1892,7 +1892,7 @@
           "source": "default"
         }
       },
-      "results_hash": "98893e2e40c733c2321e3b95a3155ea3fc4c39a040dddd780713fa16d30b671e"
+      "results_hash": "e54733ba1647cefa07932346b0e2301d2c0909689ce385fd6912213d3db4d568"
     },
     {
       "name": "L depth 14",
@@ -2008,7 +2008,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -2522,7 +2522,7 @@
           "source": "default"
         }
       },
-      "results_hash": "e64ea2447479cc8688fb7be2721f516f0ff72da1305db313d4c758765719f985"
+      "results_hash": "2215a77d0f1b63e93075cb11565c0ce9ce852f134e4876644701e17d983d5deb"
     },
     {
       "name": "M river",
@@ -2638,7 +2638,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -3134,7 +3134,7 @@
           "source": "default"
         }
       },
-      "results_hash": "4f351113ccf6c00dbea426cc8c3d977b6720574041f2cbfad6426575c40c7286"
+      "results_hash": "cf42e893ca009fe6bfa49b4eccb527626ed35cce890d1defeaa5bc1fcf339582"
     },
     {
       "name": "N1 Cb 0.97",
@@ -3254,7 +3254,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -3784,7 +3784,7 @@
           "source": "default"
         }
       },
-      "results_hash": "378c24b8c66d752b46611fa927d01d1c6313e16247252d6e27174de6107ef464"
+      "results_hash": "8198f98c3c498215b632d78699a23a77dbfd562313dc5995bcd44c8b27a24f5a"
     },
     {
       "name": "N2 Cb 0.96",
@@ -3904,7 +3904,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -4434,7 +4434,7 @@
           "source": "default"
         }
       },
-      "results_hash": "a8b2de971a35fa904914fa5d3059444b54cea95258e15558750f34ac8239ccdf"
+      "results_hash": "06de07147ee38aa26dfda235b340934922addc3852c88f6e2e538e2afac9e12f"
     },
     {
       "name": "N3 Cb 0.95",
@@ -4554,7 +4554,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -5084,7 +5084,7 @@
           "source": "default"
         }
       },
-      "results_hash": "094c21f06196cc63e59e1884132075908f06044ae71bc1f79563107ad7ea7588"
+      "results_hash": "752516b7d56a6560191dbfaa896547217bfe644c9c580719b849095debccc8ef"
     },
     {
       "name": "N4 Cb 0.92",
@@ -5204,7 +5204,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -5734,7 +5734,7 @@
           "source": "default"
         }
       },
-      "results_hash": "ff7c4ff30eb6e3281d209e7e31ab9810b0b9bfb325dce3ff0129eeca1abcbc37"
+      "results_hash": "a0e92bd13d90acf9ae06da460bd41cab7e7e936c42133f99f061159ef901f333"
     },
     {
       "name": "N5 Cb 0.87",
@@ -5854,7 +5854,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -6384,7 +6384,7 @@
           "source": "default"
         }
       },
-      "results_hash": "86253c6bfb7829174de2197515bedaa96f749d8fa01b5dfe9b8f25c721bb1799"
+      "results_hash": "671652c709151f9270ce8774ae7e29c5b8811815ca0b7df2e313eb807832234c"
     },
     {
       "name": "N6 Cb 0.84",
@@ -6504,7 +6504,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -7034,7 +7034,7 @@
           "source": "default"
         }
       },
-      "results_hash": "a8e75c2b39111a0084aaeb781987553dd911926aae31adf2be85220261c7c446"
+      "results_hash": "d42c3e7097bfca3e142930f4972f1601839dd138ef3185ee32dfe934e50fa101"
     },
     {
       "name": "N7 Cb 0.81",
@@ -7154,7 +7154,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -7684,7 +7684,7 @@
           "source": "default"
         }
       },
-      "results_hash": "ed10021dcb8b68af9a4fc9532054e2e62b5de5bfdb4facd6892f7aaa87469542"
+      "results_hash": "6e4096951eae597686a13e042f8e96de1b128c6319e58e1082e6f5e0f933cb78"
     },
     {
       "name": "N8 Cb 0.77",
@@ -7804,7 +7804,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -8334,7 +8334,7 @@
           "source": "default"
         }
       },
-      "results_hash": "eaf8c104e51e98b5a4bdc32a978d7a299ee6b751ca09898c4c517428c0867e36"
+      "results_hash": "dfcf336ac0b6e87b1cc57cf92c88c5137cd67d4ae2626dee38c71a97fdfeec0b"
     },
     {
       "name": "N9 Cb 0.74",
@@ -8454,7 +8454,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -8984,7 +8984,7 @@
           "source": "default"
         }
       },
-      "results_hash": "6cb421e5ee6998ba5e9ce715da13385923f1bcfd5f102465facd5b25d03d371b"
+      "results_hash": "f8018ca2abf978471f6401a213dfb0e64dd748cbd53f8eedbf34f9295ccc1074"
     },
     {
       "name": "P1 Cb 0.97",
@@ -9104,7 +9104,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -9634,7 +9634,7 @@
           "source": "default"
         }
       },
-      "results_hash": "7dfd1e39c443b3886953e2fb6f0ead540d0b43e5a32188bc2a6f69032b5fbdd1"
+      "results_hash": "181b04356c79b3f5e3d8e767e7cf571a0fd02a443be94bfdcbba853237df3fa0"
     },
     {
       "name": "P2 Cb 0.96",
@@ -9754,7 +9754,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -10284,7 +10284,7 @@
           "source": "default"
         }
       },
-      "results_hash": "04b5bb2b92e2e04ec087855fcd6d321e977a7a78b3d7fc899065fcfd2bddcb3e"
+      "results_hash": "7e42b984aef437ee1a1aba268201d6b1f2e8ad60881932cf79611dbef9fb4721"
     },
     {
       "name": "P3 Cb 0.95",
@@ -10404,7 +10404,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -10934,7 +10934,7 @@
           "source": "default"
         }
       },
-      "results_hash": "40d4d5d06362969ec4468cbc9c3b0fa7c78ceece5d0d17f8b1ce14debca12543"
+      "results_hash": "341ad0ed39c0cc59dd54bb11b83a8b15564c24ee96bcfae576fd8cb348804772"
     },
     {
       "name": "P4 Cb 0.92",
@@ -11054,7 +11054,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -11584,7 +11584,7 @@
           "source": "default"
         }
       },
-      "results_hash": "ed6b00f14622e1f0632238946d4a287a853d9882df12f09a0b28fd5467ea67c2"
+      "results_hash": "4edf6410c7c86815e02a78b718653f30841806aa464d1d557f62c4d36fb979cc"
     },
     {
       "name": "P5 Cb 0.87",
@@ -11704,7 +11704,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -12234,7 +12234,7 @@
           "source": "default"
         }
       },
-      "results_hash": "0180524f6c6f7e08735a18c1d16ce7f1dfd59bc0ec367457e17979cb1ee54fd0"
+      "results_hash": "ec66e5fdecac78beb5e022a4b6e06745aab7dbe36cad8049befc8ae34696e940"
     },
     {
       "name": "P6 Cb 0.84",
@@ -12354,7 +12354,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -12884,7 +12884,7 @@
           "source": "default"
         }
       },
-      "results_hash": "623ea02ab5c46fbc325a1815a8b995a634e0597149c0973b3292df5f3495eab7"
+      "results_hash": "b9aa6b97b83e9dfa274af46d089300e9ce3e9ae8a645dfb5cfd52fa9bbe4799d"
     },
     {
       "name": "P7 Cb 0.81",
@@ -13004,7 +13004,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -13534,7 +13534,7 @@
           "source": "default"
         }
       },
-      "results_hash": "4002117bd1780ede38dc7c758c1dce652d8e7d7fa68cf2be03ef2fb1ffaeb38f"
+      "results_hash": "2a2cd981a69df472631b06df6df4932810a2f1175c5390cbec5f450cb126fba8"
     },
     {
       "name": "P8 Cb 0.77",
@@ -13654,7 +13654,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -14184,7 +14184,7 @@
           "source": "default"
         }
       },
-      "results_hash": "836bff29d95b7478732b9c67de47987e5c5df358632bb086b49f85ab2f21d8b6"
+      "results_hash": "fe361f2945ec6d7af33dd53f09cbceee63d4627c7db5cb3fbb4371b37af9ce60"
     },
     {
       "name": "P9 Cb 0.74",
@@ -14304,7 +14304,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -14834,7 +14834,7 @@
           "source": "default"
         }
       },
-      "results_hash": "2f9050c2b2130a07af4525593e172fdb85c1b977f66dfc03500eadbb4583dc03"
+      "results_hash": "deba36f7349ffc18a7a89b239cb39c11dc22921d52bc6815666068e754c7c541"
     }
   ],
   "defaults_profile": "built-in"

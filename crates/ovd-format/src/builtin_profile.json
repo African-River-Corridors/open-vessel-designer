@@ -597,17 +597,17 @@
         "rows": [
           {
             "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
-            "value": 60.0,
+            "value": 96.0,
             "status": "estimate",
             "source": "Stand-in: the value of the other rows. The tank itself is uninsulated: Owner's published Form C sheet and general arrangement drawing of a pressurised LPG carrier built 2007: 17.65 barg, 0 to 45 C, tanks not insulated",
             "basis": "Not used while the thickness is 0 (no insulation, so no mass). The value stands in for a thickness you type, so the insulation then has a mass"
           },
           {
             "when": {},
-            "value": 60.0,
+            "value": 96.0,
             "status": "estimate",
-            "source": "The original engine's BargeInputs.insulation_density (60 kg/m3, Python 0.1.0); no external source",
-            "basis": "Carried over from the original engine: one density for every kind of insulation. The foam of the conductivity value is 96 kg/m3"
+            "source": "Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3: the polyurethane foam of the conductivity value is 96 kg/m3. Issue #918; maintainer decision on #919",
+            "basis": "The density of the foam that the conductivity is for (96 kg/m3), for polyurethane foam. For the insulation panel it stands in for a panel with facings, whose density no maker data was found for. The engine used 60 kg/m3 before (carried over from the original engine), which has no source. A file saved before this input keeps 60. Perlite is 40 to 300 kg/m3: type your own value for another system"
           }
         ]
       },

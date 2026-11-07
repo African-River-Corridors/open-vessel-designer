@@ -136,13 +136,16 @@ pub enum SpaceShape {
     /// Tank Heads, its axis from `axis_x0` to `axis_x1` (the Space's `x_aft` and `x_fwd`) at `y`
     /// and `z`, `outer_diameter` across the insulation. It stands clear of the hull, so `clip`
     /// passes it through. Its volume is the interior volume the capacity counts (`TankResult`'s
-    /// `volume_per_tank`), not the volume of its outer shape.
+    /// `volume_per_tank`), not the volume of its outer shape. `insulation_m` is the thickness of the
+    /// insulation: the tank's steel has the diameter `outer_diameter - 2 * insulation_m`, and a damage
+    /// breaches the tank only when it reaches that steel (issue #987).
     Tank {
         axis_x0: f64,
         axis_x1: f64,
         y: f64,
         z: f64,
         outer_diameter: f64,
+        insulation_m: f64,
         head: TankHead,
         inner_volume_m3: f64,
     },
@@ -1026,8 +1029,8 @@ pub fn consumables_tanks(
 }
 
 /// The Type C cargo tanks of a Tank Layout as Spaces (ADR 0021), each holding `inner_volume_m3` (the
-/// capacity's `volume_per_tank`).
-pub fn tank_spaces(layout: &TankLayout, inner_volume_m3: f64) -> Vec<Space> {
+/// capacity's `volume_per_tank`). `insulation_m` is the insulation thickness, m (the steel lies inside it).
+pub fn tank_spaces(layout: &TankLayout, inner_volume_m3: f64, insulation_m: f64) -> Vec<Space> {
     layout
         .tanks
         .iter()
@@ -1049,6 +1052,7 @@ pub fn tank_spaces(layout: &TankLayout, inner_volume_m3: f64) -> Vec<Space> {
                 y: t.y_m,
                 z: t.z_m,
                 outer_diameter: layout.outer_diameter_m,
+                insulation_m,
                 head: layout.head,
                 inner_volume_m3,
             },

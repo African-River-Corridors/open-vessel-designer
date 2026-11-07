@@ -128,21 +128,21 @@
   }
  },
  "results": {
-  "air_draft_light_m": 21.582405318814132,
-  "air_draft_loaded_m": 19.18297480754249,
+  "air_draft_light_m": 21.555169376544125,
+  "air_draft_loaded_m": 19.15722862219706,
   "cargo_t": 8070.899599838365,
   "cargo_volume_bound_t": 8070.899599838365,
   "cargo_volume_m3": 17935.332444085256,
-  "cargo_weight_bound_t": 33304.97945351627,
+  "cargo_weight_bound_t": 33215.52460025557,
   "deadweight_t": 8106.274425039019,
-  "displacement_t": 13313.766516238195,
-  "draught_m": 4.017025192457511,
+  "displacement_t": 13403.221369498891,
+  "draught_m": 4.0427713778029375,
   "draught_max_m": 10.6,
-  "freeboard_m": 7.982974807542489,
+  "freeboard_m": 7.9572286221970625,
   "governs": "tank volume",
   "h_over_T": null,
-  "light_draught_m": 1.6175946811858688,
-  "lightship_t": 5207.492091199175,
+  "light_draught_m": 1.6448306234558754,
+  "lightship_t": 5296.946944459872,
   "vent_distance_to_accommodation_m": 104.96799999999999,
   "vent_distance_to_openings_m": 104.96799999999999,
   "vent_exit_above_deck_m": 9.666666666666666,
@@ -336,6 +336,7 @@
   "total_m2": 266.7684210526316
  },
  "stern_arrangement": {
+  "access_tiers": 2,
   "icll_length_m": 131.2004830188679,
   "opening_zone_m": 5.0,
   "openings": [
@@ -355,7 +356,7 @@
     "z_m": 13.0
    },
    {
-    "distance_from_front_m": 10.46600076834422,
+    "distance_from_front_m": 3.8499999999999996,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -365,12 +366,12 @@
     "openable": true,
     "space": "accommodation",
     "tier": 2,
-    "x_m": 7.365999231655781,
-    "y_m": -6.85,
+    "x_m": 13.982000000000001,
+    "y_m": -1.6,
     "z_m": 15.6
    },
    {
-    "distance_from_front_m": 10.46600076834422,
+    "distance_from_front_m": 3.8499999999999996,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -380,8 +381,8 @@
     "openable": true,
     "space": "accommodation",
     "tier": 3,
-    "x_m": 7.365999231655781,
-    "y_m": -6.85,
+    "x_m": 13.982000000000001,
+    "y_m": -1.6,
     "z_m": 18.2
    },
    {
@@ -430,7 +431,7 @@
     "z_m": 13.95
    },
    {
-    "distance_from_front_m": 10.46600076834422,
+    "distance_from_front_m": 3.8499999999999996,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -440,7 +441,7 @@
     "openable": true,
     "space": "accommodation",
     "tier": 3,
-    "x_m": 7.365999231655781,
+    "x_m": 13.982000000000001,
     "y_m": 0.0,
     "z_m": 19.15
    },
@@ -522,6 +523,7 @@
   ],
   "openings_basis": "Default layout (ESTIMATE: positions, door height and count are not from a source): accommodation and machinery doors and air inlets on the aft end, no opening on the front, wheelhouse doors on the sides designed gas-tight (IGC 3.2.4.2). The zone is 4 % of L, at least 3 m and at most 5 m, from the deckhouse front (IGC 3.2.4.1); L by ICLL Regulation 3(1)(a) at 85 % of the depth, without the rudder-stock alternative.",
   "openings_source": "default",
+  "room_tiers": 1,
   "style": "deckhouse",
   "tiers": 3,
   "wheelhouse": "fixed",
@@ -811,70 +813,70 @@
    "args": {},
    "id": "name-check-feasible-arrangement"
   },
-  "GM 13.83 m (fluid), max GZ 5.87 m at 36\u00b0": {
+  "GM 13.72 m (fluid), max GZ 5.86 m at 36\u00b0": {
    "args": {
     "angle": {
      "num": "36",
      "value": 36.0
     },
     "gm": {
-     "num": "13.83",
-     "value": 13.830988737338105
+     "num": "13.72",
+     "value": 13.724906630556832
     },
     "max_gz": {
-     "num": "5.87",
-     "value": 5.874788964242442
+     "num": "5.86",
+     "value": 5.860634249673224
     }
    },
    "id": "check-stability"
   },
-  "GM 13.85 m (fluid), max GZ 5.87 m at 36\u00b0": {
+  "GM 13.74 m (fluid), max GZ 5.86 m at 36\u00b0": {
    "args": {
     "angle": {
      "num": "36",
      "value": 36.0
     },
     "gm": {
-     "num": "13.85",
-     "value": 13.847711566740266
+     "num": "13.74",
+     "value": 13.74126196117491
     },
     "max_gz": {
-     "num": "5.87",
-     "value": 5.871176950720194
+     "num": "5.86",
+     "value": 5.857120310890772
     }
    },
    "id": "check-stability"
   },
-  "GM 24.66 m (fluid), max GZ 7.45 m at 35\u00b0": {
+  "GM 24.37 m (fluid), max GZ 7.42 m at 35\u00b0": {
    "args": {
     "angle": {
      "num": "35",
      "value": 35.0
     },
     "gm": {
-     "num": "24.66",
-     "value": 24.664533206104373
+     "num": "24.37",
+     "value": 24.36946203236727
     },
     "max_gz": {
-     "num": "7.45",
-     "value": 7.449078157682034
+     "num": "7.42",
+     "value": 7.421949625769359
     }
    },
    "id": "check-stability"
   },
-  "GM 24.73 m (fluid), max GZ 7.44 m at 35\u00b0": {
+  "GM 24.43 m (fluid), max GZ 7.42 m at 35\u00b0": {
    "args": {
     "angle": {
      "num": "35",
      "value": 35.0
     },
     "gm": {
-     "num": "24.73",
-     "value": 24.728864235646153
+     "num": "24.43",
+     "value": 24.43215048976422
     },
     "max_gz": {
-     "num": "7.44",
-     "value": 7.4444647242025646
+     "num": "7.42",
+     "value": 7.4173303900044445
     }
    },
    "id": "check-stability"
@@ -943,11 +945,11 @@
    },
    "id": "check-aft-end-bulkhead-space"
   },
-  "blind distance ahead of the bow 221.2 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 0.00 m of 0.00 m": {
+  "blind distance ahead of the bow 220.7 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 0.00 m of 0.00 m": {
    "args": {
     "blind": {
-     "num": "221.2",
-     "value": 221.1725451845927
+     "num": "220.7",
+     "value": 220.7010338818901
     },
     "lift": {
      "num": "0.00",
@@ -1061,11 +1063,11 @@
    },
    "id": "check-fwd-end-bulkhead-space"
   },
-  "freeboard 7.99 m >= required 1.4 m": {
+  "freeboard 7.97 m >= required 1.4 m": {
    "args": {
     "freeboard": {
-     "num": "7.99",
-     "value": 7.99316028156338
+     "num": "7.97",
+     "value": 7.967408116686353
     },
     "required": {
      "num": "1.4",
@@ -1074,15 +1076,15 @@
    },
    "id": "check-freeboard-ok"
   },
-  "freeboard 7.99 m at the carried draught 4.01 m >= required 1.4 m": {
+  "freeboard 7.97 m at the carried draught 4.03 m >= required 1.4 m": {
    "args": {
     "draught": {
-     "num": "4.01",
-     "value": 4.00683971843662
+     "num": "4.03",
+     "value": 4.032591883313647
     },
     "freeboard": {
-     "num": "7.99",
-     "value": 7.99316028156338
+     "num": "7.97",
+     "value": 7.967408116686353
     },
     "required": {
      "num": "1.4",

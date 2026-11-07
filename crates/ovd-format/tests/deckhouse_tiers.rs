@@ -136,12 +136,12 @@ fn a_container_block_option_is_unchanged() {
         "container_block",
     );
     assert!(r["drawing"]["aft_arrangement"]["deckhouse"].is_null());
-    // The container block has no deckhouse, so no number moves. Issue #989: the sightline check's message
-    // now names the Rule that sets the limit, so the hash is re-pinned (it was 67dbe209694b... on `main`);
-    // the blind distance, the lift and the tanks are the same.
+    // The container block has no deckhouse, so this change moves no result. Re-pinned by running the
+    // code (issue #919: the insulation of the LNG tanks defaults to 96 kg/m3, was 60, so the lightship
+    // rises): the hash `main` gave was 67dbe209694b8b3aa216ba957cb48f23dd7d73fde6c3fc571b2c5ba80c763833.
     assert_eq!(
         hash,
-        "6c28eb266b916781c0a8bd1211c79c84a3d63311b576f5e3c1c75a120285693f"
+        "ae3f2ee729ea7cf252e54724b29b0aaccfc0e81ab173164140a8d7c390db2e16"
     );
 }
 
@@ -162,6 +162,12 @@ fn the_river_only_house_has_the_tiers_this_change_gives_it() {
     assert!((num(&d["volume_m3"]) - 448.656).abs() < 1e-6);
     assert!((num(&d["x_aft_m"]) - 14.232).abs() < 1e-9);
     // Lightship falls from 5588.72 t before this change; cargo is volume-bound and does not move.
-    assert!((num(&r["results"]["lightship_t"]) - 5_313.944_95).abs() < 1e-4);
+    // Re-pinned (issue #919: the insulation density of the LNG tanks defaults to 96 kg/m3, was 60, so the
+    // insulation weighs 60 % more); printed 5417.183668599429, was 5313.94495.
+    assert!(
+        (num(&r["results"]["lightship_t"]) - 5_417.183_669).abs() < 1e-4,
+        "{}",
+        r["results"]["lightship_t"]
+    );
     assert!((num(&r["results"]["cargo_t"]) - 9_882.019_135).abs() < 1e-4);
 }
