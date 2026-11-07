@@ -1688,30 +1688,46 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
             } else {
                 arr.stern_void_m
             };
-            Some(crate::vent_mast::place(
-                &crate::vent_mast::VentMastInputs {
-                    river_only: inp.river_only,
-                    beam_m: inp.beam,
-                    deck_m: inp.depth,
-                    tank_top_m: tank_top,
-                    shield_top_m: detail.weather_shield_top_above_keel_m,
-                    dome_top_m: cargo_top_above_keel,
-                    stub_m: inp.vent_stub_m,
-                    // Issue #994: with the forward house taking cargo length, the cargo area ends
-                    // at the cargo zone's forward end, not where the rake begins.
-                    mast_x_m: if aft_second.arrangement_style.is_wheelhouse_forward() {
-                        inp.loa
-                            - (arr.bow_void_m
-                                - arr.separation.as_ref().map_or(0.0, |s| s.fwd_separation_m))
-                    } else {
-                        inp.loa - arr.rake_m
-                    },
-                    cargo_area_aft_x_m: aft_x,
-                    entrance_m: inp.entrance_distance_m,
-                    engine_room_vent_inlet_m: inp.engine_room_vent_inlet_distance_m,
-                    funnel_outlet_m: inp.funnel_outlet_distance_m,
-                },
+            let mut mast_in = crate::vent_mast::VentMastInputs {
+                river_only: inp.river_only,
+                beam_m: inp.beam,
+                deck_m: inp.depth,
+                tank_top_m: tank_top,
+                shield_top_m: detail.weather_shield_top_above_keel_m,
+                dome_top_m: cargo_top_above_keel,
+                stub_m: inp.vent_stub_m,
+                mast_x_m: inp.loa - arr.rake_m,
+                cargo_area_aft_x_m: aft_x,
+                entrance_m: inp.entrance_distance_m,
+                engine_room_vent_inlet_m: inp.engine_room_vent_inlet_distance_m,
+                funnel_outlet_m: inp.funnel_outlet_distance_m,
+            };
+            // Issue #994: with the forward house, the cargo area ends at the cargo zone's forward end
+            // (the house may have taken cargo length), and the mast stands where it is as far as it
+            // can be from the openings of both houses: the aft house's nearest opening and the forward
+            // house's. The cargo area bounds it; if it is too short to give the distance, the Rule
+            // says so.
+            let forward_x = if aft_second.arrangement_style.is_wheelhouse_forward() {
+                aft.as_ref()
+                    .and_then(crate::deckhouse_openings::forward_nearest_opening_x_m)
+            } else {
+                None
+            };
+            if let Some(fx) = forward_x {
+                let fwd_end = inp.loa
+                    - (arr.bow_void_m
+                        - arr.separation.as_ref().map_or(0.0, |s| s.fwd_separation_m));
+                mast_in.mast_x_m = crate::vent_mast::balanced_x_m(
+                    aft_x,
+                    fwd_end,
+                    crate::vent_mast::nearest_aft_m(&mast_in),
+                    fx,
+                );
+            }
+            Some(crate::vent_mast::place_with_house(
+                &mast_in,
                 inp.vent_mast_lowerable,
+                forward_x,
             ))
         }
         _ => None,
@@ -1907,6 +1923,12 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         a.wheelhouse_floor_raised_m = s.floor_raised_m;
         a.wheelhouse_top_raised_m = s.floor_raised_m + a.wheelhouse_height_m;
         a.checks.retain(|c| c.name != "wheelhouse_sees_over_cargo");
+        // Issue #994: the check of a forward eye is not about the cargo, so it has a name of its own.
+        let sight_check = if a.forward_house.is_some() {
+            "forward_wheelhouse_blind_distance"
+        } else {
+            "wheelhouse_sees_over_cargo"
+        };
         // Issue #675: a failing check says the lift needed beside the lift allowed, so the list
         // of arrangements tried shows how close each one came. A passing one keeps its message.
         let blind_message = if s.enough {
@@ -1929,11 +1951,8 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
                 max_lift = Arg::fixed(aft_second.wheelhouse_max_lift_m, 2),
             )
         };
-        a.checks.push(Check::new(
-            "wheelhouse_sees_over_cargo",
-            s.enough,
-            blind_message,
-        ));
+        a.checks
+            .push(Check::new(sight_check, s.enough, blind_message));
         a.warnings
             .retain(|w| !alloc::string::ToString::to_string(w).starts_with("Sightline needs "));
         if !s.enough {
