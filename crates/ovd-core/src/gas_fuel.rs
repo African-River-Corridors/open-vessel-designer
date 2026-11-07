@@ -102,6 +102,23 @@ pub fn tank_heat_leak_kw(
     (cylinder + heads) / 1000.0
 }
 
+/// The outer area of one tank (m2) the heat leak is worked on: the cylinder and two heads taken as one
+/// sphere, all on the outer radius `r_outer_m` (domes, saddles and pipes out), as in [`tank_heat_leak_kw`].
+pub fn tank_outer_area_m2(r_outer_m: f64, cylinder_m: f64) -> f64 {
+    let pi = core::f64::consts::PI;
+    2.0 * pi * r_outer_m * cylinder_m.max(0.0) + 4.0 * pi * r_outer_m * r_outer_m
+}
+
+/// The overall heat transfer coefficient of the tank's insulation (W/m2.K), on the outer area:
+/// `U = Q / (A_outer x dT)` for the heat leak of one tank `heat_leak_kw` (kW) and the temperature
+/// difference `delta_k`. Zero when the area or the difference is not positive.
+pub fn tank_u_value_w_per_m2k(heat_leak_kw: f64, outer_area_m2: f64, delta_k: f64) -> f64 {
+    if outer_area_m2 <= 0.0 || delta_k <= 0.0 {
+        return 0.0;
+    }
+    heat_leak_kw * 1000.0 / (outer_area_m2 * delta_k)
+}
+
 /// The boil-off (kg/h) of a heat leak `kw` at the latent heat `latent_kj_per_kg`.
 pub fn boil_off_kg_per_h(kw: f64, latent_kj_per_kg: f64) -> f64 {
     kw * 3600.0 / latent_kj_per_kg

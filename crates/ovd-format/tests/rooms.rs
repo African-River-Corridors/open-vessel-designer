@@ -186,11 +186,13 @@ fn mode_a_and_mode_b_differ_in_the_crew_not_in_the_cabin_rule() {
 fn a_small_coastal_hull_gains_a_deckhouse_tier_under_mlc() {
     // Issue #892: a 60 x 10 m self-propelled hull. The deckhouse is (10 - 2 x 0.8) = 8.4 m wide, so a
     // tier is 8.4 x its length. The ES-TRIN-only rooms of the same berths fit in 1 tier; the MLC
-    // rooms need 2. Hand check: the rooms total exceeds one tier area, and fits in two.
+    // rooms need 2. Hand check: the rooms total exceeds one full-footprint tier area, and fits in two.
+    // Issue #943: the room tiers are sized from what they hold, so "a tier" here is the full
+    // footprint (the machinery space's length by the width), the most a room tier can be.
     for (cargo, containment) in [("crude_oil", "integral_tanks"), ("bauxite", "box_hold")] {
         let r = small_hull(cargo, containment, "coastal-and-river", 60.0, 10.0);
         let dh = &r["drawing"]["aft_arrangement"]["deckhouse"];
-        let tier_area = dh["tier_area_m2"].as_f64().unwrap();
+        let tier_area = dh["x_fwd_m"].as_f64().unwrap() * dh["width_m"].as_f64().unwrap();
         let total = r["rooms"]["total_m2"].as_f64().unwrap();
         let n = r["crew"]["berths"].as_u64().unwrap() as u32;
         let officers = r["crew"]["officers"].as_u64().unwrap() as u32;

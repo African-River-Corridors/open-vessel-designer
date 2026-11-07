@@ -13,6 +13,8 @@ test("the crew figures are the keys of the run's crew block", () => {
   const c = container.crew;
   assert.equal(f.style, "container_block");
   assert.equal(f.tiers, null);
+  assert.equal(f.roomTiers, null);
+  assert.equal(f.accessTiers, null);
   assert.equal(f.wheelhouse, container.stern_arrangement.wheelhouse);
   assert.equal(f.wheelhouseBasis, container.stern_arrangement.wheelhouse_basis);
   assert.deepEqual(f.crew.ruleSet, { id: c.rule_set.id, version: c.rule_set.version, status: c.rule_set.status });
@@ -45,6 +47,11 @@ test("a real deckhouse run gives its tiers, wheelhouse, crew, rooms, gas figures
   assert.equal(f.style, "deckhouse");
   assert.equal(f.tiers, run.stern_arrangement.tiers);
   assert.ok(f.tiers >= 1);
+  // Issue #943: the view lists the room tiers and the access tiers, and they make up the house.
+  assert.equal(f.roomTiers, run.stern_arrangement.room_tiers);
+  assert.equal(f.accessTiers, run.stern_arrangement.access_tiers);
+  assert.ok(f.roomTiers >= 1);
+  assert.equal(f.roomTiers + f.accessTiers, f.tiers);
   assert.equal(f.wheelhouse, run.stern_arrangement.wheelhouse);
   assert.equal(f.wheelhouseBasis, run.stern_arrangement.wheelhouse_basis);
   const outfit = run.warnings.find((w) => run.text_ids[w]?.id === OUTFIT_WARNING_ID);

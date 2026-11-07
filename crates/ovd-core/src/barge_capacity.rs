@@ -115,7 +115,18 @@ pub const DEFAULT_TANK_DESIGN_PRESSURE_MPA: f64 = 0.5;
 pub const DEFAULT_TANK_MATERIAL: &str = "9Ni";
 /// The tank head type the engine used before it was an input (issue #375).
 pub const DEFAULT_TANK_HEAD_TYPE: &str = "hemisphere";
-pub const DEFAULT_TANK_INSULATION_MM: f64 = 350.0;
+/// The insulation thickness the original engine used (mm): the `TankDesign` default, and what the raw
+/// `simulate::simulate` eval entry (the one `calibration.py` and `api_scenarios` call, not Python
+/// `ovd.simulate.simulate`, which goes through `fill` and `run`) takes for a key it is handed without
+/// one. A Design never reads it: the thickness is an input, from the Defaults Profile or typed
+/// (issue #919).
+pub const LEGACY_SIMULATE_INSULATION_MM: f64 = 350.0;
+/// The thermal conductivity the heat leak used before it was an input (W/m.K, issue #919): the
+/// polyurethane foam value of [`crate::gas_fuel::INSULATION_CONDUCTIVITY_W_PER_MK`].
+pub const DEFAULT_TANK_INSULATION_CONDUCTIVITY_W_PER_MK: f64 =
+    crate::gas_fuel::INSULATION_CONDUCTIVITY_W_PER_MK;
+/// The insulation density the tank mass used before it was an input (kg/m3, issue #919).
+pub const DEFAULT_TANK_INSULATION_DENSITY_KG_M3: f64 = 60.0;
 pub const DEFAULT_TANK_STRUCTURE_FACTOR: f64 = 1.30;
 /// Default gap between the wing tank and the cargo tank, per side (m).
 pub const DEFAULT_WING_TANK_GAP_M: f64 = 0.6;
@@ -169,6 +180,10 @@ pub struct TankDesign {
     pub allowable_stress_mpa: Option<f64>,
     /// Insulation thickness (mm). The tank outer diameter is the outside of it.
     pub insulation_thickness_mm: f64,
+    /// Insulation thermal conductivity (W/m.K): the boil-off and the holding time read it (issue #919).
+    pub insulation_conductivity_w_per_mk: f64,
+    /// Insulation density (kg/m3): the insulation mass reads it (issue #919).
+    pub insulation_density_kg_m3: f64,
     /// Internal stiffeners, supports and saddles as a multiple of the shell weight.
     pub structure_factor: f64,
     /// The liquid pressure added to the design pressure in the wall formula (issue #374).
@@ -186,7 +201,9 @@ impl Default for TankDesign {
             design_pressure_igc_minimum: false,
             material: DEFAULT_TANK_MATERIAL.to_string(),
             allowable_stress_mpa: None,
-            insulation_thickness_mm: DEFAULT_TANK_INSULATION_MM,
+            insulation_thickness_mm: LEGACY_SIMULATE_INSULATION_MM,
+            insulation_conductivity_w_per_mk: DEFAULT_TANK_INSULATION_CONDUCTIVITY_W_PER_MK,
+            insulation_density_kg_m3: DEFAULT_TANK_INSULATION_DENSITY_KG_M3,
             structure_factor: DEFAULT_TANK_STRUCTURE_FACTOR,
             liquid_pressure: LiquidPressure::None,
             design_temperature_c: None,
@@ -846,6 +863,7 @@ fn gas_volumetric(
     // The wall formula takes the steel diameter, inside the insulation (issue #292).
     base.wall_formula_on_steel_diameter = true;
     base.insulation_thickness = inp.tank_design.insulation_thickness_mm;
+    base.insulation_density = inp.tank_design.insulation_density_kg_m3;
     base.tank_structure_factor = inp.tank_design.structure_factor;
     // The mass of the steel is the material's, whether the wall is fixed or from the formula. (The
     // dataclass default is 9Ni's 7.85 t/m3, so a design on the default material is unchanged.)

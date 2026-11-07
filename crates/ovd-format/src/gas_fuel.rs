@@ -11,9 +11,9 @@ use crate::text_ids::TextIds;
 use crate::vdesign::DesignOption;
 use ovd_core::checks::Check;
 use ovd_core::gas_fuel::{
-    ALTERNATOR_EFFICIENCY, GAS_LCV_KJ_PER_KG, INSULATION_CONDUCTIVITY_W_PER_MK,
-    UPPER_AMBIENT_AIR_C, boil_off_kg_per_h, fuel_gas_kj_per_kwh, gas_use_kg_per_h,
-    methane_latent_heat_kj_per_kg, tank_heat_leak_kw,
+    ALTERNATOR_EFFICIENCY, GAS_LCV_KJ_PER_KG, UPPER_AMBIENT_AIR_C, boil_off_kg_per_h,
+    fuel_gas_kj_per_kwh, gas_use_kg_per_h, methane_latent_heat_kj_per_kg, tank_heat_leak_kw,
+    tank_outer_area_m2, tank_u_value_w_per_m2k,
 };
 use ovd_core::text;
 use ovd_core::text::Arg;
@@ -96,21 +96,30 @@ pub(crate) fn add_gas_fuel(option: &DesignOption, v: &mut Value) {
         tank["cylinder_length_m"].as_f64(),
         tank["insulation_thickness_mm"].as_f64(),
         n_tanks,
+        // The conductivity of the tank design in force (issue #919), not a constant.
+        tank["insulation_conductivity_w_per_mk"].as_f64(),
     );
     let boil = match dims {
-        (Some(ds), Some(d_o), Some(len), Some(t_mm), Some(n)) if cargo == "LNG" && t_mm > 0.0 => {
+        (Some(ds), Some(d_o), Some(len), Some(t_mm), Some(n), Some(k))
+            if cargo == "LNG" && t_mm > 0.0 =>
+        {
             let cargo_c = ovd_core::cargo::get_cargo(cargo).map_or(-162.0, |c| c.temperature);
             let delta = UPPER_AMBIENT_AIR_C - cargo_c;
-            let per_tank_kw = tank_heat_leak_kw(
-                ds / 2.0,
-                d_o / 2.0,
-                len,
-                delta,
-                INSULATION_CONDUCTIVITY_W_PER_MK,
-            );
+            let per_tank_kw = tank_heat_leak_kw(ds / 2.0, d_o / 2.0, len, delta, k);
+            let area = tank_outer_area_m2(d_o / 2.0, len);
+            let u = tank_u_value_w_per_m2k(per_tank_kw, area, delta);
             latent_heat_or_reason(cargo_c).map(|latent| {
                 let kw = n * per_tank_kw;
-                (kw, boil_off_kg_per_h(kw, latent), latent, cargo_c)
+                (
+                    kw,
+                    boil_off_kg_per_h(kw, latent),
+                    latent,
+                    cargo_c,
+                    k,
+                    per_tank_kw,
+                    area,
+                    u,
+                )
             })
         }
         _ => Err(if cargo != "LNG" {
@@ -120,7 +129,12 @@ pub(crate) fn add_gas_fuel(option: &DesignOption, v: &mut Value) {
         }),
     };
     match boil {
-        Ok((kw, boil_kg_h, latent, cargo_c)) => {
+        Ok((kw, boil_kg_h, latent, cargo_c, k, per_tank_kw, area, u)) => {
+            // The boil-off as a share of the cargo carried, per day (kg/h x 24 over the cargo in kg).
+            let cargo_kg = v["results"]["cargo_t"].as_f64().map(|t| t * 1000.0);
+            let pct_per_day = cargo_kg
+                .filter(|c| *c > 0.0)
+                .map(|c| boil_kg_h * 24.0 / c * 100.0);
             // The service condition that burns the least gas: the boil-off continues in it.
             let least = use_by_environment
                 .iter()
@@ -134,9 +148,18 @@ pub(crate) fn add_gas_fuel(option: &DesignOption, v: &mut Value) {
                 "latent_heat_kj_per_kg": crate::eval::num(latent),
                 "cargo_temperature_c": crate::eval::num(cargo_c),
                 "ambient_air_c": crate::eval::num(UPPER_AMBIENT_AIR_C),
-                "conductivity_w_per_mk": crate::eval::num(INSULATION_CONDUCTIVITY_W_PER_MK),
+                "conductivity_w_per_mk": crate::eval::num(k),
                 "gas_use_kg_per_h": crate::eval::num(use_kg_h),
                 "basis": "Conduction through the insulation at the upper ambient design air temperature (IGC Code 7.2), over the latent heat of methane (NIST saturation table); domes, saddles and pipes are not in the heat leak. The conductivity is an Estimate.",
+            });
+            // Figures worked from inputs that are already in the hash: outside it, so no saved file
+            // reports changed results for them (issue #919). See `UNHASHED_KEYS`.
+            v["boil_off_detail"] = json!({
+                "heat_leak_per_tank_kw": crate::eval::num(per_tank_kw),
+                "tank_outer_area_m2": crate::eval::num(area),
+                "u_value_w_per_m2k": crate::eval::num(u),
+                "u_value_basis": "Heat leak of one tank over its outer area (a cylinder and two heads taken as a sphere, on the outer radius) and the temperature difference; domes, saddles and pipes are not in it.",
+                "boil_off_pct_per_day": pct_per_day.map_or(Value::Null, crate::eval::num),
             });
             checks.push(Check::with_severity(
                 "boil-off within gas use",

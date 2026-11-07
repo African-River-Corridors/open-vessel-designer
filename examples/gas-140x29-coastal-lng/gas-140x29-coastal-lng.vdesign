@@ -113,6 +113,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -620,7 +628,7 @@
           "source": "default"
         }
       },
-      "results_hash": "a6d0aca8294fa0d108f8bf4996af7bf1e3565b1b49428092ac9e6c436e4499e6"
+      "results_hash": "0165dd68c5dbb597f7aa59d845e749add34156e546f1abf94795ae67d94481f7"
     },
     {
       "name": "B profile",
@@ -731,6 +739,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -1238,7 +1254,7 @@
           "source": "default"
         }
       },
-      "results_hash": "1f73394c4d7dd19580365f85baa1fffad1612ce0cb15bfc50d35985e088b6422"
+      "results_hash": "9d3bf54ec88d0c4a4548bcc1df4c273ac5951bfbe9cbfe745ac88b6f75e2ac75"
     },
     {
       "name": "C deep",
@@ -1349,6 +1365,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -1856,7 +1880,7 @@
           "source": "default"
         }
       },
-      "results_hash": "8673c19b596bae183b449b848eb4e3f9134db650012c55dc738cb570757a3f76"
+      "results_hash": "4f09a1186dc0031ff9105125703dcfcc29d1146e06f28f538ba825a651bf1939"
     }
   ],
   "defaults_profile": "built-in"
