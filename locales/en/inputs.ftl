@@ -506,6 +506,7 @@ input-sightline-margin-m = Sightline margin
 input-wheelhouse-max-lift-m = Wheelhouse maximum lift
 
 input-air-draft-limit-m = Air-draft limit
+
 input-bridge-clearance-m = Bridge clearance
 
 input-draught-limit-m = Draught limit
