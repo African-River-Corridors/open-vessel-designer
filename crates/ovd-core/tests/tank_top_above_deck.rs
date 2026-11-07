@@ -74,3 +74,21 @@ fn the_hydrostatic_table_of_a_hull_of_any_depth_ends_at_its_depth() {
         assert_eq!(table[9].draught_m, depth, "{depth}");
     }
 }
+
+/// Review item 1 at the core: with a draught limit the depth is not less than it plus the freeboard.
+#[test]
+fn the_search_keeps_the_depth_at_or_above_the_draught_limit_plus_the_freeboard() {
+    let o = FitOptions {
+        draught_limit_m: Some(3.0),
+        required_freeboard_m: 0.3,
+        river_only: true,
+        ..options(2.5)
+    };
+    let f = fit(86.0, 11.4, "LNG", 3.0, &o).unwrap();
+    assert!(f.depth_m >= 3.3 - 1e-9, "{}", f.depth_m);
+    assert!(
+        f.tried
+            .iter()
+            .all(|t| t.depth_m == 0.0 || t.depth_m >= 3.3 - 1e-9)
+    );
+}

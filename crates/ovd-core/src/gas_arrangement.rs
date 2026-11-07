@@ -115,6 +115,12 @@ pub struct FitOptions {
     /// (the tank depends on the depth only a little, through the bow rake). `Some(0.0)` is tanks in hold. `None`: depth is
     /// the one asked for, as before.
     pub tank_top_above_deck_m: Option<f64>,
+    /// Issue #992: the draught the waterway or the user allows (m), without the hull's own limit.
+    /// With a standing height the depth is never less than this plus the least freeboard plus
+    /// `depth_margin_m`.
+    pub draught_limit_m: Option<f64>,
+    /// Issue #992: the structure margin of that floor (m). An estimate; none is sourced.
+    pub depth_margin_m: f64,
     pub depths: Vec<f64>,
     pub tanks_wide: Vec<i64>,
     pub extra_clearance_m: Vec<f64>,
@@ -398,6 +404,8 @@ impl Default for FitOptions {
             solas_v22_sizing: false,
             self_propelled: true,
             tank_top_above_deck_m: None,
+            draught_limit_m: None,
+            depth_margin_m: 0.0,
             depths: DEFAULT_DEPTHS_M.to_vec(),
             tanks_wide: DEFAULT_TANKS_WIDE.to_vec(),
             extra_clearance_m: DEFAULT_EXTRA_CLEARANCE_M.to_vec(),
@@ -1257,6 +1265,20 @@ impl Search<'_> {
         od == 0.0 || od > self.o.max_tank_od_m + 1e-6
     }
 
+    /// Issue #992: the depth for a tank whose top is `top` above the keel and which is to stand `h`
+    /// above the deck: the tank-driven depth, but not less than the draught limit, the least
+    /// freeboard and the margin (D1a of the design).
+    fn target_depth(&self, top: f64, h: f64) -> f64 {
+        let tank = depth_for_standing_height(top, h);
+        match self.o.draught_limit_m {
+            Some(t) => {
+                let floor = t + self.o.required_freeboard_m + self.o.depth_margin_m;
+                tank.max(libm::ceil(floor * 1000.0) / 1000.0)
+            }
+            None => tank,
+        }
+    }
+
     fn build(&mut self, d: f64, nw: i64, nl: i64) -> Result<Option<Built>, PyError> {
         self.tried += 1;
         let mut built = self.build_or_refuse(d, nw, nl)?;
@@ -1273,12 +1295,12 @@ impl Search<'_> {
                     od = Arg::fixed(od, 2),
                 ));
             } else {
-                let mut dd = depth_for_standing_height(tank_top_above_keel_m(r), h);
+                let mut dd = self.target_depth(tank_top_above_keel_m(r), h);
                 let mut settled = false;
                 for _ in 0..DEPTH_SETTLE_ROUNDS {
                     let b = self.build_or_refuse(dd, nw, nl)?;
                     let next = match &b {
-                        Ok((_, r2)) => depth_for_standing_height(tank_top_above_keel_m(r2), h),
+                        Ok((_, r2)) => self.target_depth(tank_top_above_keel_m(r2), h),
                         Err(_) => dd,
                     };
                     built = b;
@@ -1449,7 +1471,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                     if let Some(h) = o.tank_top_above_deck_m {
                         let mut settled = false;
                         for _ in 0..DEPTH_SETTLE_ROUNDS {
-                            let want = depth_for_standing_height(tank_top_above_keel_m(&r2), h);
+                            let want = s.target_depth(tank_top_above_keel_m(&r2), h);
                             if (want - i2.depth).abs() < 0.0015 {
                                 settled = true;
                                 break;
@@ -1457,7 +1479,25 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                             i2.depth = want;
                             r2 = capacity(&i2)?;
                         }
-                        if !settled || h > opt_or_zero(r2.tank_outer_diameter_m) + 1e-9 {
+                        let od2 = opt_or_zero(r2.tank_outer_diameter_m);
+                        let why = if !settled {
+                            Some(text!(
+                                "fit-refused-depth-not-settled",
+                                "The depth that follows the tank does not settle, near {depth} m.",
+                                depth = Arg::fixed(i2.depth, 2),
+                            ))
+                        } else if h > od2 + 1e-9 {
+                            Some(text!(
+                                "fit-refused-standing-height",
+                                "The tank top is to stand {h} m above the deck, more than the tank diameter {od} m.",
+                                h = Arg::fixed(h, 2),
+                                od = Arg::fixed(od2, 2),
+                            ))
+                        } else {
+                            None
+                        };
+                        if let Some(why) = why {
+                            s.refused.push((d, nw, why));
                             continue;
                         }
                     }

@@ -141,3 +141,50 @@ fn the_profile_holds_the_maintainers_defaults_by_service_area_and_does_not_apply
             .contains_key("tank_top_above_deck_m")
     );
 }
+
+/// Issue #992, review item 1. The depth is never less than the draught limit plus the least freeboard:
+/// a shallow depth that follows a small tank must rise to it, not cost draught and cargo. The probe: a
+/// river-only 86 x 11.4 m barge, a 3.0 m draught limit, the tank top to stand 2.5 m above the deck (it
+/// built two across at 1.9 m, under the draught, before the floor).
+/// Label: rule (the design note D1a).
+#[test]
+fn the_depth_is_never_less_than_the_draught_limit_plus_the_freeboard() {
+    let file = json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": {
+            "cargo": { "value": "LNG", "source": "typed" },
+            "hull_form": { "value": "raked_box", "source": "typed" },
+            "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+            "length_overall_m": { "value": 86.0, "source": "typed" },
+            "beam_m": { "value": 11.4, "source": "typed" },
+            "service_area": { "value": "river-only", "source": "typed" },
+            "min_freeboard_m": { "value": 0.3, "source": "typed" },
+            "draught_limit_m": { "value": 3.0, "source": "typed" },
+            "tank_top_above_deck_m": { "value": 2.5, "source": "typed" }
+        } }]
+    });
+    let r = run(&file);
+    assert!(
+        depth(&r) >= 3.0 + 0.3 - 1e-9,
+        "depth {} under draught 3.0 + freeboard 0.3",
+        depth(&r)
+    );
+    let by = r["arrangement"]["depth_set_by"].as_str().unwrap();
+    assert!(by == "tank" || by == "freeboard", "{by}");
+}
+
+/// Issue #992, review item 2. The draught limit of the hull is the settled depth less the freeboard,
+/// not the depth of the ratio default the run started from (140 x 29 m coastal at 0 m: depth about 15.2
+/// m, but `draught_max_m` came out 11.95 = 15.95 - 4.0).
+#[test]
+fn the_draught_limit_follows_the_settled_depth_not_the_seed() {
+    for h in [0.0, 2.0] {
+        let r = run(&design(json!({ "tank_top_above_deck_m": h })));
+        let max = r["results"]["draught_max_m"].as_f64().unwrap();
+        assert!(
+            (max - (depth(&r) - 4.0)).abs() < 0.002,
+            "h {h}: draught_max {max} vs depth {} - 4.0",
+            depth(&r)
+        );
+    }
+}
