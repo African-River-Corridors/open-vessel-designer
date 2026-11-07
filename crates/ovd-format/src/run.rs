@@ -214,6 +214,8 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         "tank_allowable_stress_mpa",
         "tank_insulation_type",
         "tank_insulation_thickness_mm",
+        "tank_insulation_conductivity_w_per_mk",
+        "tank_insulation_density_kg_m3",
         "tank_structure_factor",
         "bow_rake_length_to_depth_ratio",
         "bow_rake_max_length_m",

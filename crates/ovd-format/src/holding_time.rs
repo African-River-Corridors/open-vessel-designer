@@ -8,7 +8,6 @@
 
 use crate::vdesign::DesignOption;
 use libm::round;
-use ovd_core::gas_fuel::INSULATION_CONDUCTIVITY_W_PER_MK;
 use ovd_core::holding_profile::{Leg, has_gas_consumer, leg_credit_kg_h, total_days};
 use ovd_core::holding_time::{Error, HeatLeak, Inputs, LegInput, Rule, Withdrawal, run};
 use serde_json::{Value, json};
@@ -51,8 +50,10 @@ pub(crate) fn add_holding_time(option: &DesignOption, v: &mut Value) {
         tank["cylinder_length_m"].as_f64(),
         tank["design_pressure_mpa"].as_f64(),
         n_tanks,
+        // The conductivity of the tank design in force (issue #919), not a constant.
+        tank["insulation_conductivity_w_per_mk"].as_f64(),
     );
-    let (Some(ds), Some(d_o), Some(d_i), Some(len), Some(relief), Some(n)) = dims else {
+    let (Some(ds), Some(d_o), Some(d_i), Some(len), Some(relief), Some(n), Some(k)) = dims else {
         return;
     };
     if d_o <= ds || n < 1.0 {
@@ -118,13 +119,7 @@ pub(crate) fn add_holding_time(option: &DesignOption, v: &mut Value) {
         start_gauge_mpa: start,
         relief_gauge_mpa: relief,
         fill: typed_fill,
-        heat_leak: HeatLeak::conduction(
-            rule,
-            ds / 2.0,
-            d_o / 2.0,
-            len,
-            INSULATION_CONDUCTIVITY_W_PER_MK,
-        ),
+        heat_leak: HeatLeak::conduction(rule, ds / 2.0, d_o / 2.0, len, k),
         withdrawal: Withdrawal::Vapour,
         legs: &leg_inputs,
         step_s: STEP_S,
@@ -223,7 +218,7 @@ pub(crate) fn add_holding_time(option: &DesignOption, v: &mut Value) {
             "start_fill": n_f(out.start_fill),
             "start_mass_kg_each": n_f(out.start_mass_kg),
             "start_temperature_c": n_f(out.start_temperature_c),
-            "conductivity_w_per_mk": n_f(INSULATION_CONDUCTIVITY_W_PER_MK),
+            "conductivity_w_per_mk": n_f(k),
         },
         "inputs": [
             input_row(option, "holding_profile"),
@@ -231,6 +226,7 @@ pub(crate) fn add_holding_time(option: &DesignOption, v: &mut Value) {
             input_row(option, "holding_fill_ratio"),
             input_row(option, "power_source"),
             input_row(option, "tank_insulation_thickness_mm"),
+            input_row(option, "tank_insulation_conductivity_w_per_mk"),
             input_row(option, "tank_design_pressure_mpa"),
         ],
         "series_columns": ["time_h", "pressure_mpa_gauge", "fill"],
