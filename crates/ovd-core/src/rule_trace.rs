@@ -444,7 +444,7 @@ pub static MEASURES: &[MeasureDef] = &[
         object: ObjectType::Option,
         value: ValueKind::Bool,
         args: &[],
-        method: "Whether a wing of a forward wheelhouse sees the full hull side aft (SOLAS V/22.1.4, 22.1.6): the wing reaches the side of the forward house, and no cargo stands further out than the wing (the hull half-beam less the tank side clearance). On plan only; no camera is credited (issue #994). Only an Option with the wheelhouse forward has a value",
+        method: "Whether a wing of a forward wheelhouse sees the full hull side aft (SOLAS V/22.1.4, 22.1.6): the wing reaches the hull side: its outboard end (the side of the forward house, until the wing reach is an input) is at least the hull half-beam from the centreline, whatever the cargo does. On plan only; no camera is credited (issue #994). Only an Option with the wheelhouse forward has a value",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {
@@ -453,7 +453,7 @@ pub static MEASURES: &[MeasureDef] = &[
         object: ObjectType::Option,
         value: ValueKind::Number,
         args: &[],
-        method: "How far the wing of a forward wheelhouse falls short of the outboard edge of the cargo (m); nought when it does not (issue #994). Only an Option with the wheelhouse forward has a value",
+        method: "How far the wing of a forward wheelhouse falls short of the hull side (the hull half-beam less the wing's reach, m); nought when it does not (issue #994). Only an Option with the wheelhouse forward has a value",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {

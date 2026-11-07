@@ -1956,7 +1956,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
             w.sees_full_hull_side,
             text!(
                 "check-wheelhouse-wing-sees-hull-side",
-                "wing reaches {wing} m from the centreline; the cargo stands out to {cargo} m of a {half} m half-beam: the view aft along the hull side (SOLAS V/22.1.4, 22.1.6) is {short} m short",
+                "wing reaches {wing} m from the centreline; the hull side is at {half} m (the cargo stands out to {cargo} m): the view aft along the hull side (SOLAS V/22.1.4, 22.1.6) is {short} m short",
                 wing = Arg::fixed(w.wing_y_m, 2),
                 cargo = Arg::fixed(w.cargo_outboard_y_m, 2),
                 half = Arg::fixed(w.hull_half_beam_m, 2),

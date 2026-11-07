@@ -187,7 +187,14 @@ fn the_forward_eye_is_checked_as_a_blind_distance_and_the_wing_view_is_reported(
     assert!(f(&s["blind_distance_light_m"]) < 50.0, "{s}");
     // The wing view is in the stern block and the stern arrangement, with cameras an open item.
     let w = &r["drawing"]["aft_arrangement"]["wing_view"];
-    assert!(w["sees_full_hull_side"].is_boolean(), "{w}");
+    // The wing is at the side of the house, a side deck (0.8 m) inside the hull side: it does not
+    // see the full hull side, whatever the cargo does, and the result says by how much.
+    assert_eq!(w["sees_full_hull_side"], json!(false), "{w}");
+    assert!(
+        (f(&w["hull_half_beam_m"]) - f(&w["wing_y_m"]) - 0.8).abs() < 1e-9,
+        "{w}"
+    );
+    assert!((f(&w["short_by_m"]) - 0.8).abs() < 1e-9, "{w}");
     assert_eq!(w["cameras"], json!("open_item"));
     assert_eq!(r["stern_arrangement"]["rear_view"], *w);
     let checks = r["checks"].as_array().unwrap();
