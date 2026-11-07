@@ -214,6 +214,8 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         "tank_allowable_stress_mpa",
         "tank_insulation_type",
         "tank_insulation_thickness_mm",
+        "tank_insulation_conductivity_w_per_mk",
+        "tank_insulation_density_kg_m3",
         "tank_structure_factor",
         "bow_rake_length_to_depth_ratio",
         "bow_rake_max_length_m",
@@ -703,6 +705,7 @@ pub(crate) fn run_option_detail(
                     option,
                     &params,
                     crate::convoy::counts(option).unwrap_or((1, 1)),
+                    &rules,
                     &mut v,
                 );
                 // Issue #464: the gas a gas-fuelled Option burns, and its boil-off check.
@@ -741,6 +744,17 @@ pub(crate) fn run_option_detail(
                 let sightline = &v["sightline"];
                 measured.blind_distance_light_m = sightline["blind_distance_light_m"].as_f64();
                 measured.blind_distance_laden_m = sightline["blind_distance_laden_m"].as_f64();
+                // Issue #989: a Formation with no wheelhouse of its own is judged on its tug's view over the
+                // barges, light and laden, and SOLAS on the length of the unit.
+                let formation_sight = &v["formation"]["sightline"];
+                if sightline.is_null() && formation_sight.is_object() {
+                    measured.blind_distance_light_m =
+                        formation_sight["blind_distance_light_m"].as_f64();
+                    measured.blind_distance_laden_m =
+                        formation_sight["blind_distance_laden_m"].as_f64();
+                    measured.unit_length_overall_m =
+                        v["formation"]["equivalent_hull"]["length_m"].as_f64();
+                }
                 let speeds_of = if v["powering"].is_null() {
                     &v["formation"]
                 } else {

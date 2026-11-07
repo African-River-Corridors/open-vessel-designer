@@ -27,7 +27,7 @@
   "inputs": {
    "gas_cargo": true,
    "genset_kw": 2400.0,
-   "gross_tonnage": 13919.948489038023,
+   "gross_tonnage": 13033.077276572907,
    "gross_tonnage_source": "computed",
    "length_m": 140.0,
    "navigation_hours_per_day": 24.0,
@@ -128,21 +128,21 @@
   }
  },
  "results": {
-  "air_draft_light_m": 21.531443877079777,
-  "air_draft_loaded_m": 19.13479939909294,
+  "air_draft_light_m": 21.582405318814132,
+  "air_draft_loaded_m": 19.18297480754249,
   "cargo_t": 8070.899599838365,
   "cargo_volume_bound_t": 8070.899599838365,
   "cargo_volume_m3": 17935.332444085256,
-  "cargo_weight_bound_t": 33137.55169223627,
+  "cargo_weight_bound_t": 33304.97945351627,
   "deadweight_t": 8106.274425039019,
-  "displacement_t": 13481.194277518194,
-  "draught_m": 4.0652006009070565,
+  "displacement_t": 13313.766516238195,
+  "draught_m": 4.017025192457511,
   "draught_max_m": 10.6,
-  "freeboard_m": 7.9347993990929435,
+  "freeboard_m": 7.982974807542489,
   "governs": "tank volume",
   "h_over_T": null,
-  "light_draught_m": 1.6685561229202217,
-  "lightship_t": 5374.919852479175,
+  "light_draught_m": 1.6175946811858688,
+  "lightship_t": 5207.492091199175,
   "vent_distance_to_accommodation_m": 104.96799999999999,
   "vent_distance_to_openings_m": 104.96799999999999,
   "vent_exit_above_deck_m": 9.666666666666666,
@@ -164,7 +164,7 @@
   "basis": "Spec 0011 D5, section 2: rooms sized from the crew model's berths to ES-TRIN 2025/1 Chapter 15. Areas marked estimate are required by the text but have no floor area in it: each is a stated estimate with its working. Concept and preliminary design only (ADR 0011).",
   "berths": 19,
   "clear_height_m": 2.1,
-  "gt_used": 13919,
+  "gt_used": 12885,
   "headroom_required_m": 2.03,
   "mlc_applied": true,
   "officers": 8,
@@ -180,7 +180,7 @@
     "governing": "mlc",
     "id": "cabin",
     "name": "Sleeping cabin (rating, cook, margin or spare berth)",
-    "note": "MLC A3.1.9(f) single berth floor 7.0 m2. ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 13919 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
+    "note": "MLC A3.1.9(f) single berth floor 7.0 m2. ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 12885 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
    },
    {
     "area_each_m2": 7.0,
@@ -191,7 +191,7 @@
     "governing": "mlc",
     "id": "cabin_senior",
     "name": "Sleeping cabin with day room (master, chief engineer, chief navigating officer)",
-    "note": "A3.1.9(m) gives each of the three an adjoining sitting room or day room, so the single berth floor 7.0 m2 of A3.1.9(f) applies and not the officer floor of A3.1.9(k), which is for \"no private sitting room or day room\". ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 13919 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
+    "note": "A3.1.9(m) gives each of the three an adjoining sitting room or day room, so the single berth floor 7.0 m2 of A3.1.9(f) applies and not the officer floor of A3.1.9(k), which is for \"no private sitting room or day room\". ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 12885 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
    },
    {
     "area_each_m2": 6.0,
@@ -213,7 +213,7 @@
     "governing": "mlc",
     "id": "cabin_officer",
     "name": "Sleeping cabin (officer, no day room)",
-    "note": "MLC A3.1.9(k) officer floor 10.0 m2 where no private sitting room or day room is provided. ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 13919 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
+    "note": "MLC A3.1.9(k) officer floor 10.0 m2 where no private sitting room or day room is provided. ES-TRIN needs 3.50 m2 (7 m3 / 2.00 m headroom, the largest of its three tests). MLC headroom is 2.03 m (A3.1.6(a)); a berth is at least 1.98 x 0.80 m (A3.1.9(e)), the 2.00 x 0.90 m of ES-TRIN 15.07(1) is larger. Floor includes berth, lockers and seat (Guideline B3.1.5(6)). An individual sleeping room for each seafarer (A3.1.9(a), (d)); the exemption for ships under 3,000 GT is not applied. Furniture to A3.1.9(n) and (o) is inside the floor. 12885 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over."
    },
    {
     "area_each_m2": 38.0,
@@ -327,11 +327,11 @@
    }
   ],
   "rule": "mlc-2006-a3.1 and es-trin-2025-ch15 (the greater, per room)",
-  "rule_note": "The Service Area reaches sea, so each room is sized to the greater of MLC 2006 Standard A3.1 (as amended, 2022 consolidated text) and ES-TRIN 2025/1 Chapter 15; the governing source is on each row. 13919 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over. No exemption is applied: not the under-3,000 GT ones of A3.1.9(a), (h), (m), 10(a), 11(b), 15, nor the under-200 GT ones of A3.1.20, nor the coastal-trade relaxation of A3.1.12; the competent authority grants them, so a concept sizes without them. Berths held by officers are sized to A3.1.9(k) or (m) and all others as ratings.",
+  "rule_note": "The Service Area reaches sea, so each room is sized to the greater of MLC 2006 Standard A3.1 (as amended, 2022 consolidated text) and ES-TRIN 2025/1 Chapter 15; the governing source is on each row. 12885 GT used for these rooms (the crew block's GT may differ by a few GT inside the same band), band 10,000 GT and over. No exemption is applied: not the under-3,000 GT ones of A3.1.9(a), (h), (m), 10(a), 11(b), 15, nor the under-200 GT ones of A3.1.20, nor the coastal-trade relaxation of A3.1.12; the competent authority grants them, so a concept sizes without them. Berths held by officers are sized to A3.1.9(k) or (m) and all others as ratings.",
   "seafarers": 17,
   "settled": true,
   "status": "estimate",
-  "tier_area_m2": 488.5968,
+  "tier_area_m2": 286.7684210526316,
   "tiers": 3,
   "total_m2": 266.7684210526316
  },
@@ -340,7 +340,7 @@
   "opening_zone_m": 5.0,
   "openings": [
    {
-    "distance_from_front_m": 17.832,
+    "distance_from_front_m": 10.46600076834422,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -350,12 +350,12 @@
     "openable": true,
     "space": "accommodation",
     "tier": 1,
-    "x_m": 0.0,
+    "x_m": 7.365999231655781,
     "y_m": -6.85,
     "z_m": 13.0
    },
    {
-    "distance_from_front_m": 17.832,
+    "distance_from_front_m": 10.46600076834422,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -365,12 +365,12 @@
     "openable": true,
     "space": "accommodation",
     "tier": 2,
-    "x_m": 0.0,
+    "x_m": 7.365999231655781,
     "y_m": -6.85,
     "z_m": 15.6
    },
    {
-    "distance_from_front_m": 17.832,
+    "distance_from_front_m": 10.46600076834422,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -380,12 +380,12 @@
     "openable": true,
     "space": "accommodation",
     "tier": 3,
-    "x_m": 0.0,
+    "x_m": 7.365999231655781,
     "y_m": -6.85,
     "z_m": 18.2
    },
    {
-    "distance_from_front_m": 17.832,
+    "distance_from_front_m": 10.46600076834422,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -395,12 +395,12 @@
     "openable": true,
     "space": "machinery",
     "tier": 1,
-    "x_m": 0.0,
+    "x_m": 7.365999231655781,
     "y_m": 6.85,
     "z_m": 13.0
    },
    {
-    "distance_from_front_m": 17.832,
+    "distance_from_front_m": 10.46600076834422,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -410,12 +410,12 @@
     "openable": true,
     "space": "machinery",
     "tier": 1,
-    "x_m": 0.0,
+    "x_m": 7.365999231655781,
     "y_m": 9.133333333333333,
     "z_m": 13.95
    },
    {
-    "distance_from_front_m": 17.832,
+    "distance_from_front_m": 10.46600076834422,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -425,12 +425,12 @@
     "openable": true,
     "space": "machinery",
     "tier": 1,
-    "x_m": 0.0,
+    "x_m": 7.365999231655781,
     "y_m": -9.133333333333333,
     "z_m": 13.95
    },
    {
-    "distance_from_front_m": 17.832,
+    "distance_from_front_m": 10.46600076834422,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -440,7 +440,7 @@
     "openable": true,
     "space": "accommodation",
     "tier": 3,
-    "x_m": 0.0,
+    "x_m": 7.365999231655781,
     "y_m": 0.0,
     "z_m": 19.15
    },
@@ -562,10 +562,10 @@
   },
   "items": [
    {
-    "kcg_m": 15.9,
+    "kcg_m": 13.87191758079976,
     "label": "deckhouse steel",
-    "lcg_m": 8.916,
-    "mass_t": 217.23013727999998
+    "lcg_m": 13.084103097110043,
+    "mass_t": 49.802376
    },
    {
     "kcg_m": 21.5,
@@ -674,7 +674,7 @@
     "watson_total_t": 311.8151878817379
    }
   },
-  "total_t": 694.7347669515186
+  "total_t": 527.3070056715186
  },
  "text_ids": {
   "0 x 40 ft units beside a 6.40 m wheelhouse need 8.20 m of 29.00 m beam; they go in a row aft of the cab instead, which lengthens the block": {
@@ -746,17 +746,23 @@
    },
    "id": "check-thrusters-fit-beam"
   },
-  "3 tier(s) of 488.6 m2 hold the 266.8 m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over 4 tiers is a tall house over a short machinery space (ESTIMATE limit)": {
+  "3 tier(s): 1 for rooms (286.8 m2 each, holding the 266.8 m2 of accommodation floor) and 2 for access (24.6 m2 each, lifting the wheelhouse eye over the cargo); over 4 tiers is a tall house over a short machinery space (ESTIMATE limit)": {
    "args": {
+    "access_area": {
+     "num": "24.6",
+     "value": 24.64
+    },
+    "access_tiers": 2,
     "max": 4,
     "required": {
      "num": "266.8",
      "value": 266.7684210526316
     },
-    "tier_area": {
-     "num": "488.6",
-     "value": 488.5968
+    "room_area": {
+     "num": "286.8",
+     "value": 286.7684210526316
     },
+    "room_tiers": 1,
     "tiers": 3
    },
    "id": "check-deckhouse-tier-count"
@@ -805,70 +811,70 @@
    "args": {},
    "id": "name-check-feasible-arrangement"
   },
-  "GM 13.55 m (fluid), max GZ 5.78 m at 35\u00b0": {
+  "GM 13.83 m (fluid), max GZ 5.87 m at 36\u00b0": {
    "args": {
     "angle": {
-     "num": "35",
-     "value": 35.0
+     "num": "36",
+     "value": 36.0
     },
     "gm": {
-     "num": "13.55",
-     "value": 13.549917625154439
+     "num": "13.83",
+     "value": 13.830988737338105
     },
     "max_gz": {
-     "num": "5.78",
-     "value": 5.776214513121037
+     "num": "5.87",
+     "value": 5.874788964242442
     }
    },
    "id": "check-stability"
   },
-  "GM 13.57 m (fluid), max GZ 5.77 m at 35\u00b0": {
+  "GM 13.85 m (fluid), max GZ 5.87 m at 36\u00b0": {
    "args": {
     "angle": {
-     "num": "35",
-     "value": 35.0
+     "num": "36",
+     "value": 36.0
     },
     "gm": {
-     "num": "13.57",
-     "value": 13.565513413302002
+     "num": "13.85",
+     "value": 13.847711566740266
     },
     "max_gz": {
-     "num": "5.77",
-     "value": 5.773267563008076
+     "num": "5.87",
+     "value": 5.871176950720194
     }
    },
    "id": "check-stability"
   },
-  "GM 24.04 m (fluid), max GZ 7.30 m at 35\u00b0": {
+  "GM 24.66 m (fluid), max GZ 7.45 m at 35\u00b0": {
    "args": {
     "angle": {
      "num": "35",
      "value": 35.0
     },
     "gm": {
-     "num": "24.04",
-     "value": 24.035250003811033
+     "num": "24.66",
+     "value": 24.664533206104373
     },
     "max_gz": {
-     "num": "7.30",
-     "value": 7.296306978205431
+     "num": "7.45",
+     "value": 7.449078157682034
     }
    },
    "id": "check-stability"
   },
-  "GM 24.10 m (fluid), max GZ 7.29 m at 35\u00b0": {
+  "GM 24.73 m (fluid), max GZ 7.44 m at 35\u00b0": {
    "args": {
     "angle": {
      "num": "35",
      "value": 35.0
     },
     "gm": {
-     "num": "24.10",
-     "value": 24.095591229421064
+     "num": "24.73",
+     "value": 24.728864235646153
     },
     "max_gz": {
-     "num": "7.29",
-     "value": 7.291351582841164
+     "num": "7.44",
+     "value": 7.4444647242025646
     }
    },
    "id": "check-stability"
@@ -937,11 +943,11 @@
    },
    "id": "check-aft-end-bulkhead-space"
   },
-  "blind distance ahead of the bow 220.3 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 0.00 m of 0.00 m": {
+  "blind distance ahead of the bow 221.2 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 0.00 m of 0.00 m": {
    "args": {
     "blind": {
-     "num": "220.3",
-     "value": 220.29029570919158
+     "num": "221.2",
+     "value": 221.1725451845927
     },
     "lift": {
      "num": "0.00",
@@ -1016,15 +1022,15 @@
    },
    "id": "check-floats"
   },
-  "deckhouse 17.83 m over the machinery space x 27.40 m wide (the 29.00 m beam less a side deck each side)": {
+  "deckhouse 10.47 m over the machinery space x 27.40 m wide (the 29.00 m beam less a side deck each side)": {
    "args": {
     "beam": {
      "num": "29.00",
      "value": 29.0
     },
     "length": {
-     "num": "17.83",
-     "value": 17.832
+     "num": "10.47",
+     "value": 10.46600076834422
     },
     "width": {
      "num": "27.40",
@@ -1055,11 +1061,11 @@
    },
    "id": "check-fwd-end-bulkhead-space"
   },
-  "freeboard 7.94 m >= required 1.4 m": {
+  "freeboard 7.99 m >= required 1.4 m": {
    "args": {
     "freeboard": {
-     "num": "7.94",
-     "value": 7.944973690132534
+     "num": "7.99",
+     "value": 7.99316028156338
     },
     "required": {
      "num": "1.4",
@@ -1068,15 +1074,15 @@
    },
    "id": "check-freeboard-ok"
   },
-  "freeboard 7.94 m at the carried draught 4.06 m >= required 1.4 m": {
+  "freeboard 7.99 m at the carried draught 4.01 m >= required 1.4 m": {
    "args": {
     "draught": {
-     "num": "4.06",
-     "value": 4.055026309867466
+     "num": "4.01",
+     "value": 4.00683971843662
     },
     "freeboard": {
-     "num": "7.94",
-     "value": 7.944973690132534
+     "num": "7.99",
+     "value": 7.99316028156338
     },
     "required": {
      "num": "1.4",

@@ -86,6 +86,8 @@ pub struct FitOptions {
     pub sightline_limit_m: Option<f64>,
     /// Issue #989: the laden limit (`BargeCapacityInputs::sightline_limit_laden_m`).
     pub sightline_limit_laden_m: Option<f64>,
+    /// Issue #989: the light limit a fixed deckhouse is sized to (`BargeCapacityInputs::sightline_sizing_limit_m`).
+    pub sightline_sizing_limit_m: Option<f64>,
     /// Issue #989: the id of the Rule that gives the light limit.
     pub sightline_limit_source: Option<String>,
     pub self_propelled: bool,
@@ -283,7 +285,7 @@ impl MeasureSource for CandidateSource<'_> {
 /// Applicability and its set's, as the Rule Trace reads them); the limit is the Rule's own, worked from
 /// the design's inputs (SOLAS V/22.1.1 reads the length overall). The least limit of each condition
 /// binds, and the id of its Rule says where it came from. A stack with no such Rule gives no limit, and
-/// a Rule that only warns gives none.
+/// a Rule that only warns gives no blocking limit, but it sizes a fixed deckhouse (`sizing_light_m`).
 ///
 /// This is the one reading the arrangement search sizes the wheelhouse to and the Rule Trace checks the
 /// result against: the Trace evaluates the same Rules, so the limit it shows is the one used here. The
@@ -321,9 +323,11 @@ pub fn blind_limits(rules: &[RuleSet], inputs: &RuleInputs) -> crate::wheelhouse
         let (Some(measure), Some(limit), Some(rule)) = (&row.measure, row.limit, &row.rule) else {
             continue;
         };
-        if row.consequence != Some(Consequence::Block)
-            || !matches!(row.outcome, Outcome::Pass | Outcome::Fail)
-        {
+        if !matches!(row.outcome, Outcome::Pass | Outcome::Fail) {
+            continue;
+        }
+        let blocks = row.consequence == Some(Consequence::Block);
+        if !blocks && row.consequence != Some(Consequence::Warn) {
             continue;
         }
         let condition = measure
@@ -333,6 +337,12 @@ pub fn blind_limits(rules: &[RuleSet], inputs: &RuleInputs) -> crate::wheelhouse
                 ("condition", ArgValue::Text(t)) => Some(t.as_str()),
                 _ => None,
             });
+        if condition == Some("light") && out.sizing_light_m.is_none_or(|least| limit < least) {
+            out.sizing_light_m = Some(limit);
+        }
+        if !blocks {
+            continue;
+        }
         let (slot, source) = match condition {
             Some("light") => (&mut out.light_m, &mut out.light_rule),
             Some("laden") => (&mut out.laden_m, &mut out.laden_rule),
@@ -442,6 +452,7 @@ impl Default for FitOptions {
             machinery: None,
             sightline_limit_m: None,
             sightline_limit_laden_m: None,
+            sightline_sizing_limit_m: None,
             sightline_limit_source: None,
             self_propelled: true,
             depths: DEFAULT_DEPTHS_M.to_vec(),
@@ -1239,6 +1250,7 @@ impl Search<'_> {
         inp.machinery = self.o.machinery.clone();
         inp.sightline_limit_m = self.o.sightline_limit_m;
         inp.sightline_limit_laden_m = self.o.sightline_limit_laden_m;
+        inp.sightline_sizing_limit_m = self.o.sightline_sizing_limit_m;
         inp.sightline_limit_source = self.o.sightline_limit_source.clone();
         inp.block_coefficient = self.o.block_coefficient;
         inp.n_tanks_wide = Some(nw);

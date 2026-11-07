@@ -149,6 +149,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -700,7 +708,7 @@
           "source": "default"
         }
       },
-      "results_hash": "ec0d286a9590f0604d3bb1aa0ea035ced75586d8b40ae1df4b0479a2ba3f1b5b"
+      "results_hash": "15e91dad51b0ea45da5a4ab29c8ec3817bae03fd69c392f2647660ca60d165a0"
     }
   ],
   "defaults_profile": "built-in"

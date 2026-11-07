@@ -179,6 +179,12 @@ choice-tank-insulation-type-panel = Insulation panel
 input-tank-insulation-thickness-mm = Tank insulation thickness
 input-tank-insulation-thickness-mm-default-by = Cargo, LPG carriage condition
 
+input-tank-insulation-conductivity-w-per-mk = Tank insulation conductivity
+input-tank-insulation-conductivity-w-per-mk-default-by = Cargo, LPG carriage condition
+
+input-tank-insulation-density-kg-m3 = Tank insulation density
+input-tank-insulation-density-kg-m3-default-by = Cargo, LPG carriage condition
+
 input-holding-profile = Holding-time profile
 
 input-holding-preset = Holding-time preset

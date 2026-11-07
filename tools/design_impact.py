@@ -313,6 +313,11 @@ OPTIONAL_INPUT_CASES = (
      {"tank_insulation_type": "pu_foam"}),
     ("tank_insulation_thickness_mm", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"tank_insulation_thickness_mm": 200.0}),
+    # Issue #919: the insulation's conductivity (the boil-off) and density (the insulation mass), on LNG.
+    ("tank_insulation_conductivity_w_per_mk", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"tank_insulation_conductivity_w_per_mk": 0.052}),
+    ("tank_insulation_density_kg_m3", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"tank_insulation_density_kg_m3": 120.0}),
     ("tank_structure_factor", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"tank_structure_factor": 1.2}),
     # The holding-time profile inputs (issue #869): input only, so no result moves.

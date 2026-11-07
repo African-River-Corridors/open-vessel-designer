@@ -27,6 +27,11 @@ pub struct BlindLimits {
     /// The limit in the laden condition, and the id of the Rule that gives it.
     pub laden_m: Option<f64>,
     pub laden_rule: Option<String>,
+    /// The least light limit of the Rules that block or warn. A fixed deckhouse wheelhouse is sized to it
+    /// (issue #779, ADR 0007): a stack that holds SOLAS V/22.1.1 as a warning (`solas-v22` 1.x) still
+    /// sizes the house to two ship lengths, and only warns, as before. A lifting wheelhouse is sized to
+    /// the blocking limit alone. With a blocking Rule only, it is the same as `light_m`.
+    pub sizing_light_m: Option<f64>,
 }
 
 impl BlindLimits {

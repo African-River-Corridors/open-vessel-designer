@@ -102,6 +102,8 @@ const FIT_OPTION_KEYS: &[&str] = &[
     "tank_material",
     "tank_allowable_stress_mpa",
     "tank_insulation_thickness_mm",
+    "tank_insulation_conductivity_w_per_mk",
+    "tank_insulation_density_kg_m3",
     "tank_structure_factor",
     "n_thrusters",
     "thruster_envelope_m",
@@ -221,6 +223,16 @@ fn fit_options(o: &Map<String, Value>, base: FitOptions) -> Result<FitOptions, E
         o,
         "tank_insulation_thickness_mm",
         f.tank_design.insulation_thickness_mm,
+    )?;
+    f.tank_design.insulation_conductivity_w_per_mk = float_or(
+        o,
+        "tank_insulation_conductivity_w_per_mk",
+        f.tank_design.insulation_conductivity_w_per_mk,
+    )?;
+    f.tank_design.insulation_density_kg_m3 = float_or(
+        o,
+        "tank_insulation_density_kg_m3",
+        f.tank_design.insulation_density_kg_m3,
     )?;
     f.tank_design.structure_factor =
         float_or(o, "tank_structure_factor", f.tank_design.structure_factor)?;
