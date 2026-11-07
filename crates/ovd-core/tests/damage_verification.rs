@@ -61,6 +61,7 @@ fn tank(zc: f64) -> IntactInclusion {
             y: 0.0,
             z: zc,
             outer_diameter: 2.0,
+            insulation_m: 0.0,
             head: TankHead {
                 kind: HeadKind::Hemisphere,
                 length_m: 1.0,
