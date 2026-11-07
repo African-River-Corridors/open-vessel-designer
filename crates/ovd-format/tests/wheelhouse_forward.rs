@@ -46,7 +46,7 @@ fn a_river_vessel_has_its_house_forward_of_the_cargo_and_its_machinery_aft() {
         loa,
         11.4,
         6.0,
-        json!({ "arrangement_style": "wheelhouse_forward" }),
+        json!({ "arrangement_style": "wheelhouse_forward", "bow_rake_length_m": 20.0 }),
     ));
     let aft = &r["drawing"]["aft_arrangement"];
     let house = &aft["forward_house"];
@@ -70,8 +70,8 @@ fn a_river_vessel_has_its_house_forward_of_the_cargo_and_its_machinery_aft() {
 
 #[test]
 fn the_forward_house_gives_the_same_cargo_zone_as_the_deckhouse_when_the_forepeak_holds_it() {
-    let base = json!({ "arrangement_style": "deckhouse" });
-    let fwd = json!({ "arrangement_style": "wheelhouse_forward" });
+    let base = json!({ "arrangement_style": "deckhouse", "bow_rake_length_m": 20.0 });
+    let fwd = json!({ "arrangement_style": "wheelhouse_forward", "bow_rake_length_m": 20.0 });
     let a = results_of(&design(110.0, 11.4, 6.0, base));
     let b = results_of(&design(110.0, 11.4, 6.0, fwd));
     assert_eq!(
@@ -126,18 +126,14 @@ fn the_forward_house_joins_the_gross_tonnage_and_the_steel() {
         110.0,
         11.4,
         6.0,
-        json!({ "arrangement_style": "wheelhouse_forward" }),
+        json!({ "arrangement_style": "wheelhouse_forward", "bow_rake_length_m": 20.0 }),
     ));
-    let deckhouse = results_of(&design(
-        110.0,
-        11.4,
-        6.0,
-        json!({ "arrangement_style": "deckhouse" }),
-    ));
-    let house = &r["drawing"]["aft_arrangement"]["forward_house"];
-    let vol = |v: &Value| f(&v["gross_tonnage"]["deckhouse_volume_m3"]);
-    // The aft deckhouse is the same size (same accommodation), so the difference is the forward house.
-    assert!((vol(&r) - vol(&deckhouse) - f(&house["volume_m3"])).abs() < 1e-6);
+    let aft = &r["drawing"]["aft_arrangement"];
+    let house = f(&aft["forward_house"]["volume_m3"]);
+    let deckhouse = f(&aft["deckhouse"]["volume_m3"]);
+    // The enclosed volume of the two houses is what the gross tonnage takes as deckhouse volume.
+    let counted = f(&r["gross_tonnage"]["deckhouse_volume_m3"]);
+    assert!((counted - deckhouse - house).abs() < 1e-6, "{counted} {deckhouse} {house}");
     let items: Vec<&str> = r["stern_block_mass"]["items"]
         .as_array()
         .unwrap()
@@ -145,4 +141,21 @@ fn the_forward_house_joins_the_gross_tonnage_and_the_steel() {
         .map(|i| i["label"].as_str().unwrap())
         .collect();
     assert!(items.contains(&"forward house steel"), "{items:?}");
+}
+
+#[test]
+fn the_aft_house_needs_no_extra_tiers_for_a_sightline_the_wheelhouse_forward_does_not_have() {
+    // On the deckhouse style a fixed wheelhouse on the aft house must see over the cargo, which adds
+    // tiers; forward, the eye is ahead of the cargo, so the aft house keeps only the tiers the
+    // accommodation needs.
+    let tiers = |style: &str| {
+        let r = results_of(&design(
+            110.0,
+            11.4,
+            6.0,
+            json!({ "arrangement_style": style, "bow_rake_length_m": 20.0 }),
+        ));
+        r["drawing"]["aft_arrangement"]["deckhouse"]["tiers"].as_i64().unwrap()
+    };
+    assert!(tiers("wheelhouse_forward") <= tiers("deckhouse"));
 }
