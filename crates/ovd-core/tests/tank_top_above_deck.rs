@@ -92,3 +92,56 @@ fn the_search_keeps_the_depth_at_or_above_the_draught_limit_plus_the_freeboard()
             .all(|t| t.depth_m == 0.0 || t.depth_m >= 3.3 - 1e-9)
     );
 }
+
+/// The probe of the depth stops before the costly stability stage; the search it stands for must pick
+/// the same depth. Label: rule (review of #1015: both passes pick the same arrangement).
+#[test]
+fn the_probe_gives_the_depth_the_full_search_settles_on() {
+    use ovd_core::gas_arrangement::probe_depth;
+    for h in [0.0, 0.2] {
+        let o = options(h);
+        let f = fit(140.0, 29.0, "LNG", 11.95, &o).unwrap();
+        let probed = probe_depth(140.0, 29.0, "LNG", 11.95, &o).unwrap().unwrap();
+        assert!(
+            (probed - f.depth_m).abs() < 0.0015,
+            "{h}: {probed} vs {}",
+            f.depth_m
+        );
+    }
+    // At 2 m standing the 250 m Blind Distance limit leaves no candidate: no probe, and the full
+    // search is the one that reports the closest.
+    assert!(
+        probe_depth(140.0, 29.0, "LNG", 11.95, &options(2.0))
+            .unwrap()
+            .is_none()
+    );
+}
+
+/// A shield higher than the dome is the highest point of the cargo area, so the air draft and the
+/// sightline take it; with the input left out the dome top stands as before.
+/// Label: rule (design note D4). The clearance 4.0 m is a test value above the dome rule's about 2.3 m.
+#[test]
+fn a_shield_above_the_dome_is_the_highest_point_only_with_a_standing_height() {
+    let high = |h: Option<f64>| {
+        let o = FitOptions {
+            tank_top_above_deck_m: h,
+            weather_shield_clearance_m: 4.0,
+            self_propelled: false,
+            vent_mast_lowerable: true,
+            depths: vec![15.95],
+            ..FitOptions::default()
+        };
+        let f = fit(140.0, 29.0, "LNG", 11.95, &o).unwrap();
+        let r = f.engine_result;
+        (r.highest_point.unwrap(), tank_top_above_keel_m(&r))
+    };
+    let (with, top) = high(Some(2.0));
+    assert_eq!(with.key, "weather_shield");
+    assert!(
+        (with.top_above_keel_m - (top + 4.0)).abs() < 1e-9,
+        "{} {top}",
+        with.top_above_keel_m
+    );
+    let (without, _) = high(None);
+    assert_ne!(without.key, "weather_shield");
+}

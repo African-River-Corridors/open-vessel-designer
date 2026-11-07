@@ -236,6 +236,10 @@ pub struct BargeCapacityInputs {
     pub required_freeboard: f64,
     /// Bridge clearance limit (m), checked against the LIGHT condition.
     pub air_draft_limit_m: Option<f64>,
+    /// Issue #992: the tank top is to stand this far above the deck (m). `Some`: the weather shield,
+    /// when fitted, counts as a high point for the air draft and the sightline (it stands the clearance
+    /// above the tank top, and the dome may be lower). `None`: as before, the dome top.
+    pub tank_top_above_deck_m: Option<f64>,
     /// Issue #991: the clearance of the lowest bridge on the route (m). Unlike `air_draft_limit_m`, which
     /// is a design limit that blocks, an air draft over it only warns: the design stands, and the warning
     /// names the highest point.
@@ -414,6 +418,7 @@ impl BargeCapacityInputs {
             water_density: 1.0,
             required_freeboard: 0.3,
             air_draft_limit_m: None,
+            tank_top_above_deck_m: None,
             bridge_clearance_m: None,
             bridge_clearance_source: None,
             ballast_capacity_t: 0.0,
@@ -549,7 +554,8 @@ pub struct GasBasis {
 /// The highest fixed point of a vessel with the wheelhouse lowered for transit, which sets the air draft
 /// (issue #991): its key and its top above the keel. The keys: `tank_dome` (the dome top of a gas
 /// tank), `hatch_coaming` (a dry bulk hold), `deck` (a liquid bulk hull), `stern_block` (the deck
-/// units and the wheelhouse lowered), `deckhouse` (the top tier of a deckhouse, wheelhouse fixed) and
+/// units and the wheelhouse lowered), `weather_shield` (the shield over tanks that stand above the
+/// deck, issue #992), `deckhouse` (the top tier of a deckhouse, wheelhouse fixed) and
 /// `vent_mast` (the vent exit of a gas hull whose mast does not lower).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HighestPoint {
@@ -563,6 +569,7 @@ impl HighestPoint {
         match self.key {
             "tank_dome" => "tank dome",
             "tank_top" => "tank top (the tank has no dome)",
+            "weather_shield" => "weather shield over the tanks",
             "hatch_coaming" => "hatch coaming",
             "deck" => "deck",
             "stern_block" => "stern block (deck units, wheelhouse lowered)",
@@ -801,6 +808,8 @@ struct Detail {
     /// weather shield (none: no shield). The dome top is the cargo top.
     tank_top_above_keel_m: Option<f64>,
     weather_shield_top_above_keel_m: Option<f64>,
+    /// Issue #992: the weather shield is the highest point of the cargo area (see `tank_top_above_deck_m`).
+    shield_is_highest: bool,
 }
 
 /// (cargo volume, lightship, top above keel, detail) of a volume branch. `n_total` is the exact
@@ -1035,8 +1044,19 @@ fn gas_volumetric(
     )?;
     let dome_mass_items = dome_items(&bi, &tanks, &mass_opts)?;
     let lightship = weights.lightship;
-    let h_top = db + inp.tank_support_height + tanks.outer_diameter + dome.1;
+    let mut h_top = db + inp.tank_support_height + tanks.outer_diameter + dome.1;
+    // Issue #992: with the tank top set, a fitted shield stands the clearance above the tank top, and
+    // that can be above the dome. It is then the cargo area's high point: the obstruction of the
+    // sightline and the top of the air draft. Without the input the dome top stands, as before.
+    let shield_top =
+        db + inp.tank_support_height + tanks.outer_diameter + inp.weather_shield_clearance_m;
+    let shield_is_highest =
+        inp.tank_top_above_deck_m.is_some() && weights.weather_shield > 0.0 && shield_top > h_top;
+    if shield_is_highest {
+        h_top = shield_top;
+    }
     let detail = Detail {
+        shield_is_highest,
         tank_outer_diameter_m: Some(tanks.outer_diameter),
         n_tanks_wide: Some(tanks.n_tanks_wide),
         max_tank_od_m: Some(inp.max_tank_od_m),
@@ -1658,6 +1678,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // Issue #991: the highest point of the vessel, with the wheelhouse lowered, which sets the air draft.
     let mut highest = HighestPoint {
         key: match class {
+            CargoClass::Gas if detail.shield_is_highest => "weather_shield",
             CargoClass::Gas if detail.dome_items.is_empty() => "tank_top",
             CargoClass::Gas => "tank_dome",
             CargoClass::DryBulk => "hatch_coaming",
