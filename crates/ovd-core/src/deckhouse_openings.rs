@@ -288,8 +288,37 @@ fn measure(o: &Opening, frame: &Frame, zone_m: f64) -> (f64, bool) {
 /// opening stands on the deckhouse front, and none on a side of a tier. ESTIMATES: the positions,
 /// the door height, the count.
 pub fn default_layout(frame: &Frame) -> Vec<Opening> {
+    default_layout_stepped(frame, &[])
+}
+
+/// The face and width of one tier of a stepped deckhouse (issue #943): where its aft face stands
+/// (m forward of the stern) and how wide the tier is (m). A room tier has the house's width; an
+/// access tier (the trunk under the wheelhouse) is narrower, and its entrance sits on its own width.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TierFace {
+    pub x_aft_m: f64,
+    pub width_m: f64,
+}
+
+/// The default layout of a stepped deckhouse (issue #943): each tier's entrance, and the openings
+/// that stand on a tier, are on that tier's own aft face and across that tier's own width.
+/// `faces[i]` is tier `i + 1`; a tier with no entry takes the frame's `x_aft_m` and `width_m`, so an
+/// empty slice is the uniform house of `default_layout`. The front face is the frame's and is the
+/// same for every tier, so the zone measurements do not change.
+pub fn default_layout_stepped(frame: &Frame, faces: &[TierFace]) -> Vec<Opening> {
+    let face_of = |t: i64| -> TierFace {
+        usize::try_from(t - 1)
+            .ok()
+            .and_then(|i| faces.get(i))
+            .copied()
+            .unwrap_or(TierFace {
+                x_aft_m: frame.x_aft_m,
+                width_m: frame.width_m,
+            })
+    };
+    let aft_of = |t: i64| face_of(t).x_aft_m;
+    let width_of = |t: i64| face_of(t).width_m;
     let mut v: Vec<Opening> = Vec::new();
-    let w = frame.width_m;
     let tiers = if frame.tiers > 0 { frame.tiers } else { 1 };
     // Each tier: an accommodation entrance on the aft end, to port of the centreline.
     for t in 1..=tiers {
@@ -299,8 +328,8 @@ pub fn default_layout(frame: &Frame) -> Vec<Opening> {
             kind: Kind::Entrance,
             space: Space::Accommodation,
             face: Face::Aft,
-            x_m: frame.x_aft_m,
-            y_m: -w / 4.0,
+            x_m: aft_of(t),
+            y_m: -width_of(t) / 4.0,
             z_m: deck + DOOR_CENTRE_ABOVE_DECK_M,
             openable: true,
             gas_tight: false,
@@ -314,8 +343,8 @@ pub fn default_layout(frame: &Frame) -> Vec<Opening> {
         kind: Kind::Entrance,
         space: Space::Machinery,
         face: Face::Aft,
-        x_m: frame.x_aft_m,
-        y_m: w / 4.0,
+        x_m: aft_of(1),
+        y_m: width_of(1) / 4.0,
         z_m: deck1 + DOOR_CENTRE_ABOVE_DECK_M,
         openable: true,
         gas_tight: false,
@@ -327,8 +356,8 @@ pub fn default_layout(frame: &Frame) -> Vec<Opening> {
         kind: Kind::AirInlet,
         space: Space::Machinery,
         face: Face::Aft,
-        x_m: frame.x_aft_m,
-        y_m: w / 3.0,
+        x_m: aft_of(1),
+        y_m: width_of(1) / 3.0,
         z_m: deck1 + INLET_CENTRE_FRACTION * frame.tier_height_m,
         openable: true,
         gas_tight: false,
@@ -339,8 +368,8 @@ pub fn default_layout(frame: &Frame) -> Vec<Opening> {
         kind: Kind::AirIntake,
         space: Space::Machinery,
         face: Face::Aft,
-        x_m: frame.x_aft_m,
-        y_m: -w / 3.0,
+        x_m: aft_of(1),
+        y_m: -width_of(1) / 3.0,
         z_m: deck1 + INLET_CENTRE_FRACTION * frame.tier_height_m,
         openable: true,
         gas_tight: false,
@@ -353,7 +382,7 @@ pub fn default_layout(frame: &Frame) -> Vec<Opening> {
         kind: Kind::AirInlet,
         space: Space::Accommodation,
         face: Face::Aft,
-        x_m: frame.x_aft_m,
+        x_m: aft_of(tiers),
         y_m: 0.0,
         z_m: top_deck + INLET_CENTRE_FRACTION * frame.tier_height_m,
         openable: true,
@@ -410,10 +439,16 @@ pub fn default_layout(frame: &Frame) -> Vec<Opening> {
 /// layout, wholly), else the default layout; each with its distance from the front, whether it faces
 /// the cargo area and whether it is in the zone.
 pub fn place(frame: &Frame, typed: Option<&[Opening]>) -> Placement {
+    place_stepped(frame, &[], typed)
+}
+
+/// [`place`] for a stepped deckhouse: the default layout puts each tier's entrance on that tier's
+/// own aft face and width (see [`default_layout_stepped`]). A typed list is placed as typed.
+pub fn place_stepped(frame: &Frame, tiers: &[TierFace], typed: Option<&[Opening]>) -> Placement {
     let zone_m = zone_length_m(frame.l_icll_m);
     let (list, is_typed): (Vec<Opening>, bool) = match typed {
         Some(t) => (t.to_vec(), true),
-        None => (default_layout(frame), false),
+        None => (default_layout_stepped(frame, tiers), false),
     };
     let openings = list
         .into_iter()
@@ -474,8 +509,22 @@ pub fn frame_of(
 pub fn place_for_vessel(v: &crate::vessel_model::VesselModelInputs) -> Option<Placement> {
     let aft = v.result.aft_arrangement.as_ref()?;
     let frame = frame_of(aft, &v.hull, v.capacity.depth)?;
-    Some(place(
+    let tiers: Vec<TierFace> = aft
+        .deckhouse
+        .as_ref()
+        .map(|d| {
+            d.tiers_plan
+                .iter()
+                .map(|t| TierFace {
+                    x_aft_m: t.x_aft_m,
+                    width_m: t.width_m,
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    Some(place_stepped(
         &frame,
+        &tiers,
         v.capacity.aft_design.deckhouse_openings.as_deref(),
     ))
 }
