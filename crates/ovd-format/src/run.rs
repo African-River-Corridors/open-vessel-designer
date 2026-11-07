@@ -280,6 +280,11 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
     put("air_draft_limit_m", "air_draft_limit_m");
     // Issue #991: the bridge clearance of the route, and where it came from, for the warning.
     put("bridge_clearance_m", "bridge_clearance_m");
+    // Issue #779: a coastal deckhouse is sized to SOLAS V/22 as well as ES-TRIN.
+    put("service_area", "service_area");
+    put("draught_limit_m", "draught_limit_m");
+    put("downflooding_angle_deg", "downflooding_angle_deg");
+    put("downflooding_openings", "downflooding_openings");
     if let Some(i) = option.input("bridge_clearance_m")
         && !i.value.is_null()
     {
@@ -288,11 +293,6 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
             json!(format!("{} input bridge_clearance_m", i.source.as_str())),
         );
     }
-    // Issue #779: a coastal deckhouse is sized to SOLAS V/22 as well as ES-TRIN.
-    put("service_area", "service_area");
-    put("draught_limit_m", "draught_limit_m");
-    put("downflooding_angle_deg", "downflooding_angle_deg");
-    put("downflooding_openings", "downflooding_openings");
     // A null wall thickness asks for the pressure-vessel formula (issue #292); `put` leaves nulls
     // out, and a key left out means the engine's old fixed 25 mm.
     // In the same way a null dome size asks for the dome rule (issue #316), and a null design
