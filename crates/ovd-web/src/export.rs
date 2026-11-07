@@ -10,7 +10,9 @@ use serde_json::Value;
 
 /// The view document of an Option (`side`, `plan` or `midship`), or the reason there is none.
 fn document(state: &AppState, option: &str, view: &str) -> Result<Value, String> {
-    let evaluation = state.session().evaluate();
+    let evaluation = state
+        .session()
+        .evaluate_with_damage(&ovd_shell::damage::off());
     let found = evaluation
         .options
         .iter()

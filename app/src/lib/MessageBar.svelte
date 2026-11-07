@@ -5,6 +5,10 @@
     severity: "error" | "warning" | "note";
     text: string;
     dismiss?: () => void;
+    /** A button for the message (issue #924: "Run damage stability", "Cancel"). */
+    action?: { label: string; run: () => void };
+    /** A bar of cases done over the total, shown with the text. */
+    progress?: { done: number; total: number; label: string };
   }
 </script>
 
@@ -50,6 +54,8 @@
     >
       <span class="shape" aria-hidden="true">{SHAPE[current.severity]}</span>
       <span class="text" role={current.severity === "error" ? "alert" : "status"} title={current.text} data-testid="message-text">{current.text}</span>
+      {#if current.progress}<progress class="meter" aria-label={current.progress.label} value={current.progress.done} max={current.progress.total} data-testid="message-progress"></progress>{/if}
+      {#if current.action}<button type="button" data-testid="message-action" onclick={current.action.run}>{current.action.label}</button>{/if}
       {#if sorted.length > 1}
         <span class="count" data-testid="message-count">{t("app-msg-count", { index: at + 1, count: sorted.length })}</span>
         <button type="button" class="nav" aria-label={t("app-msg-previous")} onclick={() => step(-1)}>&lsaquo;</button>
@@ -64,6 +70,7 @@
           <li class={m.severity} class:current={i === at}>
             <span class="shape" aria-hidden="true">{SHAPE[m.severity]}</span>
             <span class="full">{m.text}</span>
+            {#if m.action}<button type="button" onclick={m.action.run}>{m.action.label}</button>{/if}
             {#if m.dismiss}<button type="button" onclick={m.dismiss}>{t("app-dismiss")}</button>{/if}
           </li>
         {/each}
@@ -79,6 +86,7 @@
   .count { flex: none; font-variant-numeric: tabular-nums; }
   .bar button, .list button { flex: none; font-size: var(--fs-13); padding: 0 var(--sp-2); }
   .nav { min-width: 24px; }
+  .meter { flex: none; width: 10em; height: 0.8em; }
   .shape { flex: none; }
   .error { background: var(--fail-soft); color: var(--fail); }
   .warning { background: var(--warn-soft); color: var(--warn); }

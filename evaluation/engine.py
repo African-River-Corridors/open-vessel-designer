@@ -115,3 +115,28 @@ def vent_case_trace(i: dict, *, rule_sets: tuple[str, ...] = (), select: tuple[s
     if "vent_distance_to_accommodation_m" in i:      # issue #850: a river-only case reads ADN 9.3.1.22.3
         measured["vent_distance_to_accommodation_m"] = float(i["vent_distance_to_accommodation_m"])
     return stern_trace(inputs, measured, rule_sets=rule_sets, select=select)
+
+
+def openings_case_trace(i: dict, *, rule_sets: tuple[str, ...] = (), select: tuple[str, ...] = ()) -> dict:
+    """The Rule Trace of a `kind: openings` case (issue #913): a gas Option on coastal-and-river service, the
+    load line length L (IGC 1.2.31), and the openings of its deckhouse, each given by its distance from the
+    deckhouse front. The harness puts the front 20 m forward of the stern and each opening at
+    `20 - distance_from_front_m` (an opening on the front itself at 20 m), so the engine works the distance
+    back from the position; every other field of a row is read as the typed `deckhouse_openings` input reads it."""
+    inputs = {
+        "cargo": "LNG", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
+        "length_overall_m": float(i["length_overall_m"]), "beam_m": float(i["beam_m"]),
+        "moulded_depth_m": float(i["depth_m"]), "service_area": "coastal-and-river",
+    }
+    rows = []
+    for o in i["openings"]:
+        row = {k: v for k, v in o.items() if k != "distance_from_front_m"}
+        row.update(x_m=20.0 if o["face"] == "front" else 20.0 - float(o["distance_from_front_m"]),
+                   y_m=0.0, z_m=7.0)
+        rows.append(row)
+    out = raw("gas_stability", "stern_trace", dict(
+        inputs=inputs, measured={"openings": rows, "icll_length_m": float(i["l_icll_m"]), "front_x_m": 20.0},
+        rule_sets=list(rule_sets), select=list(select)))
+    if "error" in out:
+        _raise(out["error"])
+    return out["ok"]

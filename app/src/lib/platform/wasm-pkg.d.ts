@@ -6,6 +6,11 @@ declare module "*/wasm-pkg/ovd_web.js" {
     snapshot(): string;
     input_schema(): string;
     evaluate(): string;
+    design_text(): string;
+    profile_text(): string;
+    option_fingerprint(option: string): string;
+    run_damage(option: string, progress: (done: number, total: number) => void): string;
+    keep_damage(option: string, run_json: string): boolean;
     new_design(): string;
     open_text(name: string, text: string): string;
     save_text(): string;

@@ -231,6 +231,9 @@ def test_no_scenario_is_vacuous():
 def test_every_public_function_is_called_by_a_scenario():
     """Label: property"""
     needed = {"simulate." + n for n, v in API["ovd.simulate"].items() if v["kind"] == "function"}
+    # A scenario also runs on the frozen 0.1.0 package, which has no damage stage: `simulate_damage`
+    # (issue #940) is tested in tests/test_damage_stages.py instead.
+    needed.discard("simulate.simulate_damage")
     for module, names in API.items():
         if not module.startswith("ovd.core."):
             continue
