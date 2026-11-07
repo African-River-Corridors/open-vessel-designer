@@ -62,7 +62,7 @@ fn the_new_rows_judge_the_forward_style_and_the_vent_mast_meets_the_distance_to_
     assert_eq!(res["vent_mast_distance_met"], json!(true));
     // The A-60 note is listed and not evaluated, with its reason.
     let a60 = row(&r, "igc/3.2.5/forward-house-aft-face-a60").expect("the A-60 note is listed");
-    assert_eq!(a60["outcome"], json!("not_evaluated"), "{a60}");
+    assert_eq!(a60["outcome"], json!("not evaluated"), "{a60}");
     // The forward Blind Distance check is judged by its own Rule.
     let sight = row(&r, "ovd/aft-block/forward-wheelhouse-blind-distance").expect("sight row");
     assert_eq!(sight["outcome"], json!("pass"), "{sight}");
@@ -103,7 +103,7 @@ fn the_other_styles_are_not_judged_by_the_forward_rows() {
         ] {
             let outcome = row(&r, id).map(|x| x["outcome"].clone());
             assert!(
-                outcome.is_none() || outcome == Some(json!("not_applicable")),
+                outcome.is_none() || outcome == Some(json!("not applicable")),
                 "{style}: {id}: {outcome:?}"
             );
         }
