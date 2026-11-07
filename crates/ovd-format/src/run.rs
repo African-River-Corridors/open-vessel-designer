@@ -280,11 +280,21 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
     put("eta_d", "propulsive_efficiency");
     put("speed_max_kn", "max_speed_kn");
     put("air_draft_limit_m", "air_draft_limit_m");
+    // Issue #991: the bridge clearance of the route, and where it came from, for the warning.
+    put("bridge_clearance_m", "bridge_clearance_m");
     // Issue #779: a coastal deckhouse is sized to SOLAS V/22 as well as ES-TRIN.
     put("service_area", "service_area");
     put("draught_limit_m", "draught_limit_m");
     put("downflooding_angle_deg", "downflooding_angle_deg");
     put("downflooding_openings", "downflooding_openings");
+    if let Some(i) = option.input("bridge_clearance_m")
+        && !i.value.is_null()
+    {
+        p.insert(
+            "bridge_clearance_source".into(),
+            json!(format!("{} input bridge_clearance_m", i.source.as_str())),
+        );
+    }
     // A null wall thickness asks for the pressure-vessel formula (issue #292); `put` leaves nulls
     // out, and a key left out means the engine's old fixed 25 mm.
     // In the same way a null dome size asks for the dome rule (issue #316), and a null design
@@ -374,8 +384,8 @@ pub use arc_rules::load::canonical_json;
 /// (`structure_geometry`) stay outside, like the meshes: `ovd run --json` stores them only on request
 /// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
 /// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
-/// moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results. The stern arrangement (`stern_arrangement`, issue #887) is a summary of what the drawing block holds, for the Stern & crew view; it too is outside the hash. So are `damage_status` (`run`, `not run` or `not applicable`) and `damage_cases` (the number of damage cases, counted even when damage is skipped), issue #923: when damage runs they add to the results and move no saved hash. `boil_off_detail` (the U-value, the heat leak per tank, the tank outer area and the boil-off per day, issue #919) is outside it: each is worked from inputs and results that are in the hash, so hashing them would move every saved LNG hash with no physical change.
-pub const UNHASHED_KEYS: [&str; 23] = [
+/// moved no saved hash. The air draft report (`air_draft_report`, issue #991: the air draft light and laden, the highest point, the bridge clearance) is outside it, so adding it moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results. The stern arrangement (`stern_arrangement`, issue #887) is a summary of what the drawing block holds, for the Stern & crew view; it too is outside the hash. So are `damage_status` (`run`, `not run` or `not applicable`) and `damage_cases` (the number of damage cases, counted even when damage is skipped), issue #923: when damage runs they add to the results and move no saved hash. `boil_off_detail` (the U-value, the heat leak per tank, the tank outer area and the boil-off per day, issue #919) is outside it: each is worked from inputs and results that are in the hash, so hashing them would move every saved LNG hash with no physical change.
+pub const UNHASHED_KEYS: [&str; 24] = [
     "drawing",
     "stability_marks",
     "cost_masses",
@@ -394,6 +404,7 @@ pub const UNHASHED_KEYS: [&str; 23] = [
     "crew",
     "rooms",
     "air_drafts",
+    "air_draft_report",
     "stern_arrangement",
     "holding_time",
     "damage_status",

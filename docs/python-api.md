@@ -276,6 +276,7 @@ The inputs are those of `ovd schema`. Run `ovd schema` for the units, the choice
 | `sightline_margin_m` | Sightline margin | number |  |
 | `wheelhouse_max_lift_m` | Wheelhouse maximum lift | number |  |
 | `air_draft_limit_m` | Air-draft limit | number |  |
+| `bridge_clearance_m` | Bridge clearance | number |  |
 | `draught_limit_m` | Draught limit | number |  |
 | `lock_length_m` | Lock length | number |  |
 | `lock_width_m` | Lock width | number |  |

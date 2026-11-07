@@ -1479,6 +1479,8 @@ fn simulate_once_inner(
     inp.water_density = rho;
     inp.required_freeboard = freeboard;
     inp.air_draft_limit_m = air_draft_limit;
+    inp.bridge_clearance_m = truthy_float(p, "bridge_clearance_m")?;
+    inp.bridge_clearance_source = bridge_source_of(p);
     // The end spaces. A key left out keeps the core default, the value the engine always used.
     inp.bow_rake_to_depth_ratio = get_or(
         p,
@@ -2020,6 +2022,87 @@ fn simulate_once_inner(
         ),
         ids,
     )
+    .map(|v| {
+        with_air_draft_report(
+            v,
+            &r,
+            (
+                inp.bridge_clearance_m,
+                inp.bridge_clearance_source.clone(),
+                inp.ballast_capacity_t,
+            ),
+        )
+    })
+}
+
+/// Issue #991: where the bridge clearance comes from, for the warning: the `run` layer names the source of
+/// the Option's input (`bridge_clearance_source`); the Python API has none, so the value is a typed one.
+fn bridge_source_of(p: &Map<String, Value>) -> Option<String> {
+    p.get("bridge_clearance_m").filter(|v| !v.is_null())?;
+    Some(
+        p.get("bridge_clearance_source")
+            .and_then(Value::as_str)
+            .unwrap_or("typed input bridge_clearance_m")
+            .to_string(),
+    )
+}
+
+/// Issue #991: the `air_draft_report` block of the results: the air draft, light and laden, with the
+/// highest point named, and the bridge clearance of the route when one is given, with its source and
+/// whether the air draft is over it. A warning, never a block: the warning itself is in `warnings`. The
+/// block is outside the results hash (`UNHASHED_KEYS`), so no saved hash moves. Each air draft is the
+/// river one (the wheelhouse lowered for transit; the vent exit when the mast does not lower).
+fn with_air_draft_report(
+    mut v: Value,
+    r: &BargeCapacityResult,
+    bridge: (Option<f64>, Option<String>, f64),
+) -> Value {
+    let Some(point) = r.highest_point else {
+        return v;
+    };
+    let (limit, source, ballast_capacity_t) = bridge;
+    let ballasted = ballast_capacity_t > 0.0;
+    let worked = if ballasted {
+        r.air_draft_ballast_m
+    } else {
+        r.air_draft_light_m
+    };
+    // A light air draft that is not worked (not finite) is not "under the limit": the laden one stands in.
+    let light_worked = worked.filter(|g| g.is_finite());
+    let laden_now = v["results"]["air_draft_loaded_m"].as_f64();
+    let governing = light_worked.or(laden_now);
+    let condition = match (light_worked, ballasted) {
+        (Some(_), true) => "ballasted light",
+        (Some(_), false) => "light",
+        (None, _) => "laden (the light draught is not worked)",
+    };
+    let bridge_limit = limit.map_or(Value::Null, |limit| {
+        json!({
+            "limit_m": num(limit),
+            "source": source,
+            "condition": condition,
+            "air_draft_m": opt_num(governing),
+            "over_m": governing.map_or(Value::Null, |g| num((g - limit).max(0.0))),
+            "exceeded": governing.is_some_and(|g| g.is_finite() && g > limit + 1e-9),
+        })
+    });
+    let laden = v["results"]["air_draft_loaded_m"].clone();
+    if let Some(o) = v.as_object_mut() {
+        o.insert(
+            "air_draft_report".to_string(),
+            json!({
+                "highest_point": {
+                    "key": point.key,
+                    "label": point.label(),
+                    "top_above_keel_m": num(point.top_above_keel_m),
+                },
+                "light_m": opt_num(r.air_draft_light_m),
+                "laden_m": laden,
+                "bridge_limit": bridge_limit,
+            }),
+        );
+    }
+    v
 }
 
 /// Issue #331: the `liquid` block, for a liquid bulk Cargo only, so a dry bulk result keeps its keys.
@@ -3221,6 +3304,8 @@ fn simulate_gas(
         water_density_t_per_m3: rho,
         required_freeboard_m: fb,
         air_draft_limit_m: truthy_float(p, "air_draft_limit_m")?,
+        bridge_clearance_m: truthy_float(p, "bridge_clearance_m")?,
+        bridge_clearance_source: bridge_source_of(p),
         // Issue #822: the cargo vent mast; the Service Area is always given (issue #925).
         river_only: p.get("service_area").and_then(Value::as_str) == Some("river-only"),
         vent_stub_m: get_or(p, "vent_stub_m", ovd_core::vent_mast::DEFAULT_VENT_STUB_M)?,
@@ -3615,6 +3700,17 @@ fn simulate_gas(
         ),
         ids,
     )
+    .map(|v| {
+        with_air_draft_report(
+            v,
+            r,
+            (
+                f.engine_inputs.bridge_clearance_m,
+                f.engine_inputs.bridge_clearance_source.clone(),
+                f.engine_inputs.ballast_capacity_t,
+            ),
+        )
+    })
     .map(|mut v| {
         if !gas_damage_block.is_null()
             && let Some(o) = v.as_object_mut()

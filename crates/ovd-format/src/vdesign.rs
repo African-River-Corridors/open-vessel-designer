@@ -1184,6 +1184,12 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
         applies_to: AppliesTo::All,
         value: "null",
     },
+    // Issue #991: a file saved before gives no bridge clearance, so no bridge warning.
+    LegacyFixedJson {
+        name: "bridge_clearance_m",
+        applies_to: AppliesTo::All,
+        value: "null",
+    },
     // Issue #429: a file saved before costs in USD, with no price base date.
     LegacyFixedJson {
         name: "currency",
@@ -3278,6 +3284,13 @@ pub const INPUTS: &[InputSpec] = &[
     spec(
         "air_draft_limit_m",
         "Air-draft limit",
+        NUM_OR_NONE,
+        false,
+        Group::WaterwayLimits,
+    ),
+    spec(
+        "bridge_clearance_m",
+        "Bridge clearance",
         NUM_OR_NONE,
         false,
         Group::WaterwayLimits,
