@@ -552,3 +552,45 @@ def test_the_summary_and_a11_say_whether_damage_ran():
     assert "not evaluated" in said["not evaluated"] and "applies" not in said["not evaluated"]
     # A run that does not say whether damage ran is not read as run.
     assert "Damage stability: not evaluated" in _summary_text(cr.build(_run_without("damage_status"), "A basis", assets=GA))
+
+
+# --- issue #994: the hazard-study box and the verdict line of a forward wheelhouse ---
+
+def _run_with_hazard(required, reasons=()):
+    """The stored run with a `stern_arrangement.hazard_study` block, as the engine writes it."""
+    run = json.loads(json.dumps(RUN))
+    o = next(x for x in run["options"] if x["name"] == "A basis")
+    o["results"]["stern_arrangement"] = {
+        "style": "wheelhouse_forward" if required else "deckhouse",
+        "hazard_study": {"required": required, "reasons": list(reasons)},
+    }
+    return run
+
+
+def test_an_arrangement_that_needs_a_hazard_study_has_a_box_at_the_top_of_the_summary():
+    """Label: property"""
+    reasons = [
+        {"id": "no_gas_vessel_in_service", "text": "No gas-cargo vessel in service has this."},
+        {"id": "no_forward_blind_distance_check", "text": "The stack holds no Blind Distance Rule."},
+    ]
+    doc = cr.build(_run_with_hazard(True, reasons), "A basis")
+    body = _section(doc, "summary")["body"]
+    box = body[0]
+    assert box["type"] == "data_box" and box["id"] == "hazard-study"
+    assert "hazard study" in box["title"].lower()
+    # Each reason of the run, and only those, with its own text.
+    assert [i["value"] for i in box["items"]] == [r["text"] for r in reasons]
+    verdict = body[1]["markdown"]
+    assert verdict.startswith("Trace verdict:") and "not an approval" in verdict and "hazard study" in verdict
+    assert "approved" not in verdict.replace("not an approval", "")
+
+
+def test_an_arrangement_that_needs_no_study_has_no_box_and_the_verdict_it_had():
+    """Label: property"""
+    base = cr.build(RUN, "A basis", date="2026-10-30")
+    for run in (_run_with_hazard(False), RUN):
+        doc = cr.build(run, "A basis", date="2026-10-30")
+        body = _section(doc, "summary")["body"]
+        assert all(b.get("id") != "hazard-study" for b in body)
+        assert "hazard" not in body[0]["markdown"].lower()
+    assert cr.build(_run_with_hazard(False), "A basis", date="2026-10-30") == base
