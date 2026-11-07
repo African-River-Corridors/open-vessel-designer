@@ -106,6 +106,8 @@ check-name-stability-not-assessed = Stability — not assessed
 check-stability-not-assessed = stability could not be assessed: { $reason }
 fit-refused-cap-too-wide = { $n } across at the diameter cap { $cap } m do not fit in the beam.
 fit-refused-min-side-space = No tank fits across the beam with the minimum side space { $min } m.
+fit-refused-depth-not-settled = The depth that follows the tank does not settle, near { $depth } m.
+fit-refused-standing-height = The tank top is to stand { $h } m above the deck, more than the tank diameter { $od } m.
 fit-refused-no-tank-at-cap = No tank fits at the diameter cap { $cap } m.
 fit-refused-cap-side-space = At the diameter cap { $cap } m the side space is { $side } m, under the IGC 2.4 minimum { $need } m.
 
@@ -444,6 +446,7 @@ msg-hard-range = `{ $input }` = { $value } is out of range: must be { $bound } (
 msg-soft-range = `{ $input }` = { $value } is outside the usual range { $min } to { $max } (soft limit); accepted
 msg-offsets-dimension = `{ $input }` = { $typed } differs from the offsets table's { $table }: an offsets hull takes its length, beam and depth from its table
 msg-slender-hull = `{ $input }` = { $length } is { $ratio } times `{ $depth_input }` = { $depth }, over about { $limit }: a very slender hull for its depth (soft limit); accepted
+msg-standing-height-typed-depth = `{ $depth_input }` is typed, so `{ $input }` is not used: the depth follows the tank only when `{ $depth_input }` is left out
 msg-containment-cargo = `{ $input }` = { $containment } cannot carry { $cargo } ({ $phase }); use { $fits }
 msg-freeboard-depth = `{ $input }` = { $freeboard } must be less than `{ $depth_input }` = { $depth } (hard limit)
 msg-whole-number = `{ $input }` = { $value } must be a whole number (hard limit)

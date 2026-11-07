@@ -209,6 +209,8 @@ input-tank-structure-factor-default-by = Cargo, LPG carriage condition
 
 input-tanks-across = Tanks across (override)
 
+input-tank-top-above-deck-m = Tank top above deck
+
 input-tanks-in-line = Tanks in line
 
 input-tank-support-height-m = Tank support height

@@ -245,6 +245,7 @@ Defaults come from the Defaults Profile (`crates/ovd-format/src/builtin_profile.
 | `ruleset` | `IGC_2G` (only value) | — | IGC 2.4.1.1 per tank, 2.4.2 datum |
 | `max_tank_od_m` | 16.0 | m | Tool limit, not a rule |
 | `tanks_across` | none (the search tries 1, 2 and 3) | tanks | Issue #675 |
+| `tank_top_above_deck_m` | none (the depth is the one typed, or the ratio default). 0 is tanks in hold; above 0 the depth follows the tank: double bottom, support and diameter, less this height (0.3 m more at 0). The profile holds the later default by Service Area: coastal 2.0 m, river only OD/2 | m | Issue #992, maintainer decision 2026-11-07; the 0.3 m gap is an estimate |
 | `tanks_in_line` | 2 | tanks | Original engine |
 | `tank_support_height_m` | 0.5 | m | Original engine |
 | `tank_dome_height_m` | 2.0 | m | Original engine |

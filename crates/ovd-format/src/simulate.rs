@@ -3067,6 +3067,8 @@ fn simulate_gas(
         fill_ratio: loading.fill,
         cargo_density_kg_m3: loading.density_kg_m3,
         self_propelled,
+        // Issue #992: the tank top above the deck; the depth of each candidate then follows its tank.
+        tank_top_above_deck_m: opt_float(p, "tank_top_above_deck_m")?,
         depths: depths.clone(),
         // Issue #675: tanks across fixed by the user, or 1, 2 and 3 tried; and a least side space.
         tanks_wide: match opt_float(p, "tanks_across")? {
@@ -3481,6 +3483,25 @@ fn simulate_gas(
         .gas_basis
         .as_ref()
         .and_then(|b| gas_steel(b, &vessel_inputs));
+    let mut arrangement = json!({
+        "ruleset": ruleset,
+        "fill_ratio": num(fill),
+        "n_wide": f.n_tanks_wide,
+        "n_long": f.n_tanks_long,
+        "tank_od_m": num(f.tank_od_m),
+        "per_tank_m3": num(f.per_tank_volume_m3),
+        "side_clearance_m": num(f.side_clearance_m),
+        "depth_m": num(f.depth_m),
+        "depth_optimised": optimise,
+        "candidates_tried": f.candidates_tried,
+        "feasible": f.feasible,
+    });
+    // Issue #992: only when asked for, so a result without the input is unchanged.
+    if let Some(h) = options.tank_top_above_deck_m {
+        arrangement["tank_top_above_deck_m"] = num(h);
+        arrangement["tank_top_above_keel_m"] = num(ga::tank_top_above_keel_m(r));
+        arrangement["depth_follows_tank"] = json!(true);
+    }
     with_blocks_and_text_ids(
         powering_block.clone(),
         sightline_json(r),
@@ -3496,19 +3517,7 @@ fn simulate_gas(
             "hydrostatic_table": hydrostatic_table,
             "geometry": geo,
             "drawing": drawing,
-            "arrangement": {
-                "ruleset": ruleset,
-                "fill_ratio": num(fill),
-                "n_wide": f.n_tanks_wide,
-                "n_long": f.n_tanks_long,
-                "tank_od_m": num(f.tank_od_m),
-                "per_tank_m3": num(f.per_tank_volume_m3),
-                "side_clearance_m": num(f.side_clearance_m),
-                "depth_m": num(f.depth_m),
-                "depth_optimised": optimise,
-                "candidates_tried": f.candidates_tried,
-                "feasible": f.feasible,
-            },
+            "arrangement": arrangement,
             "results": {
                 "cargo_t": num(cargo_t),
                 "cargo_volume_bound_t": num(f.volume_capacity_t),

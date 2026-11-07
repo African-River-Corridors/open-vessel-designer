@@ -170,6 +170,7 @@ The inputs are those of `ovd schema`. Run `ovd schema` for the units, the choice
 | `holding_fill_ratio` | Holding-time fill (override) | number |  |
 | `tank_structure_factor` | Tank structure factor | number |  |
 | `tanks_across` | Tanks across (override) | number |  |
+| `tank_top_above_deck_m` | Tank top above deck | number |  |
 | `tanks_in_line` | Tanks in line | number |  |
 | `tank_support_height_m` | Tank support height | number |  |
 | `tank_dome_height_m` | Tank dome height (override) | number |  |

@@ -152,6 +152,14 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
     put("fill_ratio", "fill_ratio");
     put("max_tank_od_m", "max_tank_od_m");
     put("optimise_depth", "optimise_depth");
+    // Issue #992: a typed depth wins over a tank top above the deck (the depth follows the tank only
+    // when it is not typed); `report` warns of the pair.
+    let depth_typed = option
+        .input("moulded_depth_m")
+        .is_some_and(|i| i.source == crate::vdesign::Source::Typed);
+    if !depth_typed {
+        put("tank_top_above_deck_m", "tank_top_above_deck_m");
+    }
     for name in [
         "water_density_t_per_m3",
         "squat_safety_margin_m",

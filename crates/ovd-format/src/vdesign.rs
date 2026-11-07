@@ -1112,6 +1112,12 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
         applies_to: AppliesTo::Only("type_c_tanks"),
         value: "null",
     },
+    // Issue #992: a file saved before sets no standing height, so its depth is the one typed.
+    LegacyFixedJson {
+        name: "tank_top_above_deck_m",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        value: "null",
+    },
     // Issue #417: no opening faces the cargo area.
     LegacyFixedJson {
         name: "deckhouse_front_opening",
@@ -2613,6 +2619,15 @@ pub const INPUTS: &[InputSpec] = &[
     only(
         "tanks_across",
         "Tanks across (override)",
+        NUM_OR_NONE,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    // Issue #992: how far the tank top stands above the main deck; 0 is tanks in hold. None: the
+    // depth is the one typed, or the ratio default, as before.
+    only(
+        "tank_top_above_deck_m",
+        "Tank top above deck",
         NUM_OR_NONE,
         "type_c_tanks",
         Group::GasTanks,
@@ -5805,6 +5820,23 @@ fn cross_checks(
             &["min_freeboard_m", "moulded_depth_m"],
         );
     }
+    // Issue #992: a typed depth wins over a tank top above the deck.
+    if inputs
+        .iter()
+        .any(|(k, i)| k == DEPTH_INPUT && i.source == Source::Typed)
+        && get("tank_top_above_deck_m").is_some_and(|v| v.as_f64().is_some())
+    {
+        report.warning_text(
+            at(text!(
+                "msg-standing-height-typed-depth",
+                "`{depth_input}` is typed, so `{input}` is not used: the depth follows the tank \
+                 only when `{depth_input}` is left out",
+                depth_input = Arg::input("moulded_depth_m"),
+                input = Arg::input("tank_top_above_deck_m")
+            )),
+            &["moulded_depth_m", "tank_top_above_deck_m"],
+        );
+    }
     offsets_checks(&get, report, at);
     openings_checks(&get, report, at);
     shipd_checks(&get, report, at);
@@ -6096,6 +6128,27 @@ pub(crate) fn check_profile_defaults(profile: &Profile) -> Result<(), String> {
         if let Some(bound) = profile.hard("depth_to_beam_ratio")?.breach(ratio) {
             return Err(format!(
                 "profile default is invalid: `depth_to_beam_ratio` for {group} = {ratio} is out of range: must be {bound} (hard limit)"
+            ));
+        }
+    }
+    // Issue #992: each Service Area's default standing height is a height in metres or a share of the
+    // tank outer diameter, one of the two, not negative; the share is above 0 and at most 1.
+    for area in SERVICE_AREAS {
+        let Some(r) = profile.default_by("tank_top_above_deck_default_rule", "service_area", area)
+        else {
+            continue; // a copy of an older profile has no rule: the default stays none
+        };
+        let metres = r.get("metres").and_then(Value::as_f64);
+        let share = r.get("od_fraction").and_then(Value::as_f64);
+        let ok = match (metres, share) {
+            (Some(m), None) => m.is_finite() && m >= 0.0,
+            (None, Some(f)) => f > 0.0 && f <= 1.0,
+            _ => false,
+        };
+        if !ok {
+            return Err(format!(
+                "profile `tank_top_above_deck_default_rule.default_by_service_area.{area}` must \
+                 hold `metres` (0 or more) or `od_fraction` (above 0, at most 1)"
             ));
         }
     }

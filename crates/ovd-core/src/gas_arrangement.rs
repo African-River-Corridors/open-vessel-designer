@@ -67,6 +67,30 @@ pub const DEFAULT_TANKS_WIDE: [i64; 3] = [1, 2, 3];
 pub const DEFAULT_EXTRA_CLEARANCE_M: [f64; 4] = [0.5, 1.0, 1.5, 2.0];
 /// The default least freeboard (m), the one `BargeCapacityInputs` uses.
 pub const DEFAULT_REQUIRED_FREEBOARD_M: f64 = 0.3;
+/// Issue #992: with the tanks in hold (a standing height of 0), the gap between the tank top and
+/// the underside of the main deck (m). Built practice as the research for #993 gave it; an estimate.
+pub const TANKS_IN_HOLD_DECK_ALLOWANCE_M: f64 = 0.3;
+/// Issue #992: how many times the build is repeated to settle a depth that follows the tank.
+const DEPTH_SETTLE_ROUNDS: usize = 8;
+
+/// Issue #992: the moulded depth that puts the tank top `standing_m` above the main deck (m), to the
+/// millimetre. `tank_top_above_keel_m` is the double bottom, the support and the tank outer diameter.
+/// At 0 the tanks are in hold, and the deck stands [`TANKS_IN_HOLD_DECK_ALLOWANCE_M`] above the tank
+/// top; above 0 the deck cuts the tank `standing_m` below its top.
+pub fn depth_for_standing_height(tank_top_above_keel_m: f64, standing_m: f64) -> f64 {
+    let gap = if standing_m <= 0.0 {
+        TANKS_IN_HOLD_DECK_ALLOWANCE_M
+    } else {
+        0.0
+    };
+    libm::round((tank_top_above_keel_m - standing_m + gap) * 1000.0) / 1000.0
+}
+
+/// The top of the tank shell above the keel (m): the double bottom, the support and the outer
+/// diameter (`Detail::tank_top_above_keel_m` of the capacity run). Dome and shield not counted.
+pub fn tank_top_above_keel_m(r: &BargeCapacityResult) -> f64 {
+    r.tank_rules.as_ref().map_or(0.0, |t| t.bottom_gap_m) + opt_or_zero(r.tank_outer_diameter_m)
+}
 
 /// The keyword arguments of `fit`. `Default` is the Python defaults.
 #[derive(Debug, Clone, PartialEq)]
@@ -86,6 +110,11 @@ pub struct FitOptions {
     /// Issue #779: size a fixed deckhouse wheelhouse to SOLAS V/22.1.1 as well (a coastal Option).
     pub solas_v22_sizing: bool,
     pub self_propelled: bool,
+    /// Issue #992: the height of the tank top above the main deck (m). `Some`: the depth of each
+    /// candidate follows its tank ([`depth_for_standing_height`]) and `depths` only seeds the build
+    /// (the tank depends on the depth only a little, through the bow rake). `Some(0.0)` is tanks in hold. `None`: depth is
+    /// the one asked for, as before.
+    pub tank_top_above_deck_m: Option<f64>,
     pub depths: Vec<f64>,
     pub tanks_wide: Vec<i64>,
     pub extra_clearance_m: Vec<f64>,
@@ -368,6 +397,7 @@ impl Default for FitOptions {
             sightline_limit_m: None,
             solas_v22_sizing: false,
             self_propelled: true,
+            tank_top_above_deck_m: None,
             depths: DEFAULT_DEPTHS_M.to_vec(),
             tanks_wide: DEFAULT_TANKS_WIDE.to_vec(),
             extra_clearance_m: DEFAULT_EXTRA_CLEARANCE_M.to_vec(),
@@ -1116,7 +1146,10 @@ struct Candidate {
     /// `closest_to_passing` counts: never more than the candidate fails in all.
     cheap_failed: usize,
     tonnage: f64,
+    /// The moulded depth of the candidate. With a standing height (issue #992) it follows the tank.
     depth: f64,
+    /// The depth of the search step that built it (the same as `depth` without a standing height).
+    search_depth: f64,
     result: BargeCapacityResult,
     journey: JourneyDeratingResult,
     inputs: BargeCapacityInputs,
@@ -1226,7 +1259,44 @@ impl Search<'_> {
 
     fn build(&mut self, d: f64, nw: i64, nl: i64) -> Result<Option<Built>, PyError> {
         self.tried += 1;
-        let built = self.build_or_refuse(d, nw, nl)?;
+        let mut built = self.build_or_refuse(d, nw, nl)?;
+        // Issue #992: the depth follows the tank. The tank depends a little on the depth (the bow
+        // rake is a share of it, so the cargo zone and the tank length move), so the depth is
+        // settled by repeating the build at the depth the last tank gave, to the millimetre.
+        if let (Ok((_, r)), Some(h)) = (&built, self.o.tank_top_above_deck_m) {
+            let od = opt_or_zero(r.tank_outer_diameter_m);
+            if h > od + 1e-9 {
+                built = Err(text!(
+                    "fit-refused-standing-height",
+                    "The tank top is to stand {h} m above the deck, more than the tank diameter {od} m.",
+                    h = Arg::fixed(h, 2),
+                    od = Arg::fixed(od, 2),
+                ));
+            } else {
+                let mut dd = depth_for_standing_height(tank_top_above_keel_m(r), h);
+                let mut settled = false;
+                for _ in 0..DEPTH_SETTLE_ROUNDS {
+                    let b = self.build_or_refuse(dd, nw, nl)?;
+                    let next = match &b {
+                        Ok((_, r2)) => depth_for_standing_height(tank_top_above_keel_m(r2), h),
+                        Err(_) => dd,
+                    };
+                    built = b;
+                    if (next - dd).abs() < 0.0015 {
+                        settled = true;
+                        break;
+                    }
+                    dd = next;
+                }
+                if built.is_ok() && !settled {
+                    built = Err(text!(
+                        "fit-refused-depth-not-settled",
+                        "The depth that follows the tank does not settle, near {depth} m.",
+                        depth = Arg::fixed(dd, 2),
+                    ));
+                }
+            }
+        }
         Ok(match built {
             Ok(b) => Some(b),
             Err(reason) => {
@@ -1373,7 +1443,24 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                     s.tried += 1;
                     let mut i2 = inp0.clone();
                     i2.side_clearance_override_m = Some(side + extra);
-                    let r2 = capacity(&i2)?;
+                    let mut r2 = capacity(&i2)?;
+                    // Issue #992: a wider side space gives a smaller tank, so the depth that
+                    // follows the tank is settled again for this variant.
+                    if let Some(h) = o.tank_top_above_deck_m {
+                        let mut settled = false;
+                        for _ in 0..DEPTH_SETTLE_ROUNDS {
+                            let want = depth_for_standing_height(tank_top_above_keel_m(&r2), h);
+                            if (want - i2.depth).abs() < 0.0015 {
+                                settled = true;
+                                break;
+                            }
+                            i2.depth = want;
+                            r2 = capacity(&i2)?;
+                        }
+                        if !settled || h > opt_or_zero(r2.tank_outer_diameter_m) + 1e-9 {
+                            continue;
+                        }
+                    }
                     // Mutation survivors (#58), `&&` to `||` and `>` to `>=` below: equivalent. The
                     // two differ from the real test only for a candidate with a tank but zero
                     // capacity (a fill ratio of 0, or a product that underflows to 0); a tank
@@ -1393,15 +1480,22 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                 }
             }
             for (inp, r) in cands.into_iter().chain(more) {
-                let j = derate_candidate(&r, loa, beam, d, t_max, o.water_density_t_per_m3)?;
-                let cheap = cheap_checks(&r, &j, d, o);
+                // With a standing height (issue #992) the depth is the candidate's own, and the
+                // draught cap is the less of the limit and its own depth less the freeboard.
+                let dep = inp.depth;
+                let t_cap = match o.tank_top_above_deck_m {
+                    Some(_) => t_max.min(dep - o.required_freeboard_m),
+                    None => t_max,
+                };
+                let j = derate_candidate(&r, loa, beam, dep, t_cap, o.water_density_t_per_m3)?;
+                let cheap = cheap_checks(&r, &j, dep, o);
                 // With Rule Sets: the trace before stability (its stability Rules are not yet
                 // evaluated, so they cannot fail here).
                 let cheap_failed = if o.rules.is_empty() {
                     cheap.iter().filter(|k| k.is_error() && !k.ok).count()
                 } else {
                     failing_groups(&candidate_failures(
-                        &candidate_measured(&r, &j, &inp, d, &cheap, Vec::new()),
+                        &candidate_measured(&r, &j, &inp, dep, &cheap, Vec::new()),
                         o,
                     ))
                     .len()
@@ -1409,7 +1503,8 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                 pool.all.push(Candidate {
                     cheap_failed,
                     tonnage: ranked_cargo(&r, &j, &inp, o),
-                    depth: d,
+                    depth: dep,
+                    search_depth: d,
                     result: r,
                     journey: j,
                     inputs: inp,
@@ -1540,7 +1635,7 @@ fn tried_arrangements(
     for &d in &o.depths {
         for &nw in &o.tanks_wide {
             let group: Vec<usize> = (0..pool.all.len())
-                .filter(|&i| pool.all[i].depth == d && nw_of(&pool.all[i]) == nw)
+                .filter(|&i| pool.all[i].search_depth == d && nw_of(&pool.all[i]) == nw)
                 .collect();
             if group.is_empty() {
                 if let Some((_, _, why)) = refused.iter().find(|(rd, rn, _)| *rd == d && *rn == nw)
@@ -1615,7 +1710,7 @@ fn tried_arrangements(
             let c = &pool.all[i];
             let r = &c.result;
             out.push(TriedArrangement {
-                depth_m: d,
+                depth_m: c.depth,
                 n_wide: nw,
                 n_long: c.inputs.n_tanks_long,
                 tank_od_m: opt_or_zero(r.tank_outer_diameter_m),
@@ -1689,6 +1784,7 @@ pub fn fit(
                 cheap_failed: 1,
                 tonnage: 0.0,
                 depth: d,
+                search_depth: d,
                 result: r,
                 journey: j,
                 inputs: inp,
@@ -1702,7 +1798,15 @@ pub fn fit(
         .filter(|c| c.is_error() && !c.ok)
         .map(|c| format!("{}: {}", c.name, c.message))
         .collect();
-    let feasible = if o.rules.is_empty() {
+    // Issue #992: nothing was built because every tank stood higher than its diameter allows (or
+    // none floated): the plain attempt below is not an answer.
+    let nothing_built = pick.is_none() && o.tank_top_above_deck_m.is_some();
+    if nothing_built {
+        failed.push("Arrangement: no tank was built at the standing height asked for; see the arrangements tried".to_string());
+    }
+    let feasible = if nothing_built {
+        false
+    } else if o.rules.is_empty() {
         all_ok(&checks)
     } else {
         // The failing rows no check of the list reports (a tank Rule, a Rule of a set loaded at
