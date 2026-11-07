@@ -336,7 +336,6 @@
   "total_m2": 266.7684210526316
  },
  "stern_arrangement": {
-  "access_tiers": 2,
   "icll_length_m": 131.2004830188679,
   "opening_zone_m": 5.0,
   "openings": [
@@ -356,7 +355,7 @@
     "z_m": 13.0
    },
    {
-    "distance_from_front_m": 3.8499999999999996,
+    "distance_from_front_m": 10.46600076834422,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -366,12 +365,12 @@
     "openable": true,
     "space": "accommodation",
     "tier": 2,
-    "x_m": 13.982000000000001,
+    "x_m": 7.365999231655781,
     "y_m": -6.85,
     "z_m": 15.6
    },
    {
-    "distance_from_front_m": 3.8499999999999996,
+    "distance_from_front_m": 10.46600076834422,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -381,7 +380,7 @@
     "openable": true,
     "space": "accommodation",
     "tier": 3,
-    "x_m": 13.982000000000001,
+    "x_m": 7.365999231655781,
     "y_m": -6.85,
     "z_m": 18.2
    },
@@ -431,7 +430,7 @@
     "z_m": 13.95
    },
    {
-    "distance_from_front_m": 3.8499999999999996,
+    "distance_from_front_m": 10.46600076834422,
     "face": "aft",
     "faces_cargo_area": false,
     "gas_tight": false,
@@ -441,7 +440,7 @@
     "openable": true,
     "space": "accommodation",
     "tier": 3,
-    "x_m": 13.982000000000001,
+    "x_m": 7.365999231655781,
     "y_m": 0.0,
     "z_m": 19.15
    },
@@ -523,7 +522,6 @@
   ],
   "openings_basis": "Default layout (ESTIMATE: positions, door height and count are not from a source): accommodation and machinery doors and air inlets on the aft end, no opening on the front, wheelhouse doors on the sides designed gas-tight (IGC 3.2.4.2). The zone is 4 % of L, at least 3 m and at most 5 m, from the deckhouse front (IGC 3.2.4.1); L by ICLL Regulation 3(1)(a) at 85 % of the depth, without the rudder-stock alternative.",
   "openings_source": "default",
-  "room_tiers": 1,
   "style": "deckhouse",
   "tiers": 3,
   "wheelhouse": "fixed",
