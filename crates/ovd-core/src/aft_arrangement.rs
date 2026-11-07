@@ -36,7 +36,13 @@ pub const DEFAULT_WHEELHOUSE_LENGTH_M: f64 = 3.60;
 pub const DEFAULT_WHEELHOUSE_WIDTH_M: f64 = 6.40;
 pub const DEFAULT_WHEELHOUSE_HEIGHT_M: f64 = 3.40;
 pub const DEFAULT_WHEELHOUSE_GAP_M: f64 = 0.30;
+/// The eye height the engine reads when an input is absent, and what a file saved before the input
+/// existed keeps (ADR 0007: its results do not move): 1.50 m, an estimate carried over from the original
+/// engine. A new Option takes [`ES_TRIN_EYE_ABOVE_FLOOR_M`] from the Defaults Profile.
 pub const DEFAULT_WHEELHOUSE_EYE_ABOVE_FLOOR_M: f64 = 1.50;
+/// The helmsman's eye above the wheelhouse floor at the steering position: 1.65 m, as ES-TRIN 2025/1
+/// Art. 7.02(3) states (issue #990). The sightline of a tug has no input for it, so it reads this.
+pub const ES_TRIN_EYE_ABOVE_FLOOR_M: f64 = 1.65;
 pub const DEFAULT_SIGHTLINE_MARGIN_M: f64 = 0.50;
 pub const DEFAULT_WHEELHOUSE_MAX_LIFT_M: f64 = 6.00;
 
