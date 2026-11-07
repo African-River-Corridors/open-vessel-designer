@@ -1,5 +1,2 @@
 <!-- unreleased -->
 - Weather shield over tanks that stand above the deck (issue #992, phase 2): with `tank_top_above_deck_m` set, the result holds `arrangement.above_deck`: whether the shield is fitted, its mass (already in the lightship, the existing shield of issue #410), its top above the deck, the top of the highest thing above the deck (for the sightline), and the projected side and front areas above the deck as the windage (estimates, an upper bound for bare cylinders; there is no wind heel model yet). The shield is weight and windage only: it gives no freeboard (the freeboard is the depth at the side less the draught), no hull girder credit and no buoyancy, and the block says so (`weather_shield_watertight` false, `weather_shield_freeboard_credit_m` 0, `weather_shield_hull_girder_credit` false). With the tanks in hold (`tank_top_above_deck_m` 0) there is no shield, whatever `weather_shield_thickness_mm` is. Without `tank_top_above_deck_m` nothing changes.
-
-<!-- design-impact -->
-no design change.
