@@ -4,7 +4,7 @@
 <!-- design-impact -->
 ### ticket/989-blind-distance-by-rule-set (2026-11-07)
 
-Between `main 9e16c79` and `this branch 27f4c19e`.
+Between `main 9e16c79` and `this branch 42123d44`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|

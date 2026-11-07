@@ -346,6 +346,15 @@ pub static MEASURES: &[MeasureDef] = &[
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {
+        id: "wheelhouse.ship_length",
+        unit: "m",
+        object: ObjectType::Option,
+        value: ValueKind::Number,
+        args: &[],
+        method: "The length overall of the ship whose blind distance is limited (SOLAS V/22.1.1: two ship lengths): the Option's length overall, or for a Formation whose tug has a sightline the length of the unit, tug and barges (issue #989)",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
         id: "powering.speed_through_water_kmh",
         unit: "km/h",
         object: ObjectType::Option,

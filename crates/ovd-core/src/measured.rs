@@ -563,6 +563,7 @@ impl Measured {
                 }
                 _ => false,
             },
+            "wheelhouse.ship_length" => true,
             "powering.speed_through_water_kmh" => !self.speeds_kn.is_empty(),
             "powering.speed_over_design" => {
                 !self.speeds_kn.is_empty() && self.design_speed_kn.is_some()

@@ -23,7 +23,14 @@ fn stack(ids: &[(&str, &str)]) -> Vec<RuleSet> {
 }
 
 fn inputs(area: &str, loa: f64) -> RuleInputs {
-    let id = "input.length_overall_m";
+    // `solas-v22` 1.x reads the input length overall, 2.0.0 the ship's length (issue #989).
+    let measure = |id: &str| {
+        (
+            id.to_string(),
+            measure_info(id).unwrap(),
+            MeasureValue::Number(loa),
+        )
+    };
     RuleInputs {
         applicability: vec![
             ("service_area".to_string(), area.to_string()),
@@ -32,11 +39,10 @@ fn inputs(area: &str, loa: f64) -> RuleInputs {
                 ovd_core::measured::length_band(loa).to_string(),
             ),
         ],
-        measures: vec![(
-            id.to_string(),
-            measure_info(id).unwrap(),
-            MeasureValue::Number(loa),
-        )],
+        measures: vec![
+            measure("input.length_overall_m"),
+            measure("wheelhouse.ship_length"),
+        ],
     }
 }
 
