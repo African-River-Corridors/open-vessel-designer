@@ -1093,6 +1093,9 @@ fn stern_arrangement_of(
             let mut block = json!({
                 "style": "deckhouse",
                 "tiers": d.tiers,
+                // Issue #943: the tiers that hold rooms, and those that only lift the wheelhouse.
+                "room_tiers": d.tiers_plan.iter().filter(|t| t.kind == ovd_core::aft_arrangement::TierKind::Rooms).count(),
+                "access_tiers": d.tiers_plan.iter().filter(|t| t.kind == ovd_core::aft_arrangement::TierKind::Access).count(),
                 "wheelhouse": if d.wheelhouse_elevating { "elevating" } else { "fixed" },
                 "wheelhouse_basis": if d.wheelhouse_elevating {
                     "air_draft_limit"
