@@ -1646,17 +1646,29 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
         checks.push(Check::with_severity(
             "deckhouse_tier_count",
             d.tiers <= deckhouse_sizes::MAX_TIERS,
-            text!(
-                "check-deckhouse-tier-count",
-                "{tiers} tier(s): {room_tiers} for rooms ({room_area} m2 each, holding the {required} m2 of accommodation floor) and {access_tiers} for access ({access_area} m2 each, lifting the wheelhouse eye over the cargo); over {max} tiers is a tall house over a short machinery space (ESTIMATE limit)",
-                tiers = d.tiers,
-                room_tiers = n_kind(TierKind::Rooms),
-                room_area = Arg::fixed(area_of(TierKind::Rooms), 1),
-                access_tiers = n_kind(TierKind::Access),
-                access_area = Arg::fixed(area_of(TierKind::Access), 1),
-                required = Arg::fixed(d.required_area_m2, 1),
-                max = deckhouse_sizes::MAX_TIERS,
-            ),
+            if n_kind(TierKind::Access) == 0 {
+                // No tier only lifts the wheelhouse: say nothing of access tiers.
+                text!(
+                    "check-deckhouse-tier-count-rooms-only",
+                    "{tiers} tier(s) for rooms ({room_area} m2 each, holding the {required} m2 of accommodation floor); over {max} tiers is a tall house over a short machinery space (ESTIMATE limit)",
+                    tiers = d.tiers,
+                    room_area = Arg::fixed(area_of(TierKind::Rooms), 1),
+                    required = Arg::fixed(d.required_area_m2, 1),
+                    max = deckhouse_sizes::MAX_TIERS,
+                )
+            } else {
+                text!(
+                    "check-deckhouse-tier-count",
+                    "{tiers} tier(s): {room_tiers} for rooms ({room_area} m2 each, holding the {required} m2 of accommodation floor) and {access_tiers} for access ({access_area} m2 each, lifting the wheelhouse eye over the cargo); over {max} tiers is a tall house over a short machinery space (ESTIMATE limit)",
+                    tiers = d.tiers,
+                    room_tiers = n_kind(TierKind::Rooms),
+                    room_area = Arg::fixed(area_of(TierKind::Rooms), 1),
+                    access_tiers = n_kind(TierKind::Access),
+                    access_area = Arg::fixed(area_of(TierKind::Access), 1),
+                    required = Arg::fixed(d.required_area_m2, 1),
+                    max = deckhouse_sizes::MAX_TIERS,
+                )
+            },
             "warning",
         ));
         warnings.push(Text::fixed(

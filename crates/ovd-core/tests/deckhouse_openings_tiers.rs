@@ -20,6 +20,31 @@ fn frame() -> Frame {
     }
 }
 
+/// A room tier of the house's 12 m width, and two access tiers (the trunk) 6.4 m wide.
+fn faces() -> [TierFace; 3] {
+    [
+        TierFace {
+            x_aft_m: 2.0,
+            width_m: 12.0,
+        },
+        TierFace {
+            x_aft_m: 5.0,
+            width_m: 6.4,
+        },
+        TierFace {
+            x_aft_m: 6.5,
+            width_m: 6.4,
+        },
+    ]
+}
+
+fn uniform() -> TierFace {
+    TierFace {
+        x_aft_m: 2.0,
+        width_m: 12.0,
+    }
+}
+
 fn entrance(layout: &[Opening], tier: i64) -> &Opening {
     layout
         .iter()
@@ -30,8 +55,7 @@ fn entrance(layout: &[Opening], tier: i64) -> &Opening {
 #[test]
 fn a_stepped_house_puts_each_tiers_entrance_on_its_own_aft_face() {
     // Tier 1 is longest; tiers 2 and 3 are shorter, cut from the aft end.
-    let aft = [2.0, 5.0, 6.5];
-    let l = default_layout_stepped(&frame(), &aft);
+    let l = default_layout_stepped(&frame(), &faces());
     for (t, x) in [(1, 2.0), (2, 5.0), (3, 6.5)] {
         assert_eq!(entrance(&l, t).x_m, x, "tier {t}");
     }
@@ -50,13 +74,13 @@ fn a_uniform_house_is_the_layout_it_was() {
     );
     assert_eq!(
         default_layout(&frame()),
-        default_layout_stepped(&frame(), &[2.0, 2.0, 2.0])
+        default_layout_stepped(&frame(), &[uniform(); 3])
     );
 }
 
 #[test]
 fn the_zone_measures_from_the_same_front_whatever_the_steps() {
-    let stepped = place_stepped(&frame(), &[2.0, 5.0, 6.5], None);
+    let stepped = place_stepped(&frame(), &faces(), None);
     let uniform = place(&frame(), None);
     assert_eq!(stepped.zone_m, uniform.zone_m);
     // The wheelhouse doors and the front window are not on a tier: they are where they were.
@@ -75,4 +99,20 @@ fn the_zone_measures_from_the_same_front_whatever_the_steps() {
             .filter(|p| p.opening.face == Face::Aft)
             .all(|p| !p.in_zone)
     );
+}
+
+#[test]
+fn an_access_tiers_entrance_is_on_the_trunks_own_width() {
+    let l = default_layout_stepped(&frame(), &faces());
+    // To port of the centreline by a quarter of the tier's own width: 12 m -> 3.0 m, 6.4 m -> 1.6 m.
+    assert_eq!(entrance(&l, 1).y_m, -3.0);
+    assert_eq!(entrance(&l, 2).y_m, -1.6);
+    assert_eq!(entrance(&l, 3).y_m, -1.6);
+    // The entrance stands inside its tier.
+    for t in 1..=3 {
+        assert!(entrance(&l, t).y_m.abs() <= faces()[t as usize - 1].width_m / 2.0);
+    }
+    // The machinery openings are on tier 1 and use tier 1's width.
+    let y = |id: &str| l.iter().find(|o| o.id == id).unwrap().y_m;
+    assert_eq!(y("machinery entrance"), 3.0);
 }
