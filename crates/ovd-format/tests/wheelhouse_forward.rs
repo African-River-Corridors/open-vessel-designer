@@ -171,3 +171,42 @@ fn the_aft_house_needs_no_extra_tiers_for_a_sightline_the_wheelhouse_forward_doe
     };
     assert!(tiers("wheelhouse_forward") <= tiers("deckhouse"));
 }
+
+#[test]
+fn the_forward_eye_is_checked_as_a_blind_distance_and_the_wing_view_is_reported() {
+    let r = results_of(&design(
+        110.0,
+        11.4,
+        6.0,
+        json!({ "arrangement_style": "wheelhouse_forward", "bow_rake_length_m": 20.0 }),
+    ));
+    // The Blind Distance is worked out whatever the sightline method: only the bow is ahead of the eye.
+    let s = &r["sightline"];
+    assert_eq!(f(&s["lift_needed_m"]), 0.0, "{s}");
+    assert_eq!(s["lift_enough"], json!(true));
+    assert!(f(&s["blind_distance_light_m"]) < 50.0, "{s}");
+    // The wing view is in the stern block and the stern arrangement, with cameras an open item.
+    let w = &r["drawing"]["aft_arrangement"]["wing_view"];
+    assert!(w["sees_full_hull_side"].is_boolean(), "{w}");
+    assert_eq!(w["cameras"], json!("open_item"));
+    assert_eq!(r["stern_arrangement"]["rear_view"], *w);
+    let checks = r["checks"].as_array().unwrap();
+    let wing = checks
+        .iter()
+        .find(|c| c["name"] == json!("wheelhouse wing sees hull side"))
+        .unwrap_or_else(|| panic!("the wing check is listed in {checks:?}"));
+    assert_eq!(wing["ok"], w["sees_full_hull_side"]);
+    assert_eq!(wing["severity"], json!("warning"));
+}
+
+#[test]
+fn the_other_styles_have_no_wing_view() {
+    let r = results_of(&design(
+        110.0,
+        11.4,
+        6.0,
+        json!({ "arrangement_style": "deckhouse" }),
+    ));
+    assert!(r["drawing"]["aft_arrangement"].get("wing_view").is_none());
+    assert!(r["stern_arrangement"].get("rear_view").is_none());
+}

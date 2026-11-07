@@ -1839,7 +1839,17 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // limit needs, up to its maximum; the check of the margin method gives way to it.
     let mut sightline = None;
     let mut blind_distance_laden_m = None;
-    if let (Some(limit), Some(a)) = (inp.sightline_limit_m, aft.as_mut()) {
+    // Issue #994: a forward wheelhouse always gets the Blind Distance of its eye ahead of the cargo,
+    // on the ES-TRIN limit where none is typed: only what stands ahead of the eye (the bow) counts.
+    let forward_style = aft_second.arrangement_style.is_wheelhouse_forward();
+    let sight_limit = inp
+        .sightline_limit_m
+        .or(if forward_style && inp.self_propelled {
+            Some(crate::wheelhouse::ES_TRIN_BLIND_DISTANCE_M)
+        } else {
+            None
+        });
+    if let (Some(limit), Some(a)) = (sight_limit, aft.as_mut()) {
         let waterline = |name: &str, t: f64| match trim_conditions.iter().find(|(n, _)| *n == name)
         {
             Some((_, tr)) => crate::wheelhouse::Waterline {
@@ -1920,6 +1930,33 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         }
         air_draft_navigating_light = h_top_navigating - light_draft;
         sightline = Some(s);
+    }
+
+    // Issue #994: what the wings of the forward wheelhouse see aft along the hull side. No camera is
+    // credited (`rear_view::CAMERAS_OPEN_ITEM`).
+    if let Some(a) = aft.as_mut()
+        && let Some(f) = &a.forward_house
+    {
+        let half_beam = inp.beam / 2.0;
+        let cargo_y = half_beam
+            - detail
+                .side_clearance_m
+                .unwrap_or(crate::aft_arrangement::deckhouse_sizes::SIDE_DECK_M);
+        let w = crate::rear_view::wing_view(f.width_m / 2.0, cargo_y, half_beam);
+        a.checks.push(Check::with_severity(
+            "wheelhouse_wing_sees_hull_side",
+            w.sees_full_hull_side,
+            text!(
+                "check-wheelhouse-wing-sees-hull-side",
+                "wing reaches {wing} m from the centreline; the cargo stands out to {cargo} m of a {half} m half-beam: the view aft along the hull side (SOLAS V/22.1.4, 22.1.6) is {short} m short",
+                wing = Arg::fixed(w.wing_y_m, 2),
+                cargo = Arg::fixed(w.cargo_outboard_y_m, 2),
+                half = Arg::fixed(w.hull_half_beam_m, 2),
+                short = Arg::fixed(w.short_by_m, 2),
+            ),
+            "warning",
+        ));
+        a.wing_view = Some(w);
     }
 
     // A geometry error is error text: it stays English, with no Message Id.

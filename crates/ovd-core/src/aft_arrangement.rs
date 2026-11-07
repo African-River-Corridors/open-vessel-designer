@@ -605,6 +605,10 @@ pub struct AftArrangementResult {
     /// Issue #994: the forward house, when the Arrangement Style is `wheelhouse_forward`.
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub forward_house: Option<ForwardHouse>,
+    /// Issue #994: what the wings of the forward wheelhouse see aft. Set by the capacity run, which
+    /// knows the cargo; `None` for every other style and for a bare `compute`.
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub wing_view: Option<crate::rear_view::WingView>,
 }
 
 /// The forward house of the `wheelhouse_forward` style (issue #994): a house over the forepeak with
@@ -2087,6 +2091,7 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
         deck_length_m: deck_len,
         deckhouse,
         forward_house,
+        wing_view: None,
     })
 }
 

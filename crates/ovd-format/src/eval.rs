@@ -552,7 +552,24 @@ pub(crate) fn aft_json(r: &AftArrangementResult) -> Value {
             "size_status": "estimate",
         });
     }
+    // Issue #994: what the wings of the forward wheelhouse see aft.
+    if let Some(w) = &r.wing_view {
+        v["wing_view"] = wing_view_json(w);
+    }
     v
+}
+
+/// The view aft from the wings of a forward wheelhouse (issue #994). Cameras are an open item.
+pub(crate) fn wing_view_json(w: &ovd_core::rear_view::WingView) -> Value {
+    json!({
+        "wing_y_m": num(w.wing_y_m),
+        "cargo_outboard_y_m": num(w.cargo_outboard_y_m),
+        "hull_half_beam_m": num(w.hull_half_beam_m),
+        "short_by_m": num(w.short_by_m),
+        "sees_full_hull_side": w.sees_full_hull_side,
+        "cameras": "open_item",
+        "cameras_note": ovd_core::rear_view::CAMERAS_OPEN_ITEM,
+    })
 }
 
 /// The deckhouse of a stern block (issue #779, spec 0011 D3, D4, D6). The sizes are estimates, and

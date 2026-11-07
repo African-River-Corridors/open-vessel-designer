@@ -295,6 +295,7 @@ fn aft_from_json(value: &Value, ctx: &str) -> Result<AftArrangementResult, EvalE
         machinery: None,
         deckhouse: None,
         forward_house: None,
+        wing_view: None,
     })
 }
 
