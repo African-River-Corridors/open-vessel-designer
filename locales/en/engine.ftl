@@ -45,7 +45,6 @@ check-deckhouse-clear-height = tier height { $tier } m less { $allowance } m for
 warn-barge-bulk-gm = Bulk GM is first-order (assumed lightship KG); cargo-shift/angle-of-repose not modelled — confirm with a full intact-stability booklet.
 check-wheelhouse-blind-distance = blind distance ahead of the bow { $blind } m <= { $limit } m, light (limit from the Rule Sets of the stack: { $source }); lift used { $lift } m of { $max_lift } m
 check-wheelhouse-blind-distance-fails = blind distance ahead of the bow over { $limit } m, light (limit from the Rule Sets of the stack: { $source }): lift needed { $needed } m of { $max_lift } m
-warn-blind-distance-laden-limit-only = The Rule Sets limit the laden Blind Distance to { $limit } m but set no light limit, so the wheelhouse is not sized to a Blind Distance and the laden Rule is only checked.
 warn-aft-blind-distance-lift = The blind distance needs { $needed } m of lift; the column gives { $max_lift } m. Raise the column or lower the cargo top.
 check-feasible-geometry = cargo volume must be positive (tank/hold fits)
 check-name-feasible-geometry = feasible geometry
@@ -63,6 +62,7 @@ check-trim-in-range = the hull floats within { $limit } degrees of trim (every c
 check-trim-no-balance = no trim balances the load: { $conditions }
 check-name-trim-in-range = trim in range
 warn-barge-pushed = PUSHED barge: crew, battery and propulsion are on the tug and are NOT in this hull's lightship, capacity or air draft. The tug is a separate vessel and must be costed and air-draft-gated separately.
+warn-blind-distance-laden-limit-only = The Rule Sets limit the laden Blind Distance to { $limit } m but set no light limit, so the wheelhouse is not sized to a Blind Distance and the laden Rule is only checked.
 warn-vent-mast-lowerable = A lowerable cargo vent mast is not backed by a practice source: none was found for lowering cargo vent masts. Class or flag acceptance is needed. The river air drafts leave the mast out; the sea air draft keeps it.
 warn-vent-mast-distance = The cargo vent mast stands { $achieved } m from the nearest openings and { $target } m is asked; no position in the cargo area is further. Lengthen the cargo area or move the openings aft.
 check-name-gm-positive = gm positive
