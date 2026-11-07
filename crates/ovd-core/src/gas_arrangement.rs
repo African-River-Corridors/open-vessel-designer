@@ -91,6 +91,71 @@ pub fn depth_for_standing_height(tank_top_above_keel_m: f64, standing_m: f64) ->
     libm::round((tank_top_above_keel_m - standing_m + gap) * 1000.0) / 1000.0
 }
 
+/// Issue #992: what stands above the main deck over the cargo tanks, for the windage and the sightline.
+/// All estimates; there is no wind heel model yet, and nothing here is a freeboard or hull girder credit.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AboveDeck {
+    /// A weather shield is fitted (its mass is in the lightship).
+    pub shield_fitted: bool,
+    /// The highest of the shield top, the dome top and the tank top above the main deck (m); 0 when
+    /// nothing stands above it. It is the obstruction for the sightline.
+    pub top_above_deck_m: f64,
+    /// The dome top above the deck (m); the domes pass through the shield and the deck.
+    pub dome_top_above_deck_m: f64,
+    /// The shield's own top above the deck (m); 0 with no shield.
+    pub shield_top_above_deck_m: f64,
+    /// The projected side area above the deck (m2): the cargo zone length times the height of what
+    /// stands. An upper bound for bare cylinders.
+    pub side_area_m2: f64,
+    /// The projected front area above the deck (m2): the beam times the height for a shield; the
+    /// tanks across times their diameter times the height for bare tanks.
+    pub front_area_m2: f64,
+    /// The mass of the shield (t), already in the lightship.
+    pub shield_mass_t: f64,
+}
+
+/// What stands above the deck of a gas arrangement of moulded depth `depth` (issue #992).
+pub fn above_deck(r: &BargeCapacityResult, depth: f64) -> Option<AboveDeck> {
+    let g = r.gas_basis.as_ref()?;
+    let inp = &g.inputs;
+    let od = g.tanks.outer_diameter;
+    let bottom = r.tank_rules.as_ref().map_or(0.0, |t| t.bottom_gap_m);
+    let tank_top = bottom + od;
+    let zone = crate::tanks::CargoZone::new(
+        inp.loa,
+        inp.bow_non_tank_length.unwrap_or(0.0),
+        inp.stern_non_tank_length.unwrap_or(0.0),
+    );
+    let zone_len = (zone.x_fwd_m - zone.x_aft_m).max(0.0);
+    let fitted = g.weights.weather_shield > 0.0;
+    let shield_top = tank_top + inp.weather_shield_clearance - depth;
+    let (shield_top_above, height, front) = if fitted && shield_top > 0.0 {
+        let wing_top = bottom + inp.wing_tank_height_ratio * od;
+        let foot = wing_top.max(depth);
+        let h = (tank_top + inp.weather_shield_clearance - foot).max(0.0);
+        (shield_top, h, inp.beam * h)
+    } else {
+        let h = (tank_top - depth).max(0.0);
+        (0.0, h, g.tanks.n_tanks_wide as f64 * od * h)
+    };
+    let dome_top = (tank_top + inp.dome_height - depth).max(0.0);
+    Some(AboveDeck {
+        shield_fitted: fitted,
+        top_above_deck_m: shield_top_above
+            .max((tank_top - depth).max(0.0))
+            .max(dome_top),
+        dome_top_above_deck_m: dome_top,
+        shield_top_above_deck_m: shield_top_above,
+        side_area_m2: zone_len * height,
+        front_area_m2: front,
+        shield_mass_t: if g.weights.weather_shield > 0.0 {
+            g.weights.weather_shield
+        } else {
+            0.0
+        },
+    })
+}
+
 /// The top of the tank shell above the keel (m): the double bottom, the support and the outer
 /// diameter (`Detail::tank_top_above_keel_m` of the capacity run). Dome and shield not counted.
 pub fn tank_top_above_keel_m(r: &BargeCapacityResult) -> f64 {
@@ -1403,6 +1468,9 @@ struct Search<'a> {
     damage_runs: usize,
     /// Issue #935: the search reached `damage_run_cap` and stopped screening.
     cap_hit: bool,
+    /// Issue #992: stop after the cheap stage and take the most cargo among the candidates that pass
+    /// it (the probe of [`probe_depth`]); the costly stability stage does not run.
+    cheap_only: bool,
 }
 
 impl Search<'_> {
@@ -1442,7 +1510,13 @@ impl Search<'_> {
         inp.double_side_min_m = sizing_limit(&self.o.rules, ADN_DOUBLE_SIDE_RULE);
         inp.double_bottom_min_m = sizing_limit(&self.o.rules, ADN_DOUBLE_BOTTOM_RULE);
         inp.wing_tank_height_ratio = self.o.wing_tank_height_ratio;
-        inp.weather_shield_thickness_mm = self.o.weather_shield_thickness_mm;
+        // Issue #992: with the tanks in hold (a standing height of 0) nothing stands over the deck
+        // but the domes, so there is no shield, whatever its thickness is set to.
+        inp.weather_shield_thickness_mm = if self.o.tank_top_above_deck_m == Some(0.0) {
+            0.0
+        } else {
+            self.o.weather_shield_thickness_mm
+        };
         inp.weather_shield_clearance_m = self.o.weather_shield_clearance_m;
         inp.structure = self.o.structure;
         inp.tank_forming_allowance_pct = self.o.tank_forming_allowance_pct;
@@ -1466,6 +1540,7 @@ impl Search<'_> {
         inp.tank_design = self.o.tank_design.clone();
         inp.water_density = self.o.water_density_t_per_m3;
         inp.air_draft_limit_m = self.o.air_draft_limit_m;
+        inp.tank_top_above_deck_m = self.o.tank_top_above_deck_m;
         inp.bridge_clearance_m = self.o.bridge_clearance_m;
         inp.bridge_clearance_source = self.o.bridge_clearance_source.clone();
         inp.aft_design = self.o.aft_design.clone();
@@ -1781,6 +1856,10 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
         .filter(|&i| pool.all[i].cheap_failed == 0)
         .collect();
     order.sort_by(|&a, &b| pool.all[b].tonnage.total_cmp(&pool.all[a].tonnage));
+    if s.cheap_only {
+        pool.best = order.first().copied();
+        return Ok(pool);
+    }
     let mut top = 0.0;
     let mut unscreened_top = 0.0;
     for i in order {
@@ -2210,6 +2289,7 @@ pub fn fit_with(
         runner,
         damage_runs: 0,
         cap_hit: false,
+        cheap_only: false,
     };
     let pool = search(&mut s, t_max, false)?;
     let pick = pool.best.or_else(|| closest_to_passing(&pool.all, o));
@@ -2252,7 +2332,11 @@ pub fn fit_with(
             let nw = o.tanks_wide.first().copied().unwrap_or(1);
             let inp = s.base_inputs(d, nw, o.tanks_in_line);
             let r = capacity(&inp)?;
-            let j = derate_candidate(&r, loa, beam, d, t_max, o.water_density_t_per_m3)?;
+            let t_cap = match o.tank_top_above_deck_m {
+                Some(_) => t_max.min(d - o.required_freeboard_m),
+                None => t_max,
+            };
+            let j = derate_candidate(&r, loa, beam, d, t_cap, o.water_density_t_per_m3)?;
             Candidate {
                 cheap_failed: 1,
                 tonnage: 0.0,
@@ -2408,8 +2492,42 @@ fn has_passing_arrangement(
         runner,
         damage_runs: 0,
         cap_hit: false,
+        cheap_only: false,
     };
     Ok(search(&mut s, t_max, true)?.best.is_some())
+}
+
+/// Issue #992: the depth the search would settle on with a standing height, found without the costly
+/// stability stage: the depth of the candidate with the most cargo among those that pass the cheap
+/// checks. The stability stage can turn that candidate down and the full search then picks another,
+/// so a caller checks the depth `fit` gives against this one. `None` when no candidate passes the
+/// cheap checks.
+pub fn probe_depth(
+    loa: f64,
+    beam: f64,
+    cargo: &str,
+    t_max: f64,
+    o: &FitOptions,
+) -> Result<Option<f64>, PyError> {
+    if !RULESETS.contains(&o.ruleset.as_str()) {
+        return Err(value_error(
+            "ruleset must be one of ('IGC_2G',)".to_string(),
+        ));
+    }
+    let mut s = Search {
+        loa,
+        beam,
+        cargo,
+        o,
+        tried: 0,
+        refused: Vec::new(),
+        runner: &SerialRunner,
+        damage_runs: 0,
+        cap_hit: false,
+        cheap_only: true,
+    };
+    let pool = search(&mut s, t_max, false)?;
+    Ok(pool.best.map(|i| pool.all[i].depth))
 }
 
 /// Step of the upward scan of `smallest_viable_loa` (m).

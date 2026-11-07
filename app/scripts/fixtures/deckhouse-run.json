@@ -337,6 +337,10 @@
  },
  "stern_arrangement": {
   "access_tiers": 2,
+  "hazard_study": {
+   "reasons": [],
+   "required": false
+  },
   "icll_length_m": 131.2004830188679,
   "opening_zone_m": 5.0,
   "openings": [

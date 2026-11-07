@@ -280,6 +280,15 @@ pub static MEASURES: &[MeasureDef] = &[
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {
+        id: "vent.distance_to_forward_house",
+        unit: "m",
+        object: ObjectType::Option,
+        value: ValueKind::Number,
+        args: &[],
+        method: "The distance from the cargo PRV vent exit to the nearest air intake, outlet or opening of the forward house of a forward wheelhouse, along the hull (issue #994). The mast stands where it is as far as it can be from the nearest opening aft and this one, within the cargo area. Only a forward-wheelhouse Option has a value",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
         id: "vent.distance_to_accommodation",
         unit: "m",
         object: ObjectType::Option,

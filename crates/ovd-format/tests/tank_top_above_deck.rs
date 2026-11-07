@@ -196,3 +196,142 @@ fn the_draught_limit_follows_the_settled_depth_not_the_seed() {
         );
     }
 }
+
+fn above(r: &Value) -> &Value {
+    &r["arrangement"]["above_deck"]
+}
+
+/// Issue #992, phase 2. In hold there is no shield and nothing stands above the deck; the result
+/// block is absent without the input, so a result without it is unchanged.
+#[test]
+fn in_hold_nothing_stands_above_the_deck_and_without_the_input_there_is_no_block() {
+    let hold = run(&design(json!({ "tank_top_above_deck_m": 0.0 })));
+    let a = above(&hold);
+    assert_eq!(a["weather_shield_fitted"], false);
+    assert_eq!(a["weather_shield_mass_t"].as_f64().unwrap(), 0.0);
+    // Only the domes pass through the deck: they are the highest thing, and not a windage area here.
+    assert_eq!(a["weather_shield_top_above_deck_m"].as_f64().unwrap(), 0.0);
+    assert_eq!(a["top_above_deck_m"], a["dome_top_above_deck_m"]);
+    assert!(a["dome_top_above_deck_m"].as_f64().unwrap() > 0.0);
+    assert_eq!(a["windage_side_area_m2"].as_f64().unwrap(), 0.0);
+    let plain = run(&design(json!({})));
+    assert!(
+        !plain["arrangement"]
+            .as_object()
+            .unwrap()
+            .contains_key("above_deck")
+    );
+}
+
+/// With the tanks standing above the deck the existing weather shield of the weights (issue #410)
+/// stands over them: its top is the tank top plus the clearance above the deck, its mass is in the
+/// lightship, and its projected areas are the windage. It adds no freeboard (the freeboard is the
+/// depth at the side less the draught) and no credit to the hull girder or the buoyancy.
+/// Label: rule (design note D2); sums of the shield's own inputs, not a published value.
+#[test]
+fn a_shield_over_standing_tanks_is_weight_and_windage_and_no_credit() {
+    let with = run(&design(json!({ "tank_top_above_deck_m": 2.0 })));
+    let a = above(&with);
+    assert_eq!(a["weather_shield_fitted"], true);
+    // Tank top 2.0 m above the deck plus the 1.5 m clearance of the shield.
+    let top = a["weather_shield_top_above_deck_m"].as_f64().unwrap();
+    assert!((top - 3.5).abs() < 0.01, "{top}");
+    // The highest thing above the deck is the dome (about 2.3 m above the tank top), through the shield.
+    let dome = a["dome_top_above_deck_m"].as_f64().unwrap();
+    assert!(dome > 2.0);
+    assert!((a["top_above_deck_m"].as_f64().unwrap() - dome.max(top)).abs() < 1e-9);
+    let front = a["windage_front_area_m2"].as_f64().unwrap();
+    assert!((front - 29.0 * top).abs() < 0.05, "{front}");
+    assert!(a["windage_side_area_m2"].as_f64().unwrap() > 0.0);
+    assert_eq!(a["weather_shield_watertight"], false);
+    assert_eq!(
+        a["weather_shield_freeboard_credit_m"].as_f64().unwrap(),
+        0.0
+    );
+    assert_eq!(a["weather_shield_hull_girder_credit"], false);
+    // No freeboard credit: the freeboard is the depth less the draught.
+    let fb = with["results"]["freeboard_m"].as_f64().unwrap();
+    let t = with["results"]["draught_m"].as_f64().unwrap();
+    assert!(
+        (fb - (depth(&with) - t)).abs() < 1e-6,
+        "{fb} {} {t}",
+        depth(&with)
+    );
+    // The shield is in the lightship: with it off, the hull is lighter by its mass, at the same depth.
+    let off = run(&design(
+        json!({ "tank_top_above_deck_m": 2.0, "weather_shield_thickness_mm": 0.0 }),
+    ));
+    assert_eq!(above(&off)["weather_shield_fitted"], false);
+    assert!((depth(&off) - depth(&with)).abs() < 1e-9);
+    let mass = a["weather_shield_mass_t"].as_f64().unwrap();
+    let dl = with["results"]["lightship_t"].as_f64().unwrap()
+        - off["results"]["lightship_t"].as_f64().unwrap();
+    // The lightship carries the shield with the steel's own allowance (about 1 %).
+    assert!(
+        mass > 0.0 && (dl / mass - 1.0).abs() < 0.03,
+        "{dl} vs {mass}"
+    );
+}
+
+/// The floor of the depth applies with `optimise_depth` too (review of #1015). The probe of
+/// the review: river-only 86 x 11.4 m, a 3.0 m draught limit, 2.5 m standing.
+#[test]
+fn the_floor_applies_with_optimise_depth_too() {
+    let file = json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": {
+            "cargo": { "value": "LNG", "source": "typed" },
+            "hull_form": { "value": "raked_box", "source": "typed" },
+            "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+            "length_overall_m": { "value": 86.0, "source": "typed" },
+            "beam_m": { "value": 11.4, "source": "typed" },
+            "service_area": { "value": "river-only", "source": "typed" },
+            "min_freeboard_m": { "value": 0.3, "source": "typed" },
+            "draught_limit_m": { "value": 3.0, "source": "typed" },
+            "optimise_depth": { "value": true, "source": "typed" },
+            "tank_top_above_deck_m": { "value": 2.5, "source": "typed" }
+        } }]
+    });
+    let r = run(&file);
+    assert!(
+        depth(&r) >= 3.3 - 1e-9,
+        "depth {} under 3.0 + 0.3",
+        depth(&r)
+    );
+}
+
+/// Both passes pick the same arrangement: the probe's depth is the run's depth, so the run is done
+/// once (`depth_passes` 1), and the draught limit follows the depth.
+#[test]
+fn the_run_is_done_once_when_the_probe_and_the_run_agree() {
+    for h in [0.0, 2.0] {
+        let r = run(&design(json!({ "tank_top_above_deck_m": h })));
+        assert_eq!(r["arrangement"]["depth_passes"], 1, "h {h}");
+    }
+}
+
+/// The side area of the windage is the cargo zone length times the height of the shield above its
+/// foot (the deck, when the wing tank top is lower). Label: rule, a cross-check of two numbers the
+/// code works out apart (the area, and the cargo zone length of the arrangement).
+#[test]
+fn the_side_area_is_the_cargo_zone_length_times_the_shield_height() {
+    let r = run(&design(json!({ "tank_top_above_deck_m": 2.0 })));
+    let a = above(&r);
+    let zone = r["geometry"]["cargo_zone_length_m"]
+        .as_f64()
+        .expect("the cargo zone length");
+    let top = a["weather_shield_top_above_deck_m"].as_f64().unwrap();
+    let side = a["windage_side_area_m2"].as_f64().unwrap();
+    assert!(
+        (side - zone * top).abs() < 0.05 * zone,
+        "{side} vs {zone} x {top}"
+    );
+    // No negative zero in hold.
+    let hold = run(&design(json!({ "tank_top_above_deck_m": 0.0 })));
+    assert!(
+        above(&hold)["weather_shield_mass_t"]
+            .as_f64()
+            .unwrap()
+            .is_sign_positive()
+    );
+}

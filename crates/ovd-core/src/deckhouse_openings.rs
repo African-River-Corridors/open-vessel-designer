@@ -262,8 +262,26 @@ pub struct Placement {
     pub basis: String,
 }
 
-/// The distance of an opening from the deckhouse front, and whether it is in the zone.
-fn measure(o: &Opening, frame: &Frame, zone_m: f64) -> (f64, bool) {
+/// The distance of an opening from the end of the deckhouse that faces the cargo area, and whether it
+/// is in the zone. For a house forward of the cargo (issue #994, `cargo_aft`) that end is the aft end,
+/// and the face that does not face the cargo area is the fore face.
+fn measure(o: &Opening, frame: &Frame, zone_m: f64, cargo_aft: bool) -> (f64, bool) {
+    if cargo_aft {
+        let distance = match o.face {
+            Face::Aft => 0.0,
+            Face::Side | Face::Front => {
+                let d = o.x_m - frame.x_aft_m;
+                if d > 0.0 { d } else { 0.0 }
+            }
+        };
+        let in_zone = match o.face {
+            Face::Aft => true,
+            Face::Side => distance < zone_m - EDGE_EPS_M,
+            // The fore end bulkhead, away from the cargo area: no distance is needed (IGC 3.2.4.1).
+            Face::Front => false,
+        };
+        return (distance, in_zone);
+    }
     let distance = match o.face {
         Face::Front => 0.0,
         // The aft end bulkhead and the sides: along the deckhouse from its front to the opening.
@@ -445,17 +463,39 @@ pub fn place(frame: &Frame, typed: Option<&[Opening]>) -> Placement {
 /// [`place`] for a stepped deckhouse: the default layout puts each tier's entrance on that tier's
 /// own aft face and width (see [`default_layout_stepped`]). A typed list is placed as typed.
 pub fn place_stepped(frame: &Frame, tiers: &[TierFace], typed: Option<&[Opening]>) -> Placement {
+    place_inner(frame, tiers, typed, false)
+}
+
+/// The openings of the forward house of `wheelhouse_forward` (issue #994): its aft end faces the cargo
+/// area, and its default layout is [`default_forward_layout`].
+pub fn place_forward(frame: &Frame) -> Placement {
+    place_inner(frame, &[], None, true)
+}
+
+/// [`place_forward`] with a typed list in place of the default layout (issue #994).
+pub fn place_forward_typed(frame: &Frame, typed: &[Opening]) -> Placement {
+    place_inner(frame, &[], Some(typed), true)
+}
+
+fn place_inner(
+    frame: &Frame,
+    tiers: &[TierFace],
+    typed: Option<&[Opening]>,
+    cargo_aft: bool,
+) -> Placement {
     let zone_m = zone_length_m(frame.l_icll_m);
     let (list, is_typed): (Vec<Opening>, bool) = match typed {
         Some(t) => (t.to_vec(), true),
+        None if cargo_aft => (default_forward_layout(frame), false),
         None => (default_layout_stepped(frame, tiers), false),
     };
+    let cargo_face = if cargo_aft { Face::Aft } else { Face::Front };
     let openings = list
         .into_iter()
         .map(|o| {
-            let (distance, in_zone) = measure(&o, frame, zone_m);
+            let (distance, in_zone) = measure(&o, frame, zone_m, cargo_aft);
             Placed {
-                faces_cargo_area: o.face == Face::Front,
+                faces_cargo_area: o.face == cargo_face,
                 distance_from_front_m: distance,
                 in_zone,
                 opening: o,
@@ -473,6 +513,171 @@ pub fn place_stepped(frame: &Frame, tiers: &[TierFace], typed: Option<&[Opening]
             "Default layout (ESTIMATE: positions, door height and count are not from a source): accommodation and machinery doors and air inlets on the aft end, no opening on the front, wheelhouse doors on the sides designed gas-tight (IGC 3.2.4.2). The zone is 4 % of L, at least 3 m and at most 5 m, from the deckhouse front (IGC 3.2.4.1); L by ICLL Regulation 3(1)(a) at 85 % of the depth, without the rudder-stock alternative.".to_string()
         },
     }
+}
+
+/// The default layout of the forward house of `wheelhouse_forward` (issue #994): the watch room and the
+/// muster point are entered on the fore face, away from the cargo area, with the watch room's air inlet;
+/// the wheelhouse has a door and an openable, gas-tight window on each side (IGC 3.2.4.2 read strictly:
+/// no door on the aft face, which faces the cargo area, and the side doors stand beyond the zone) and a
+/// fixed window in its fore face. ESTIMATES: the positions and the count.
+pub fn default_forward_layout(frame: &Frame) -> Vec<Opening> {
+    let mut v: Vec<Opening> = Vec::new();
+    let w = frame.width_m;
+    let deck1 = frame.base_m;
+    let mut push = |id: &str, kind, space, face, x_m, y_m, z_m, openable, gas_tight, tier| {
+        v.push(Opening {
+            id: id.to_string(),
+            kind,
+            space,
+            face,
+            x_m,
+            y_m,
+            z_m,
+            openable,
+            gas_tight,
+            tier,
+        });
+    };
+    let door_z = deck1 + DOOR_CENTRE_ABOVE_DECK_M;
+    push(
+        "watch room entrance",
+        Kind::Entrance,
+        Space::ControlStation,
+        Face::Front,
+        frame.x_fwd_m,
+        -w / 4.0,
+        door_z,
+        true,
+        false,
+        1,
+    );
+    push(
+        "muster point entrance",
+        Kind::Entrance,
+        Space::Service,
+        Face::Front,
+        frame.x_fwd_m,
+        w / 4.0,
+        door_z,
+        true,
+        false,
+        1,
+    );
+    push(
+        "watch room air inlet",
+        Kind::AirInlet,
+        Space::ControlStation,
+        Face::Front,
+        frame.x_fwd_m,
+        0.0,
+        deck1 + INLET_CENTRE_FRACTION * frame.tier_height_m,
+        true,
+        false,
+        1,
+    );
+    if let Some((x0, x1, ww, floor)) = frame.wheelhouse {
+        let mid = 0.5 * (x0 + x1);
+        for (side, y) in [("port", -ww / 2.0), ("starboard", ww / 2.0)] {
+            push(
+                &alloc::format!("wheelhouse door, {side}"),
+                Kind::Entrance,
+                Space::Wheelhouse,
+                Face::Side,
+                mid,
+                y,
+                floor + DOOR_CENTRE_ABOVE_DECK_M,
+                true,
+                true,
+                0,
+            );
+            push(
+                &alloc::format!("wheelhouse window, {side}"),
+                Kind::Window,
+                Space::Wheelhouse,
+                Face::Side,
+                mid,
+                y,
+                floor + WHEELHOUSE_WINDOW_CENTRE_M,
+                true,
+                true,
+                0,
+            );
+        }
+        push(
+            "wheelhouse window, fore",
+            Kind::Window,
+            Space::Wheelhouse,
+            Face::Front,
+            x1,
+            0.0,
+            floor + WHEELHOUSE_WINDOW_CENTRE_M,
+            false,
+            false,
+            0,
+        );
+    }
+    v
+}
+
+/// The aft-most x of the openings of the default layout of a forward house (m forward of the stern):
+/// where the vent mast's distance to the house is measured to.
+pub fn forward_house_nearest_x_m(frame: &Frame) -> f64 {
+    default_forward_layout(frame)
+        .iter()
+        .map(|o| o.x_m)
+        .fold(f64::INFINITY, |a, b| if b < a { b } else { a })
+}
+
+/// The x of the aft-most opening of the forward house of a stern block (m forward of the stern); `None`
+/// for any other style. It does not need L, which only the zone reads.
+pub fn forward_nearest_opening_x_m(
+    aft: &crate::aft_arrangement::AftArrangementResult,
+) -> Option<f64> {
+    let f = aft.forward_house.as_ref()?;
+    let frame = Frame {
+        x_aft_m: f.x_aft_m,
+        x_fwd_m: f.x_fwd_m,
+        width_m: f.width_m,
+        base_m: f.base_m,
+        tier_height_m: f.tier_height_m,
+        tiers: f.tiers,
+        wheelhouse: Some((
+            aft.wheelhouse_x0_m,
+            aft.wheelhouse_x1_m,
+            aft.wheelhouse_width_m,
+            aft.wheelhouse_floor_lowered_m,
+        )),
+        l_icll_m: 0.0,
+    };
+    Some(forward_house_nearest_x_m(&frame))
+}
+
+/// The forward house of `wheelhouse_forward` as a [`Frame`] (issue #994), with the wheelhouse on top;
+/// `None` for any other style.
+pub fn forward_frame_of(
+    aft: &crate::aft_arrangement::AftArrangementResult,
+    hull: &crate::sections::SectionsTable,
+    depth_m: f64,
+) -> Option<Frame> {
+    let f = aft.forward_house.as_ref()?;
+    let l = 0.96
+        * crate::sections::immersed(hull, &crate::sections::Waterplane::upright(0.85 * depth_m))
+            .l_wl_m;
+    Some(Frame {
+        x_aft_m: f.x_aft_m,
+        x_fwd_m: f.x_fwd_m,
+        width_m: f.width_m,
+        base_m: f.base_m,
+        tier_height_m: f.tier_height_m,
+        tiers: f.tiers,
+        wheelhouse: Some((
+            aft.wheelhouse_x0_m,
+            aft.wheelhouse_x1_m,
+            aft.wheelhouse_width_m,
+            aft.wheelhouse_floor_lowered_m,
+        )),
+        l_icll_m: l,
+    })
 }
 
 /// The deckhouse and wheelhouse of a vessel's stern block as a [`Frame`], with L from the hull. `None`
@@ -494,7 +699,8 @@ pub fn frame_of(
         base_m: d.base_m,
         tier_height_m: d.tier_height_m,
         tiers: d.tiers,
-        wheelhouse: Some((
+        // Issue #994: the wheelhouse of `wheelhouse_forward` is not on the aft deckhouse.
+        wheelhouse: aft.forward_house.is_none().then_some((
             aft.wheelhouse_x0_m,
             aft.wheelhouse_x1_m,
             aft.wheelhouse_width_m,
@@ -522,9 +728,22 @@ pub fn place_for_vessel(v: &crate::vessel_model::VesselModelInputs) -> Option<Pl
                 .collect()
         })
         .unwrap_or_default();
-    Some(place_stepped(
+    let mut placement = place_stepped(
         &frame,
         &tiers,
         v.capacity.aft_design.deckhouse_openings.as_deref(),
-    ))
+    );
+    // Issue #994: the forward house has its own default layout, whose cargo-facing end is its aft end.
+    // A typed list stands in for the layout of the aft house only.
+    if let Some(ff) = forward_frame_of(aft, &v.hull, v.capacity.depth) {
+        let fwd = place_forward(&ff);
+        placement
+            .openings
+            .extend(fwd.openings.into_iter().map(|mut p| {
+                p.opening.id = alloc::format!("forward house: {}", p.opening.id);
+                p
+            }));
+        placement.basis.push_str(" The forward house has its own default layout (ESTIMATE): entrances and the watch room air inlet on the fore face, away from the cargo area; the wheelhouse doors and windows on the sides, beyond the zone, with no door on the aft face (IGC 3.2.4.1, 3.2.4.2 read strictly). A typed list stands in for the aft house only.");
+    }
+    Some(placement)
 }

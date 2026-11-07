@@ -707,7 +707,28 @@ def _summary(o):
         c = rule_counts(o)
         not_run = f", {c['not run']} not run" if c["not run"] else ""
         verdict = prose(f"Trace verdict: {c['pass']} pass, {c['warn']} warn, {c.get('fail', 0)} fail and {c['not evaluated']} not evaluated{not_run}.")
-    return [verdict, prose(damage_line(o)), principal_table(o)]
+        if hazard_study(o):
+            verdict = prose(verdict["markdown"] + " This is a trace verdict, not an approval: this arrangement needs a hazard study (see the box above).")
+    return hazard_blocks(o) + [verdict, prose(damage_line(o)), principal_table(o)]
+
+
+def hazard_study(o):
+    """The hazard-study block of the run (`stern_arrangement.hazard_study`, issue #994), or None."""
+    h = _get(R(o), "stern_arrangement", "hazard_study")
+    return h if isinstance(h, dict) and h.get("required") else None
+
+
+def hazard_blocks(o):
+    """The boxed line at the top of the summary for an arrangement that needs a hazard study (issue #994, D5).
+
+    It names the study and gives each reason the run holds. The verdict line that follows says only that
+    the Rules are met, never that the arrangement is approved: a pass on the Rules is not an approval of an
+    arrangement no gas-cargo vessel in service has. Nothing here is typed: the reasons are the run's own."""
+    h = hazard_study(o)
+    if not h:
+        return []
+    items = [{"label": r.get("id", "reason").replace("_", " "), "value": r.get("text", "")} for r in h.get("reasons", [])]
+    return [{"type": "data_box", "id": "hazard-study", "title": "Hazard study required", "items": items}]
 
 
 def build(run, option, ref=None, number=None, revision="A", date="1970-01-01", title=None, commit=None, assets=None,

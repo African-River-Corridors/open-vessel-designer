@@ -1457,22 +1457,53 @@ fn lightest_aft_draught(v: &Value) -> Option<f64> {
 fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRules) -> R<Value> {
     // Issue #992: with a standing height the depth is a result of the search, but the draught limit
     // (depth less the freeboard), the design draught and the installed power are worked out from
-    // the depth before it. So run once to find the depth, then again with that depth.
+    // the depth before it. So find the depth first, by a probe that stops before the costly stability
+    // stage, and run the whole simulation once with it. The depth the run then gives is checked
+    // against the probe; if the stability stage turned the probe's pick down, run again with the
+    // depth it gave (at most twice more).
     if p.get("tank_top_above_deck_m")
         .is_some_and(|v| v.is_number())
     {
+        let mut probe = p.clone();
+        probe.insert("__probe_depth".to_string(), json!(true));
         let mut scratch = Measured::default();
-        let first = simulate_once_inner(p, &mut scratch, rules)?;
-        let settled = first
-            .get("dims")
-            .and_then(|d| d.get("depth_m"))
+        let probed = simulate_once_inner(&probe, &mut scratch, rules)?
+            .get("probe_depth")
             .and_then(Value::as_f64);
-        if let Some(depth) = settled
-            && p.get("depth_m").and_then(Value::as_f64) != Some(depth)
-        {
-            let mut q = p.clone();
-            q.insert("depth_m".to_string(), json!(depth));
-            return finish_once(simulate_once_inner(&q, measured, rules)?, measured);
+        let mut depth = probed;
+        if depth.is_none() {
+            // No candidate passed the cheap checks: the full run finds the closest, as before.
+            let first = simulate_once_inner(p, &mut Measured::default(), rules)?;
+            depth = first
+                .get("dims")
+                .and_then(|d| d.get("depth_m"))
+                .and_then(Value::as_f64);
+        }
+        if let Some(mut depth) = depth {
+            let mut passes = 1;
+            loop {
+                let mut q = p.clone();
+                q.insert("depth_m".to_string(), json!(depth));
+                let mut m = Measured::default();
+                let mut v = simulate_once_inner(&q, &mut m, rules)?;
+                let got = v
+                    .get("dims")
+                    .and_then(|d| d.get("depth_m"))
+                    .and_then(Value::as_f64);
+                match got {
+                    Some(g) if (g - depth).abs() > 0.0015 && passes < 3 => {
+                        depth = g;
+                        passes += 1;
+                    }
+                    _ => {
+                        if let Some(a) = v.get_mut("arrangement").and_then(Value::as_object_mut) {
+                            a.insert("depth_passes".to_string(), json!(passes));
+                        }
+                        *measured = m;
+                        return finish_once(v, measured);
+                    }
+                }
+            }
         }
     }
     finish_once(simulate_once_inner(p, measured, rules)?, measured)
@@ -3216,7 +3247,9 @@ fn simulate_gas(
         limits.push((channel_name.as_str(), v));
     }
     let optimise = p.get("optimise_depth").is_some_and(truthy);
-    let mut external_limit: Option<f64> = None;
+    // Issue #992: the draught the waterway or the user allows, before the hull's own limit; with a
+    // standing height the depth never falls below it plus the freeboard (with `optimise_depth` too).
+    let external_limit = limits.iter().map(|&(_, v)| v).reduce(f64::min);
     let depths: Vec<f64> = if optimise {
         let cap = if limits.is_empty() {
             None
@@ -3240,9 +3273,6 @@ fn simulate_gas(
             picked
         }
     } else {
-        // Issue #992: the draught the waterway or the user allows, before the hull's own limit; with
-        // a standing height the depth never falls below it plus the freeboard.
-        external_limit = limits.iter().map(|&(_, v)| v).reduce(f64::min);
         limits.push((hull_limit.as_str(), d0 - fb));
         vec![d0]
     };
@@ -3419,10 +3449,30 @@ fn simulate_gas(
         damage_run_cap: crate::damage::damage_run_cap(),
         ..FitOptions::default()
     };
+    // Issue #992: with a standing height every candidate is capped by its own depth less the
+    // freeboard (in the search), so the limit given is the external one only; the seed depth `d0`
+    // must not cap a deeper candidate and flip the pick.
+    let standing = options.tank_top_above_deck_m.is_some();
+    let t_arg = if standing {
+        external_limit.unwrap_or(f64::INFINITY)
+    } else {
+        t_max
+    };
+    if p.get("__probe_depth").is_some_and(truthy) {
+        let depth = ga::probe_depth(l, b, cargo_key, t_arg, &options)
+            .map_err(|e| Stop::Raised(e.kind.to_string(), e.message))?;
+        return Ok((json!({ "probe_depth": depth }), Measured::default()));
+    }
     // Issue #935: the search screens by damage with the run's threads, progress and cancel.
     let runner = crate::damage::ThreadedRunner::new(&rules.damage);
-    let f = ga::fit_with(l, b, cargo_key, t_max, &options, &runner)
+    let f = ga::fit_with(l, b, cargo_key, t_arg, &options, &runner)
         .map_err(|e| Stop::Raised(e.kind.to_string(), e.message))?;
+    // The draught the hull allows is the winner's own depth less the freeboard (issue #992).
+    let t_max = if standing {
+        external_limit.map_or(f.depth_m - fb, |e| e.min(f.depth_m - fb))
+    } else {
+        t_max
+    };
     let r = &f.engine_result;
     let d = f.depth_m;
     // Issue #448: the hull of the arrangement found, as its sections.
@@ -3744,6 +3794,23 @@ fn simulate_gas(
         arrangement["depth_follows_tank"] = json!(true);
         // Whether the tank or the draught limit plus the freeboard set the depth (issue #992).
         let by_tank = ga::depth_for_standing_height(ga::tank_top_above_keel_m(r), h);
+        // What stands above the deck, for the windage and the sightline (P3 reads the top). A
+        // weather shield is weight and windage only: no freeboard credit (the freeboard is the
+        // depth at the side less the draught), no hull girder credit, no buoyancy.
+        if let Some(a) = ga::above_deck(r, f.depth_m) {
+            arrangement["above_deck"] = json!({
+                "weather_shield_fitted": a.shield_fitted,
+                "weather_shield_mass_t": num(a.shield_mass_t.max(0.0)),
+                "weather_shield_top_above_deck_m": num(a.shield_top_above_deck_m),
+                "top_above_deck_m": num(a.top_above_deck_m),
+                "dome_top_above_deck_m": num(a.dome_top_above_deck_m),
+                "windage_side_area_m2": num(a.side_area_m2),
+                "windage_front_area_m2": num(a.front_area_m2),
+                "weather_shield_watertight": false,
+                "weather_shield_freeboard_credit_m": num(0.0),
+                "weather_shield_hull_girder_credit": false,
+            });
+        }
         arrangement["depth_set_by"] = json!(if f.depth_m > by_tank + 0.0015 {
             "freeboard"
         } else {
@@ -3983,6 +4050,10 @@ fn insert_vent_mast(results: &mut Map<String, Value>, vm: &ovd_core::vent_mast::
         "vent_distance_to_accommodation_m",
         num(vm.distance_to_accommodation_m),
     );
+    // Issue #994: the distance to the forward house, for a forward wheelhouse only.
+    if let Some(d) = vm.distance_to_forward_house_m {
+        put("vent_distance_to_forward_house_m", num(d));
+    }
     put("vent_mast_distance_target_m", num(vm.target_distance_m));
     put("vent_mast_distance_met", json!(vm.distance_met));
     put("vent_mast_lowerable", json!(vm.lowerable));

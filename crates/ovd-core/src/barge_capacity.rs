@@ -236,6 +236,10 @@ pub struct BargeCapacityInputs {
     pub required_freeboard: f64,
     /// Bridge clearance limit (m), checked against the LIGHT condition.
     pub air_draft_limit_m: Option<f64>,
+    /// Issue #992: the tank top is to stand this far above the deck (m). `Some`: the weather shield,
+    /// when fitted, counts as a high point for the air draft and the sightline (it stands the clearance
+    /// above the tank top, and the dome may be lower). `None`: as before, the dome top.
+    pub tank_top_above_deck_m: Option<f64>,
     /// Issue #991: the clearance of the lowest bridge on the route (m). Unlike `air_draft_limit_m`, which
     /// is a design limit that blocks, an air draft over it only warns: the design stands, and the warning
     /// names the highest point.
@@ -414,6 +418,7 @@ impl BargeCapacityInputs {
             water_density: 1.0,
             required_freeboard: 0.3,
             air_draft_limit_m: None,
+            tank_top_above_deck_m: None,
             bridge_clearance_m: None,
             bridge_clearance_source: None,
             ballast_capacity_t: 0.0,
@@ -549,7 +554,8 @@ pub struct GasBasis {
 /// The highest fixed point of a vessel with the wheelhouse lowered for transit, which sets the air draft
 /// (issue #991): its key and its top above the keel. The keys: `tank_dome` (the dome top of a gas
 /// tank), `hatch_coaming` (a dry bulk hold), `deck` (a liquid bulk hull), `stern_block` (the deck
-/// units and the wheelhouse lowered), `deckhouse` (the top tier of a deckhouse, wheelhouse fixed) and
+/// units and the wheelhouse lowered), `weather_shield` (the shield over tanks that stand above the
+/// deck, issue #992), `deckhouse` (the top tier of a deckhouse, wheelhouse fixed) and
 /// `vent_mast` (the vent exit of a gas hull whose mast does not lower).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HighestPoint {
@@ -563,6 +569,7 @@ impl HighestPoint {
         match self.key {
             "tank_dome" => "tank dome",
             "tank_top" => "tank top (the tank has no dome)",
+            "weather_shield" => "weather shield over the tanks",
             "hatch_coaming" => "hatch coaming",
             "deck" => "deck",
             "stern_block" => "stern block (deck units, wheelhouse lowered)",
@@ -801,6 +808,8 @@ struct Detail {
     /// weather shield (none: no shield). The dome top is the cargo top.
     tank_top_above_keel_m: Option<f64>,
     weather_shield_top_above_keel_m: Option<f64>,
+    /// Issue #992: the weather shield is the highest point of the cargo area (see `tank_top_above_deck_m`).
+    shield_is_highest: bool,
 }
 
 /// (cargo volume, lightship, top above keel, detail) of a volume branch. `n_total` is the exact
@@ -1035,8 +1044,19 @@ fn gas_volumetric(
     )?;
     let dome_mass_items = dome_items(&bi, &tanks, &mass_opts)?;
     let lightship = weights.lightship;
-    let h_top = db + inp.tank_support_height + tanks.outer_diameter + dome.1;
+    let mut h_top = db + inp.tank_support_height + tanks.outer_diameter + dome.1;
+    // Issue #992: with the tank top set, a fitted shield stands the clearance above the tank top, and
+    // that can be above the dome. It is then the cargo area's high point: the obstruction of the
+    // sightline and the top of the air draft. Without the input the dome top stands, as before.
+    let shield_top =
+        db + inp.tank_support_height + tanks.outer_diameter + inp.weather_shield_clearance_m;
+    let shield_is_highest =
+        inp.tank_top_above_deck_m.is_some() && weights.weather_shield > 0.0 && shield_top > h_top;
+    if shield_is_highest {
+        h_top = shield_top;
+    }
     let detail = Detail {
+        shield_is_highest,
         tank_outer_diameter_m: Some(tanks.outer_diameter),
         n_tanks_wide: Some(tanks.n_tanks_wide),
         max_tank_od_m: Some(inp.max_tank_od_m),
@@ -1658,6 +1678,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // Issue #991: the highest point of the vessel, with the wheelhouse lowered, which sets the air draft.
     let mut highest = HighestPoint {
         key: match class {
+            CargoClass::Gas if detail.shield_is_highest => "weather_shield",
             CargoClass::Gas if detail.dome_items.is_empty() => "tank_top",
             CargoClass::Gas => "tank_dome",
             CargoClass::DryBulk => "hatch_coaming",
@@ -1745,30 +1766,46 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
             } else {
                 arr.stern_void_m
             };
-            Some(crate::vent_mast::place(
-                &crate::vent_mast::VentMastInputs {
-                    river_only: inp.river_only,
-                    beam_m: inp.beam,
-                    deck_m: inp.depth,
-                    tank_top_m: tank_top,
-                    shield_top_m: detail.weather_shield_top_above_keel_m,
-                    dome_top_m: cargo_top_above_keel,
-                    stub_m: inp.vent_stub_m,
-                    // Issue #994: with the forward house taking cargo length, the cargo area ends
-                    // at the cargo zone's forward end, not where the rake begins.
-                    mast_x_m: if aft_second.arrangement_style.is_wheelhouse_forward() {
-                        inp.loa
-                            - (arr.bow_void_m
-                                - arr.separation.as_ref().map_or(0.0, |s| s.fwd_separation_m))
-                    } else {
-                        inp.loa - arr.rake_m
-                    },
-                    cargo_area_aft_x_m: aft_x,
-                    entrance_m: inp.entrance_distance_m,
-                    engine_room_vent_inlet_m: inp.engine_room_vent_inlet_distance_m,
-                    funnel_outlet_m: inp.funnel_outlet_distance_m,
-                },
+            let mut mast_in = crate::vent_mast::VentMastInputs {
+                river_only: inp.river_only,
+                beam_m: inp.beam,
+                deck_m: inp.depth,
+                tank_top_m: tank_top,
+                shield_top_m: detail.weather_shield_top_above_keel_m,
+                dome_top_m: cargo_top_above_keel,
+                stub_m: inp.vent_stub_m,
+                mast_x_m: inp.loa - arr.rake_m,
+                cargo_area_aft_x_m: aft_x,
+                entrance_m: inp.entrance_distance_m,
+                engine_room_vent_inlet_m: inp.engine_room_vent_inlet_distance_m,
+                funnel_outlet_m: inp.funnel_outlet_distance_m,
+            };
+            // Issue #994: with the forward house, the cargo area ends at the cargo zone's forward end
+            // (the house may have taken cargo length), and the mast stands where it is as far as it
+            // can be from the openings of both houses: the aft house's nearest opening and the forward
+            // house's. The cargo area bounds it; if it is too short to give the distance, the Rule
+            // says so.
+            let forward_x = if aft_second.arrangement_style.is_wheelhouse_forward() {
+                aft.as_ref()
+                    .and_then(crate::deckhouse_openings::forward_nearest_opening_x_m)
+            } else {
+                None
+            };
+            if let Some(fx) = forward_x {
+                let fwd_end = inp.loa
+                    - (arr.bow_void_m
+                        - arr.separation.as_ref().map_or(0.0, |s| s.fwd_separation_m));
+                mast_in.mast_x_m = crate::vent_mast::balanced_x_m(
+                    aft_x,
+                    fwd_end,
+                    crate::vent_mast::nearest_aft_m(&mast_in),
+                    fx,
+                );
+            }
+            Some(crate::vent_mast::place_with_house(
+                &mast_in,
                 inp.vent_mast_lowerable,
+                forward_x,
             ))
         }
         _ => None,
@@ -1970,6 +2007,12 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         a.wheelhouse_floor_raised_m = s.floor_raised_m;
         a.wheelhouse_top_raised_m = s.floor_raised_m + a.wheelhouse_height_m;
         a.checks.retain(|c| c.name != "wheelhouse_sees_over_cargo");
+        // Issue #994: the check of a forward eye is not about the cargo, so it has a name of its own.
+        let sight_check = if a.forward_house.is_some() {
+            "forward_wheelhouse_blind_distance"
+        } else {
+            "wheelhouse_sees_over_cargo"
+        };
         // Issue #675: a failing check says the lift needed beside the lift allowed, so the list
         // of arrangements tried shows how close each one came. A passing one keeps its message.
         let blind_message = if s.enough {
@@ -1992,11 +2035,8 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
                 max_lift = Arg::fixed(aft_second.wheelhouse_max_lift_m, 2),
             )
         };
-        a.checks.push(Check::new(
-            "wheelhouse_sees_over_cargo",
-            s.enough,
-            blind_message,
-        ));
+        a.checks
+            .push(Check::new(sight_check, s.enough, blind_message));
         a.warnings
             .retain(|w| !alloc::string::ToString::to_string(w).starts_with("Sightline needs "));
         if !s.enough {
@@ -2041,6 +2081,13 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
             "warning",
         ));
         a.wing_view = Some(w);
+        // A Service Area that reaches sea: the bow moves more than the stern, and the crew is forward.
+        if !inp.river_only {
+            a.warnings.push(Text::fixed(
+                "warn-aft-forward-house-bow-motions",
+                "Wheelhouse forward on a Service Area that reaches sea: bow accelerations are about 1.2 times the stern's (IGC 4.28.2.1), and the ICLL 39 bow height is not binding for this arrangement. No bow-motion check exists yet, so the hazard study must cover the motions of the forward house and its crew.",
+            ));
+        }
     }
 
     // A geometry error is error text: it stays English, with no Message Id.
