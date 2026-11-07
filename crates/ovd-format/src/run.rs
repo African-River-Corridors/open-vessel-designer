@@ -374,8 +374,8 @@ pub use arc_rules::load::canonical_json;
 /// (`structure_geometry`) stay outside, like the meshes: `ovd run --json` stores them only on request
 /// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
 /// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
-/// moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results. The stern arrangement (`stern_arrangement`, issue #887) is a summary of what the drawing block holds, for the Stern & crew view; it too is outside the hash. So are `damage_status` (`run`, `not run` or `not applicable`) and `damage_cases` (the number of damage cases, counted even when damage is skipped), issue #923: when damage runs they add to the results and move no saved hash.
-pub const UNHASHED_KEYS: [&str; 22] = [
+/// moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results. The stern arrangement (`stern_arrangement`, issue #887) is a summary of what the drawing block holds, for the Stern & crew view; it too is outside the hash. So are `damage_status` (`run`, `not run` or `not applicable`) and `damage_cases` (the number of damage cases, counted even when damage is skipped), issue #923: when damage runs they add to the results and move no saved hash. `boil_off_detail` (the U-value, the heat leak per tank, the tank outer area and the boil-off per day, issue #919) is outside it: each is worked from inputs and results that are in the hash, so hashing them would move every saved LNG hash with no physical change.
+pub const UNHASHED_KEYS: [&str; 23] = [
     "drawing",
     "stability_marks",
     "cost_masses",
@@ -398,6 +398,7 @@ pub const UNHASHED_KEYS: [&str; 22] = [
     "holding_time",
     "damage_status",
     "damage_cases",
+    "boil_off_detail",
 ];
 
 /// SHA-256 of a text, as lower-case hex.
@@ -1127,6 +1128,9 @@ fn stern_arrangement_of(
             let mut block = json!({
                 "style": "deckhouse",
                 "tiers": d.tiers,
+                // Issue #943: the tiers that hold rooms, and those that only lift the wheelhouse.
+                "room_tiers": d.tiers_plan.iter().filter(|t| t.kind == ovd_core::aft_arrangement::TierKind::Rooms).count(),
+                "access_tiers": d.tiers_plan.iter().filter(|t| t.kind == ovd_core::aft_arrangement::TierKind::Access).count(),
                 "wheelhouse": if d.wheelhouse_elevating { "elevating" } else { "fixed" },
                 "wheelhouse_basis": if d.wheelhouse_elevating {
                     "air_draft_limit"

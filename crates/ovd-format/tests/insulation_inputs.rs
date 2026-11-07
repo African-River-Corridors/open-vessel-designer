@@ -104,19 +104,40 @@ fn the_defaults_are_inputs_marked_default_with_a_basis() {
 
 #[test]
 fn a_file_saved_before_the_inputs_keeps_the_values_the_engine_used() {
-    let text = example_text();
-    let (s, opened) = DesignSession::open(&text, Profile::built_in()).unwrap();
-    assert!(
-        opened
-            .hash_status
-            .iter()
-            .all(|(_, h)| *h == HashStatus::Matches),
-        "{:?}",
-        opened.hash_status
+    // A version 3 gas file, written before these inputs: 0.026 W/m.K and 60 kg/m3, marked default,
+    // not the profile's 96 kg/m3 (the maintainer's decision on #919 moves new Designs only).
+    let path = format!(
+        "{}/tests/legacy/v3_gas_before_739.vdesign",
+        env!("CARGO_MANIFEST_DIR")
     );
+    let text = std::fs::read_to_string(path).unwrap();
+    let text = ovd_format::with_service_area(&text, "river-only").unwrap();
+    let (s, opened) = DesignSession::open(&text, Profile::built_in()).unwrap();
+    assert!(opened.report.errors.is_empty(), "{:?}", opened.report);
     let o = &s.design().options[0];
-    assert_eq!(o.input(CONDUCTIVITY).unwrap().value, json!(0.026));
-    assert_eq!(o.input(DENSITY).unwrap().value, json!(60.0));
+    for (name, want) in [(CONDUCTIVITY, 0.026), (DENSITY, 60.0)] {
+        let i = o.input(name).unwrap();
+        assert_eq!(
+            (i.value.clone(), i.source),
+            (json!(want), Source::Default),
+            "{name}"
+        );
+    }
+}
+
+/// Label: snapshot (printed by the code). The default density is 96 kg/m3 (the maintainer's decision
+/// on #919; the foam of the conductivity): the example's insulation, 133.8 t at 60 kg/m3, is 214.2 t
+/// (#918: about +80 t).
+#[test]
+fn the_examples_insulation_mass_is_214_t_at_the_default_density() {
+    let s = example();
+    assert_eq!(
+        s.design().options[0].input(DENSITY).unwrap().value,
+        json!(96.0)
+    );
+    let m = insulation_t(&results(&s));
+    assert!((m - 214.157).abs() < 0.01, "{m}");
+    assert!((m - 133.848 - 80.3).abs() < 0.1, "about +80 t: {m}");
 }
 
 fn with_typed(f: impl Fn(&mut Value)) -> Value {
@@ -156,4 +177,55 @@ fn a_typed_type_other_than_the_default_warns_until_the_values_are_typed_too() {
         i[CONDUCTIVITY] = typed(json!(0.03));
         i[DENSITY] = typed(json!(40.0));
     })));
+}
+
+/// Label: sourced. The hand check of the example's tank in issue #918: U = 0.0759 W/m2.K on the outer
+/// area of 1,690 m2 (cylinder 37.904 m, OD 11.0 m, two heads as one sphere), 26.54 kW per tank;
+/// boil-off 0.27 to 0.29 %/day of the cargo.
+#[test]
+fn the_results_carry_the_u_value_and_the_heat_leak_per_tank() {
+    let r = results(&example());
+    let b = &r["boil_off_detail"];
+    let get = |k: &str| b[k].as_f64().unwrap_or_else(|| panic!("{k}: {b}"));
+    assert!((get("u_value_w_per_m2k") - 0.0759).abs() < 1e-4);
+    assert!((get("heat_leak_per_tank_kw") - 26.54).abs() < 0.01);
+    assert!((get("tank_outer_area_m2") - 1690.0).abs() < 1.0);
+    let pct = get("boil_off_pct_per_day");
+    assert!((0.27..0.29).contains(&pct), "{pct}");
+    // The per-tank figure and the total agree.
+    assert!((get("heat_leak_per_tank_kw") * 4.0 - heat_leak_kw(&r)).abs() < 1e-9);
+}
+
+#[test]
+fn the_u_value_does_not_depend_on_the_conductivity_it_is_made_of_but_follows_it() {
+    let mut s = example();
+    let base = results(&s)["boil_off_detail"]["u_value_w_per_m2k"]
+        .as_f64()
+        .unwrap();
+    s.set_input("A basis", CONDUCTIVITY, json!(0.052)).unwrap();
+    let doubled = results(&s)["boil_off_detail"]["u_value_w_per_m2k"]
+        .as_f64()
+        .unwrap();
+    assert!((doubled / base - 2.0).abs() < 1e-9);
+}
+
+/// The U-value and the other figures are outside the results hash: the example's stored hashes still
+/// match, and the hash does not read them.
+#[test]
+fn the_new_figures_are_unhashed() {
+    let (_, opened) = DesignSession::open(&example_text(), Profile::built_in()).unwrap();
+    assert!(
+        opened
+            .hash_status
+            .iter()
+            .all(|(_, h)| *h == HashStatus::Matches),
+        "{:?}",
+        opened.hash_status
+    );
+    let mut r = results(&example());
+    let before = ovd_format::results_hash(&r);
+    r["boil_off_detail"]["u_value_w_per_m2k"] = json!(123.0);
+    assert_eq!(ovd_format::results_hash(&r), before);
+    r["boil_off"]["heat_leak_kw"] = json!(1.0);
+    assert_ne!(ovd_format::results_hash(&r), before);
 }

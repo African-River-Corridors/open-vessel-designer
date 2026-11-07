@@ -115,7 +115,12 @@ pub const DEFAULT_TANK_DESIGN_PRESSURE_MPA: f64 = 0.5;
 pub const DEFAULT_TANK_MATERIAL: &str = "9Ni";
 /// The tank head type the engine used before it was an input (issue #375).
 pub const DEFAULT_TANK_HEAD_TYPE: &str = "hemisphere";
-pub const DEFAULT_TANK_INSULATION_MM: f64 = 350.0;
+/// The insulation thickness the original engine used (mm): the `TankDesign` default, and what the raw
+/// `simulate::simulate` eval entry (the one `calibration.py` and `api_scenarios` call, not Python
+/// `ovd.simulate.simulate`, which goes through `fill` and `run`) takes for a key it is handed without
+/// one. A Design never reads it: the thickness is an input, from the Defaults Profile or typed
+/// (issue #919).
+pub const LEGACY_SIMULATE_INSULATION_MM: f64 = 350.0;
 /// The thermal conductivity the heat leak used before it was an input (W/m.K, issue #919): the
 /// polyurethane foam value of [`crate::gas_fuel::INSULATION_CONDUCTIVITY_W_PER_MK`].
 pub const DEFAULT_TANK_INSULATION_CONDUCTIVITY_W_PER_MK: f64 =
@@ -196,7 +201,7 @@ impl Default for TankDesign {
             design_pressure_igc_minimum: false,
             material: DEFAULT_TANK_MATERIAL.to_string(),
             allowable_stress_mpa: None,
-            insulation_thickness_mm: DEFAULT_TANK_INSULATION_MM,
+            insulation_thickness_mm: LEGACY_SIMULATE_INSULATION_MM,
             insulation_conductivity_w_per_mk: DEFAULT_TANK_INSULATION_CONDUCTIVITY_W_PER_MK,
             insulation_density_kg_m3: DEFAULT_TANK_INSULATION_DENSITY_KG_M3,
             structure_factor: DEFAULT_TANK_STRUCTURE_FACTOR,

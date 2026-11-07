@@ -118,7 +118,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -628,7 +628,7 @@
           "source": "default"
         }
       },
-      "results_hash": "17ec907b346413aaadb1899612f81a2ffa3b0f0522ede3100c65b48ea58ed723"
+      "results_hash": "0165dd68c5dbb597f7aa59d845e749add34156e546f1abf94795ae67d94481f7"
     },
     {
       "name": "B profile",
@@ -744,7 +744,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -1254,7 +1254,7 @@
           "source": "default"
         }
       },
-      "results_hash": "f76933c7bc21c4d23f80e8a309699ee34ef00b4d863ee95f48bcdf421051fe61"
+      "results_hash": "9d3bf54ec88d0c4a4548bcc1df4c273ac5951bfbe9cbfe745ac88b6f75e2ac75"
     },
     {
       "name": "C deep",
@@ -1370,7 +1370,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -1880,7 +1880,7 @@
           "source": "default"
         }
       },
-      "results_hash": "177cf18b688862d987a4af422511c7f206ba10a4bcbcb7d1834404b9dfe436e9"
+      "results_hash": "4f09a1186dc0031ff9105125703dcfcc29d1146e06f28f538ba825a651bf1939"
     }
   ],
   "defaults_profile": "built-in"

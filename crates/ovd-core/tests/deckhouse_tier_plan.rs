@@ -31,3 +31,29 @@ fn the_plan_has_one_entry_per_tier_and_its_areas_sum_to_the_deckhouse_area() {
         assert_eq!(d.tiers_plan[0].kind, TierKind::Rooms);
     }
 }
+
+#[test]
+fn the_tier_count_message_names_a_kind_only_when_there_is_one() {
+    // Issue #943: a house with no tier that only lifts the wheelhouse does not say "0 for access".
+    for (beam, accom) in [(20.0, 6), (29.0, 12), (12.0, 0)] {
+        let r = compute(&inputs(beam, accom)).unwrap();
+        let d = r.deckhouse.as_ref().unwrap();
+        let access = d
+            .tiers_plan
+            .iter()
+            .filter(|t| t.kind == TierKind::Access)
+            .count();
+        let c = r
+            .checks
+            .iter()
+            .find(|c| c.name == "deckhouse_tier_count")
+            .unwrap();
+        assert_eq!(
+            c.message.contains("for access"),
+            access > 0,
+            "{}",
+            c.message
+        );
+        assert!(c.message.contains("for rooms"), "{}", c.message);
+    }
+}
