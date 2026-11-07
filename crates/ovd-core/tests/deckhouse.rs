@@ -310,19 +310,17 @@ fn a_warning_only_solas_limit_still_sizes_the_fixed_wheelhouse_but_130_m_is_unch
     // (`solas-v22` 1.x). The house is still sized to min(250 m, 2 L), as before, and the Rule only warns:
     // the blocking limit stays at 250 m. At 125 m and over the two limits are the same, so the tiers are too.
     assert_eq!(
-        deckhouse_run(100.0, Some(250.0), Some(200.0)).0,
-        deckhouse_run(100.0, Some(200.0), None).0
+        deckhouse_run(60.0, Some(250.0), Some(120.0)).0,
+        deckhouse_run(60.0, Some(120.0), None).0
     );
     assert!(
-        deckhouse_run(100.0, Some(250.0), Some(200.0)).0
-            > deckhouse_run(100.0, Some(250.0), None).0
+        deckhouse_run(60.0, Some(250.0), Some(120.0)).0 > deckhouse_run(60.0, Some(250.0), None).0
     );
     assert_eq!(
         deckhouse_run(130.0, Some(250.0), Some(250.0)).0,
         deckhouse_run(130.0, Some(250.0), None).0
     );
-    // The blind distance of the 100 m old-file case is within 2 L (200 m), where it was 240.8 m at 250 m.
-    assert!(deckhouse_run(100.0, Some(250.0), Some(200.0)).1 <= 200.0 + 1e-9);
+    assert!(deckhouse_run(60.0, Some(250.0), Some(120.0)).1 <= 120.0 + 1e-9);
 }
 
 /// A fixed-wheelhouse deckhouse hull of `loa` m with a blocking light limit and a sizing limit (the least
