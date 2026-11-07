@@ -46,10 +46,9 @@ def test_gas_optimised_depth_matches_snapshot():
     # the stability conditions are the run's); was 1767.6.
     # Re-pinned (issue #926: a coastal LNG tank takes the IGC 4.23.1.2 minimum as its design pressure,
     # below 0.40 MPa for this tank, so the walls are thinner; printed 2016.7821962259627); was 1977.2.
-    # Re-pinned (issue #919: the insulation density of the LNG tanks defaults to 96 kg/m3, was 60, so the
-    # insulation weighs 60 % more and the cargo falls; printed 1989.4767355498795 on the tree with #926's
-    # IGC minimum and #919's density together); was 2016.8.
-    assert abs(o["results"]["cargo_t"] - 1989.5) < 1.0
+    # Re-pinned (issue #943: the deckhouse tiers are sized from what they hold, and the depth search
+    # carries more; printed 2164.0197934647263); was 2016.8.
+    assert abs(o["results"]["cargo_t"] - 2164.0) < 1.0
     assert o["arrangement"]["fill_ratio"] == 0.98          # ruleset-driven default
 
 
