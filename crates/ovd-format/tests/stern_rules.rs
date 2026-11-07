@@ -110,22 +110,23 @@ fn the_solas_limit_is_two_ship_lengths_or_500_m_whichever_is_less() {
 }
 
 #[test]
-fn a_coastal_option_is_checked_against_two_lengths_and_the_light_blind_distance_warns() {
-    // 110 m: the limit is 220 m. The light Blind Distance is 250 m (the ES-TRIN limit the search
-    // sizes to), the laden one 216 m: the light condition warns, the laden one passes.
-    // Issue #779: on the container block, whose wheelhouse lifts only as far as the 250 m limit needs;
-    // a deckhouse is given the height instead.
+fn a_coastal_option_is_sized_to_two_lengths_and_the_light_blind_distance_passes() {
+    // 110 m: the limit is 220 m. Issue #989: from solas-v22 2.0.0 the Rule blocks, so the search reads it
+    // with the ES-TRIN limit (250 m) and sizes the lift to the stricter, 220 m; both conditions pass.
+    // On the container block, whose wheelhouse lifts; a deckhouse is given the height instead (#779).
     let r = results(&design(
         json!({ "service_area": "coastal-and-river", "arrangement_style": "container_block" }),
     ));
     let sets = r["rule_trace"]["rule_sets"].to_string();
-    assert!(sets.contains("solas-v22@1.1.0"), "{sets}");
+    assert!(sets.contains("solas-v22@2.0.0"), "{sets}");
     let light = rows(&r, "solas/V.22.1.1/blind-zone-light");
     let laden = rows(&r, "solas/V.22.1.1/blind-zone-laden");
     assert_eq!(light.len(), 1);
-    assert_eq!(light[0]["outcome"], "warn", "{light:?}");
+    assert_eq!(light[0]["outcome"], "pass", "{light:?}");
     assert_eq!(light[0]["limit"], json!(220.0));
     assert_eq!(laden[0]["outcome"], "pass", "{laden:?}");
+    assert_eq!(r["sightline"]["limit_m"], json!(220.0));
+    assert_eq!(r["sightline"]["limit_laden_m"], json!(220.0));
     // A river-only Option does not take the set.
     let river = results(&design(json!({})));
     assert!(
