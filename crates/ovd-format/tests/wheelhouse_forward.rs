@@ -259,3 +259,126 @@ fn the_forward_eye_is_checked_against_the_limit_of_the_stack_of_its_service_area
     assert_eq!(limit("river-only", "blind_distance"), 250.0);
     assert_eq!(limit("coastal-and-river", "margin"), 220.0);
 }
+
+fn hazard(r: &Value) -> &Value {
+    &r["stern_arrangement"]["hazard_study"]
+}
+
+fn reason_ids(r: &Value) -> Vec<&str> {
+    hazard(r)["reasons"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|x| x["id"].as_str().unwrap())
+        .collect()
+}
+
+#[test]
+fn a_forward_wheelhouse_on_a_river_needs_a_hazard_study_and_says_why() {
+    let r = results_of(&design(
+        110.0,
+        11.4,
+        6.0,
+        json!({ "arrangement_style": "wheelhouse_forward", "bow_rake_length_m": 20.0 }),
+    ));
+    assert_eq!(hazard(&r)["required"], json!(true));
+    let ids = reason_ids(&r);
+    for want in ["no_gas_vessel_in_service", "split_crew", "view_aft"] {
+        assert!(ids.contains(&want), "{ids:?}");
+    }
+    // A river-only Service Area does not reach sea: no bow-motion reason, no such warning.
+    assert!(!ids.contains(&"bow_motions"), "{ids:?}");
+    assert!(
+        !r["warnings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|w| w.as_str().is_some_and(|w| w.contains("bow accelerations")))
+    );
+    // Every reason has its text.
+    assert!(
+        hazard(&r)["reasons"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|x| x["text"].as_str().is_some_and(|t| t.len() > 20))
+    );
+}
+
+#[test]
+fn a_forward_wheelhouse_where_the_sea_is_reached_has_the_bow_motion_warning_and_reason() {
+    let r = results_of(&design(
+        110.0,
+        11.4,
+        6.0,
+        json!({
+            "arrangement_style": "wheelhouse_forward",
+            "bow_rake_length_m": 20.0,
+            "service_area": "coastal-and-river"
+        }),
+    ));
+    assert!(
+        reason_ids(&r).contains(&"bow_motions"),
+        "{:?}",
+        reason_ids(&r)
+    );
+    let warned = r["warnings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|w| w.as_str().is_some_and(|w| w.contains("bow accelerations")));
+    assert!(warned, "{}", r["warnings"]);
+    // The style is not refused: the design runs and the flag is set.
+    assert_eq!(hazard(&r)["required"], json!(true));
+}
+
+#[test]
+fn the_other_styles_hold_no_hazard_study() {
+    for style in ["container_block", "deckhouse"] {
+        let r = results_of(&design(
+            110.0,
+            11.4,
+            6.0,
+            json!({ "arrangement_style": style }),
+        ));
+        assert_eq!(hazard(&r)["required"], json!(false), "{style}");
+        assert_eq!(hazard(&r)["reasons"], json!([]), "{style}");
+    }
+}
+
+#[test]
+fn a_file_pinned_to_a_stack_with_no_blind_distance_rule_has_no_forward_check_and_says_so() {
+    // The stored stack holds the OVD checks alone: no ES-TRIN or SOLAS Rule gives a Blind Distance limit.
+    let ovd = ovd_format::rule_set::Library::built_in()
+        .latest("ovd")
+        .map(|s| (s.version.to_string(), s.hash.to_string()))
+        .unwrap();
+    let r = results_of(&design(
+        110.0,
+        11.4,
+        6.0,
+        json!({
+            "arrangement_style": "wheelhouse_forward",
+            "bow_rake_length_m": 20.0,
+            "rule_sets": [{ "id": "ovd", "version": ovd.0, "hash": ovd.1, "source": "typed" }]
+        }),
+    ));
+    assert!(
+        r.get("sightline").is_none() || r["sightline"].is_null(),
+        "{}",
+        r["sightline"]
+    );
+    assert!(
+        reason_ids(&r).contains(&"no_forward_blind_distance_check"),
+        "{:?}",
+        reason_ids(&r)
+    );
+    // With the default stack the check is there and the reason is not.
+    let normal = results_of(&design(
+        110.0,
+        11.4,
+        6.0,
+        json!({ "arrangement_style": "wheelhouse_forward", "bow_rake_length_m": 20.0 }),
+    ));
+    assert!(!reason_ids(&normal).contains(&"no_forward_blind_distance_check"));
+}

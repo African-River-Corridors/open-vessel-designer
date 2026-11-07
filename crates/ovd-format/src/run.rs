@@ -1146,6 +1146,7 @@ fn stern_arrangement_of(
             a.wheelhouse_max_lift_m
         });
     let limit_set = vessel.capacity.air_draft_limit_m.is_some();
+    let hazard = hazard_study_json(aft, vessel);
     Some(match &aft.deckhouse {
         // D4: fixed on the deckhouse, unless an air-draft limit is set and the wheelhouse can lift.
         Some(d) => {
@@ -1176,9 +1177,11 @@ fn stern_arrangement_of(
                 block["openings_source"] = json!(if p.typed { "typed" } else { "default" });
                 block["openings_basis"] = json!(p.basis);
             }
+            block["hazard_study"] = hazard;
             block
         }
         None => json!({
+            "hazard_study": hazard,
             "style": "container_block",
             "tiers": Value::Null,
             "wheelhouse": if lift > 0.0 { "elevating" } else { "fixed" },
@@ -1191,6 +1194,59 @@ fn stern_arrangement_of(
             },
         }),
     })
+}
+
+/// Issue #994 (D5): whether the arrangement needs a hazard study, and why. The `wheelhouse_forward`
+/// style always does: no gas-cargo vessel in service has the wheelhouse forward, the crew is split
+/// across the cargo deck, the view aft is not settled (the wings, and cameras as an open item), and on a
+/// Service Area that reaches sea the bow motions are not checked. A stack with no Blind Distance Rule
+/// gives no forward Blind Distance check at all, which is a reason too. Every other style holds `false`
+/// and no reasons. In the stern block, outside the results hash.
+fn hazard_study_json(
+    aft: &ovd_core::aft_arrangement::AftArrangementResult,
+    vessel: &ovd_core::vessel_model::VesselModelInputs,
+) -> Value {
+    let mut reasons: Vec<Value> = Vec::new();
+    if aft.forward_house.is_some() {
+        let mut why = |id: &str, text: String| reasons.push(json!({ "id": id, "text": text }));
+        why(
+            "no_gas_vessel_in_service",
+            "No gas-cargo vessel in service has the wheelhouse forward of the cargo; there is no service record to rest the arrangement on.".to_string(),
+        );
+        why(
+            "split_crew",
+            "The crew is split across the cargo deck, about the length of the cargo zone apart: a second escape route, a second muster point and an unmanned or lightly manned engine room are inputs for the study, not computed checks.".to_string(),
+        );
+        let wing = aft.wing_view.as_ref().map_or(String::new(), |w| {
+            if w.sees_full_hull_side {
+                String::new()
+            } else {
+                format!(
+                    " The wings fall {} m short of the hull side.",
+                    ovd_core::pyfmt::fixed(w.short_by_m, 2)
+                )
+            }
+        });
+        why(
+            "view_aft",
+            format!(
+                "The view aft from the wheelhouse is not settled: SOLAS V/22.1.4 and 22.1.6 need the wings to see along the hull side, and ES-TRIN 7.02(3) may need cameras, which are an open item with no credit.{wing}"
+            ),
+        );
+        if !vessel.capacity.river_only {
+            why(
+                "bow_motions",
+                "The Service Area reaches sea: bow accelerations are about 1.2 times the stern's (IGC 4.28.2.1), and no bow-motion check exists.".to_string(),
+            );
+        }
+        if vessel.result.sightline.is_none() {
+            why(
+                "no_forward_blind_distance_check",
+                "The Rule Sets this Option stores hold no Blind Distance Rule, so the forward eye has no Blind Distance check at all.".to_string(),
+            );
+        }
+    }
+    json!({ "required": !reasons.is_empty(), "reasons": reasons })
 }
 
 /// The openings of a deckhouse stern as results rows (issue #912): each with its position, face, kind
