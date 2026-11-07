@@ -3936,6 +3936,10 @@ fn insert_vent_mast(results: &mut Map<String, Value>, vm: &ovd_core::vent_mast::
         "vent_distance_to_accommodation_m",
         num(vm.distance_to_accommodation_m),
     );
+    // Issue #994: the distance to the forward house, for a forward wheelhouse only.
+    if let Some(d) = vm.distance_to_forward_house_m {
+        put("vent_distance_to_forward_house_m", num(d));
+    }
     put("vent_mast_distance_target_m", num(vm.target_distance_m));
     put("vent_mast_distance_met", json!(vm.distance_met));
     put("vent_mast_lowerable", json!(vm.lowerable));

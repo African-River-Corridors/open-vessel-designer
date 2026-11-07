@@ -98,6 +98,9 @@ pub struct VentMast {
     pub distance_to_openings_m: f64,
     /// To the accommodation and service spaces (the ADN 9.3.1.22.3 datum).
     pub distance_to_accommodation_m: f64,
+    /// Issue #994: to the nearest opening of the forward house of `wheelhouse_forward`; `None` for any
+    /// other style. It is read against the same distance as the others.
+    pub distance_to_forward_house_m: Option<f64>,
     /// The distance the Service Area asks for, and the datum it is read on.
     pub target_distance_m: f64,
     pub distance_met: bool,
@@ -180,8 +183,51 @@ fn heights(i: &VentMastInputs, exit: f64) -> (f64, f64) {
 /// The most a height may sit under the term that set it before it is read as the term, m.
 const SNAP_M: f64 = 1e-9;
 
+/// The x of a mast that stands as far as it can from both houses of `wheelhouse_forward` (issue #994),
+/// within the cargo area `[cargo_area_aft_x_m, cargo_area_fwd_x_m]`. The distance aft is the mast's
+/// distance from the cargo area's aft end plus `nearest_aft_m` (the nearest opening aft, measured from
+/// the cargo area, as [`place`] reads it); the distance forward is `forward_opening_x_m` less the mast.
+/// The two are equal at the point returned, unless the cargo area is too short to reach it.
+pub fn balanced_x_m(
+    cargo_area_aft_x_m: f64,
+    cargo_area_fwd_x_m: f64,
+    nearest_aft_m: f64,
+    forward_opening_x_m: f64,
+) -> f64 {
+    let x = (forward_opening_x_m + cargo_area_aft_x_m - nearest_aft_m) / 2.0;
+    if x < cargo_area_aft_x_m {
+        cargo_area_aft_x_m
+    } else if x > cargo_area_fwd_x_m {
+        cargo_area_fwd_x_m
+    } else {
+        x
+    }
+}
+
+/// The smallest of the distances from the cargo area to the openings aft (m), as [`place`] reads them.
+pub fn nearest_aft_m(i: &VentMastInputs) -> f64 {
+    let mut nearest = i.entrance_m;
+    if i.engine_room_vent_inlet_m < nearest {
+        nearest = i.engine_room_vent_inlet_m;
+    }
+    if i.funnel_outlet_m < nearest {
+        nearest = i.funnel_outlet_m;
+    }
+    nearest
+}
+
 /// Place the mast and read its heights and distances.
 pub fn place(i: &VentMastInputs, lowerable: bool) -> VentMast {
+    place_with_house(i, lowerable, None)
+}
+
+/// [`place`], with the x of the nearest opening of a forward house (issue #994): the distance to it is
+/// read too, and the distance is met only if both are.
+pub fn place_with_house(
+    i: &VentMastInputs,
+    lowerable: bool,
+    forward_opening_x_m: Option<f64>,
+) -> VentMast {
     let (exit, governs) = exit_above_keel(i);
     let working = working_area_top(i);
     // The nearest opening stands aft of the aft end of the cargo area by the least of the three
@@ -207,6 +253,8 @@ pub fn place(i: &VentMastInputs, lowerable: bool) -> VentMast {
         (cap, to_openings)
     };
     let (above_deck, above_working) = heights(i, exit);
+    let to_forward = forward_opening_x_m.map(|x| x - i.mast_x_m);
+    let met = achieved >= target && to_forward.is_none_or(|d| d >= target);
     VentMast {
         river_only: i.river_only,
         x_m: i.mast_x_m,
@@ -218,8 +266,9 @@ pub fn place(i: &VentMastInputs, lowerable: bool) -> VentMast {
         governs,
         distance_to_openings_m: to_openings,
         distance_to_accommodation_m: to_accommodation,
+        distance_to_forward_house_m: to_forward,
         target_distance_m: target,
-        distance_met: achieved >= target,
+        distance_met: met,
         lowerable,
     }
 }

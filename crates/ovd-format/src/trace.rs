@@ -1097,6 +1097,10 @@ pub const CHECK_RULES: &[(&str, &str)] = &[
         "wheelhouse sees over cargo",
         "ovd/aft-block/wheelhouse-sightline",
     ),
+    (
+        "forward wheelhouse blind distance",
+        "ovd/aft-block/forward-wheelhouse-blind-distance",
+    ),
     ("aft end bulkhead space", "lr-inland/3.5.3/aft-end-space"),
     ("opening setback", "lr-inland/3.3.7/opening-setback"),
     ("fwd end bulkhead space", "lr-inland/3.5.3/end-space"),
@@ -1338,6 +1342,7 @@ pub fn stern_trace(
                 .unwrap_or(f64::NAN),
             target_distance_m: 0.0,
             distance_met: true,
+            distance_to_forward_house_m: number("vent_distance_to_forward_house_m"),
             lowerable: false,
         });
     }

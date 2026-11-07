@@ -545,6 +545,11 @@ impl Measured {
             | "vent.exit_above_working_area"
             | "vent.distance_to_openings" => self.vent_mast.is_some(),
             // Issue #850: a mast whose distance to the accommodation is not given (NaN) has no such value.
+            // Issue #994: the distance to the forward house; only a forward-wheelhouse mast has one.
+            "vent.distance_to_forward_house" => self
+                .vent_mast
+                .as_ref()
+                .is_some_and(|v| v.distance_to_forward_house_m.is_some()),
             "vent.distance_to_accommodation" => self
                 .vent_mast
                 .as_ref()
@@ -721,6 +726,10 @@ impl Measured {
                 "distance_to_accommodation" => {
                     Ok(MeasureValue::Number(v.distance_to_accommodation_m))
                 }
+                "distance_to_forward_house" => v
+                    .distance_to_forward_house_m
+                    .map(MeasureValue::Number)
+                    .ok_or_else(|| "the Option has no forward house".to_string()),
                 other => Err(format!("no value for Measure `vent.{other}`")),
             };
         }

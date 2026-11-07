@@ -1,5 +1,8 @@
 //! Seam: the sightline from the eye of a forward wheelhouse (issue #994, design D3).
 //!
+//! These tests pin existing behaviour of `wheelhouse.rs` for the new style: they pass on `main` and are
+//! not fail-first. The tests that fail on `main` are in `crates/ovd-format/tests/wheelhouse_forward.rs`.
+//!
 //! Label: property. With the eye forward of the cargo, what stands behind the eye gives no blind
 //! distance; what stands ahead of it (the bow, a mooring winch) still does.
 
