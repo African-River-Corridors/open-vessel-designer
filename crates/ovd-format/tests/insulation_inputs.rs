@@ -104,19 +104,40 @@ fn the_defaults_are_inputs_marked_default_with_a_basis() {
 
 #[test]
 fn a_file_saved_before_the_inputs_keeps_the_values_the_engine_used() {
-    let text = example_text();
-    let (s, opened) = DesignSession::open(&text, Profile::built_in()).unwrap();
-    assert!(
-        opened
-            .hash_status
-            .iter()
-            .all(|(_, h)| *h == HashStatus::Matches),
-        "{:?}",
-        opened.hash_status
+    // A version 3 gas file, written before these inputs: 0.026 W/m.K and 60 kg/m3, marked default,
+    // not the profile's 96 kg/m3 (the maintainer's decision on #919 moves new Designs only).
+    let path = format!(
+        "{}/tests/legacy/v3_gas_before_739.vdesign",
+        env!("CARGO_MANIFEST_DIR")
     );
+    let text = std::fs::read_to_string(path).unwrap();
+    let text = ovd_format::with_service_area(&text, "river-only").unwrap();
+    let (s, opened) = DesignSession::open(&text, Profile::built_in()).unwrap();
+    assert!(opened.report.errors.is_empty(), "{:?}", opened.report);
     let o = &s.design().options[0];
-    assert_eq!(o.input(CONDUCTIVITY).unwrap().value, json!(0.026));
-    assert_eq!(o.input(DENSITY).unwrap().value, json!(60.0));
+    for (name, want) in [(CONDUCTIVITY, 0.026), (DENSITY, 60.0)] {
+        let i = o.input(name).unwrap();
+        assert_eq!(
+            (i.value.clone(), i.source),
+            (json!(want), Source::Default),
+            "{name}"
+        );
+    }
+}
+
+/// Label: snapshot (printed by the code). The default density is 96 kg/m3 (the maintainer's decision
+/// on #919; the foam of the conductivity): the example's insulation, 133.8 t at 60 kg/m3, is 214.2 t
+/// (#918: about +80 t).
+#[test]
+fn the_examples_insulation_mass_is_214_t_at_the_default_density() {
+    let s = example();
+    assert_eq!(
+        s.design().options[0].input(DENSITY).unwrap().value,
+        json!(96.0)
+    );
+    let m = insulation_t(&results(&s));
+    assert!((m - 214.157).abs() < 0.01, "{m}");
+    assert!((m - 133.848 - 80.3).abs() < 0.1, "about +80 t: {m}");
 }
 
 fn with_typed(f: impl Fn(&mut Value)) -> Value {

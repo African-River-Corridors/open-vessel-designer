@@ -166,7 +166,7 @@
           "source": "default"
         },
         "tank_insulation_density_kg_m3": {
-          "value": 60.0,
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -650,7 +650,7 @@
           "source": "default"
         }
       },
-      "results_hash": "e533cccfa9dd049295451db9c4b89d66d493c87980c56af2b44977b1ddae50a4"
+      "results_hash": "1bd4adf83564828f24ee5621ab0e2a876c02b592eadf2be61f25f3f1b0d84b84"
     }
   ],
   "defaults_profile": "built-in"
