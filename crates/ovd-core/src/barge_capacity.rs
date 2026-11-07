@@ -297,6 +297,11 @@ pub struct BargeCapacityInputs {
     /// conditions of draught). `Some` makes the lift meet it too. It binds only beside a light limit: with
     /// no light limit the sightline is not worked as a distance.
     pub sightline_limit_laden_m: Option<f64>,
+    /// Issue #989: the light limit a fixed deckhouse wheelhouse is sized to: the least of the blocking and
+    /// the warning Rules' limits ([`crate::wheelhouse::BlindLimits::sizing_light_m`]). A coastal stack that
+    /// holds SOLAS V/22.1.1 as a warning (`solas-v22` 1.x) sizes the house to two lengths and only warns.
+    /// `None`: the light limit.
+    pub sightline_sizing_limit_m: Option<f64>,
     /// Issue #989: the id of the Rule that gives the light limit, for the check's message.
     pub sightline_limit_source: Option<String>,
     /// Issue #779: the trimmed light waterline (draught aft, draught forward) of a first pass, which
@@ -417,6 +422,7 @@ impl BargeCapacityInputs {
             stern_geometry: None,
             sightline_limit_m: None,
             sightline_limit_laden_m: None,
+            sightline_sizing_limit_m: None,
             sightline_limit_source: None,
             light_waterline_hint: None,
             machinery: None,
@@ -1475,7 +1481,9 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
     let mut again = inp.clone();
     again.light_waterline_hint = Some(light);
     let second = compute_once(&again)?;
-    let limit = inp.sightline_limit_m;
+    let limit = inp
+        .sightline_limit_m
+        .map(|l| inp.sightline_sizing_limit_m.map_or(l, |s| s.min(l)));
     let passes = second
         .sightline
         .as_ref()
@@ -1587,7 +1595,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     if inp.self_propelled
         && aft_second.arrangement_style == crate::aft_arrangement::ArrangementStyle::Deckhouse
         && aft_second.wheelhouse_max_lift_m <= 0.0
-        && let Some(limit) = inp.sightline_limit_m
+        && let Some(limit) = inp.sightline_limit_m.or(inp.sightline_sizing_limit_m)
     {
         let probe = compute_aft_arrangement(&aft_second)?;
         let units = (!probe.container_units.is_empty())
@@ -1609,11 +1617,11 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
                 },
                 None => crate::wheelhouse::Waterline::even(0.0, inp.loa),
             },
-            // The light limit of the stack's Rule Sets sizes the eye (issue #989). The laden limit
+            // The least limit of the stack's Rules, blocking or warning, sizes the eye (issue #989, #779). The laden limit
             // does not size it: the laden waterline stands higher, which shortens the Blind Distance,
             // and no Rule of the built-in sets has a laden limit under the light one. The Rule Trace
             // still checks the laden row.
-            limit,
+            inp.sightline_sizing_limit_m.map_or(limit, |s| s.min(limit)),
         );
     }
     let aft = compute_aft_arrangement(&aft_second)?;
@@ -2014,6 +2022,18 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     };
     if let Some(s) = &sep {
         warnings.extend(s.warnings.iter().cloned());
+    }
+    // Issue #989: a stack that limits the laden Blind Distance but not the light one gives the lift
+    // nothing to be sized to: say so rather than leave the laden Rule to fail alone.
+    if inp.self_propelled
+        && inp.sightline_limit_m.is_none()
+        && let Some(laden) = inp.sightline_limit_laden_m
+    {
+        warnings.push(text!(
+            "warn-blind-distance-laden-limit-only",
+            "The Rule Sets limit the laden Blind Distance to {limit} m but set no light limit, so the wheelhouse is not sized to a Blind Distance and the laden Rule is only checked.",
+            limit = Arg::fixed(laden, 0),
+        ));
     }
     if let Some(v) = &vent_mast {
         if v.lowerable {

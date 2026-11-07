@@ -117,3 +117,53 @@ fn a_stack_with_no_blind_distance_rule_gives_no_limit() {
     assert!(l.is_none(), "{l:?}");
     assert!(blind_limits(&[], &inputs("river-only", 140.0)).is_none());
 }
+
+#[test]
+fn a_warning_only_solas_rule_gives_no_blocking_limit_but_still_sizes_a_fixed_deckhouse() {
+    // Issue #779 and ADR 0007, kept by #989: an old coastal stack holds `solas-v22` 1.x, which warns. The
+    // blocking limit is ES-TRIN's 250 m alone; the deckhouse sizing limit is the least of the two, 2 L.
+    let l = blind_limits(
+        &stack(&[ES_TRIN, SOLAS_WARNING]),
+        &inputs("coastal-and-river", 100.0),
+    );
+    assert_eq!((l.light_m, l.laden_m), (Some(250.0), None));
+    assert_eq!(l.sizing_light_m, Some(200.0));
+    // With a blocking SOLAS the two are the same.
+    let l = blind_limits(
+        &stack(&[ES_TRIN, SOLAS]),
+        &inputs("coastal-and-river", 100.0),
+    );
+    assert_eq!((l.light_m, l.sizing_light_m), (Some(200.0), Some(200.0)));
+}
+
+#[test]
+fn an_old_coastal_file_at_100_m_keeps_its_deckhouse_sized_to_two_lengths_and_the_rule_only_warns() {
+    // Failing first: the fixture's stored stack holds solas-v22 1.0.0 (a warning). Before the sizing limit,
+    // the house was sized to 250 m alone: limit 250 m, light Blind Distance 240.8 m, over SOLAS's 200 m.
+    let path = format!(
+        "{}/tests/fixtures/gas_deckhouse_self_propelled.vdesign",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    let mut file: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    file["options"][0]["inputs"]["length_overall_m"]["value"] = serde_json::json!(100.0);
+    let design = ovd_format::check(&file.to_string(), &ovd_format::Profile::built_in())
+        .design
+        .unwrap();
+    let r = match ovd_format::run_design(&design).remove(0).outcome {
+        ovd_format::RunOutcome::Results { results, .. } => results,
+        other => panic!("{other:?}"),
+    };
+    let sl = &r["sightline"];
+    assert_eq!(sl["limit_m"], serde_json::json!(250.0), "{sl}");
+    let blind = sl["blind_distance_light_m"].as_f64().unwrap();
+    assert!(blind <= 200.0 + 1e-6, "{blind}");
+    let solas = r["rule_trace"]["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|row| row["rule"] == "solas/V.22.1.1/blind-zone-light")
+        .unwrap();
+    assert_eq!(solas["outcome"], "pass", "{solas}");
+    assert_eq!(solas["consequence"], "warn");
+}

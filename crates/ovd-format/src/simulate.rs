@@ -1493,6 +1493,7 @@ fn simulate_once_inner(
     let blind = sightline_limits_of(p, self_propelled, rules);
     inp.sightline_limit_m = blind.light_m;
     inp.sightline_limit_laden_m = blind.laden_m;
+    inp.sightline_sizing_limit_m = blind.sizing_light_m;
     inp.sightline_limit_source = blind.light_rule;
     // The hold design values. A key left out keeps the core default, which is the value the engine
     // used before these were inputs.
@@ -3216,6 +3217,7 @@ fn simulate_gas(
         machinery: gas_machinery,
         sightline_limit_m: blind.light_m,
         sightline_limit_laden_m: blind.laden_m,
+        sightline_sizing_limit_m: blind.sizing_light_m,
         sightline_limit_source: blind.light_rule.clone(),
         is_code: is_code_options,
         ..FitOptions::default()
