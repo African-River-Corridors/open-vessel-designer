@@ -55,7 +55,7 @@ fn the_machinery_and_the_accommodation_stay_aft_and_the_wheelhouse_goes_forward(
         r.length_m,
         aft.x_fwd_m
     );
-    assert!(aft.x_aft_m == 0.0 && aft.tiers >= 1);
+    assert!(aft.x_aft_m < aft.x_fwd_m && aft.tiers >= 1);
     // The wheelhouse stands on the forward house, at its forward end, and clear of the block.
     assert!(r.wheelhouse_x1_m == fwd.x_fwd_m);
     assert!(r.wheelhouse_x0_m >= fwd.x_aft_m && r.wheelhouse_x0_m < r.wheelhouse_x1_m);

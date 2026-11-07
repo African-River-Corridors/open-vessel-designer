@@ -113,6 +113,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -729,6 +737,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
           "source": "default"
         },
         "holding_profile": {
@@ -1349,6 +1365,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -1965,6 +1989,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
           "source": "default"
         },
         "holding_profile": {
@@ -2585,6 +2617,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -3187,6 +3227,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
           "source": "default"
         },
         "holding_profile": {
@@ -3827,6 +3875,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -4463,6 +4519,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
           "source": "default"
         },
         "holding_profile": {
@@ -5103,6 +5167,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -5739,6 +5811,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
           "source": "default"
         },
         "holding_profile": {
@@ -6379,6 +6459,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -7015,6 +7103,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
           "source": "default"
         },
         "holding_profile": {
@@ -7655,6 +7751,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -8291,6 +8395,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
           "source": "default"
         },
         "holding_profile": {
@@ -8931,6 +9043,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -9567,6 +9687,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
           "source": "default"
         },
         "holding_profile": {
@@ -10207,6 +10335,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -10843,6 +10979,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
           "source": "default"
         },
         "holding_profile": {
@@ -11483,6 +11627,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -12119,6 +12271,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
           "source": "default"
         },
         "holding_profile": {
@@ -12759,6 +12919,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -13397,6 +13565,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -14033,6 +14209,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 60.0,
           "source": "default"
         },
         "holding_profile": {

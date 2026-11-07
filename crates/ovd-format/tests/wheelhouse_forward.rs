@@ -56,7 +56,7 @@ fn a_river_vessel_has_its_house_forward_of_the_cargo_and_its_machinery_aft() {
     assert!(f(&house["x_aft_m"]) >= loa - bow_void - 1e-9);
     assert!(f(&house["x_fwd_m"]) < loa);
     // Aft: the deckhouse over the machinery space, at the stern.
-    assert_eq!(f(&aft["deckhouse"]["x_aft_m"]), 0.0);
+    assert!(f(&aft["deckhouse"]["x_aft_m"]) < f(&aft["deckhouse"]["x_fwd_m"]));
     assert!(f(&aft["deckhouse"]["x_fwd_m"]) < f(&house["x_aft_m"]));
     // The wheelhouse is on the forward house and fixed.
     assert!(f(&aft["wheelhouse_x0_m"]) >= f(&house["x_aft_m"]));

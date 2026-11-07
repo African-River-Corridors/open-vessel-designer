@@ -509,6 +509,8 @@
             "allowable_stress_basis": "igc_4_23_3_1",
             "insulation_type": "panel",
             "insulation_thickness_mm": 330.0,
+            "insulation_conductivity_w_per_mk": 0.026,
+            "insulation_density_kg_m3": 60.0,
             "structure_factor": 1.3,
             "wall_thickness_source": "formula",
             "cylinder_wall_thickness_mm": 11.5,
@@ -5813,6 +5815,11 @@
             {
               "name": "tank_insulation_thickness_mm",
               "value": 330.0,
+              "source": "default"
+            },
+            {
+              "name": "tank_insulation_conductivity_w_per_mk",
+              "value": 0.026,
               "source": "default"
             },
             {
@@ -12331,6 +12338,8 @@
             "allowable_stress_basis": "igc_4_23_3_1",
             "insulation_type": "panel",
             "insulation_thickness_mm": 330.0,
+            "insulation_conductivity_w_per_mk": 0.026,
+            "insulation_density_kg_m3": 60.0,
             "structure_factor": 1.3,
             "wall_thickness_source": "formula",
             "cylinder_wall_thickness_mm": 11.5,
@@ -17635,6 +17644,11 @@
             {
               "name": "tank_insulation_thickness_mm",
               "value": 330.0,
+              "source": "default"
+            },
+            {
+              "name": "tank_insulation_conductivity_w_per_mk",
+              "value": 0.026,
               "source": "default"
             },
             {
@@ -24153,6 +24167,8 @@
             "allowable_stress_basis": "igc_4_23_3_1",
             "insulation_type": "panel",
             "insulation_thickness_mm": 330.0,
+            "insulation_conductivity_w_per_mk": 0.026,
+            "insulation_density_kg_m3": 60.0,
             "structure_factor": 1.3,
             "wall_thickness_source": "formula",
             "cylinder_wall_thickness_mm": 12.5,
@@ -29479,6 +29495,11 @@
             {
               "name": "tank_insulation_thickness_mm",
               "value": 330.0,
+              "source": "default"
+            },
+            {
+              "name": "tank_insulation_conductivity_w_per_mk",
+              "value": 0.026,
               "source": "default"
             },
             {
