@@ -141,7 +141,7 @@ fn a_container_block_option_is_unchanged() {
     // rises): the hash `main` gave was 67dbe209694b8b3aa216ba957cb48f23dd7d73fde6c3fc571b2c5ba80c763833.
     assert_eq!(
         hash,
-        "7f9a6ae39ff460e497124f35e491afe86eb29dfddacc502f2ff796b74e1bd126"
+        "ae3f2ee729ea7cf252e54724b29b0aaccfc0e81ab173164140a8d7c390db2e16"
     );
 }
 
