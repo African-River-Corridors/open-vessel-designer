@@ -7,9 +7,9 @@ use ovd_core::compartments::{Side, Space, SpaceKind, SpaceShape};
 use ovd_core::damage_cases::{
     AdnExtents, BoxExtents, CaseOptions, DamageCase, Permeability, PermeabilityTable, Placement,
     StandardOfDamage, adn_damage_cases, adn_damage_cases_with, box_damage_cases,
-    deck_edge_immersed, es_trin_longitudinal_extent_m, gas_flooding, igc_damage_cases,
-    longitudinal_extent_m, machinery_bulkheads_intact, marpol_damage_cases, normam_damage_cases,
-    without_breached_cargo,
+    breached_cargo_at_stage, deck_edge_immersed, es_trin_longitudinal_extent_m, gas_flooding,
+    igc_damage_cases, longitudinal_extent_m, machinery_bulkheads_intact, marpol_damage_cases,
+    normam_damage_cases, without_breached_cargo,
 };
 use ovd_core::damage_stability::FloodedVolume;
 use ovd_core::sections::{Gravity, Waterplane};
@@ -41,6 +41,7 @@ fn tank(name: &str, x: (f64, f64), y: f64, z: f64, d: f64) -> Space {
             y,
             z,
             outer_diameter: d,
+            insulation_m: 0.0,
             head: TankHead {
                 kind: HeadKind::Hemisphere,
                 length_m: 0.5 * d,
@@ -268,6 +269,79 @@ fn a_side_damage_breaches_a_type_c_tank_only_when_it_reaches_the_tank() {
         side_inboard_m: 4.1,
         ..ext
     }));
+}
+
+/// IGC 2.4.2 measures the bottom clearance to the tank's shell, not to its insulation (issue #987). A tank of
+/// outer diameter 4.0 m with 0.3 m of insulation has its steel 1.7 m in radius. At z 2.5 m its insulation face is
+/// 0.5 m above the base line and its steel 0.8 m. A bottom damage 0.7 m high reaches the insulation but not the
+/// steel: the tank is intact. One 0.9 m high reaches the steel: the tank is breached.
+#[test]
+fn a_bottom_damage_that_reaches_the_insulation_but_not_the_steel_leaves_the_tank_intact() {
+    let mut spaces = vec![
+        space(
+            "H1C",
+            SpaceKind::CargoHold,
+            (8.0, 60.0),
+            (-4.5, 4.5),
+            (1.0, 6.0),
+        ),
+        space(
+            "DB1C",
+            SpaceKind::DoubleBottomBallast,
+            (8.0, 60.0),
+            (-6.0, 6.0),
+            (0.0, 1.0),
+        ),
+        space(
+            "M1C",
+            SpaceKind::Machinery,
+            (0.0, 8.0),
+            (-6.0, 6.0),
+            (0.0, 6.0),
+        ),
+    ];
+    let mut t = tank("CT1C", (9.0, 59.0), 0.0, 2.5, 4.0);
+    if let SpaceShape::Tank { insulation_m, .. } = &mut t.shape {
+        *insulation_m = 0.3;
+    }
+    spaces.push(t);
+    let breached = |height: f64| -> bool {
+        igc_damage_cases(
+            &spaces,
+            60.0,
+            12.0,
+            &BoxExtents {
+                bottom_height_m: height,
+                ..igc_extents()
+            },
+            &StandardOfDamage::igc_2g(&spaces, 60.0, true),
+            &|_| 0.95,
+        )
+        .iter()
+        .filter(|c| c.name.starts_with("bottom"))
+        .any(|c| c.flooded.iter().any(|f| f.name == "CT1C"))
+    };
+    assert!(!breached(0.7), "damage short of the steel");
+    assert!(breached(0.9), "damage past the steel");
+    // The ADN-style generator (gas, type G) uses the same test.
+    let adn = |height: f64| -> bool {
+        ovd_core::damage_cases::adn_damage_cases(
+            &spaces,
+            60.0,
+            12.0,
+            &ovd_core::damage_cases::AdnExtents {
+                side_inboard_m: 2.4,
+                bottom_width_m: 2.0,
+                bottom_height_m: height,
+            },
+            &|_| 0.95,
+        )
+        .iter()
+        .filter(|c| c.name.starts_with("bottom"))
+        .any(|c| c.flooded.iter().any(|f| f.name == "CT1C"))
+    };
+    assert!(!adn(0.7));
+    assert!(adn(0.9));
 }
 
 /// The IGC bottom damage is B/15 high, here 0.8 m: in the cargo zone it floods the double bottom, not the hold
@@ -642,4 +716,30 @@ fn each_case_carries_its_extent() {
         }
     }
     assert!(side > 0 && bottom > 0, "side {side}, bottom {bottom}");
+}
+
+/// Issue #988, spec 0012 D18a: at the stage of fraction f a breached tank has let out f of its share of the
+/// cargo. Two equal tanks, 100 t of cargo at KG 3.5 m, mass 1000 t at LCG 30 m, KG 3.0 m: at the 25 % stage the
+/// breached tank CT1C (x 21 m, y 0) has let out 0.25 x 50 t = 12.5 t, so the mass is 987.5 t, the LCG is
+/// (1000 x 30 - 12.5 x 21) / 987.5 and the KG is (1000 x 3.0 - 12.5 x 3.5) / 987.5. At the final stage (f = 1) the
+/// whole 50 t has left, and at f = 0 none has.
+#[test]
+fn at_a_stage_a_breached_tank_has_let_out_that_fraction_of_its_cargo() {
+    let spaces = gas_layout();
+    let g = Gravity {
+        lcg_m: 30.0,
+        tcg_m: 0.0,
+        kg_m: 3.0,
+    };
+    let breached = ["CT1C".to_string()];
+    let (m, gd) = breached_cargo_at_stage(0.25, 1000.0, g, (100.0, 3.5), &spaces, &breached);
+    assert!((m - 987.5).abs() < 1e-9, "{m}");
+    assert!((gd.lcg_m - (1000.0 * 30.0 - 12.5 * 21.0) / 987.5).abs() < 1e-9);
+    assert!((gd.kg_m - (1000.0 * 3.0 - 12.5 * 3.5) / 987.5).abs() < 1e-9);
+    assert_eq!(gd.tcg_m, 0.0);
+    let (full, _) = breached_cargo_at_stage(1.0, 1000.0, g, (100.0, 3.5), &spaces, &breached);
+    let (whole, _) = without_breached_cargo(1000.0, g, (100.0, 3.5), &spaces, &breached);
+    assert_eq!(full, whole);
+    let (none, _) = breached_cargo_at_stage(0.0, 1000.0, g, (100.0, 3.5), &spaces, &breached);
+    assert_eq!(none, 1000.0);
 }

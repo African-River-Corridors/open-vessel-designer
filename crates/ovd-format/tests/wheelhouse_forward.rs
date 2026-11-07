@@ -209,4 +209,20 @@ fn the_other_styles_have_no_wing_view() {
     ));
     assert!(r["drawing"]["aft_arrangement"].get("wing_view").is_none());
     assert!(r["stern_arrangement"].get("rear_view").is_none());
+
+fn the_vent_mast_is_never_inside_the_forward_house_at_any_rake() {
+    // Default rake (9.6 m on a 6 m depth: the house takes cargo length) and a long rake (it does not).
+    for extra in [
+        json!({ "arrangement_style": "wheelhouse_forward" }),
+        json!({ "arrangement_style": "wheelhouse_forward", "bow_rake_length_m": 20.0 }),
+        json!({ "arrangement_style": "wheelhouse_forward", "bow_rake_length_m": 4.0 }),
+    ] {
+        let r = results_of(&design(110.0, 11.4, 6.0, extra.clone()));
+        let house = f(&r["drawing"]["aft_arrangement"]["forward_house"]["x_aft_m"]);
+        let mast = f(&r["results"]["vent_mast_x_m"]);
+        assert!(
+            mast <= house + 1e-9,
+            "mast {mast} m is inside the house, which starts at {house} m ({extra})"
+        );
+    }
 }

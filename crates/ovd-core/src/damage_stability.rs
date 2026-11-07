@@ -869,20 +869,45 @@ pub fn righting_lever_at(
 /// 2025/1 28.03(3), 25, 50 and 75 %, for every Rule Set).
 pub const INTERMEDIATE_FRACTIONS: [f64; 3] = [0.25, 0.50, 0.75];
 
-/// The intermediate stages of flooding by added mass (spec 0012 D5, D15 to D18).
-///
-/// At each fraction `f` every Flooded Volume holds `f` times the water it holds at the final stage (D16: all
-/// fill together), or `f` times its whole permeable volume when the final stage has no equilibrium. The water
-/// lies level in the space, upright, and is added to the intact hull as a mass at its centroid; its free
-/// surface is the space's gross surface at that level (D17, ES-TRIN 28.03(4)(e): no permeability; the chord
-/// of an intact tank is not water surface), as a rise of the centre of gravity of `density × i / mass`. The mass and centre of
-/// gravity of the condition are those before the damage: a breached tank's cargo stays aboard (D18). Each
-/// stage is then assessed as the final stage is, with `criteria`.
+/// The intermediate stages of flooding by added mass (spec 0012 D5, D15 to D18), with the mass and centre of
+/// gravity of the condition the same at every stage: no cargo leaves. See [`intermediate_stages_releasing`], which
+/// lets a breached tank's cargo leave in step with the inflow.
 pub fn intermediate_stages(
     table: &SectionsTable,
     flooded: &[FloodedVolume],
     final_outcome: &DamageOutcome,
     (mass_t, g): (f64, Gravity),
+    density: f64,
+    start: (f64, f64),
+    criteria: &DamageCriteria,
+) -> Vec<DamageOutcome> {
+    intermediate_stages_releasing(
+        table,
+        flooded,
+        final_outcome,
+        &|_| (mass_t, g),
+        density,
+        start,
+        criteria,
+    )
+}
+
+/// The intermediate stages of flooding by added mass (spec 0012 D5, D15 to D18; issue #988).
+///
+/// At each fraction `f` every Flooded Volume holds `f` times the water it holds at the final stage (D16: all
+/// fill together), or `f` times its whole permeable volume when the final stage has no equilibrium. The water
+/// lies level in the space, upright, and is added to the intact hull as a mass at its centroid; its free
+/// surface is the space's gross surface at that level (D17, ES-TRIN 28.03(4)(e): no permeability; the chord
+/// of an intact tank is not water surface), as a rise of the centre of gravity of `density × i / mass`.
+/// `condition_at(f)` is the mass and centre of gravity of the condition at the fraction `f` before the water
+/// is added. For a gas hull it is the condition with the fraction `f` of the breached tanks' cargo gone
+/// ([`crate::damage_cases::breached_cargo_at_stage`], D18): a breached tank holds sea water to the fraction `f` of
+/// its flood and its cargo for the rest. Each stage is then assessed as the final stage is, with `criteria`.
+pub fn intermediate_stages_releasing(
+    table: &SectionsTable,
+    flooded: &[FloodedVolume],
+    final_outcome: &DamageOutcome,
+    condition_at: &dyn Fn(f64) -> (f64, Gravity),
     density: f64,
     start: (f64, f64),
     criteria: &DamageCriteria,
@@ -903,6 +928,7 @@ pub fn intermediate_stages(
     INTERMEDIATE_FRACTIONS
         .iter()
         .map(|&f| {
+            let (mass_t, g) = condition_at(f);
             let (mut m, mut mx, mut my, mut mz) =
                 (mass_t, mass_t * g.lcg_m, mass_t * g.tcg_m, mass_t * g.kg_m);
             let mut free_surface_tm = 0.0;
