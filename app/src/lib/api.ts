@@ -2,7 +2,8 @@
 // desktop, the WebAssembly session in the browser); none computes.
 import { platform } from "./platform";
 export type { DrawingFormat, DrawingView, ModelFormat } from "./platform";
-import type { DrawingFormat, DrawingView, ModelFormat } from "./platform";
+import type { DamageEnd, DamageProgress, DrawingFormat, DrawingView, ModelFormat } from "./platform";
+export type { DamageEnd, DamageProgress };
 import type { EngineMsg } from "./i18n.svelte";
 
 /** Where an input came from: the designer, the Defaults Profile, or the Vessel Class. */
@@ -152,6 +153,9 @@ export interface Evaluation {
 export const snapshot = () => platform().snapshot();
 export const inputSchema = () => platform().inputSchema();
 export const evaluate = () => platform().evaluate();
+/** Issue #924: run the damage cases of an Option, with progress; resolves when the run ends. */
+export const runDamage = (option: string, onProgress: (p: DamageProgress) => void) => platform().runDamage(option, onProgress);
+export const cancelDamage = () => platform().cancelDamage();
 /** Each of these returns null when the user cancels a dialog. */
 export const newFile = () => platform().newFile();
 export const openFile = () => platform().openFile();

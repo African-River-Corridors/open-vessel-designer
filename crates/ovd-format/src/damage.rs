@@ -642,6 +642,17 @@ struct CaseRun {
     gd: ovd_core::sections::Gravity,
 }
 
+thread_local! {
+    static DAMAGE_RUNS: core::cell::Cell<usize> = const { core::cell::Cell::new(0) };
+}
+
+/// How many damage runs the calling thread has started (a run that works cases out, not one that only counts
+/// them). A test reads it before and after a call to show that the call ran no damage (issue #924). Per thread,
+/// so tests that run side by side do not count each other's runs.
+pub fn damage_runs_started() -> usize {
+    DAMAGE_RUNS.with(core::cell::Cell::get)
+}
+
 /// How many worker threads the damage cases may use; 0 means one per core.
 static DAMAGE_WORKERS: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
@@ -742,6 +753,9 @@ impl Gauge {
     }
 
     pub(crate) fn new(hook: Option<ProgressHook>, total: usize) -> Self {
+        if total > 0 {
+            DAMAGE_RUNS.with(|c| c.set(c.get() + 1));
+        }
         Self {
             hook,
             total,

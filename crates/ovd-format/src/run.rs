@@ -13,7 +13,7 @@ use crate::damage::DamageControl;
 use crate::rule_set::Library;
 use crate::simulate::{Outcome, RunRules, simulate_params_measured};
 use crate::trace::{rule_inputs, stack_for, trace_json, trace_of};
-use crate::vdesign::{Design, DesignOption};
+use crate::vdesign::{Design, DesignOption, Source};
 use ovd_core::pyfmt::fixed;
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
@@ -299,6 +299,16 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
             p.insert(name.to_string(), Value::Null);
         }
     }
+    // Issue #926: how the design pressure was set, for the results: a value the file only holds as a
+    // default says so; a null is the IGC minimum whatever its source (`simulate` decides that).
+    if let Some(i) = option.input("tank_design_pressure_mpa") {
+        let basis = if i.source == Source::Default {
+            "default"
+        } else {
+            "typed"
+        };
+        p.insert("tank_design_pressure_basis".into(), json!(basis));
+    }
     let vessel = match get("cargo_containment").as_ref().and_then(Value::as_str) {
         Some("box_hold") => "box_barge",
         Some("sloped_hopper_hold") => "hopper_barge",
@@ -390,6 +400,12 @@ pub const UNHASHED_KEYS: [&str; 22] = [
     "damage_cases",
 ];
 
+/// SHA-256 of a text, as lower-case hex.
+pub fn sha256_hex(text: &str) -> String {
+    let digest = Sha256::digest(text.as_bytes());
+    digest.iter().map(|b| format!("{b:02x}")).collect()
+}
+
 /// SHA-256 of the canonical JSON of `results`, without the [`UNHASHED_KEYS`].
 pub fn results_hash(results: &Value) -> String {
     let mut hashed = results.clone();
@@ -454,7 +470,11 @@ pub fn option_vessel_run(option: &DesignOption) -> Result<VesselRun, String> {
     let rules = RunRules {
         sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
         inputs: rule_inputs(option),
-        ..RunRules::default()
+        // The Vessel Model and the waterlines do not read damage: skip it (issue #924).
+        damage: DamageControl {
+            run: false,
+            progress: None,
+        },
     };
     let (outcome, measured) = simulate_params_measured(&params, &rules);
     match outcome {

@@ -32,7 +32,9 @@ fn new_gas_design(cargo: &str, extra: Value) -> ovd_format::Design {
         "beam_m": { "value": 11.4, "source": "typed" },
         // Issue #850: the IGC rows are in the coastal-and-river stack; a river-only gas Option takes ADN 9.3.1.
         "service_area": { "value": "coastal-and-river", "source": "typed" },
-        "moulded_depth_m": { "value": 6.0, "source": "typed" }
+        "moulded_depth_m": { "value": 6.0, "source": "typed" },
+        // Issue #913: `igc-2g` 4.0.0 keeps the typed-input IGC 3.2.4.1 rows for a container-block stern only.
+        "arrangement_style": { "value": "container_block", "source": "typed" }
     });
     for (k, v) in extra.as_object().unwrap() {
         inputs[k] = json!({ "value": v, "source": "typed" });
@@ -211,7 +213,7 @@ fn a_new_gas_option_meets_the_opening_rules_and_names_the_ones_the_model_cannot_
         let results = results_of(&new_gas_design(cargo, json!({})));
         let sets = results["rule_trace"]["rule_sets"].to_string();
         assert!(
-            sets.contains("lr-inland-gas@2.0.0") && sets.contains("igc-2g@3.3.0"),
+            sets.contains("lr-inland-gas@2.0.0") && sets.contains("igc-2g@4.0.0"),
             "{sets}"
         );
         for id in [

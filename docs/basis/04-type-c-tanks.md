@@ -142,11 +142,11 @@ API, not a Design.
 | TC-A23 | Allowable stress, 9Ni | 230 MPa | Estimate | Matches IGC 4.23.3.1 with ASTM A553 Type I minimums: min(690/3, 585/1.5) = 230 (derived) | `pressure_vessel.rs` 72 | None known at those strengths |
 | TC-A24 | Allowable stress, S690QL1 | 256.7 MPa = min(770/3, 690/1.5) | Sourced default | IGC 4.23.3.1; Rm and Re from the DESIGN 2006 river tank paper and an EN 10025-6 S690QL data sheet (#313). Input `tank_allowable_stress_basis`: `igc_4_23_3_1` (default) or `published_design` (285 MPa, kept for old files). A stress above the IGC limit gives a warning | `pressure_vessel.rs`; profile | Matches the IGC limit |
 | TC-A25 | Steel density | 7.93 (304L), 7.98 (316L), 7.85 (9Ni, S690QL1) t/m³ | Fixed in code | Original engine; S690QL1 copies 9Ni (code comment says estimate) | `pressure_vessel.rs` 51, 62, 73, 89 | Small |
-| TC-A26 | Design pressure, LNG | 0.4 MPa **(Rule pending, #317)** | Sourced default | Owners' sheets of two LNG bunker vessels (4 bar); a tank maker's 2018 presentation (3 to 5 barg) | Profile 127; wall formula | Unknown |
-| TC-A27 | Design pressure, LNG and ethane | 0.4 MPa **(Rule pending, #317)** | Estimate | Taken as for LNG | Profile 133 | Unknown |
+| TC-A26 | Design pressure, LNG | 0.4 MPa on river-only; on a coastal Service Area the IGC 4.23.1.2 minimum of each tank (#926) | Sourced default (river-only) | Owners' sheets of two LNG bunker vessels (4 bar); a tank maker's 2018 presentation (3 to 5 barg) | Profile 127; wall formula | Unknown |
+| TC-A27 | Design pressure, LNG and ethane | 0.4 MPa on river-only; on a coastal Service Area the IGC 4.23.1.2 minimum of each tank (#926) | Estimate | Taken as for LNG | Profile 133 | Unknown |
 | TC-A28 | Design pressure, LPG fully pressurised | 1.77 MPa **(Rule pending, #317)** | Sourced default | Owner's Form C particulars of 16 pressurised LPG carriers: 17.65 to 17.7 barg | Profile 138–143 | Unknown |
 | TC-A29 | Design pressure, LPG semi-pressurised | 1.0 MPa **(Rule pending, #317)** | Estimate | One trade-press report: 9.97 bar at −48 °C, condition not stated | Profile 145–150 | Unknown |
-| TC-A30 | Design pressure, LPG fully refrigerated | 0.4 MPa **(Rule pending, #317)** | Estimate | Taken as for LNG | Profile 152–156 | May be below the IGC 4.23.1.2 minimum (see Questions) |
+| TC-A30 | Design pressure, LPG fully refrigerated | The IGC 4.23.1.2 minimum of each tank (`null`, worked out for the design; #577) | Estimate | The IGC minimum sets it | Profile 152–156 | May be below the IGC 4.23.1.2 minimum (see Questions) |
 | TC-A31 | Design temperature, LNG and LNG/ethane | −163 °C **(Rule pending, #317)** | Sourced default | Owner's Form B particulars of a 2022 LNG bunker vessel | Profile 168–174; recorded only | No effect today |
 | TC-A32 | Design temperature, LPG fully pressurised | 0 °C **(Rule pending, #317)** | Sourced default | Owner's Form C sheet of a 2007 pressurised LPG carrier (0 to 45 °C) | Profile 176–181; recorded only | No effect today |
 | TC-A33 | Design temperature, LPG semi-pressurised | −48 °C **(Rule pending, #317)** | Estimate | One trade-press report | Profile 183–188; recorded only | No effect today |
@@ -206,7 +206,7 @@ Cargo Containment, Cargo and LPG Carriage Condition (see TC-A26 to TC-A48).
 | `tank_insulation_type` | panel / none / pu_foam by row | – | – | Recorded only: it does not set the two values below |
 | `tank_insulation_thickness_mm` | 330 / 0 / 200 by row | mm | 0–1000; 0–400 | Table rows TC-A40 to TC-A42 |
 | `tank_insulation_conductivity_w_per_mk` | 0.026 (foam; the pressurised LPG row is not used) | W/m.K | > 0, ≤ 10; 0.001–0.06 | Estimate (#919): Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3. The heat leak, the boil-off and the holding time read it. Old files keep 0.026 |
-| `tank_insulation_density_kg_m3` | 60 / 0 by row | kg/m3 | 0–2000; 0–300 | Estimate (#919); the insulation mass reads it. Old files keep 60 |
+| `tank_insulation_density_kg_m3` | 60 (every row; the pressurised LPG row is a stand-in for a typed thickness) | kg/m3 | 0–2000; 0–300 | Estimate (#919); the insulation mass reads it. Old files keep 60 |
 | `tank_structure_factor` | 1.30 / 1.12 by row | – | 1–3; 1.0–1.6 | Table rows TC-A62, TC-A63 |
 | `tank_wall_thickness_mm` | none (formula) | mm | > 0, ≤ 200; 10–50 | A typed value is an override for shell and heads |
 | `max_tank_od_m` | 16.0 | m | > 0, ≤ 50; 4–20 | Tool limit |

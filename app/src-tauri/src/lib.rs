@@ -7,6 +7,7 @@
 mod notice;
 
 use ovd_shell::AppState;
+use ovd_shell::damage::End;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State, Window, WindowEvent};
@@ -137,6 +138,64 @@ fn input_schema(state: State<Shared>) -> Reply {
 #[tauri::command]
 fn evaluate(state: State<Shared>) -> Reply {
     Ok(lock(&state)?.evaluate_json())
+}
+
+/// Issue #924: how often a damage run tells the front end how far it is.
+const PROGRESS_EVERY: std::time::Duration = std::time::Duration::from_millis(100);
+
+/// Issue #924: run the damage cases of an Option, off the main thread and off the state's lock. The lock
+/// is held only to copy the Option out and to keep the results. The front end hears `damage-progress`
+/// (`option`, `done`, `total`; at most every 100 ms) and `damage-done` (`option`, and `outcome`: `done`,
+/// `stale` when the Option changed during the run, `cancelled` or `failed` with a `message`), then
+/// evaluates again.
+#[tauri::command]
+fn run_damage(app: AppHandle, option: String, state: State<Shared>) -> Result<(), String> {
+    let job = lock(&state)?.damage_job(&option)?;
+    std::thread::spawn(move || {
+        let name = job.option.clone();
+        let sender = app.clone();
+        let progress_name = name.clone();
+        let mut last: Option<std::time::Instant> = None;
+        let end = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            job.run(move |done, total| {
+                let due = last.is_none_or(|t| t.elapsed() >= PROGRESS_EVERY);
+                if due || done == total {
+                    last = Some(std::time::Instant::now());
+                    let _ = sender.emit(
+                        "damage-progress",
+                        serde_json::json!({ "option": progress_name, "done": done, "total": total }),
+                    );
+                }
+            })
+        }))
+        .unwrap_or_else(|_| End::Failed("damage stability stopped unexpectedly".into()));
+        let (outcome, message) = match &end {
+            End::Cancelled => ("cancelled", None),
+            End::Failed(m) => ("failed", Some(m.clone())),
+            End::Done(_) => ("done", None),
+        };
+        let kept = match app.state::<Shared>().lock() {
+            Ok(mut guard) => guard.finish_damage(&job, end),
+            Err(_) => false,
+        };
+        let outcome = if outcome == "done" && !kept {
+            "stale"
+        } else {
+            outcome
+        };
+        let _ = app.emit(
+            "damage-done",
+            serde_json::json!({ "option": name, "outcome": outcome, "message": message }),
+        );
+    });
+    Ok(())
+}
+
+/// Issue #924: stop the damage run under way. The Option stays `not run`.
+#[tauri::command]
+fn cancel_damage(state: State<Shared>) -> Result<(), String> {
+    lock(&state)?.cancel_damage();
+    Ok(())
 }
 
 /// Issue #457: the mesh vertex data of an Option, as raw bytes (no JSON for vertex data): the
@@ -424,6 +483,8 @@ pub fn run() {
             snapshot,
             input_schema,
             evaluate,
+            run_damage,
+            cancel_damage,
             new_file,
             open_file,
             save,

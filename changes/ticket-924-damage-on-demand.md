@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Damage on demand in the app (issue #924): open, edit and save run no damage, so they stay quick. The Damage view and the message bar offer "Run damage stability", with a progress bar, the cases done, the time left (measured from the first cases of the run, and kept per machine for the next run) and Cancel. An edit to the Option cancels the run. The web build runs it in a Web Worker. The results hashes do not move. The rule-check table shows an outcome it does not know in the engine's own words and warns, instead of reading "not evaluated".

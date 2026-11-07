@@ -222,16 +222,26 @@ pub const TABLE_DEFAULTS: &[&str] = &[
 ];
 
 /// The keys of a default table, in the order the schema names them. The carriage condition is
-/// empty for a Cargo that has none.
-pub const TABLE_KEYS: &[&str] = &["cargo_containment", "cargo", "lpg_carriage_condition"];
+/// empty for a Cargo that has none. The Service Area is the fourth key (issue #926): a row that
+/// leaves it out fits both Service Areas, and so does a context that has none yet.
+pub const TABLE_KEYS: &[&str] = &[
+    "cargo_containment",
+    "cargo",
+    "lpg_carriage_condition",
+    "service_area",
+];
+
+/// The keys a default table named before the Service Area became a key (issue #926). A profile whose
+/// `by` list is these three still loads: its rows fit any Service Area.
+pub const LEGACY_TABLE_KEYS: &[&str] = &["cargo_containment", "cargo", "lpg_carriage_condition"];
 
 /// The statuses a table value can have.
 pub const TABLE_STATUSES: &[&str] = &["sourced", "estimate"];
 
 /// Every combination of [`TABLE_KEYS`] the schema can make: the Cargo Containment, each Cargo it
-/// carries, and, for an LPG Cargo, each carriage condition (an empty text for a Cargo that has none).
-/// The Defaults Profile must give a table row for each.
-pub fn table_combinations() -> Vec<[(&'static str, String); 3]> {
+/// carries, for an LPG Cargo each carriage condition (an empty text for a Cargo that has none), and
+/// each Service Area. The Defaults Profile must give a table row for each.
+pub fn table_combinations() -> Vec<[(&'static str, String); 4]> {
     let mut out = Vec::new();
     for (containment, phase) in CARGO_CONTAINMENTS {
         // The tables are for the gas tanks; no other Cargo Containment has table inputs.
@@ -248,11 +258,14 @@ pub fn table_combinations() -> Vec<[(&'static str, String); 3]> {
                 vec![""]
             };
             for carriage in carriages {
-                out.push([
-                    ("cargo_containment", containment.to_string()),
-                    ("cargo", cargo.to_string()),
-                    ("lpg_carriage_condition", carriage.to_string()),
-                ]);
+                for area in SERVICE_AREAS {
+                    out.push([
+                        ("cargo_containment", containment.to_string()),
+                        ("cargo", cargo.to_string()),
+                        ("lpg_carriage_condition", carriage.to_string()),
+                        ("service_area", area.to_string()),
+                    ]);
+                }
             }
         }
     }
@@ -4836,7 +4849,7 @@ fn read_option(
             ));
             continue;
         }
-        let default = match default_for(spec.name, &inputs, profile) {
+        let default = match default_for(spec.name, &inputs, raw, profile) {
             Ok(Some(d)) => d,
             // The input it depends on is missing or wrong; that error is already reported.
             Ok(None) => continue,
@@ -5028,6 +5041,7 @@ fn read_option(
 fn default_for(
     name: &str,
     inputs: &[(String, StoredInput)],
+    raw: &Map<String, Value>,
     profile: &Profile,
 ) -> Result<Option<Value>, Text> {
     let got = |n: &str| {
@@ -5050,7 +5064,7 @@ fn default_for(
             .map(|c| crate::trace::default_rule_sets(profile, &area, Some(c.as_str()))));
     }
     if TABLE_DEFAULTS.contains(&name) {
-        return table_default_for(name, inputs, profile);
+        return table_default_for(name, inputs, raw, profile);
     }
     let (value, case) = match KEYED_DEFAULTS.iter().find(|(n, _, _)| *n == name) {
         Some((_, by, _)) => {
@@ -5112,6 +5126,7 @@ fn default_for(
 fn table_default_for(
     name: &str,
     inputs: &[(String, StoredInput)],
+    raw: &Map<String, Value>,
     profile: &Profile,
 ) -> Result<Option<Value>, Text> {
     let got = |n: &str| {
@@ -5128,11 +5143,21 @@ fn table_default_for(
     if LPG_CARGOS.contains(&cargo) && !carriage.is_some_and(|c| CARRIAGE_CONDITIONS.contains(&c)) {
         return Ok(None);
     }
-    let context = [
+    let mut context = vec![
         ("cargo_containment", containment),
         ("cargo", cargo),
         ("lpg_carriage_condition", carriage.unwrap_or("")),
     ];
+    // The Service Area, once it is known (issue #926): a row that names it fits only that area. The
+    // Service Area comes after the tank inputs in `INPUTS`, so it may not be resolved yet: read the
+    // file's own value then.
+    let raw_area = raw
+        .get("service_area")
+        .and_then(|v| unmark(v).ok())
+        .and_then(|i| i.value.as_str().map(String::from));
+    if let Some(area) = got("service_area").or(raw_area.as_deref()) {
+        context.push(("service_area", area));
+    }
     match profile.table_default(name, &context) {
         Some(hit) => Ok(Some(normalise(hit.value.clone()))),
         None => Err(match carriage {
@@ -5834,7 +5859,8 @@ fn cross_checks(
         .find(|(k, i)| k == "tank_insulation_type" && i.source == Source::Typed)
         .and_then(|(_, i)| i.value.as_str())
         && typed != "unspecified"
-        && let Ok(Some(default)) = table_default_for("tank_insulation_type", inputs, profile)
+        && let Ok(Some(default)) =
+            table_default_for("tank_insulation_type", inputs, &Map::new(), profile)
         && let Some(default) = default.as_str()
         && default != typed
         && [

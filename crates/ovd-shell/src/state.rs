@@ -5,11 +5,14 @@
 //! This module has no Tauri types, so it is tested like any other Rust. It holds no calculation,
 //! validation or default logic: every answer comes from [`DesignSession`].
 
+use crate::damage::{self, End, Job, Kept, Running};
 use crate::{vessel, views};
 use ovd_core::text::{Arg, Msg};
-use ovd_format::{DesignSession, HashStatus, Profile, RunOutcome, msg_json};
+use ovd_format::{DesignSession, HashStatus, Profile, RunOutcome, check, msg_json};
 use serde_json::{Value, json};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::Ordering;
 
 pub struct AppState {
     session: DesignSession,
@@ -23,6 +26,18 @@ pub struct AppState {
     migration_notes: Vec<Note>,
     /// The run of the Option the 3D view last asked about (issue #457), until that Option changes.
     vessel: Option<vessel::Kept>,
+    /// The damage run each Option last had (issue #924), by name. Shown while its fingerprint still
+    /// matches the Option's inputs and the Defaults Profile; an edit leaves it unused.
+    damage: HashMap<String, Kept>,
+    /// The damage run under way, if any.
+    running: Option<Running>,
+}
+
+impl Drop for AppState {
+    /// A state that goes (a new or opened Design replaces it) cancels the run for its Option.
+    fn drop(&mut self) {
+        self.cancel_damage();
+    }
 }
 
 /// One migration note: the Option it is about (none for a note about the file), the message without
@@ -104,6 +119,8 @@ impl AppState {
             hash_changed: Vec::new(),
             migration_notes: Vec::new(),
             vessel: None,
+            damage: HashMap::new(),
+            running: None,
         })
     }
 
@@ -138,6 +155,8 @@ impl AppState {
                 })
                 .collect(),
             vessel: None,
+            damage: HashMap::new(),
+            running: None,
         })
     }
 
@@ -198,7 +217,18 @@ impl AppState {
     /// to the outcome of each Option that was computed, and the damage case drawings (SVG) of each
     /// Option whose results hold damage cases.
     pub fn evaluate_json(&self) -> Value {
-        let evaluation = self.session.evaluate();
+        let mut evaluation = self.session.evaluate_with_damage(&damage::off());
+        // An Option with a damage run for its current inputs shows that run.
+        for option in &mut evaluation.options {
+            if let (Some(kept), Ok(now)) = (
+                self.damage.get(&option.name),
+                self.session.option_fingerprint(&option.name),
+            ) && kept.fingerprint == now
+                && option.outcome.is_some()
+            {
+                option.outcome = Some(kept.outcome.clone());
+            }
+        }
         let mut json = evaluation.to_json();
         for (i, option) in evaluation.options.iter().enumerate() {
             if let Some(outcome @ RunOutcome::Results { .. }) = &option.outcome {
@@ -211,9 +241,29 @@ impl AppState {
         json
     }
 
+    /// The Design changed: it is unsaved, and a damage run whose Option changed (or went) stops.
+    fn edited(&mut self) {
+        self.dirty = true;
+        let stale = self.running.as_ref().is_some_and(|r| {
+            self.session.option_fingerprint(&r.option).ok().as_deref() != Some(&r.fingerprint)
+        });
+        if stale {
+            self.cancel_damage();
+        }
+        // A kept run of an Option that went is dropped; the others stay until their fingerprint differs.
+        let names: Vec<String> = self
+            .session
+            .design()
+            .options
+            .iter()
+            .map(|o| o.name.clone())
+            .collect();
+        self.damage.retain(|name, _| names.contains(name));
+    }
+
     pub fn set_input(&mut self, option: &str, name: &str, value: Value) -> Result<(), String> {
         self.session.set_input(option, name, value)?;
-        self.dirty = true;
+        self.edited();
         Ok(())
     }
 
@@ -221,13 +271,13 @@ impl AppState {
     /// resampled table's warning shows with the Design's messages.
     pub fn import_offsets(&mut self, option: &str, csv: &str) -> Result<(), String> {
         self.session.import_offsets(option, csv)?;
-        self.dirty = true;
+        self.edited();
         Ok(())
     }
 
     pub fn reset_input(&mut self, option: &str, name: &str) -> Result<(), String> {
         self.session.reset_input(option, name)?;
-        self.dirty = true;
+        self.edited();
         Ok(())
     }
 
@@ -239,27 +289,36 @@ impl AppState {
         in_line: Option<u64>,
     ) -> Result<(), String> {
         self.session.set_formation(option, kind, abreast, in_line)?;
-        self.dirty = true;
+        self.edited();
         Ok(())
     }
 
     /// Add an Option and make it the active one.
     pub fn add_option(&mut self) -> Result<(), String> {
         self.active_option = self.session.add_option(None)?;
-        self.dirty = true;
+        self.edited();
         Ok(())
     }
 
     /// Copy an Option and make the copy the active one.
     pub fn duplicate_option(&mut self, option: &str) -> Result<(), String> {
         self.active_option = self.session.duplicate_option(option, None)?;
-        self.dirty = true;
+        self.edited();
         Ok(())
     }
 
     pub fn rename_option(&mut self, option: &str, new_name: &str) -> Result<(), String> {
         self.session.rename_option(option, new_name)?;
         let new_name = new_name.trim();
+        // The kept damage run, and the run under way, follow the new name.
+        if new_name != option {
+            if let Some(kept) = self.damage.remove(option) {
+                self.damage.insert(new_name.to_string(), kept);
+            }
+            if let Some(r) = self.running.as_mut().filter(|r| r.option == option) {
+                r.option = new_name.to_string();
+            }
+        }
         if self.active_option == option {
             self.active_option = new_name.to_string();
         }
@@ -274,7 +333,7 @@ impl AppState {
                 *name = new_name.to_string();
             }
         }
-        self.dirty = true;
+        self.edited();
         Ok(())
     }
 
@@ -288,14 +347,14 @@ impl AppState {
         self.migration_notes
             .retain(|n| n.option.as_deref() != Some(option));
         self.hash_changed.retain(|n| n != option);
-        self.dirty = true;
+        self.edited();
         Ok(())
     }
 
     /// Swap in a Defaults Profile from its text. The session refuses one that loosens a hard range.
     pub fn load_profile(&mut self, text: &str) -> Result<(), String> {
         self.session.load_profile(text)?;
-        self.dirty = true;
+        self.edited();
         Ok(())
     }
 
@@ -316,6 +375,95 @@ impl AppState {
         } else {
             Err(format!("no Option named '{option}'"))
         }
+    }
+
+    /// Start a damage run of `option` (issue #924): a copy of the Option for the engine, so the lock
+    /// is free while the cases run. One run at a time; the caller runs the [`Job`] off this lock, then
+    /// gives its end to [`AppState::finish_damage`]. Refused while the Option has a hard error.
+    pub fn damage_job(&mut self, option: &str) -> Result<Job, String> {
+        if self.running.is_some() {
+            return Err("damage stability is already running".into());
+        }
+        let fingerprint = self.session.option_fingerprint(option)?;
+        let checked = check(&self.session.design().to_text(), self.session.profile());
+        if !checked.report.is_ok() {
+            return Err(format!(
+                "damage stability cannot run while the Design has an error: {}",
+                checked.report.errors.join("; ")
+            ));
+        }
+        let run_option = checked
+            .design
+            .and_then(|d| d.options.into_iter().find(|o| o.name == option))
+            .ok_or_else(|| format!("no Option named '{option}'"))?;
+        let cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        self.running = Some(Running {
+            option: option.to_string(),
+            fingerprint: fingerprint.clone(),
+            cancel: cancel.clone(),
+        });
+        Ok(Job::new(
+            option.to_string(),
+            fingerprint,
+            run_option,
+            cancel,
+        ))
+    }
+
+    /// A damage run ended. Its results are kept only when it finished and the Option's inputs and the
+    /// profile are still what it ran for. Returns whether they were kept.
+    pub fn finish_damage(&mut self, job: &Job, end: End) -> bool {
+        if self
+            .running
+            .as_ref()
+            .is_some_and(|r| std::sync::Arc::ptr_eq(&r.cancel, &job.cancel))
+        {
+            self.running = None;
+        }
+        self.keep_damage(&job.option, &job.fingerprint, end)
+    }
+
+    /// Keep the results of a damage run done elsewhere (the web build runs it in a worker): `fingerprint`
+    /// is the run's, and must be the Option's now.
+    pub fn keep_damage(&mut self, option: &str, fingerprint: &str, end: End) -> bool {
+        let End::Done(outcome) = end else {
+            return false;
+        };
+        if self.session.option_fingerprint(option).ok().as_deref() != Some(fingerprint) {
+            return false;
+        }
+        self.damage.insert(
+            option.to_string(),
+            Kept {
+                fingerprint: fingerprint.to_string(),
+                outcome,
+            },
+        );
+        true
+    }
+
+    /// The kept damage run of an Option as JSON, `{ fingerprint, results }`, for a worker that ran it
+    /// to hand back (the web build). `None` when the Option has no kept run.
+    pub fn damage_run_json(&self, option: &str) -> Option<Value> {
+        let kept = self.damage.get(option)?;
+        match &kept.outcome {
+            RunOutcome::Results { results, .. } => {
+                Some(json!({ "fingerprint": kept.fingerprint, "results": results }))
+            }
+            _ => None,
+        }
+    }
+
+    /// Stop the damage run under way, if any. The Option stays `not run`.
+    pub fn cancel_damage(&mut self) {
+        if let Some(r) = self.running.take() {
+            r.cancel.store(true, Ordering::SeqCst);
+        }
+    }
+
+    /// Is a damage run under way, and for which Option?
+    pub fn damage_running(&self) -> Option<&str> {
+        self.running.as_ref().map(|r| r.option.as_str())
     }
 
     /// The `.vdesign` text to write. Refused while the Design has a hard error.
@@ -747,8 +895,14 @@ mod tests {
         let eval = state.evaluate_json();
         assert!(eval["options"][0]["outcome"].get("damage_views").is_none());
 
-        let text = views::tests::gas_damage_design_text();
-        let state = AppState::open(std::path::Path::new("damage.vdesign"), &text).unwrap();
+        // Issue #924: an evaluation runs no damage, so the drawings come after a damage run.
+        let mut state = gas_state();
+        assert!(
+            state.evaluate_json()["options"][0]["outcome"]
+                .get("damage_views")
+                .is_none()
+        );
+        run_damage(&mut state);
         let eval = state.evaluate_json();
         let outcome = &eval["options"][0]["outcome"];
         assert_eq!(outcome["status"], "results");
@@ -809,5 +963,177 @@ mod tests {
     #[test]
     fn a_file_that_is_not_a_design_is_refused() {
         assert!(AppState::open(Path::new("x.vdesign"), "not json").is_err());
+    }
+
+    // ---- Issue #924: damage on demand ----
+
+    /// A coastal gas hull with damage cases (the IGC cases are in the coastal-and-river gas stack),
+    /// opened as the app opens a file.
+    fn gas_state() -> AppState {
+        let text = views::tests::gas_damage_design_text();
+        AppState::open(Path::new("/x/gas.vdesign"), &text).unwrap()
+    }
+
+    fn results_of(state: &AppState) -> Value {
+        state.evaluate_json()["options"][0]["outcome"]["results"].clone()
+    }
+
+    /// Run damage on the first Option and keep it, as the desktop command does.
+    fn run_damage(state: &mut AppState) -> (Vec<(usize, usize)>, bool) {
+        let name = state.session().design().options[0].name.clone();
+        let job = state.damage_job(&name).unwrap();
+        let calls = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+        let log = calls.clone();
+        let end = job.run(move |done, total| log.borrow_mut().push((done, total)));
+        let kept = state.finish_damage(&job, end);
+        let calls = calls.borrow().clone();
+        (calls, kept)
+    }
+
+    /// Issue #924: only a run the user asks for works damage out. Every path of the app that reaches the
+    /// engine runs without it: open, evaluate, save and the drawing and 3D calls.
+    #[test]
+    fn open_evaluate_and_save_run_no_damage() {
+        let text = views::tests::gas_damage_design_text();
+        let before = ovd_format::damage::damage_runs_started();
+        let state = AppState::open(Path::new("/x/gas.vdesign"), &text).unwrap();
+        assert_eq!(
+            ovd_format::damage::damage_runs_started(),
+            before,
+            "open ran damage"
+        );
+        let runs = || ovd_format::damage::damage_runs_started();
+        state.evaluate_json();
+        assert_eq!(runs(), before, "evaluate ran damage");
+        state.save_text().unwrap();
+        assert_eq!(runs(), before, "save ran damage");
+        let mut state = state;
+        let name = state.session().design().options[0].name.clone();
+        state.mesh_buffers(&name).unwrap();
+        assert_eq!(runs(), before, "the 3D mesh ran damage");
+        state.waterlines(&name).unwrap();
+        state.deck_items(&name).unwrap();
+        assert_eq!(
+            ovd_format::damage::damage_runs_started(),
+            before,
+            "evaluate or save ran damage"
+        );
+        // The counter does move when damage runs, so the check above can fail.
+        run_damage(&mut state);
+        assert!(ovd_format::damage::damage_runs_started() > before);
+    }
+
+    #[test]
+    fn an_evaluation_runs_no_damage_until_it_is_asked_for() {
+        let mut state = gas_state();
+        let before = results_of(&state);
+        assert_eq!(before["damage_status"], "not run");
+        let total = before["damage_cases"].as_u64().unwrap();
+        assert!(total > 4, "{total} damage cases");
+        assert!(before.get("damage").is_none_or(|d| d.is_null()));
+
+        let (calls, kept) = run_damage(&mut state);
+        assert!(kept);
+        // The hook saw the count reach the total the no-damage run gave.
+        assert_eq!(calls.first(), Some(&(0, total as usize)));
+        assert_eq!(calls.last(), Some(&(total as usize, total as usize)));
+        let after = results_of(&state);
+        assert_eq!(after["damage_status"], "run");
+        assert_eq!(after["damage_cases"].as_u64(), Some(total));
+        assert!(!after["damage"].is_null());
+        assert!(
+            state.evaluate_json()["options"][0]["outcome"]["damage_views"].is_object(),
+            "the damage drawings come from the kept run"
+        );
+    }
+
+    #[test]
+    fn an_edit_or_a_new_profile_makes_the_kept_run_not_run_again() {
+        let mut state = gas_state();
+        run_damage(&mut state);
+        assert_eq!(results_of(&state)["damage_status"], "run");
+        // A rename keeps the run.
+        let first = state.session().design().options[0].name.clone();
+        state.rename_option(&first, "Coastal").unwrap();
+        let name = state.session().design().options[0].name.clone();
+        assert_eq!(results_of(&state)["damage_status"], "run");
+        // An edit does not.
+        state.set_input(&name, "beam_m", json!(29.5)).unwrap();
+        assert_eq!(results_of(&state)["damage_status"], "not run");
+
+        // A profile of the same name with other content makes a run not run.
+        let mut state = gas_state();
+        run_damage(&mut state);
+        let mut profile: Value = serde_json::from_str(Profile::built_in_text()).unwrap();
+        let (_, entry) = profile["inputs"]
+            .as_object_mut()
+            .unwrap()
+            .iter_mut()
+            .next()
+            .unwrap();
+        entry["basis"] = json!("a changed basis");
+        state.load_profile(&profile.to_string()).unwrap();
+        assert_eq!(results_of(&state)["damage_status"], "not run");
+    }
+
+    #[test]
+    fn a_kept_run_follows_a_rename_and_goes_with_a_delete() {
+        let mut state = gas_state();
+        run_damage(&mut state);
+        let first = state.session().design().options[0].name.clone();
+        state.rename_option(&first, "Renamed").unwrap();
+        assert_eq!(results_of(&state)["damage_status"], "run");
+        assert!(state.damage.contains_key("Renamed"));
+        state.add_option().unwrap();
+        state.delete_option("Renamed").unwrap();
+        assert!(state.damage.is_empty());
+    }
+
+    #[test]
+    fn save_writes_the_same_hash_with_and_without_a_kept_run() {
+        let mut state = gas_state();
+        let without = state.save_text().unwrap();
+        run_damage(&mut state);
+        assert_eq!(state.save_text().unwrap(), without);
+        // And the hash is the one the results of the run with damage give.
+        let saved: Value = serde_json::from_str(&without).unwrap();
+        assert_eq!(
+            saved["options"][0]["results_hash"],
+            state.evaluate_json()["options"][0]["outcome"]["results_hash"]
+        );
+    }
+
+    #[test]
+    fn a_stopped_run_keeps_nothing() {
+        let mut state = gas_state();
+        let name = state.session().design().options[0].name.clone();
+        let job = state.damage_job(&name).unwrap();
+        // One run at a time.
+        assert!(state.damage_job(&name).is_err());
+        let stop = job.canceller();
+        let end = job.run(move |done, _| {
+            if done >= 3 {
+                stop.store(true, Ordering::SeqCst);
+            }
+        });
+        assert_eq!(end, End::Cancelled);
+        assert!(!state.finish_damage(&job, end));
+        assert_eq!(results_of(&state)["damage_status"], "not run");
+        assert!(state.damage_running().is_none());
+    }
+
+    #[test]
+    fn an_edit_cancels_the_run_of_its_option() {
+        let mut state = gas_state();
+        let name = state.session().design().options[0].name.clone();
+        let job = state.damage_job(&name).unwrap();
+        state.set_input(&name, "beam_m", json!(29.5)).unwrap();
+        assert!(job.canceller().load(Ordering::SeqCst));
+        assert_eq!(job.run(|_, _| {}), End::Cancelled);
+        // A new Design in its place cancels too.
+        let mut state = gas_state();
+        let job = state.damage_job(&name).unwrap();
+        drop(state);
+        assert!(job.canceller().load(Ordering::SeqCst));
     }
 }

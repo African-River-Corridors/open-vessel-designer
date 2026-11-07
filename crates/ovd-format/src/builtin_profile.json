@@ -269,7 +269,7 @@
     },
     "lpg_loading_temperature_c": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
@@ -318,7 +318,7 @@
     },
     "fill_ratio": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": {},
@@ -343,8 +343,15 @@
     },
     "tank_design_pressure_mpa": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
+          {
+            "when": { "service_area": "coastal-and-river", "cargo_containment": "type_c_tanks", "cargo": ["LNG", "LNG_ethane"] },
+            "value": null,
+            "status": "estimate",
+            "source": "IGC Code, MSC.370(93), 4.23.1.2 (annex p. 63-64, as read): the design vapour pressure is not less than Po = 0.2 + A C (rho_r)^1.5 MPa, with A = 0.00185 (sigma_m / 55)^2 and C the greatest of h, 0.75 b and 0.45 l",
+            "basis": "On a coastal Service Area the IGC Code applies, and 4.23.1.2 sets a minimum design vapour pressure for each tank, so the default is that minimum, worked out for the design (as for fully refrigerated LPG): Po = 0.2 + A C (rho_r)^1.5 MPa, with sigma_m the allowable stress of the wall formula, C the greatest of the tank outer diameter, 0.75 times it and 0.45 times the overall tank length, and rho_r the liquid density at the design temperature (t/m3). A larger tank gets a higher value; for 9 % nickel steel it is 0.41 MPa for the 140 x 29 m coastal LNG reference design, against 0.40 MPa on a river-only Service Area. The tank size does not depend on the wall, so the value needs no iteration. A value typed higher is kept; a value typed lower fails the IGC row. A saved file that stores a value keeps it"
+          },
           {
             "when": { "cargo": ["LNG"] },
             "value": 0.4,
@@ -384,11 +391,11 @@
       "unit": "MPa",
       "hard": { "gt": 0, "le": 5 },
       "soft": { "min": 0.1, "max": 2.5 },
-      "basis": "The design pressure of the tank, the maximum allowable relief valve setting (MARVS), in MPa (1 MPa = 10 bar). It sets the wall thickness through the pressure-vessel formula. The engine adds no liquid head. The default depends on the Cargo and, for LPG, the carriage condition. none: the IGC 4.23.1.2 minimum of each tank, worked out for the design (fully refrigerated LPG)"
+      "basis": "The design pressure of the tank, the maximum allowable relief valve setting (MARVS), in MPa (1 MPa = 10 bar). It sets the wall thickness through the pressure-vessel formula. The engine adds no liquid head. The default depends on the Cargo and, for LPG, the carriage condition. none: the IGC 4.23.1.2 minimum of each tank, worked out for the design (fully refrigerated LPG, and LNG on a coastal Service Area)"
     },
     "tank_design_temperature_c": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LNG", "LNG_ethane"] },
@@ -427,7 +434,7 @@
     },
     "tank_head_type": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
@@ -453,7 +460,7 @@
     },
     "tank_material": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LNG", "LNG_ethane"] },
@@ -502,7 +509,7 @@
     },
     "tank_insulation_type": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LNG", "LNG_ethane"] },
@@ -530,7 +537,7 @@
     },
     "tank_insulation_thickness_mm": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LNG", "LNG_ethane"] },
@@ -567,7 +574,8 @@
             "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
             "value": 0.026,
             "status": "estimate",
-            "basis": "Not used: this tank has no insulation, so no heat leak is worked out. The value is the foam value, as a stand-in if you add insulation"
+            "source": "Stand-in: the foam value of the other rows (Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3). The tank itself is uninsulated: Owner's published Form C sheet and general arrangement drawing of a pressurised LPG carrier built 2007",
+            "basis": "Not used while the thickness is 0: no heat leak is worked out. The value is the foam value, as a stand-in if you add insulation"
           },
           {
             "when": {},
@@ -589,15 +597,16 @@
         "rows": [
           {
             "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
-            "value": 0.0,
-            "status": "sourced",
-            "source": "Owner's published Form C sheet and general arrangement drawing of a pressurised LPG carrier built 2007: 17.65 barg, 0 to 45 C, tanks not insulated",
-            "basis": "None"
+            "value": 60.0,
+            "status": "estimate",
+            "source": "Stand-in: the value of the other rows. The tank itself is uninsulated: Owner's published Form C sheet and general arrangement drawing of a pressurised LPG carrier built 2007: 17.65 barg, 0 to 45 C, tanks not insulated",
+            "basis": "Not used while the thickness is 0 (no insulation, so no mass). The value stands in for a thickness you type, so the insulation then has a mass"
           },
           {
             "when": {},
             "value": 60.0,
             "status": "estimate",
+            "source": "The original engine's BargeInputs.insulation_density (60 kg/m3, Python 0.1.0); no external source",
             "basis": "Carried over from the original engine: one density for every kind of insulation. The foam of the conductivity value is 96 kg/m3"
           }
         ]
@@ -609,7 +618,7 @@
     },
     "tank_structure_factor": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
@@ -807,7 +816,7 @@
     },
     "tank_dome_height_m": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": {},
@@ -824,7 +833,7 @@
     },
     "tank_dome_diameter_m": {
       "default_by_table": {
-        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition", "service_area"],
         "rows": [
           {
             "when": {},
@@ -1184,7 +1193,7 @@
     "deckhouse_front_opening": {
       "default": false,
       "status": "estimate",
-      "basis": "Whether the deckhouse front, the end facing the cargo area, has an entrance, air inlet or opening (IGC 3.2.4.1; inland class rules 3.3.10). The engine does not place openings: type what the general arrangement shows. false is the aim of both rules. A file saved before reads false"
+      "basis": "Whether the deckhouse front, the end facing the cargo area, has an entrance, air inlet or opening (IGC 3.2.4.1, for a container-block stern; a deckhouse stern has its placed openings checked instead; inland class rules 3.3.10). The engine does not place openings on a container-block stern: type what the general arrangement shows. false is the aim of both rules. A file saved before reads false"
     },
     "deckhouse_side_opening_distance_m": {
       "default": 5.0,
@@ -1198,7 +1207,7 @@
         "max": 20.0
       },
       "status": "estimate",
-      "basis": "The distance of the first entrance, air inlet or opening on the side of the deckhouse from the deckhouse end facing the cargo area. IGC 3.2.4.1 asks for at least 4 % of the ship length L, not less than 3 m, and no more than 5 m. 5 m is the most the rule ever asks, so the default meets it; the engine does not place openings. A file saved before reads 5 m"
+      "basis": "The distance of the first entrance, air inlet or opening on the side of the deckhouse from the deckhouse end facing the cargo area. IGC 3.2.4.1 asks for at least 4 % of the ship length L, not less than 3 m, and no more than 5 m; `igc-2g` 4.0.0 reads this input for a container-block stern only (a deckhouse stern has its placed openings checked). 5 m is the most the rule ever asks, so the default meets it; the engine does not place openings on a container-block stern. A file saved before reads 5 m"
     },
     "entrance_distance_m": {
       "default": 5.0,
@@ -1212,7 +1221,7 @@
         "max": 30.0
       },
       "status": "estimate",
-      "basis": "The distance from the cargo area of the nearest entrance, or openable window, of the engine room, the accommodation and the wheelhouse (inland class rules 3.3.7 and 3.3.11 ask for at least 2.00 m). On a gas hull IGC 3.2.4.1 also asks for at least 4 % of the ship length L from the deckhouse end facing the cargo area, not less than 3 m and no more than 5 m; with no setback length in the hull (spec 0011 D17) that end stands at the cargo area. 5 m is the most either rule asks, so the default meets both; the engine does not place openings. Type the distance the general arrangement shows. A file saved before reads 2 m"
+      "basis": "The distance from the cargo area of the nearest entrance, or openable window, of the engine room, the accommodation and the wheelhouse (inland class rules 3.3.7 and 3.3.11 ask for at least 2.00 m). On a gas hull with a container-block stern IGC 3.2.4.1 also asks for at least 4 % of the ship length L from the deckhouse end facing the cargo area, not less than 3 m and no more than 5 m (a deckhouse stern has its placed openings checked instead); with no setback length in the hull (spec 0011 D17) that end stands at the cargo area. 5 m is the most either rule asks, so the default meets both; the engine does not place openings. Type the distance the general arrangement shows. A file saved before reads 2 m"
     },
     "engine_room_vent_inlet_distance_m": {
       "default": 5.0,
@@ -1226,7 +1235,7 @@
         "max": 30.0
       },
       "status": "estimate",
-      "basis": "The distance from the cargo area of the engine room ventilation inlets, and of the engine air intakes when the engines do not take air from the engine room (inland class rules 3.3.8 ask for at least 2.00 m). On a gas hull IGC 3.2.4.1 also asks for at least 4 % of the ship length L from the deckhouse end facing the cargo area, not less than 3 m and no more than 5 m; with no setback length in the hull (spec 0011 D17) that end stands at the cargo area. 5 m is the most either rule asks, so the default meets both; the engine does not place openings. A file saved before reads 2 m"
+      "basis": "The distance from the cargo area of the engine room ventilation inlets, and of the engine air intakes when the engines do not take air from the engine room (inland class rules 3.3.8 ask for at least 2.00 m). On a gas hull with a container-block stern IGC 3.2.4.1 also asks for at least 4 % of the ship length L from the deckhouse end facing the cargo area, not less than 3 m and no more than 5 m (a deckhouse stern has its placed openings checked instead); with no setback length in the hull (spec 0011 D17) that end stands at the cargo area. 5 m is the most either rule asks, so the default meets both; the engine does not place openings. A file saved before reads 2 m"
     },
     "vent_stub_m": {
       "default": 1.0,
