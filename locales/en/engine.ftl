@@ -18,7 +18,7 @@ check-wheelhouse-fits-beam = wheelhouse { $width } m wide on a { $beam } m beam
 check-name-deckhouse-has-a-footprint = deckhouse has a footprint
 check-deckhouse-has-a-footprint = deckhouse { $length } m over the machinery space x { $width } m wide (the { $beam } m beam less a side deck each side)
 check-name-deckhouse-tier-count = deckhouse tier count
-check-deckhouse-tier-count = { $tiers } tier(s) of { $tier_area } m2 hold the { $required } m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over { $max } tiers is a tall house over a short machinery space (ESTIMATE limit)
+check-deckhouse-tier-count = { $tiers } tier(s): { $room_tiers } for rooms ({ $room_area } m2 each, holding the { $required } m2 of accommodation floor) and { $access_tiers } for access ({ $access_area } m2 each, lifting the wheelhouse eye over the cargo); over { $max } tiers is a tall house over a short machinery space (ESTIMATE limit)
 warn-aft-deckhouse-no-outfit = The deckhouse carries no outfit mass: the outfit of the accommodation units left with them, and no outfit rate has been found, so the lightship is under-stated and GM over-stated until the calibration set (issue #782) gives one.
 warn-aft-deckhouse-estimates = Deckhouse stern: the tier height, the side deck and the tier limit are ESTIMATES. A fixed wheelhouse is given the tiers its Blind Distance needs, to the stricter of ES-TRIN 7.02(2) and, on a coastal Option, SOLAS V/22.1.1: the first pass sizes the eye for a waterline at the keel, which is never too low and can add a tier; a second pass on the trimmed light waterline of the first keeps the lower tier count only if the sightline still passes.
 warn-aft-deckhouse-interim-floor = The accommodation floor of the deckhouse is the interim stand-in (the floor of the 40 ft accommodation units the Option holds): no crew gave berths to size rooms from.
@@ -448,6 +448,7 @@ msg-containment-cargo = `{ $input }` = { $containment } cannot carry { $cargo } 
 msg-freeboard-depth = `{ $input }` = { $freeboard } must be less than `{ $depth_input }` = { $depth } (hard limit)
 msg-whole-number = `{ $input }` = { $value } must be a whole number (hard limit)
 msg-insulation-disagree = `{ $input }` is { $kind } but `{ $thickness_input }` is { $thickness }: the type and the thickness disagree (soft check); accepted
+msg-insulation-defaults-of-other-type = `{ $input }` is { $typed }, but `{ $conductivity }` and `{ $density }` still hold the defaults for { $default }: type the values for { $typed } (soft check); accepted
 msg-loading-above-marvs = `{ $input }` = { $value }: the vapour pressure of { $cargo } there is { $pressure } bar, above the MARVS of { $marvs } bar absolute; the tank is loaded to the filling limit, not above (soft check); accepted
 msg-stress-from-input = `{ $input }`
 msg-stress-from-basis = the `published_design` allowable stress basis

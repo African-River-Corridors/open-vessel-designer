@@ -243,7 +243,11 @@ fn each_governing_case_carries_its_extent_and_the_sheet_dimensions_it() {
             );
         }
     }
-    assert!(side > 0 && bottom > 0, "side {side}, bottom {bottom}");
+    // Issue #943: the smaller deckhouse makes the hull lighter, and on this hull the coastal set's
+    // governing case at 55.9 to 68.9 m is now a side damage, not a bottom damage (the same extent).
+    // The drawing code reads the extent from the fields either way, so a bottom case is checked
+    // when one governs and not required.
+    assert!(side > 0, "side {side}, bottom {bottom}");
     println!("governing cases: side {side}, bottom {bottom}, with a width {across}");
 }
 
