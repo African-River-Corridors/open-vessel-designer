@@ -755,9 +755,9 @@ pub fn tank_spaces_of(c: &BargeCapacityInputs, r: &BargeCapacityResult) -> Vec<C
             g.tanks.volume_per_tank,
             g.inputs.insulation_thickness / 1000.0,
         )
-            .into_iter()
-            .map(ClippedSpace::prism)
-            .collect(),
+        .into_iter()
+        .map(ClippedSpace::prism)
+        .collect(),
         _ => Vec::new(),
     }
 }
