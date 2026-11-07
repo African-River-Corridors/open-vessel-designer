@@ -233,6 +233,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"

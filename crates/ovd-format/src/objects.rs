@@ -380,6 +380,7 @@ pub(crate) fn capacity_result_from_json(
         deadweight_t: o.f64("deadweight_t")?,
         freeboard_m: o.f64("freeboard_m")?,
         air_draft_top_above_keel_m: o.f64("air_draft_top_above_keel_m")?,
+        highest_point: None,
         overloaded: o.bool("overloaded")?,
         tank_outer_diameter_m: o.opt_f64("tank_outer_diameter_m")?,
         n_tanks_wide: o.opt_i64("n_tanks_wide")?,
@@ -451,8 +452,9 @@ mod tests {
             // The tank values of the Rule Trace are not written to JSON (issue #271).
             let mut written = result.clone();
             written.tank_rules = None;
-            // Nor is the vent mast (issue #822).
+            // Nor is the vent mast (issue #822), nor the highest point (issue #991).
             written.vent_mast = None;
+            written.highest_point = None;
             // Issue #448: the JSON holds the hull's dimensions only in a gas basis, so a dry
             // result comes back with no hull.
             if written.gas_basis.is_none() {
