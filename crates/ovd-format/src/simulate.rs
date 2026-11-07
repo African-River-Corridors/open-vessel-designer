@@ -3682,6 +3682,22 @@ fn simulate_gas(
         arrangement["depth_follows_tank"] = json!(true);
         // Whether the tank or the draught limit plus the freeboard set the depth (issue #992).
         let by_tank = ga::depth_for_standing_height(ga::tank_top_above_keel_m(r), h);
+        // What stands above the deck, for the windage and the sightline (P3 reads the top). A
+        // weather shield is weight and windage only: no freeboard credit (the freeboard is the
+        // depth at the side less the draught), no hull girder credit, no buoyancy.
+        if let Some(a) = ga::above_deck(r, f.depth_m) {
+            arrangement["above_deck"] = json!({
+                "weather_shield_fitted": a.shield_fitted,
+                "weather_shield_mass_t": num(a.shield_mass_t),
+                "weather_shield_top_above_deck_m": num(a.shield_top_above_deck_m),
+                "top_above_deck_m": num(a.top_above_deck_m),
+                "windage_side_area_m2": num(a.side_area_m2),
+                "windage_front_area_m2": num(a.front_area_m2),
+                "weather_shield_watertight": false,
+                "weather_shield_freeboard_credit_m": num(0.0),
+                "weather_shield_hull_girder_credit": false,
+            });
+        }
         arrangement["depth_set_by"] = json!(if f.depth_m > by_tank + 0.0015 {
             "freeboard"
         } else {

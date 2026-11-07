@@ -86,6 +86,61 @@ pub fn depth_for_standing_height(tank_top_above_keel_m: f64, standing_m: f64) ->
     libm::round((tank_top_above_keel_m - standing_m + gap) * 1000.0) / 1000.0
 }
 
+/// Issue #992: what stands above the main deck over the cargo tanks, for the windage and the sightline.
+/// All estimates; there is no wind heel model yet, and nothing here is a freeboard or hull girder credit.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AboveDeck {
+    /// A weather shield is fitted (its mass is in the lightship).
+    pub shield_fitted: bool,
+    /// The top of the shield, or of the bare tanks, above the main deck (m); 0 when nothing stands
+    /// above it. The highest of the two is the obstruction for the sightline.
+    pub top_above_deck_m: f64,
+    /// The shield's own top above the deck (m); 0 with no shield.
+    pub shield_top_above_deck_m: f64,
+    /// The projected side area above the deck (m2): the cargo zone length times the height of what
+    /// stands. An upper bound for bare cylinders.
+    pub side_area_m2: f64,
+    /// The projected front area above the deck (m2): the beam times the height for a shield; the
+    /// tanks across times their diameter times the height for bare tanks.
+    pub front_area_m2: f64,
+    /// The mass of the shield (t), already in the lightship.
+    pub shield_mass_t: f64,
+}
+
+/// What stands above the deck of a gas arrangement of moulded depth `depth` (issue #992).
+pub fn above_deck(r: &BargeCapacityResult, depth: f64) -> Option<AboveDeck> {
+    let g = r.gas_basis.as_ref()?;
+    let inp = &g.inputs;
+    let od = g.tanks.outer_diameter;
+    let bottom = r.tank_rules.as_ref().map_or(0.0, |t| t.bottom_gap_m);
+    let tank_top = bottom + od;
+    let zone = crate::tanks::CargoZone::new(
+        inp.loa,
+        inp.bow_non_tank_length.unwrap_or(0.0),
+        inp.stern_non_tank_length.unwrap_or(0.0),
+    );
+    let zone_len = (zone.x_fwd_m - zone.x_aft_m).max(0.0);
+    let fitted = g.weights.weather_shield > 0.0;
+    let shield_top = tank_top + inp.weather_shield_clearance - depth;
+    let (shield_top_above, height, front) = if fitted && shield_top > 0.0 {
+        let wing_top = bottom + inp.wing_tank_height_ratio * od;
+        let foot = wing_top.max(depth);
+        let h = (tank_top + inp.weather_shield_clearance - foot).max(0.0);
+        (shield_top, h, inp.beam * h)
+    } else {
+        let h = (tank_top - depth).max(0.0);
+        (0.0, h, g.tanks.n_tanks_wide as f64 * od * h)
+    };
+    Some(AboveDeck {
+        shield_fitted: fitted,
+        top_above_deck_m: shield_top_above.max((tank_top - depth).max(0.0)),
+        shield_top_above_deck_m: shield_top_above,
+        side_area_m2: zone_len * height,
+        front_area_m2: front,
+        shield_mass_t: g.weights.weather_shield,
+    })
+}
+
 /// The top of the tank shell above the keel (m): the double bottom, the support and the outer
 /// diameter (`Detail::tank_top_above_keel_m` of the capacity run). Dome and shield not counted.
 pub fn tank_top_above_keel_m(r: &BargeCapacityResult) -> f64 {
@@ -1315,7 +1370,13 @@ impl Search<'_> {
         inp.double_side_min_m = sizing_limit(&self.o.rules, ADN_DOUBLE_SIDE_RULE);
         inp.double_bottom_min_m = sizing_limit(&self.o.rules, ADN_DOUBLE_BOTTOM_RULE);
         inp.wing_tank_height_ratio = self.o.wing_tank_height_ratio;
-        inp.weather_shield_thickness_mm = self.o.weather_shield_thickness_mm;
+        // Issue #992: with the tanks in hold (a standing height of 0) nothing stands over the deck
+        // but the domes, so there is no shield, whatever its thickness is set to.
+        inp.weather_shield_thickness_mm = if self.o.tank_top_above_deck_m == Some(0.0) {
+            0.0
+        } else {
+            self.o.weather_shield_thickness_mm
+        };
         inp.weather_shield_clearance_m = self.o.weather_shield_clearance_m;
         inp.structure = self.o.structure;
         inp.tank_forming_allowance_pct = self.o.tank_forming_allowance_pct;

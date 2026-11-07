@@ -188,3 +188,73 @@ fn the_draught_limit_follows_the_settled_depth_not_the_seed() {
         );
     }
 }
+
+fn above(r: &Value) -> &Value {
+    &r["arrangement"]["above_deck"]
+}
+
+/// Issue #992, phase 2. In hold there is no shield and nothing stands above the deck; the result
+/// block is absent without the input, so a result without it is unchanged.
+#[test]
+fn in_hold_nothing_stands_above_the_deck_and_without_the_input_there_is_no_block() {
+    let hold = run(&design(json!({ "tank_top_above_deck_m": 0.0 })));
+    let a = above(&hold);
+    assert_eq!(a["weather_shield_fitted"], false);
+    assert_eq!(a["weather_shield_mass_t"].as_f64().unwrap(), 0.0);
+    assert_eq!(a["top_above_deck_m"].as_f64().unwrap(), 0.0);
+    assert_eq!(a["windage_side_area_m2"].as_f64().unwrap(), 0.0);
+    let plain = run(&design(json!({})));
+    assert!(
+        !plain["arrangement"]
+            .as_object()
+            .unwrap()
+            .contains_key("above_deck")
+    );
+}
+
+/// With the tanks standing above the deck the existing weather shield of the weights (issue #410)
+/// stands over them: its top is the tank top plus the clearance above the deck, its mass is in the
+/// lightship, and its projected areas are the windage. It adds no freeboard (the freeboard is the
+/// depth at the side less the draught) and no credit to the hull girder or the buoyancy.
+/// Label: rule (design note D2); sums of the shield's own inputs, not a published value.
+#[test]
+fn a_shield_over_standing_tanks_is_weight_and_windage_and_no_credit() {
+    let with = run(&design(json!({ "tank_top_above_deck_m": 2.0 })));
+    let a = above(&with);
+    assert_eq!(a["weather_shield_fitted"], true);
+    // Tank top 2.0 m above the deck plus the 1.5 m clearance of the shield.
+    let top = a["weather_shield_top_above_deck_m"].as_f64().unwrap();
+    assert!((top - 3.5).abs() < 0.01, "{top}");
+    assert!((a["top_above_deck_m"].as_f64().unwrap() - top).abs() < 1e-9);
+    let front = a["windage_front_area_m2"].as_f64().unwrap();
+    assert!((front - 29.0 * top).abs() < 0.05, "{front}");
+    assert!(a["windage_side_area_m2"].as_f64().unwrap() > 0.0);
+    assert_eq!(a["weather_shield_watertight"], false);
+    assert_eq!(
+        a["weather_shield_freeboard_credit_m"].as_f64().unwrap(),
+        0.0
+    );
+    assert_eq!(a["weather_shield_hull_girder_credit"], false);
+    // No freeboard credit: the freeboard is the depth less the draught.
+    let fb = with["results"]["freeboard_m"].as_f64().unwrap();
+    let t = with["results"]["draught_m"].as_f64().unwrap();
+    assert!(
+        (fb - (depth(&with) - t)).abs() < 1e-6,
+        "{fb} {} {t}",
+        depth(&with)
+    );
+    // The shield is in the lightship: with it off, the hull is lighter by its mass, at the same depth.
+    let off = run(&design(
+        json!({ "tank_top_above_deck_m": 2.0, "weather_shield_thickness_mm": 0.0 }),
+    ));
+    assert_eq!(above(&off)["weather_shield_fitted"], false);
+    assert!((depth(&off) - depth(&with)).abs() < 1e-9);
+    let mass = a["weather_shield_mass_t"].as_f64().unwrap();
+    let dl = with["results"]["lightship_t"].as_f64().unwrap()
+        - off["results"]["lightship_t"].as_f64().unwrap();
+    // The lightship carries the shield with the steel's own allowance (about 1 %).
+    assert!(
+        mass > 0.0 && (dl / mass - 1.0).abs() < 0.03,
+        "{dl} vs {mass}"
+    );
+}
