@@ -137,7 +137,9 @@ pub fn with_stern_items(
     }
     v["stern_items"] = json!({
         "genset_kwe": ovd_core::aft_arrangement::installed_genset_kwe(a),
-        "deckhouse_area_m2": a.deckhouse.as_ref().map_or(0.0, |d| d.area_m2),
+        // Issue #994: the forward house of `wheelhouse_forward` is priced on its floor too.
+        "deckhouse_area_m2": a.deckhouse.as_ref().map_or(0.0, |d| d.area_m2)
+            + a.forward_house.as_ref().map_or(0.0, |f| f.area_m2),
         "gas_fuel_system_kw": if a.propulsion == "gas_fuelled" {
             a.installed_kwe
         } else {

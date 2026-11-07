@@ -951,7 +951,12 @@ fn settle_rooms(
     params: &mut Map<String, Value>,
     rules: &RunRules,
 ) -> (Outcome, crate::simulate::Measured, bool) {
-    if params.get("arrangement_style").and_then(Value::as_str) != Some("deckhouse") {
+    // Issue #994: the forward-wheelhouse style holds its accommodation in a deckhouse aft, so its
+    // rooms are sized from the berths too.
+    if !matches!(
+        params.get("arrangement_style").and_then(Value::as_str),
+        Some("deckhouse" | "wheelhouse_forward")
+    ) {
         let (outcome, measured) = simulate_params_measured(params, rules);
         return (outcome, measured, true);
     }
@@ -1114,7 +1119,7 @@ fn stern_arrangement_of(
         // D4: fixed on the deckhouse, unless an air-draft limit is set and the wheelhouse can lift.
         Some(d) => {
             let mut block = json!({
-                "style": "deckhouse",
+                "style": if aft.forward_house.is_some() { "wheelhouse_forward" } else { "deckhouse" },
                 "tiers": d.tiers,
                 // Issue #943: the tiers that hold rooms, and those that only lift the wheelhouse.
                 "room_tiers": d.tiers_plan.iter().filter(|t| t.kind == ovd_core::aft_arrangement::TierKind::Rooms).count(),
