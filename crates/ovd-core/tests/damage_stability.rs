@@ -616,6 +616,7 @@ fn tank_shape(kind: HeadKind, head_m: f64) -> SpaceShape {
         y: 0.0,
         z: 2.5,
         outer_diameter: 2.0,
+        insulation_m: 0.0,
         head: TankHead {
             kind,
             length_m: head_m,

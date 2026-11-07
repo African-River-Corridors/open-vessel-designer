@@ -235,7 +235,28 @@ struct Compartment {
     x: (f64, f64),
     y: (f64, f64),
     z: (f64, f64),
+    /// A Type C tank's steel in the (y, z) plane: the centre and the radius of the steel, inside the
+    /// insulation. A damage breaches the tank only if it reaches this circle (issue #987).
+    steel: Option<(f64, f64, f64)>,
 }
+
+impl Compartment {
+    /// Whether a damage over `y` across the hull and `z` up it reaches the compartment. A plain compartment
+    /// is reached when the ranges overlap its extent; a Type C tank is reached only when the damage reaches
+    /// its steel, so the insulation does not count as the tank's boundary (IGC 2.4.2 measures to the shell).
+    fn reached_by(&self, y: (f64, f64), z: (f64, f64)) -> bool {
+        match self.steel {
+            None => overlaps(self.y, y) && overlaps(self.z, z),
+            Some((cy, cz, r)) => {
+                let dy = (y.0 - cy).max(0.0).max(cy - y.1);
+                let dz = (z.0 - cz).max(0.0).max(cz - z.1);
+                dy * dy + dz * dz + 1e-9 < r * r
+            }
+        }
+    }
+}
+
+const ANY: (f64, f64) = (f64::NEG_INFINITY, f64::INFINITY);
 
 /// The permeability of one `SpaceKind` in a [`PermeabilityTable`].
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -285,7 +306,7 @@ impl PermeabilityTable {
 }
 
 /// The extent of a Space across and up the hull: the bounding box of its section, or for a Type C tank the
-/// square that holds its outer diameter.
+/// square that holds its outer diameter. A tank's steel is in [`Compartment::steel`].
 fn bbox(s: &Space) -> ((f64, f64), (f64, f64)) {
     if let SpaceShape::Tank {
         y,
@@ -326,6 +347,16 @@ fn compartments(spaces: &[Space], cut: bool) -> Vec<Compartment> {
     let mut out = Vec::new();
     for s in spaces {
         let (y, z) = bbox(s);
+        let steel = match &s.shape {
+            SpaceShape::Tank {
+                y,
+                z,
+                outer_diameter,
+                insulation_m,
+                ..
+            } => Some((*y, *z, (0.5 * outer_diameter - insulation_m).max(0.0))),
+            SpaceShape::Prism { .. } => None,
+        };
         let cuts = cut
             && matches!(
                 s.kind,
@@ -352,6 +383,7 @@ fn compartments(spaces: &[Space], cut: bool) -> Vec<Compartment> {
                 x: (w[0], w[1]),
                 y,
                 z,
+                steel,
             });
         }
     }
@@ -444,10 +476,10 @@ pub fn adn_damage_cases_with(
                 .filter(|c| {
                     if side {
                         // starboard: the strip inboard of the side, from the base line up without limit
-                        overlaps(c.y, (half - extents.side_inboard_m, half))
+                        c.reached_by((half - extents.side_inboard_m, half), ANY)
                     } else {
                         // bottom: below the height of the damage; athwartships neighbours flood too
-                        c.z.0 + 1e-9 < extents.bottom_height_m
+                        c.reached_by(ANY, (f64::NEG_INFINITY, extents.bottom_height_m))
                     }
                 })
                 .filter(|c| permeability(c.kind) > 0.0)
@@ -670,7 +702,9 @@ pub fn box_damage_cases(
     for (a, b) in windows(ext.side_long_m) {
         let hit: Vec<&Compartment> = parts
             .iter()
-            .filter(|c| overlaps(c.x, (a, b)) && overlaps(c.y, (half - ext.side_inboard_m, half)))
+            .filter(|c| {
+                overlaps(c.x, (a, b)) && c.reached_by((half - ext.side_inboard_m, half), ANY)
+            })
             .collect();
         push(
             true,
@@ -708,8 +742,7 @@ pub fn box_damage_cases(
                     .iter()
                     .filter(|c| {
                         overlaps(c.x, (a, b))
-                            && overlaps(c.y, (y0, y1))
-                            && c.z.0 + 1e-9 < ext.bottom_height_m
+                            && c.reached_by((y0, y1), (f64::NEG_INFINITY, ext.bottom_height_m))
                     })
                     .collect();
                 push(

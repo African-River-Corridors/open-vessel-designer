@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Damage (issue #987): a damage breaches a Type C tank only if it reaches the tank's steel, not the outside of its insulation (IGC 2.4.2 measures to the shell). On the 140 x 29 m coastal LNG reference design this removes every bottom-damage breach of a tank, which made the 11.0 m tank fail and 11.1 m pass; at a 12.0 m tank the failing damage rows fall from 26 to 8, and at 13.0 m from 58 to 24. The damage block is outside the results hash, so no hash moves.
