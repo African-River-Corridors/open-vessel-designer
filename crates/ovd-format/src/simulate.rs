@@ -2062,19 +2062,28 @@ fn with_air_draft_report(
     };
     let (limit, source, ballast_capacity_t) = bridge;
     let ballasted = ballast_capacity_t > 0.0;
-    let governing = if ballasted {
+    let worked = if ballasted {
         r.air_draft_ballast_m
     } else {
         r.air_draft_light_m
+    };
+    // A light air draft that is not worked (not finite) is not "under the limit": the laden one stands in.
+    let light_worked = worked.filter(|g| g.is_finite());
+    let laden_now = v["results"]["air_draft_loaded_m"].as_f64();
+    let governing = light_worked.or(laden_now);
+    let condition = match (light_worked, ballasted) {
+        (Some(_), true) => "ballasted light",
+        (Some(_), false) => "light",
+        (None, _) => "laden (the light draught is not worked)",
     };
     let bridge_limit = limit.map_or(Value::Null, |limit| {
         json!({
             "limit_m": num(limit),
             "source": source,
-            "condition": if ballasted { "ballasted light" } else { "light" },
+            "condition": condition,
             "air_draft_m": opt_num(governing),
             "over_m": governing.map_or(Value::Null, |g| num((g - limit).max(0.0))),
-            "exceeded": governing.is_some_and(|g| g > limit + 1e-9),
+            "exceeded": governing.is_some_and(|g| g.is_finite() && g > limit + 1e-9),
         })
     });
     let laden = v["results"]["air_draft_loaded_m"].clone();

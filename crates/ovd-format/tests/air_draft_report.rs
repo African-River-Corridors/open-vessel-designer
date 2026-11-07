@@ -121,3 +121,93 @@ fn the_design_stands_when_the_bridge_clearance_is_exceeded() {
         without["rule_trace"]["verdict"]
     );
 }
+
+#[test]
+fn the_named_point_is_the_one_whose_top_sets_the_air_draft() {
+    // The light air draft is the top of the named point less the light draught; a vent mast that stands
+    // highest is the one the results give as the vent exit.
+    let r = results(json!({}));
+    let report = &r["air_draft_report"];
+    let top = report["highest_point"]["top_above_keel_m"]
+        .as_f64()
+        .unwrap();
+    let light = r["results"]["air_draft_light_m"].as_f64().unwrap();
+    let draught = r["results"]["light_draught_m"].as_f64().unwrap();
+    assert!(
+        (top - draught - light).abs() < 1e-9,
+        "{top} {draught} {light}"
+    );
+    if report["highest_point"]["key"] == "vent_mast" {
+        assert_eq!(
+            top,
+            r["results"]["vent_exit_above_keel_m"].as_f64().unwrap()
+        );
+    }
+    // A dry bulk hull names its hatch coaming (a pushed barge carries no stern block).
+    let dry = dry_results(json!({}));
+    assert_eq!(
+        dry["air_draft_report"]["highest_point"]["key"],
+        json!("hatch_coaming")
+    );
+}
+
+fn dry_results(extra: Value) -> Value {
+    let mut inputs = json!({
+        "cargo": { "value": "bauxite", "source": "typed" },
+        "hull_form": { "value": "raked_box", "source": "typed" },
+        "formation": { "value": { "kind": "pushed_barge" }, "source": "typed" },
+        "length_overall_m": { "value": 76.5, "source": "typed" },
+        "service_area": { "value": "river-only", "source": "typed" },
+        "beam_m": { "value": 11.4, "source": "typed" },
+        "moulded_depth_m": { "value": 3.5, "source": "typed" }
+    });
+    for (k, v) in extra.as_object().unwrap() {
+        inputs[k] = json!({ "value": v, "source": "typed" });
+    }
+    let file = json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": inputs }]
+    });
+    let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+    match run_option_with(
+        &filled.design.unwrap().options[0],
+        &Library::built_in(),
+        &[],
+    ) {
+        RunOutcome::Results { results, .. } => results,
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn a_light_draught_that_is_not_worked_is_not_read_as_under_the_limit() {
+    // `crude_integral_tanks_self_propelled` has no light draught worked (it is not a number: issue #1012), so its light air draft is not a number. A typed limit under the laden air draft still warns,
+    // on the laden value, and says so.
+    let path = format!(
+        "{}/tests/fixtures/crude_integral_tanks_self_propelled.vdesign",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    let mut file: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    file["options"][0]["inputs"]["bridge_clearance_m"] = json!({ "value": 3.0, "source": "typed" });
+    let design = ovd_format::check(&file.to_string(), &Profile::built_in())
+        .design
+        .unwrap();
+    let r = match ovd_format::run_design(&design).remove(0).outcome {
+        RunOutcome::Results { results, .. } => results,
+        other => panic!("{other:?}"),
+    };
+    let limit = &r["air_draft_report"]["bridge_limit"];
+    assert_eq!(limit["exceeded"], json!(true), "{limit}");
+    assert!(
+        limit["condition"].as_str().unwrap().starts_with("laden"),
+        "{limit}"
+    );
+    assert!(
+        warnings(&r)
+            .iter()
+            .any(|w| w.contains("bridge limit")
+                && w.contains("laden (the light draught is not worked)")),
+        "{:?}",
+        warnings(&r)
+    );
+}

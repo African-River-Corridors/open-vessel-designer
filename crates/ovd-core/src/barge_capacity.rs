@@ -557,6 +557,7 @@ impl HighestPoint {
     pub fn label(&self) -> &'static str {
         match self.key {
             "tank_dome" => "tank dome",
+            "tank_top" => "tank top (the tank has no dome)",
             "hatch_coaming" => "hatch coaming",
             "deck" => "deck",
             "stern_block" => "stern block (deck units, wheelhouse lowered)",
@@ -1638,6 +1639,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // Issue #991: the highest point of the vessel, with the wheelhouse lowered, which sets the air draft.
     let mut highest = HighestPoint {
         key: match class {
+            CargoClass::Gas if detail.dome_items.is_empty() => "tank_top",
             CargoClass::Gas => "tank_dome",
             CargoClass::DryBulk => "hatch_coaming",
             CargoClass::LiquidBulk => "deck",
@@ -2133,23 +2135,38 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // air-draft limit check uses (light, ballasted where ballast is carried).
     if let Some(limit) = inp.bridge_clearance_m {
         let ballasted = inp.ballast_capacity_t > 0.0;
-        let governing = if ballasted {
+        let worked = if ballasted {
             air_draft_ballast
         } else {
             air_draft_light
         };
-        if governing > limit + 1e-9 {
-            let condition = if ballasted {
+        // A light draught that is not worked (not finite) is not "under the limit": the laden air draft
+        // stands in, and the message says so.
+        let (governing, condition) = if worked.is_finite() {
+            (
+                worked,
+                if ballasted {
+                    Text::fixed(
+                        "check-air-draft-condition-ballasted-light",
+                        "ballasted light",
+                    )
+                } else {
+                    Text::fixed("check-air-draft-condition-light", "light")
+                },
+            )
+        } else {
+            (
+                air_draft,
                 Text::fixed(
-                    "check-air-draft-condition-ballasted-light",
-                    "ballasted light",
-                )
-            } else {
-                Text::fixed("check-air-draft-condition-light", "light")
-            };
+                    "check-air-draft-condition-laden-stands-in",
+                    "laden (the light draught is not worked)",
+                ),
+            )
+        };
+        if governing.is_finite() && governing > limit + 1e-9 {
             warnings.push(text!(
                 "warn-air-draft-over-bridge-limit",
-                "The {condition} air draft {governing} m (laden {laden} m) is over the bridge limit {limit} m by {over} m ({source}). The highest point is the {point}, {top} m above the keel. The vessel cannot pass under a bridge of that clearance.",
+                "The {condition} air draft {governing} m (laden {laden} m) is over the bridge limit {limit} m by {over} m ({source}). The highest point is the {point}, {top} m above the keel. The vessel cannot pass under a bridge of that clearance. The wheelhouse of a tug is not counted for a pushed or ATB design.",
                 condition = condition,
                 governing = Arg::fixed(governing, 2),
                 laden = Arg::fixed(air_draft, 2),
