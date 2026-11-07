@@ -1,10 +1,10 @@
 <!-- unreleased -->
-- Design change (issue #919): the default insulation density of the type C tanks is 96 kg/m3 for the insulation panel and polyurethane foam (the Defaults Profile table of `tank_insulation_density_kg_m3`; was 60 kg/m3, carried over from the original engine with no source). 96 kg/m3 is the foam the conductivity (0.026 W/m.K, Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3) is for; the maintainer decided it on #919. The 140 x 29 m coastal LNG reference design's insulation goes from 133.8 t to 214.2 t (about +80 t), and its lightship, draught, cargo and gross tonnage move with it (table below). A file saved before the input keeps 60 kg/m3. A pressurised LPG tank has no insulation and does not move.
+- Design change (issue #919): the default insulation density of the type C tanks is 96 kg/m3 for the insulation panel and polyurethane foam (the Defaults Profile table of `tank_insulation_density_kg_m3`; was 60 kg/m3, carried over from the original engine with no source). 96 kg/m3 is the foam the conductivity (0.026 W/m.K, Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3) is for; the maintainer decided it on #919. The 140 x 29 m coastal LNG reference design's insulation goes from 133.8 t to 214.2 t (about +80 t), and its lightship and draught move with it, the cargo does not (table below). A file saved before the input keeps 60 kg/m3. A pressurised LPG tank has no insulation and does not move.
 
 <!-- design-impact -->
-### ticket/919-insulation-inputs-5-density-96 (2026-11-06)
+### ticket/919-insulation-inputs-5-density-96 (2026-11-07)
 
-Between `main 4f9c946` and `this branch 83eefba3`.
+Between `main 669689c` and `this branch 85075cb1`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|
@@ -48,4 +48,4 @@ Between `main 4f9c946` and `this branch 83eefba3`.
 | sweep gas cargo LNG pushed | `checks[19].message` | barge form factor at the service speed: Fn 0.177, Cp 0.969, L/B 6.12, B/T 4.23; outside its range: Fn 0.18 (range 0.00 to 0.14), Cp 0.97 (range 0.77 to 0.88), L/B 6.12 (range 7.59 to 16.29) | barge form factor at the service speed: Fn 0.177, Cp 0.969, L/B 6.12, B/T 4.20; outside its range: Fn 0.18 (range 0.00 to 0.14), Cp 0.97 (range 0.77 to 0.88), L/B 6.12 (range 7.59 to 16.29) | changed |
 | sweep gas cargo LNG pushed | `checks[3].message` | freeboard 2.69 m >= required 0.3 m | freeboard 2.67 m >= required 0.3 m | changed |
 | sweep gas cargo LNG pushed | `formation.notes[1]` | Coupling force between the pusher and the pushed craft: 494 kN (ES-TRIN 2025/1, ESI-III-6 2.1: 270 x P_B x L_S / B_S, with P_B 967 kW, L_S 15.2 m taken as the pusher length, B_S 8.0 m). | Coupling force between the pusher and the pushed craft: 496 kN (ES-TRIN 2025/1, ESI-III-6 2.1: 270 x P_B x L_S / B_S, with P_B 971 kW, L_S 15.3 m taken as the pusher length, B_S 8.1 m). | changed |
-| ... | 25528 more changed quantities | | | |
+| ... | 25523 more changed quantities | | | |
