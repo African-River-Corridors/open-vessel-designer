@@ -16,7 +16,7 @@
 use libm::{acos, cos, sin, sqrt, tan};
 use ovd_core::damage_stability::{
     DamageCriteria, Floats, FloodedVolume, INTERMEDIATE_FRACTIONS, IntactInclusion, assess,
-    crossing_segment, intermediate_stages, righting_lever_at,
+    crossing_segment, intermediate_stages, intermediate_stages_releasing, righting_lever_at,
 };
 use ovd_core::hull::hull_form::{HullFormInputs, HullFormKind, HullShape, generate};
 use ovd_core::sections::{Gravity, SectionsTable, equilibrium};
@@ -938,4 +938,56 @@ fn the_last_segment_of_the_curve_is_a_triangle_to_the_crossing() {
     let (area, to_zero_deg) = crossing_segment(0.4, 0.0, 5.0);
     assert!((to_zero_deg - 5.0).abs() < 1e-12);
     assert!((area - 0.5 * 0.4 * 5.0 * core::f64::consts::PI / 180.0).abs() < 1e-12);
+}
+
+/// Issue #988, spec 0012 D18a. A breached tank at mid length and on the centre line: the box hull 60 x 10 m floats
+/// upright at every stage, so the draught is the mass over L x B (the water plane is the whole 600 m^2). The flood
+/// is the centred double bottom, 5 x 10 x 1 m at 0.95: 47.5 t of water at the final stage. The breached tank's cargo share is 100 t. At the 50 %
+/// stage the water is 0.5 x 47.5 = 23.75 t and 0.5 x 100 = 50 t of cargo has gone: the mass is
+/// 1200 + 23.75 - 50 = 1173.75 t and the draught 1173.75 / 600 = 1.95625 m. With the cargo kept aboard it is
+/// (1200 + 23.75) / 600 = 2.039583 m.
+#[test]
+fn a_stage_with_the_cargo_let_out_floats_at_the_hand_calculated_draught() {
+    let t = hull();
+    let s = start(&t);
+    let boxes = [centred_double_bottom(0.95)];
+    let fin = assess(
+        &t,
+        &boxes,
+        MASS,
+        gravity(),
+        1.0,
+        s,
+        &DamageCriteria::IGC_2_7,
+    );
+    let g = gravity();
+    let released = intermediate_stages_releasing(
+        &t,
+        &boxes,
+        &fin,
+        &|f| (MASS - f * 100.0, g),
+        1.0,
+        s,
+        &DamageCriteria::IGC_2_7,
+    );
+    let kept = intermediate_stages(
+        &t,
+        &boxes,
+        &fin,
+        (MASS, g),
+        1.0,
+        s,
+        &DamageCriteria::IGC_2_7,
+    );
+    assert_eq!(released[1].floats, Floats::Yes);
+    assert!(
+        (released[1].draught_mid_m - 1173.75 / 600.0).abs() < 1e-6,
+        "{}",
+        released[1].draught_mid_m
+    );
+    assert!(
+        (kept[1].draught_mid_m - 1223.75 / 600.0).abs() < 1e-6,
+        "{}",
+        kept[1].draught_mid_m
+    );
 }

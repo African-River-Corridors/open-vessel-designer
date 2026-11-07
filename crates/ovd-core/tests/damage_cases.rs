@@ -7,9 +7,9 @@ use ovd_core::compartments::{Side, Space, SpaceKind, SpaceShape};
 use ovd_core::damage_cases::{
     AdnExtents, BoxExtents, CaseOptions, DamageCase, Permeability, PermeabilityTable, Placement,
     StandardOfDamage, adn_damage_cases, adn_damage_cases_with, box_damage_cases,
-    deck_edge_immersed, es_trin_longitudinal_extent_m, gas_flooding, igc_damage_cases,
-    longitudinal_extent_m, machinery_bulkheads_intact, marpol_damage_cases, normam_damage_cases,
-    without_breached_cargo,
+    breached_cargo_at_stage, deck_edge_immersed, es_trin_longitudinal_extent_m, gas_flooding,
+    igc_damage_cases, longitudinal_extent_m, machinery_bulkheads_intact, marpol_damage_cases,
+    normam_damage_cases, without_breached_cargo,
 };
 use ovd_core::damage_stability::FloodedVolume;
 use ovd_core::sections::{Gravity, Waterplane};
@@ -716,4 +716,30 @@ fn each_case_carries_its_extent() {
         }
     }
     assert!(side > 0 && bottom > 0, "side {side}, bottom {bottom}");
+}
+
+/// Issue #988, spec 0012 D18a: at the stage of fraction f a breached tank has let out f of its share of the
+/// cargo. Two equal tanks, 100 t of cargo at KG 3.5 m, mass 1000 t at LCG 30 m, KG 3.0 m: at the 25 % stage the
+/// breached tank CT1C (x 21 m, y 0) has let out 0.25 x 50 t = 12.5 t, so the mass is 987.5 t, the LCG is
+/// (1000 x 30 - 12.5 x 21) / 987.5 and the KG is (1000 x 3.0 - 12.5 x 3.5) / 987.5. At the final stage (f = 1) the
+/// whole 50 t has left, and at f = 0 none has.
+#[test]
+fn at_a_stage_a_breached_tank_has_let_out_that_fraction_of_its_cargo() {
+    let spaces = gas_layout();
+    let g = Gravity {
+        lcg_m: 30.0,
+        tcg_m: 0.0,
+        kg_m: 3.0,
+    };
+    let breached = ["CT1C".to_string()];
+    let (m, gd) = breached_cargo_at_stage(0.25, 1000.0, g, (100.0, 3.5), &spaces, &breached);
+    assert!((m - 987.5).abs() < 1e-9, "{m}");
+    assert!((gd.lcg_m - (1000.0 * 30.0 - 12.5 * 21.0) / 987.5).abs() < 1e-9);
+    assert!((gd.kg_m - (1000.0 * 3.0 - 12.5 * 3.5) / 987.5).abs() < 1e-9);
+    assert_eq!(gd.tcg_m, 0.0);
+    let (full, _) = breached_cargo_at_stage(1.0, 1000.0, g, (100.0, 3.5), &spaces, &breached);
+    let (whole, _) = without_breached_cargo(1000.0, g, (100.0, 3.5), &spaces, &breached);
+    assert_eq!(full, whole);
+    let (none, _) = breached_cargo_at_stage(0.0, 1000.0, g, (100.0, 3.5), &spaces, &breached);
+    assert_eq!(none, 1000.0);
 }

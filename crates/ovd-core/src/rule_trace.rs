@@ -879,7 +879,7 @@ pub static MEASURES: &[MeasureDef] = &[
         object: ObjectType::DamageCase,
         value: ValueKind::Number,
         args: &[],
-        method: "The largest angle of heel of the damaged hull at any stage of flooding: the intermediate stages at 25, 50 and 75 % of the final flood and the final stage (spec 0012 D15). Intermediate stages by added mass: every damaged Space holds the same fraction of its final water, level and upright, as a mass at its centroid, with the free surface of its gross surface (ES-TRIN 2025/1 28.03(4)(e)); a breached tank's cargo stays aboard until the final stage. A stage with no floating position has no value",
+        method: "The largest angle of heel of the damaged hull at any stage of flooding: the intermediate stages at 25, 50 and 75 % of the final flood and the final stage (spec 0012 D15). Intermediate stages by added mass: every damaged Space holds the same fraction of its final water, level and upright, as a mass at its centroid, with the free surface of its gross surface (ES-TRIN 2025/1 28.03(4)(e)); a breached tank holds sea water to the stage's fraction of its flood and keeps its cargo for the rest (its share of the cargo leaves in step with the inflow, spec 0012 D18; IGC gives no stage method), the cargo of an intact tank stays aboard. A stage with no floating position has no value",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {
