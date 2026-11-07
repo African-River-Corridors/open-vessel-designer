@@ -5859,7 +5859,7 @@ fn cross_checks(
         .find(|(k, i)| k == "tank_insulation_type" && i.source == Source::Typed)
         .and_then(|(_, i)| i.value.as_str())
         && typed != "unspecified"
-        && let Ok(Some(default)) = table_default_for("tank_insulation_type", inputs, profile)
+        && let Ok(Some(default)) = table_default_for("tank_insulation_type", inputs, &Map::new(), profile)
         && let Some(default) = default.as_str()
         && default != typed
         && [

@@ -574,7 +574,8 @@
             "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
             "value": 0.026,
             "status": "estimate",
-            "basis": "Not used: this tank has no insulation, so no heat leak is worked out. The value is the foam value, as a stand-in if you add insulation"
+            "source": "Stand-in: the foam value of the other rows (Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3). The tank itself is uninsulated: Owner's published Form C sheet and general arrangement drawing of a pressurised LPG carrier built 2007",
+            "basis": "Not used while the thickness is 0: no heat leak is worked out. The value is the foam value, as a stand-in if you add insulation"
           },
           {
             "when": {},
@@ -596,15 +597,16 @@
         "rows": [
           {
             "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
-            "value": 0.0,
-            "status": "sourced",
-            "source": "Owner's published Form C sheet and general arrangement drawing of a pressurised LPG carrier built 2007: 17.65 barg, 0 to 45 C, tanks not insulated",
-            "basis": "None"
+            "value": 60.0,
+            "status": "estimate",
+            "source": "Stand-in: the value of the other rows. The tank itself is uninsulated: Owner's published Form C sheet and general arrangement drawing of a pressurised LPG carrier built 2007: 17.65 barg, 0 to 45 C, tanks not insulated",
+            "basis": "Not used while the thickness is 0 (no insulation, so no mass). The value stands in for a thickness you type, so the insulation then has a mass"
           },
           {
             "when": {},
             "value": 60.0,
             "status": "estimate",
+            "source": "The original engine's BargeInputs.insulation_density (60 kg/m3, Python 0.1.0); no external source",
             "basis": "Carried over from the original engine: one density for every kind of insulation. The foam of the conductivity value is 96 kg/m3"
           }
         ]
