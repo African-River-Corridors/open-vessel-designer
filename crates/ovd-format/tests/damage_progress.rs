@@ -84,16 +84,29 @@ fn the_hook_runs_on_the_calling_thread_counts_up_and_can_cancel() {
             calls.iter().all(|(_, t)| *t == me),
             "{workers} workers: the hook ran off the calling thread"
         );
-        assert_eq!(calls[0].0, DamageProgress { done: 0, total });
-        // One pass only (issue #923): the sizing and rooms passes skip damage, so the count never falls and
-        // only the first call has 0 done.
-        assert!(
-            calls.windows(2).all(|w| w[0].0.done <= w[1].0.done),
-            "{workers} workers: the count fell"
-        );
-        assert_eq!(calls.iter().filter(|(p, _)| p.done == 0).count(), 1);
-        assert!(calls.iter().all(|(p, _)| p.total == total));
-        assert_eq!(calls.last().unwrap().0.done, total, "{workers} workers");
+        assert_eq!(calls[0].0.done, 0);
+        // Issue #935: the search runs damage on each candidate that passes stability, then the answer's run
+        // follows. Each run reports its own count, from 0 to its total, which never falls within a run (a run's
+        // sizing and rooms passes skip damage); the last run is the answer's.
+        let mut runs: Vec<Vec<DamageProgress>> = Vec::new();
+        for (p, _) in calls.iter() {
+            if p.done == 0 {
+                runs.push(Vec::new());
+            }
+            runs.last_mut().unwrap().push(*p);
+        }
+        for run in &runs {
+            assert!(
+                run.iter().all(|p| p.total == run[0].total),
+                "{workers} workers: the total changed within a run"
+            );
+            assert!(
+                run.windows(2).all(|w| w[0].done <= w[1].done),
+                "{workers} workers: the count fell"
+            );
+            assert_eq!(run.last().unwrap().done, run[0].total, "{workers} workers");
+        }
+        assert_eq!(runs.last().unwrap()[0].total, total, "{workers} workers");
 
         // Cancel after 3 cases: the run fails, says so, and the hook is not called again.
         let (control, calls) = recording(Some(3));
@@ -104,7 +117,7 @@ fn the_hook_runs_on_the_calling_thread_counts_up_and_can_cancel() {
         let calls = calls.borrow();
         let last = calls.last().unwrap().0;
         assert!(
-            last.done >= 3 && last.done < total,
+            last.done >= 3 && last.done < last.total,
             "{workers} workers: {last:?}"
         );
         assert_eq!(

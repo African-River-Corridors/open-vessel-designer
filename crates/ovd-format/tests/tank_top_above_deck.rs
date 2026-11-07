@@ -79,7 +79,12 @@ fn in_hold_the_depth_is_the_tank_top_plus_the_gap_and_a_standing_height_takes_it
         depth(&hold)
     );
     assert_eq!(hold["arrangement"]["depth_follows_tank"], true);
-    assert!(depth(&hold) < 15.95, "{}", depth(&hold));
+    // Issue #935: the search screens by IGC 2.7 damage. The two-across 13.28 m tanks this design chose before do
+    // not survive a side breach across the hold bulkhead, so it carries one 16 m tank across, and the hull is
+    // deeper than the ratio default (17.903 m against 15.95 m). Label: snapshot, printed by the code.
+    assert_eq!(hold["arrangement"]["n_wide"], 1);
+    assert_eq!(hold["arrangement"]["tank_od_m"], 16.0);
+    assert!((depth(&hold) - 17.903).abs() < 0.0006, "{}", depth(&hold));
 
     let two = run(&design(json!({ "tank_top_above_deck_m": 2.0 })));
     let top2 = two["arrangement"]["tank_top_above_keel_m"]

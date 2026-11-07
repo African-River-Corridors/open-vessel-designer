@@ -82,6 +82,20 @@ pub(crate) fn run_gas_damage(
     density: f64,
     gauge: &Gauge,
 ) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), Cancelled> {
+    let out = run_gas_damage_typed(run, spaces, hull, conditions, density, gauge)?;
+    let block = damage_block(run, &out);
+    Ok((out.verdicts, block))
+}
+
+/// [`run_gas_damage`] without the JSON block: the typed run.
+pub(crate) fn run_gas_damage_typed(
+    run: &GasRun,
+    spaces: &[ovd_core::compartments::Space],
+    hull: &ovd_core::hydrostatics::Hull,
+    conditions: &[ovd_core::loading_conditions::LoadedCondition],
+    density: f64,
+    gauge: &Gauge,
+) -> Result<GasDamageRun, Cancelled> {
     let workers = damage_workers(run.cases.len());
     let mut out = GasDamageRun::default();
     for c in conditions {
@@ -93,8 +107,36 @@ pub(crate) fn run_gas_damage(
         })?;
         out.push_condition(run, hull, c, &state, density, runs);
     }
-    let block = damage_block(run, &out);
-    Ok((out.verdicts, block))
+    Ok(out)
+}
+
+/// The runner the arrangement search uses (issue #935): the cases on worker threads (issue #921), the progress
+/// hook and the cancel of the run's [`DamageControl`]. Each damage run the search works out reports its own
+/// `done` of `total` cases, so the count restarts with each candidate; a cancel stops the run under way and the
+/// search. With `control.run` false the search does not screen by damage.
+pub(crate) struct ThreadedRunner<'a> {
+    pub control: &'a DamageControl,
+}
+
+impl ovd_core::gas_damage::DamageRunner for ThreadedRunner<'_> {
+    fn enabled(&self) -> bool {
+        self.control.run
+    }
+
+    fn run(
+        &self,
+        run: &GasRun,
+        spaces: &[ovd_core::compartments::Space],
+        hull: &ovd_core::hydrostatics::Hull,
+        conditions: &[ovd_core::loading_conditions::LoadedCondition],
+        density: f64,
+    ) -> Result<GasDamageRun, ovd_core::gas_damage::Cancelled> {
+        let total = run.case_count(hull, conditions, density);
+        let gauge = Gauge::new(self.control.progress.clone(), total);
+        gauge.report();
+        run_gas_damage_typed(run, spaces, hull, conditions, density, &gauge)
+            .map_err(|Cancelled| ovd_core::gas_damage::Cancelled)
+    }
 }
 
 fn floats_text(f: ovd_core::damage_stability::Floats) -> &'static str {
@@ -361,8 +403,7 @@ pub struct DamageProgress {
 /// [`DAMAGE_CANCELLED`]. Not `Send`: it stays on the calling thread.
 pub type ProgressHook = std::rc::Rc<dyn Fn(DamageProgress) -> ControlFlow<()>>;
 
-/// The message of a run that the progress hook cancelled (the `Raised` kind is `Cancelled`).
-pub const DAMAGE_CANCELLED: &str = "damage stability was cancelled";
+pub use ovd_core::gas_damage::DAMAGE_CANCELLED;
 
 pub use core::ops::ControlFlow;
 

@@ -83,9 +83,22 @@ fn the_hook_sees_done_reach_total() {
     let total = r["damage_cases"].as_u64().unwrap() as usize;
     let calls = calls.borrow();
     assert!(total > 3);
-    assert!(calls.iter().all(|c| c.1 == total));
-    assert!(calls.windows(2).all(|w| w[0].0 <= w[1].0));
-    assert_eq!(calls.last().unwrap(), &(total, total));
+    // Issue #935: the search runs damage on each candidate that passes stability, and the answer's run follows.
+    // Each run reports its own count, from 0 to its total, which never falls within a run; the last run is the
+    // answer's.
+    let mut runs: Vec<Vec<(usize, usize)>> = Vec::new();
+    for c in calls.iter() {
+        if c.0 == 0 {
+            runs.push(Vec::new());
+        }
+        runs.last_mut().expect("a run starts with 0 done").push(*c);
+    }
+    for run in &runs {
+        assert!(run.iter().all(|c| c.1 == run[0].1));
+        assert!(run.windows(2).all(|w| w[0].0 <= w[1].0));
+        assert_eq!(run.last().unwrap().0, run[0].1);
+    }
+    assert_eq!(runs.last().unwrap()[0].1, total);
 }
 
 #[test]

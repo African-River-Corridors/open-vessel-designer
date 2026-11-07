@@ -33,6 +33,7 @@ use crate::barge_capacity::{
     dome_dimensions, dome_volume_m3,
 };
 use crate::checks::{Check, all_ok};
+use crate::gas_damage::{self, DamageRunner, SerialRunner};
 use crate::gas_stability::{self as gs, DEFAULT_WATER_DENSITY, GasCapacityResult};
 use crate::journey_derating::{JourneyDeratingInputs, JourneyDeratingResult, compute as derate};
 use crate::loading_conditions as lc;
@@ -642,6 +643,8 @@ pub struct ArrangementFit {
     pub tried: Vec<TriedArrangement>,
     pub engine_inputs: BargeCapacityInputs,
     pub engine_result: BargeCapacityResult,
+    /// Issue #935: how many damage runs the search worked out (0: it did not screen by damage).
+    pub damage_runs: usize,
 }
 
 /// One arrangement the search tried (issue #675): one depth and number of tanks across. It is the
@@ -1250,9 +1253,73 @@ fn full_measured(c: &Candidate, o: &FitOptions) -> Measured {
     let (stab, conditions) = stability_assessment(&c.result, &c.journey, &c.inputs, o);
     let mut checks = cheap_checks(&c.result, &c.journey, c.depth, o);
     checks.extend(stab);
-    candidate_measured(
+    let mut m = candidate_measured(
         &c.result, &c.journey, &c.inputs, c.depth, &checks, conditions,
-    )
+    );
+    // Issue #935: the damage the search worked out; its rows read as the answer's do.
+    if let Some(verdicts) = &c.damage {
+        m.damage = verdicts.clone();
+        m.damage_status = crate::measured::DamageStatus::Run;
+    }
+    m
+}
+
+/// The `igc-2g` Rule Set of the stack when it evaluates IGC 2.7 damage survival (the set the results' damage block
+/// is read from), and the search is to screen by it.
+fn igc_damage_set(o: &FitOptions) -> Option<&RuleSet> {
+    o.rules.iter().find(|s| {
+        s.id == "igc-2g"
+            && s.rule("igc/2.7/damage-survival")
+                .is_some_and(|r| r.evaluated)
+    })
+}
+
+/// Issue #935: work out the IGC damage of a candidate that passed the cheap checks and stability, as the answer's
+/// run does (same conditions, same cargo, same spaces), and keep the verdicts on it. Does nothing when the stack
+/// does not evaluate IGC 2.7, the runner is told to skip, or the candidate has no loading conditions with weights.
+fn screen_damage(s: &mut Search<'_>, c: &mut Candidate) -> Result<(), PyError> {
+    let o = s.o;
+    let (Some(set), Some(ic)) = (igc_damage_set(o), o.is_code.as_ref()) else {
+        return Ok(());
+    };
+    if !s.runner.enabled() || c.result.gas_basis.is_none() {
+        return Ok(());
+    }
+    let Some(spec) = c.result.hull_spec.as_ref() else {
+        return Ok(());
+    };
+    let cargo_t = ranked_cargo(&c.result, &c.journey, &c.inputs, o);
+    let conditions =
+        is_code_conditions(&c.result, &c.inputs, cargo_t, o, ic).map_err(|e| PyError {
+            kind: e.type_name(),
+            message: e.message().to_string(),
+        })?;
+    if conditions.is_empty() {
+        return Ok(());
+    }
+    let hull = crate::hydrostatics::Hull::build(spec).map_err(|e| value_error(format!("{e}")))?;
+    let model = crate::vessel_model::assemble(&crate::vessel_model::VesselModelInputs {
+        capacity: c.inputs.clone(),
+        result: c.result.clone(),
+        hull: hull.table.clone(),
+        structure: crate::vessel_model::StructureBlock::default(),
+    });
+    let spaces: Vec<crate::compartments::Space> =
+        model.spaces.iter().map(|k| k.space.clone()).collect();
+    // A Rule Set version without the tables gives no damage run, as the answer's run does.
+    let Ok(plan) = gas_damage::gas_damage_plan(set, &spaces, &hull) else {
+        return Ok(());
+    };
+    let run = s
+        .runner
+        .run(&plan, &spaces, &hull, &conditions, o.water_density_t_per_m3)
+        .map_err(|gas_damage::Cancelled| PyError {
+            kind: "Cancelled",
+            message: gas_damage::DAMAGE_CANCELLED.to_string(),
+        })?;
+    s.damage_runs += 1;
+    c.damage = Some(run.verdicts);
+    Ok(())
 }
 
 /// Every check of a candidate: the cheap ones, then stability.
@@ -1305,6 +1372,9 @@ struct Candidate {
     result: BargeCapacityResult,
     journey: JourneyDeratingResult,
     inputs: BargeCapacityInputs,
+    /// Issue #935: the damage verdicts of the candidate, when the search ran its damage (only candidates that
+    /// passed the cheap checks and stability get it).
+    damage: Option<Vec<crate::measured::DamageVerdict>>,
 }
 
 fn derate_candidate(
@@ -1331,6 +1401,10 @@ struct Search<'a> {
     tried: i64,
     /// Issue #675: the arrangements `build` turned down, as (depth, tanks across, reason).
     refused: Vec<(f64, i64, Text)>,
+    /// Issue #935: works out the damage of a candidate (threads, progress and cancel are the caller's).
+    runner: &'a dyn DamageRunner,
+    /// Issue #935: the damage runs worked out so far.
+    damage_runs: usize,
 }
 
 impl Search<'_> {
@@ -1702,6 +1776,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                     result: r,
                     journey: j,
                     inputs: inp,
+                    damage: None,
                 });
             }
         }
@@ -1713,11 +1788,17 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
     order.sort_by(|&a, &b| pool.all[b].tonnage.total_cmp(&pool.all[a].tonnage));
     let mut top = 0.0;
     for i in order {
-        let c = &pool.all[i];
-        if pool.best.is_some() && c.tonnage < top - 1e-6 {
+        if pool.best.is_some() && pool.all[i].tonnage < top - 1e-6 {
             break;
         }
-        if !passes_all(c, o) {
+        // Issue #935: damage is the slowest part, so it runs last, on a candidate that passed everything else.
+        let mut ok = passes_all(&pool.all[i], o);
+        if ok && igc_damage_set(o).is_some() {
+            screen_damage(s, &mut pool.all[i])?;
+            ok = passes_all(&pool.all[i], o);
+        }
+        let c = &pool.all[i];
+        if !ok {
             pool.assessed_failed.push(i);
         } else {
             match pool.best {
@@ -1943,6 +2024,19 @@ pub fn fit(
     t_max: f64,
     o: &FitOptions,
 ) -> Result<ArrangementFit, PyError> {
+    fit_with(loa, beam, cargo, t_max, o, &SerialRunner)
+}
+
+/// [`fit`], with the damage of a candidate worked out by `runner` (issue #935): the caller's threads, progress
+/// and cancel. A cancelled run is `Err` with kind `Cancelled` and the message [`gas_damage::DAMAGE_CANCELLED`].
+pub fn fit_with(
+    loa: f64,
+    beam: f64,
+    cargo: &str,
+    t_max: f64,
+    o: &FitOptions,
+    runner: &dyn DamageRunner,
+) -> Result<ArrangementFit, PyError> {
     if !RULESETS.contains(&o.ruleset.as_str()) {
         return Err(value_error(
             "ruleset must be one of ('IGC_2G',)".to_string(),
@@ -1955,6 +2049,8 @@ pub fn fit(
         o,
         tried: 0,
         refused: Vec::new(),
+        runner,
+        damage_runs: 0,
     };
     let pool = search(&mut s, t_max, false)?;
     let pick = pool.best.or_else(|| closest_to_passing(&pool.all, o));
@@ -1982,6 +2078,7 @@ pub fn fit(
                 result: r,
                 journey: j,
                 inputs: inp,
+                damage: None,
             }
         }
     };
@@ -2090,6 +2187,7 @@ pub fn fit(
         candidates_tried: s.tried,
         tried,
         engine_inputs: inp,
+        damage_runs: s.damage_runs,
         engine_result: r,
     })
 }
@@ -2115,6 +2213,8 @@ fn has_passing_arrangement(
         o,
         tried: 0,
         refused: Vec::new(),
+        runner: &SerialRunner,
+        damage_runs: 0,
     };
     Ok(search(&mut s, t_max, true)?.best.is_some())
 }
