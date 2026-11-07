@@ -427,6 +427,7 @@ pub(crate) fn capacity_result_from_json(
         hull_spec,
         sightline: None,
         blind_distance_laden_m: None,
+        blind_limit_laden_m: None,
         checks: o.checks("checks")?,
         warnings: o.text_list("warnings")?,
     })

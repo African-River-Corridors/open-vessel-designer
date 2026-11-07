@@ -1,6 +1,7 @@
 //! The wheelhouse sightline as a distance (issue #354, spec 0007 "Wheelhouse, sightline and air
-//! draft"): the Blind Distance ahead of the bow, as ES-TRIN 7.02(2) states the rule, and the lift that
-//! brings it within a limit.
+//! draft"): the Blind Distance ahead of the bow, as ES-TRIN 7.02(2) and SOLAS V/22.1.1 state the rule,
+//! and the lift that brings it within a limit. The limit is not in this file: the Rule Sets of the stack
+//! give it ([`BlindLimits`], issue #989).
 //!
 //! The ship frame: x forward from the aft end, z up from the keel. The water is the straight line
 //! through the draughts aft (x = 0) and forward (x = L), so a trimmed waterline counts (#349). The
@@ -10,17 +11,34 @@
 //! the water. The lift needed works the same line backwards: the eye that sees the water at
 //! x_bow + limit over every obstruction.
 
+use alloc::string::String;
 use alloc::vec::Vec;
 
-/// The obstructed view ahead may not exceed 250 m (ES-TRIN 7.02(2)), until the Rule Sets of #355 set
-/// the limit.
-pub const ES_TRIN_BLIND_DISTANCE_M: f64 = 250.0;
+/// The Blind Distance limits that bind a design (m), one for each loading condition, and the Rule that
+/// sets each (issue #989). They come from the Rule Sets of the stack, never from a constant: a Rule that
+/// measures `wheelhouse.blind_distance`, blocks, and applies to the design gives a limit, and the least
+/// limit of a condition binds. A condition with no such Rule has no limit. See
+/// [`crate::gas_arrangement::blind_limits`], which reads them.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct BlindLimits {
+    /// The limit in the light condition, and the id of the Rule that gives it.
+    pub light_m: Option<f64>,
+    pub light_rule: Option<String>,
+    /// The limit in the laden condition, and the id of the Rule that gives it.
+    pub laden_m: Option<f64>,
+    pub laden_rule: Option<String>,
+    /// The least light limit of the Rules that block or warn. A fixed deckhouse wheelhouse is sized to it
+    /// (issue #779, ADR 0007): a stack that holds SOLAS V/22.1.1 as a warning (`solas-v22` 1.x) still
+    /// sizes the house to two ship lengths, and only warns, as before. A lifting wheelhouse is sized to
+    /// the blocking limit alone. With a blocking Rule only, it is the same as `light_m`.
+    pub sizing_light_m: Option<f64>,
+}
 
-/// The obstructed view ahead that SOLAS V/22.1.1 allows (m): two ship lengths or 500 m, whichever is
-/// less, for a ship of 45 m length overall and more (read as the Rule Set `solas-v22` reads it);
-/// `None` below 45 m.
-pub fn solas_v22_limit_m(loa_m: f64) -> Option<f64> {
-    (loa_m >= 45.0).then(|| (2.0 * loa_m).min(500.0))
+impl BlindLimits {
+    /// Whether no Rule of the stack limits the Blind Distance.
+    pub fn is_none(&self) -> bool {
+        self.light_m.is_none() && self.laden_m.is_none()
+    }
 }
 
 /// Something forward of the eye: its top above the keel at its forward edge.
@@ -164,6 +182,58 @@ pub fn assess(
         floor_raised_m: eye - eye_height_m,
         blind_distance_m: blind,
         enough: blind <= limit_m + 1e-9,
+    }
+}
+
+/// [`assess`] in the light condition, and in the laden condition too when it has a limit (issue #989).
+/// The lift is the larger of the two the limits need, within the maximum lift; the Blind Distance of
+/// each condition is then worked at that eye. With no laden limit the answer is [`assess`] alone.
+#[allow(clippy::too_many_arguments)] // the eye, the column, the hull and the two limits
+pub fn assess_conditions(
+    eye_x: f64,
+    eye_lowered_m: f64,
+    eye_height_m: f64,
+    max_lift_m: f64,
+    obstructions: &[Obstruction],
+    bow_x: f64,
+    light: (&Waterline, f64),
+    laden: Option<(&Waterline, f64)>,
+) -> Sightline {
+    let s = assess(
+        eye_x,
+        eye_lowered_m,
+        eye_height_m,
+        max_lift_m,
+        obstructions,
+        bow_x,
+        light.0,
+        light.1,
+    );
+    let Some((laden_water, laden_limit)) = laden else {
+        return s;
+    };
+    let l = assess(
+        eye_x,
+        eye_lowered_m,
+        eye_height_m,
+        max_lift_m,
+        obstructions,
+        bow_x,
+        laden_water,
+        laden_limit,
+    );
+    let used = s.lift_used_m.max(l.lift_used_m);
+    let eye = eye_lowered_m + used;
+    let blind_light = blind_distance(eye_x, eye, obstructions, bow_x, light.0);
+    let blind_laden = blind_distance(eye_x, eye, obstructions, bow_x, laden_water);
+    Sightline {
+        limit_m: light.1,
+        lift_needed_m: s.lift_needed_m.max(l.lift_needed_m),
+        lift_used_m: used,
+        eye_raised_m: eye,
+        floor_raised_m: eye - eye_height_m,
+        blind_distance_m: blind_light,
+        enough: blind_light <= light.1 + 1e-9 && blind_laden <= laden_limit + 1e-9,
     }
 }
 

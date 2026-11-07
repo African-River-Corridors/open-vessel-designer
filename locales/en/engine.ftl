@@ -46,8 +46,8 @@ check-deckhouse-clear-height = tier height { $tier } m less { $allowance } m for
 ## crates/ovd-core/src/barge_capacity.rs
 
 warn-barge-bulk-gm = Bulk GM is first-order (assumed lightship KG); cargo-shift/angle-of-repose not modelled — confirm with a full intact-stability booklet.
-check-wheelhouse-blind-distance = blind distance ahead of the bow { $blind } m <= { $limit } m, light (ES-TRIN 7.02(2)); lift used { $lift } m of { $max_lift } m
-check-wheelhouse-blind-distance-fails = blind distance ahead of the bow over { $limit } m, light (ES-TRIN 7.02(2)): lift needed { $needed } m of { $max_lift } m
+check-wheelhouse-blind-distance = blind distance ahead of the bow { $blind } m <= { $limit } m, light (limit from the Rule Sets of the stack: { $source }); lift used { $lift } m of { $max_lift } m
+check-wheelhouse-blind-distance-fails = blind distance ahead of the bow over { $limit } m, light (limit from the Rule Sets of the stack: { $source }): lift needed { $needed } m of { $max_lift } m
 warn-aft-blind-distance-lift = The blind distance needs { $needed } m of lift; the column gives { $max_lift } m. Raise the column or lower the cargo top.
 check-feasible-geometry = cargo volume must be positive (tank/hold fits)
 check-name-feasible-geometry = feasible geometry
@@ -65,6 +65,7 @@ check-trim-in-range = the hull floats within { $limit } degrees of trim (every c
 check-trim-no-balance = no trim balances the load: { $conditions }
 check-name-trim-in-range = trim in range
 warn-barge-pushed = PUSHED barge: crew, battery and propulsion are on the tug and are NOT in this hull's lightship, capacity or air draft. The tug is a separate vessel and must be costed and air-draft-gated separately.
+warn-blind-distance-laden-limit-only = The Rule Sets limit the laden Blind Distance to { $limit } m but set no light limit, so the wheelhouse is not sized to a Blind Distance and the laden Rule is only checked.
 warn-vent-mast-lowerable = A lowerable cargo vent mast is not backed by a practice source: none was found for lowering cargo vent masts. Class or flag acceptance is needed. The river air drafts leave the mast out; the sea air draft keeps it.
 warn-vent-mast-distance = The cargo vent mast stands { $achieved } m from the nearest openings and { $target } m is asked; no position in the cargo area is further. Lengthen the cargo area or move the openings aft.
 check-name-gm-positive = gm positive
@@ -270,8 +271,8 @@ note-atb-method-unverified = The ATB's resistance is that of its Equivalent Hull
 note-formation-method-unverified = The Formation's resistance is that of its Equivalent Hull (the barges and the pusher as one hull) by the single-hull method, times the Formation resistance allowance. The method is unverified.
 note-formation-coupling-force = Coupling force between the pusher and the pushed craft: { $force } kN (ES-TRIN 2025/1, ESI-III-6 2.1: 270 x P_B x L_S / B_S, with P_B { $power } kW, L_S { $ls } m taken as the pusher length, B_S { $bs } m).
 note-formation-service-margins = Service margins, shown and not used to size the tug: the still-water power in deep water at the design speed, { $p0 } kW, x the sea margin 1.15 x the engine margin 1/0.90 (MAN B&W, Basic Principles of Ship Propulsion, p. 27 and Fig. 17) = { $total } kW, for an installed power of { $installed } kW.
-warn-formation-blind-distance-lift = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. The Blind Distance light is { $blind } m, more than { $limit } m (ES-TRIN 7.02(2)).
-warn-formation-blind-distance-hidden = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. At that height the barges hide the water ahead (ES-TRIN 7.02(2): at most { $limit } m).
+warn-formation-blind-distance-lift = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. The Blind Distance light is { $blind } m, more than { $limit } m (limit from the Rule Sets of the stack).
+warn-formation-blind-distance-hidden = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. At that height the barges hide the water ahead (limit from the Rule Sets of the stack: at most { $limit } m).
 
 ## crates/ovd-format/src/gas_fuel.rs
 
