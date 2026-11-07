@@ -8,7 +8,7 @@
 //! bollard pull and, for a pusher, the coupling force. The result of the barge itself does not
 //! change.
 
-use crate::simulate::formation_curves;
+use crate::simulate::{RunRules, formation_curves};
 use crate::text_ids::TextIds;
 use crate::vdesign::DesignOption;
 use ovd_core::atb::{TugTyped, notch_for_tug, tug_from_barge};
@@ -317,6 +317,7 @@ pub(crate) fn add_formation(
     option: &DesignOption,
     p: &Map<String, Value>,
     counts: (u64, u64),
+    rules: &RunRules,
     v: &mut Value,
 ) {
     let kind = option
@@ -339,7 +340,7 @@ pub(crate) fn add_formation(
         Some("towed_barge") => Kind::Towed,
         _ => Kind::Pushed,
     };
-    let block = match build(option, p, counts, join_kind, v, &mut notes) {
+    let block = match build(option, p, counts, join_kind, rules, v, &mut notes) {
         Ok(b) => b,
         Err(message) => json!({ "tug_included": true, "error": message }),
     };
@@ -381,6 +382,7 @@ fn build(
     p: &Map<String, Value>,
     counts: (u64, u64),
     kind: Kind,
+    rules: &RunRules,
     v: &mut Value,
     notes: &mut Vec<ovd_core::text::Text>,
 ) -> Result<Value, String> {
@@ -615,7 +617,15 @@ fn build(
     }
     // Issue #360: the tug's view over the barges ahead, when its sightline is a Blind Distance.
     if tug.blind_distance
-        && let Some(s) = sightline(&tug, &r.dims, join, barge.0, v, &mut notes2)?
+        && let Some(s) = sightline(
+            &tug,
+            &r.dims,
+            join,
+            barge.0,
+            (r.hull.length_m, rules),
+            v,
+            &mut notes2,
+        )?
         && let Some(o) = block.as_object_mut()
     {
         o.insert("sightline".into(), s);
@@ -628,16 +638,32 @@ fn build(
     Ok(block)
 }
 
+/// The Option's Rule inputs with the length of the unit (tug and barges) as the ship's length: the one
+/// `wheelhouse.ship_length` that SOLAS V/22.1.1 reads for a Formation (issue #989). No other Measure moves.
+pub(crate) fn unit_rule_inputs(
+    base: &ovd_core::gas_arrangement::RuleInputs,
+    unit_length_m: f64,
+) -> ovd_core::gas_arrangement::RuleInputs {
+    let mut out = base.clone();
+    for (id, _, value) in &mut out.measures {
+        if id == "wheelhouse.ship_length" {
+            *value = ovd_core::rule_trace::MeasureValue::Number(unit_length_m);
+        }
+    }
+    out
+}
+
 /// The sightline of a pusher or an ATB tug over its barges (issue #360, spec 0007 "Wheelhouse,
 /// sightline and air draft"): the eye at the forward face of the wheelhouse, at mid-length of the tug
 /// (an Estimate), the floor lowered on the tug's deck; each barge's highest point light and laden
-/// (its air draft) at its forward end; the ES-TRIN 7.02(2) limit, light. `None` for a tow (the tug
+/// (its air draft) at its forward end; the light limit of the Rule Sets of the stack (issue #989). `None` for a tow (the tug
 /// is ahead of its barge). With `notes` the warning when the lift is not enough.
 fn sightline(
     tug: &TugInputs,
     dims: &TugDims,
     join: Join,
     barge_length_m: f64,
+    (unit_length_m, rules): (f64, &RunRules),
     v: &Value,
     notes: &mut Vec<ovd_core::text::Text>,
 ) -> Result<Option<Value>, String> {
@@ -645,7 +671,6 @@ fn sightline(
     use ovd_core::formation::{
         ConvoySight, PUSHER_WHEELHOUSE_AT, convoy_obstructions, convoy_sightline,
     };
-    use ovd_core::wheelhouse::ES_TRIN_BLIND_DISTANCE_M;
     let (first_aft_x, in_line) = match join {
         Join::Pushed { counts } => (dims.length_m, counts.1),
         Join::Atb { notch_depth_m, .. } => (dims.length_m - notch_depth_m, 1),
@@ -682,12 +707,21 @@ fn sightline(
         max_lift_m: max_lift,
         bow_x_m: first_aft_x + in_line as f64 * barge_length_m,
     };
-    let limit = ES_TRIN_BLIND_DISTANCE_M;
+    // Issue #989: the limits come from the Rule Sets of the run's stack, as the Rule Trace reads them. The
+    // ship SOLAS V/22.1.1 speaks of is the unit, tug and barges, so two lengths is worked on the unit's
+    // length overall (the Equivalent Hull's), not the barge's.
+    let limits = ovd_core::gas_arrangement::blind_limits(
+        &rules.sets,
+        &unit_rule_inputs(&rules.inputs, unit_length_m),
+    );
+    let Some(limit) = limits.light_m else {
+        return Ok(None);
+    };
     let (s, laden_m) = convoy_sightline(&sight, &light, &laden, limit);
     if !s.enough && s.blind_distance_m.is_finite() {
         notes.push(text!(
             "warn-formation-blind-distance-lift",
-            "The tug's view over the barges needs {needed} m of wheelhouse lift; the tug gives {max_lift} m. The Blind Distance light is {blind} m, more than {limit} m (ES-TRIN 7.02(2)).",
+            "The tug's view over the barges needs {needed} m of wheelhouse lift; the tug gives {max_lift} m. The Blind Distance light is {blind} m, more than {limit} m (limit from the Rule Sets of the stack).",
             needed = Arg::fixed(s.lift_needed_m, 2),
             max_lift = Arg::fixed(max_lift, 2),
             blind = Arg::fixed(s.blind_distance_m, 1),
@@ -696,14 +730,14 @@ fn sightline(
     } else if !s.enough {
         notes.push(text!(
             "warn-formation-blind-distance-hidden",
-            "The tug's view over the barges needs {needed} m of wheelhouse lift; the tug gives {max_lift} m. At that height the barges hide the water ahead (ES-TRIN 7.02(2): at most {limit} m).",
+            "The tug's view over the barges needs {needed} m of wheelhouse lift; the tug gives {max_lift} m. At that height the barges hide the water ahead (limit from the Rule Sets of the stack: at most {limit} m).",
             needed = Arg::fixed(s.lift_needed_m, 2),
             max_lift = Arg::fixed(max_lift, 2),
             limit = Arg::fixed(limit, 0),
         ));
     }
     let num = crate::eval::num;
-    Ok(Some(json!({
+    let mut out = json!({
         "limit_m": num(limit),
         "eye_x_m": num(sight.eye_x_m),
         "eye_lowered_above_water_m": num(sight.eye_lowered_m),
@@ -716,7 +750,12 @@ fn sightline(
         "blind_distance_light_m": num(s.blind_distance_m),
         "blind_distance_laden_m": num(laden_m),
         "enough": s.enough,
-    })))
+    });
+    // Issue #989: the laden limit of the stack's Rules, when one is given; the Rule Trace checks it.
+    if let (Some(l), Some(o)) = (limits.laden_m, out.as_object_mut()) {
+        o.insert("limit_laden_m".into(), num(l));
+    }
+    Ok(Some(out))
 }
 
 /// The tug as its GA needs it (`drawing.tug`, issue #360): its size, its propulsors, the machinery

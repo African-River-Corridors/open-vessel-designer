@@ -695,6 +695,7 @@ pub(crate) fn run_option_detail(
                     option,
                     &params,
                     crate::convoy::counts(option).unwrap_or((1, 1)),
+                    &rules,
                     &mut v,
                 );
                 // Issue #464: the gas a gas-fuelled Option burns, and its boil-off check.
@@ -733,6 +734,17 @@ pub(crate) fn run_option_detail(
                 let sightline = &v["sightline"];
                 measured.blind_distance_light_m = sightline["blind_distance_light_m"].as_f64();
                 measured.blind_distance_laden_m = sightline["blind_distance_laden_m"].as_f64();
+                // Issue #989: a Formation with no wheelhouse of its own is judged on its tug's view over the
+                // barges, light and laden, and SOLAS on the length of the unit.
+                let formation_sight = &v["formation"]["sightline"];
+                if sightline.is_null() && formation_sight.is_object() {
+                    measured.blind_distance_light_m =
+                        formation_sight["blind_distance_light_m"].as_f64();
+                    measured.blind_distance_laden_m =
+                        formation_sight["blind_distance_laden_m"].as_f64();
+                    measured.unit_length_overall_m =
+                        v["formation"]["equivalent_hull"]["length_m"].as_f64();
+                }
                 let speeds_of = if v["powering"].is_null() {
                     &v["formation"]
                 } else {

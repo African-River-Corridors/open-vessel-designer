@@ -305,15 +305,25 @@ pub struct BargeCapacityInputs {
     /// Issue #350: the Stern Form, when it is not today's square stern: it corrects the LCB of the
     /// trim. `None`: a square stern.
     pub stern_geometry: Option<crate::stern_form::SternGeometry>,
-    /// Issue #354: `Some(limit)` checks the sightline as a Blind Distance (ES-TRIN 7.02(2)) in the
-    /// light condition, and lifts the wheelhouse to meet it; `None`: today's margin over the cargo.
+    /// Issue #354: `Some(limit)` checks the sightline as a Blind Distance in the light condition, and
+    /// lifts the wheelhouse to meet it; `None`: today's margin over the cargo. Issue #989: the limit is
+    /// the least blocking limit of the Rule Sets of the stack ([`crate::wheelhouse::BlindLimits`]), the
+    /// one the Rule Trace checks the result against; no constant sets it.
     pub sightline_limit_m: Option<f64>,
+    /// Issue #989: the limit in the laden condition, from the same Rule Sets (SOLAS V/22.1.1 holds in all
+    /// conditions of draught). `Some` makes the lift meet it too. It binds only beside a light limit: with
+    /// no light limit the sightline is not worked as a distance.
+    pub sightline_limit_laden_m: Option<f64>,
+    /// Issue #989: the light limit a fixed deckhouse wheelhouse is sized to: the least of the blocking and
+    /// the warning Rules' limits ([`crate::wheelhouse::BlindLimits::sizing_light_m`]). A coastal stack that
+    /// holds SOLAS V/22.1.1 as a warning (`solas-v22` 1.x) sizes the house to two lengths and only warns.
+    /// `None`: the light limit.
+    pub sightline_sizing_limit_m: Option<f64>,
+    /// Issue #989: the id of the Rule that gives the light limit, for the check's message.
+    pub sightline_limit_source: Option<String>,
     /// Issue #779: the trimmed light waterline (draught aft, draught forward) of a first pass, which
     /// the second pass sizes a fixed deckhouse wheelhouse to. `None`: the keel.
     pub light_waterline_hint: Option<(f64, f64)>,
-    /// Issue #779: a fixed deckhouse wheelhouse is sized to the stricter of the Blind Distance limit
-    /// and SOLAS V/22.1.1 ([`crate::wheelhouse::solas_v22_limit_m`]); `true` for a coastal Option.
-    pub solas_v22_sizing: bool,
     /// Issue #352: the machinery of a specified Propulsor; it sets the stern block's run below deck
     /// and its mass items. `None`: today's stern block.
     pub machinery: Option<crate::machinery::MachineryInputs>,
@@ -428,8 +438,10 @@ impl BargeCapacityInputs {
             stern_block_mass: None,
             stern_geometry: None,
             sightline_limit_m: None,
+            sightline_limit_laden_m: None,
+            sightline_sizing_limit_m: None,
+            sightline_limit_source: None,
             light_waterline_hint: None,
-            solas_v22_sizing: false,
             machinery: None,
             dome_height: DEFAULT_TANK_DOME_HEIGHT_M,
             dome_diameter: DEFAULT_TANK_DOME_DIAMETER_M,
@@ -618,6 +630,8 @@ pub struct BargeCapacityResult {
     /// Distance at the same lift; `None` with the margin method or no wheelhouse.
     pub sightline: Option<crate::wheelhouse::Sightline>,
     pub blind_distance_laden_m: Option<f64>,
+    /// Issue #989: the laden limit the lift met, when the Rule Sets give one.
+    pub blind_limit_laden_m: Option<f64>,
     pub gas_basis: Option<GasBasis>,
     /// The liquid bulk layout: Spaces, volumes, free surfaces and the lightship items (crude oil).
     pub liquid: Option<LiquidBulkResult>,
@@ -1499,10 +1513,9 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
     let mut again = inp.clone();
     again.light_waterline_hint = Some(light);
     let second = compute_once(&again)?;
-    let limit = match crate::wheelhouse::solas_v22_limit_m(inp.loa) {
-        Some(solas) if inp.solas_v22_sizing => inp.sightline_limit_m.map(|l| l.min(solas)),
-        _ => inp.sightline_limit_m,
-    };
+    let limit = inp
+        .sightline_limit_m
+        .map(|l| inp.sightline_sizing_limit_m.map_or(l, |s| s.min(l)));
     let passes = second
         .sightline
         .as_ref()
@@ -1614,7 +1627,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     if inp.self_propelled
         && aft_second.arrangement_style == crate::aft_arrangement::ArrangementStyle::Deckhouse
         && aft_second.wheelhouse_max_lift_m <= 0.0
-        && let Some(limit) = inp.sightline_limit_m
+        && let Some(limit) = inp.sightline_limit_m.or(inp.sightline_sizing_limit_m)
     {
         let probe = compute_aft_arrangement(&aft_second)?;
         let units = (!probe.container_units.is_empty())
@@ -1636,11 +1649,11 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
                 },
                 None => crate::wheelhouse::Waterline::even(0.0, inp.loa),
             },
-            // The stricter of the two limits sizes the eye (maintainer decision, issue #779).
-            match crate::wheelhouse::solas_v22_limit_m(inp.loa) {
-                Some(solas) if inp.solas_v22_sizing => limit.min(solas),
-                _ => limit,
-            },
+            // The least limit of the stack's Rules, blocking or warning, sizes the eye (issue #989, #779). The laden limit
+            // does not size it: the laden waterline stands higher, which shortens the Blind Distance,
+            // and no Rule of the built-in sets has a laden limit under the light one. The Rule Trace
+            // still checks the laden row.
+            inp.sightline_sizing_limit_m.map_or(limit, |s| s.min(limit)),
         );
     }
     let aft = compute_aft_arrangement(&aft_second)?;
@@ -1876,22 +1889,26 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         );
         let eye_x = a.wheelhouse_x1_m;
         let eye_height = aft_second.wheelhouse_eye_above_floor_m;
-        let s = crate::wheelhouse::assess(
+        let light_water = waterline("Light", light_draft);
+        let laden_water = waterline("Laden", draft);
+        // Issue #989: the laden limit binds beside the light one.
+        let laden_limit = inp.sightline_limit_laden_m.map(|l| (&laden_water, l));
+        let s = crate::wheelhouse::assess_conditions(
             eye_x,
             a.wheelhouse_floor_lowered_m + eye_height,
             eye_height,
             aft_second.wheelhouse_max_lift_m,
             &obstructions,
             inp.loa,
-            &waterline("Light", light_draft),
-            limit,
+            (&light_water, limit),
+            laden_limit,
         );
         blind_distance_laden_m = Some(crate::wheelhouse::blind_distance(
             eye_x,
             s.eye_raised_m,
             &obstructions,
             inp.loa,
-            &waterline("Laden", draft),
+            &laden_water,
         ));
         a.wheelhouse_lift_m = s.lift_used_m;
         a.wheelhouse_floor_raised_m = s.floor_raised_m;
@@ -1902,17 +1919,19 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         let blind_message = if s.enough {
             text!(
                 "check-wheelhouse-blind-distance",
-                "blind distance ahead of the bow {blind} m <= {limit} m, light (ES-TRIN 7.02(2)); lift used {lift} m of {max_lift} m",
+                "blind distance ahead of the bow {blind} m <= {limit} m, light (limit from the Rule Sets of the stack: {source}); lift used {lift} m of {max_lift} m",
                 blind = Arg::fixed(s.blind_distance_m, 1),
                 limit = Arg::fixed(limit, 0),
+                source = Arg::cite(inp.sightline_limit_source.clone().unwrap_or_default()),
                 lift = Arg::fixed(s.lift_used_m, 2),
                 max_lift = Arg::fixed(aft_second.wheelhouse_max_lift_m, 2),
             )
         } else {
             text!(
                 "check-wheelhouse-blind-distance-fails",
-                "blind distance ahead of the bow over {limit} m, light (ES-TRIN 7.02(2)): lift needed {needed} m of {max_lift} m",
+                "blind distance ahead of the bow over {limit} m, light (limit from the Rule Sets of the stack: {source}): lift needed {needed} m of {max_lift} m",
                 limit = Arg::fixed(limit, 0),
+                source = Arg::cite(inp.sightline_limit_source.clone().unwrap_or_default()),
                 needed = Arg::fixed(s.lift_needed_m, 2),
                 max_lift = Arg::fixed(aft_second.wheelhouse_max_lift_m, 2),
             )
@@ -1939,6 +1958,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         air_draft_navigating_light = h_top_navigating - light_draft;
         sightline = Some(s);
     }
+    let blind_limit_laden_m = sightline.as_ref().and(inp.sightline_limit_laden_m);
 
     // Issue #994: what the wings of the forward wheelhouse see aft along the hull side. No camera is
     // credited (`rear_view::CAMERAS_OPEN_ITEM`).
@@ -2080,6 +2100,18 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     if let Some(s) = &sep {
         warnings.extend(s.warnings.iter().cloned());
     }
+    // Issue #989: a stack that limits the laden Blind Distance but not the light one gives the lift
+    // nothing to be sized to: say so rather than leave the laden Rule to fail alone.
+    if inp.self_propelled
+        && inp.sightline_limit_m.is_none()
+        && let Some(laden) = inp.sightline_limit_laden_m
+    {
+        warnings.push(text!(
+            "warn-blind-distance-laden-limit-only",
+            "The Rule Sets limit the laden Blind Distance to {limit} m but set no light limit, so the wheelhouse is not sized to a Blind Distance and the laden Rule is only checked.",
+            limit = Arg::fixed(laden, 0),
+        ));
+    }
     if let Some(v) = &vent_mast {
         if v.lowerable {
             warnings.push(Text::fixed(
@@ -2191,6 +2223,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         trim_conditions,
         sightline,
         blind_distance_laden_m,
+        blind_limit_laden_m,
         stern_geometry: inp.stern_geometry.clone(),
         hull_spec: Some(hull.spec.clone()),
         tank_rules: detail.tank_rules,

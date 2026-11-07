@@ -294,43 +294,59 @@ fn the_second_pass_on_the_light_waterline_never_adds_a_tier_and_keeps_the_sightl
 }
 
 #[test]
-fn on_a_hull_under_125_m_solas_governs_the_fixed_wheelhouse_and_adds_a_tier() {
-    // Issue #779, maintainer decision: a coastal deckhouse is sized to the stricter of the 250 m
-    // ES-TRIN Blind Distance and SOLAS V/22.1.1, min(2 L, 500 m). Under 125 m, 2 L is under 250 m, so
-    // SOLAS governs; at and over 125 m ES-TRIN does.
-    use ovd_core::barge_capacity::{BargeCapacityInputs, compute as capacity};
-    use ovd_core::wheelhouse::solas_v22_limit_m;
-    assert_eq!(solas_v22_limit_m(44.9), None);
-    assert_eq!(solas_v22_limit_m(110.0), Some(220.0));
-    assert_eq!(solas_v22_limit_m(300.0), Some(500.0));
-    let run = |loa: f64, solas: bool| {
-        let mut i = BargeCapacityInputs::new(loa, 11.4, 6.0);
-        i.cargo_type = "LPG_propane".to_string();
-        i.self_propelled = true;
-        i.sightline_limit_m = Some(250.0);
-        i.solas_v22_sizing = solas;
-        i.aft_design.arrangement_style = ArrangementStyle::Deckhouse;
-        i.aft_design.wheelhouse_max_lift_m = 0.0;
-        let r = capacity(&i).unwrap();
-        let tiers = r
-            .aft_arrangement
-            .as_ref()
-            .unwrap()
-            .deckhouse
-            .as_ref()
-            .unwrap()
-            .tiers;
-        (tiers, r.sightline.as_ref().unwrap().blind_distance_m)
-    };
-    // 60 m: the ES-TRIN sizing leaves a light Blind Distance of 234.7 m, over 2 L = 120 m; SOLAS adds
-    // the tier that brings it to 105.0 m.
-    let (es_trin_tiers, es_trin_blind) = run(60.0, false);
-    let (solas_tiers, blind) = run(60.0, true);
-    assert_eq!((es_trin_tiers, solas_tiers), (3, 4));
+fn a_tighter_blind_distance_limit_adds_a_tier_to_the_fixed_wheelhouse() {
+    // Issue #989: the limit is an input, read from the Rule Sets of the stack (ES-TRIN 250 m, and under
+    // 125 m SOLAS V/22.1.1: 2 L). The wheelhouse is sized to the one it is given, the least that binds.
+    // On a 60 m hull the 250 m limit leaves a light Blind Distance of 234.7 m; 2 L = 120 m adds a tier.
+    let (loose_tiers, loose_blind) = deckhouse_run(60.0, Some(250.0), None);
+    let (tight_tiers, tight_blind) = deckhouse_run(60.0, Some(250.0), Some(120.0));
+    let (blocking_tiers, _) = deckhouse_run(60.0, Some(120.0), None);
+    assert_eq!((loose_tiers, tight_tiers), (3, 4));
+    assert_eq!(blocking_tiers, tight_tiers);
     assert!(
-        es_trin_blind > 120.0 && blind <= 120.0 + 1e-9,
-        "{es_trin_blind}, {blind}"
+        loose_blind > 120.0 && tight_blind <= 120.0 + 1e-9,
+        "{loose_blind}, {tight_blind}"
     );
-    // At 125 m and over the two limits are the same, so the tiers are too.
-    assert_eq!(run(130.0, true).0, run(130.0, false).0);
+}
+
+#[test]
+fn a_warning_only_solas_limit_still_sizes_the_fixed_wheelhouse_but_130_m_is_unchanged() {
+    // Issue #779, ADR 0007, kept by #989: an old file's coastal stack holds SOLAS V/22.1.1 as a warning
+    // (`solas-v22` 1.x). The house is still sized to min(250 m, 2 L), as before, and the Rule only warns:
+    // the blocking limit stays at 250 m. At 125 m and over the two limits are the same, so the tiers are too.
+    assert_eq!(
+        deckhouse_run(60.0, Some(250.0), Some(120.0)).0,
+        deckhouse_run(60.0, Some(120.0), None).0
+    );
+    assert!(
+        deckhouse_run(60.0, Some(250.0), Some(120.0)).0 > deckhouse_run(60.0, Some(250.0), None).0
+    );
+    assert_eq!(
+        deckhouse_run(130.0, Some(250.0), Some(250.0)).0,
+        deckhouse_run(130.0, Some(250.0), None).0
+    );
+    assert!(deckhouse_run(60.0, Some(250.0), Some(120.0)).1 <= 120.0 + 1e-9);
+}
+
+/// A fixed-wheelhouse deckhouse hull of `loa` m with a blocking light limit and a sizing limit (the least
+/// of the blocking and warning Rules); (tiers, light Blind Distance).
+fn deckhouse_run(loa: f64, limit: Option<f64>, sizing: Option<f64>) -> (u32, f64) {
+    use ovd_core::barge_capacity::{BargeCapacityInputs, compute as capacity};
+    let mut i = BargeCapacityInputs::new(loa, 11.4, 6.0);
+    i.cargo_type = "LPG_propane".to_string();
+    i.self_propelled = true;
+    i.sightline_limit_m = limit;
+    i.sightline_sizing_limit_m = sizing;
+    i.aft_design.arrangement_style = ArrangementStyle::Deckhouse;
+    i.aft_design.wheelhouse_max_lift_m = 0.0;
+    let r = capacity(&i).unwrap();
+    let tiers = r
+        .aft_arrangement
+        .as_ref()
+        .unwrap()
+        .deckhouse
+        .as_ref()
+        .unwrap()
+        .tiers;
+    (tiers as u32, r.sightline.as_ref().unwrap().blind_distance_m)
 }

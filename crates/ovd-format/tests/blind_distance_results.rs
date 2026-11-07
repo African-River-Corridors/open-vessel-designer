@@ -58,7 +58,10 @@ fn a_new_option_lifts_its_wheelhouse_to_250_m_and_says_so() {
     assert!(sl["lift_used_m"].as_f64().unwrap() > 0.0);
     let c = sightline_check(&r);
     assert!(
-        c["message"].as_str().unwrap().contains("ES-TRIN 7.02(2)"),
+        c["message"]
+            .as_str()
+            .unwrap()
+            .contains("es-trin/7.02(2)/blind-zone-unladen"),
         "{c}"
     );
     // The navigating air draft carries the raised wheelhouse.
