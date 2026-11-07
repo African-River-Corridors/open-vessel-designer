@@ -2410,6 +2410,7 @@
             "reasons": []
           }
         ],
+        "damage_screening": null,
         "cost_masses": {
           "masses": {
             "hull_steel_t": 3274.5179418110247,
@@ -14259,6 +14260,7 @@
             "reasons": []
           }
         ],
+        "damage_screening": null,
         "cost_masses": {
           "masses": {
             "hull_steel_t": 3274.6865884710724,
@@ -26108,6 +26110,7 @@
             "reasons": []
           }
         ],
+        "damage_screening": null,
         "cost_masses": {
           "masses": {
             "hull_steel_t": 3855.6235167315085,

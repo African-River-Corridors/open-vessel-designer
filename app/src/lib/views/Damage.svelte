@@ -77,6 +77,8 @@
     <div class="runline" data-testid="damage-run-panel">
       <span class="label">{t("app-damage-status-label")}</span>
       <span class="tag {status.status === 'run' ? 'ok' : 'open'}" data-testid="damage-status" data-status={status.status}>{t(STATUS_TEXT[status.status])}</span>
+      {#if results.damage_screening?.note}<span class="dim" data-testid="damage-not-screened">{tr(results.damage_screening.note)}</span>{/if}
+      {#if results.damage_screening?.changed_note}<span class="dim" data-testid="damage-changed-arrangement">{tr(results.damage_screening.changed_note)}</span>{/if}
       {#if status.cases !== null}<span class="dim" data-testid="damage-case-count">{t("app-damage-cases-count", { count: status.cases })}</span>{/if}
       {#if run}
         <progress aria-label={t("app-damage-progress-label")} value={run.done} max={run.total} data-testid="damage-progress" data-done={run.done} data-total={run.total}></progress>

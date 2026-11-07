@@ -111,11 +111,47 @@ pub(crate) fn run_gas_damage_typed(
 }
 
 /// The runner the arrangement search uses (issue #935): the cases on worker threads (issue #921), the progress
-/// hook and the cancel of the run's [`DamageControl`]. Each damage run the search works out reports its own
-/// `done` of `total` cases, so the count restarts with each candidate; a cancel stops the run under way and the
-/// search. With `control.run` false the search does not screen by damage.
+/// hook and the cancel of the run's [`DamageControl`]. The progress is cumulative over the search's damage runs:
+/// `done` counts every case of every run so far and never falls, and `total` is the cases of the runs so far
+/// (the search does not know how many runs it will make, so the time left it implies is a lower bound until the
+/// last run). A cancel stops the run under way and the search. With `control.run` false the search does not
+/// screen by damage.
 pub(crate) struct ThreadedRunner<'a> {
     pub control: &'a DamageControl,
+    /// The cases worked out by the runs so far.
+    pub done: core::cell::Cell<usize>,
+}
+
+impl<'a> ThreadedRunner<'a> {
+    pub(crate) fn new(control: &'a DamageControl) -> Self {
+        Self {
+            control,
+            done: core::cell::Cell::new(0),
+        }
+    }
+
+    /// The control for the run that follows the search (the answer's damage stages): the same hook, with the
+    /// cases of the search's runs added to `done` and `total`, so the count carries on from where it stopped.
+    pub(crate) fn following_control(&self) -> DamageControl {
+        DamageControl {
+            run: self.control.run,
+            progress: offset_hook(self.control.progress.as_ref(), self.done.get()),
+        }
+    }
+}
+
+/// `hook` with `base` cases added to `done` and `total` of every report; `None` for no hook.
+fn offset_hook(hook: Option<&ProgressHook>, base: usize) -> Option<ProgressHook> {
+    let hook = hook?.clone();
+    if base == 0 {
+        return Some(hook);
+    }
+    Some(std::rc::Rc::new(move |p: DamageProgress| {
+        hook(DamageProgress {
+            done: base + p.done,
+            total: base + p.total,
+        })
+    }))
 }
 
 impl ovd_core::gas_damage::DamageRunner for ThreadedRunner<'_> {
@@ -132,10 +168,13 @@ impl ovd_core::gas_damage::DamageRunner for ThreadedRunner<'_> {
         density: f64,
     ) -> Result<GasDamageRun, ovd_core::gas_damage::Cancelled> {
         let total = run.case_count(hull, conditions, density);
-        let gauge = Gauge::new(self.control.progress.clone(), total);
+        let base = self.done.get();
+        let gauge = Gauge::new(offset_hook(self.control.progress.as_ref(), base), total);
         gauge.report();
-        run_gas_damage_typed(run, spaces, hull, conditions, density, &gauge)
-            .map_err(|Cancelled| ovd_core::gas_damage::Cancelled)
+        let out = run_gas_damage_typed(run, spaces, hull, conditions, density, &gauge)
+            .map_err(|Cancelled| ovd_core::gas_damage::Cancelled)?;
+        self.done.set(base + total);
+        Ok(out)
     }
 }
 
@@ -338,6 +377,24 @@ static DAMAGE_WORKERS: core::sync::atomic::AtomicUsize = core::sync::atomic::Ato
 #[doc(hidden)]
 pub fn set_damage_workers(n: usize) {
     DAMAGE_WORKERS.store(n, core::sync::atomic::Ordering::Relaxed);
+}
+
+/// The most damage runs one arrangement search works out; 0 means the default of the core (issue #935).
+static DAMAGE_RUN_CAP: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
+
+/// For tests only (issue #935), hence hidden from the docs: a process-wide knob, so a test that sets it must be
+/// the only one in its test binary. Sets the damage-run limit of the arrangement search; 0 is the default (24).
+#[doc(hidden)]
+pub fn set_damage_run_cap(n: usize) {
+    DAMAGE_RUN_CAP.store(n, core::sync::atomic::Ordering::Relaxed);
+}
+
+/// The damage-run limit of the search: the knob above, or the core's default.
+pub(crate) fn damage_run_cap() -> usize {
+    match DAMAGE_RUN_CAP.load(core::sync::atomic::Ordering::Relaxed) {
+        0 => ovd_core::gas_arrangement::DEFAULT_DAMAGE_RUN_CAP,
+        n => n,
+    }
 }
 
 /// The worker count for `cases` cases: at least 1, at most one per case.

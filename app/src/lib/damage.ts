@@ -44,6 +44,8 @@ export interface DamageResults {
   marpol_damage?: DamageCase[];
   damage_by_rule?: Record<string, { rule_set?: string; method?: string; cases?: DamageCase[]; governing?: { condition: string; case: string }[] }>;
   rule_trace?: TraceLike;
+  /** Issue #935: whether the arrangement was screened by damage; null where there is no IGC damage to screen by. */
+  damage_screening?: { screened: boolean; note?: string | null; changed_note?: string | null } | null;
 }
 
 /** One list of damage cases and what the engine says about it. */

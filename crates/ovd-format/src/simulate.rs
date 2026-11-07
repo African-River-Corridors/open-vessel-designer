@@ -508,6 +508,64 @@ fn no_wing_tank_note(r: &BargeCapacityResult, gap_m: f64) -> Option<Text> {
     })
 }
 
+/// Issue #935: whether the arrangement was screened by IGC 2.7 damage survival, for the app. Unhashed (it is
+/// one of the `UNHASHED_KEYS`): the arrangement it describes is hashed. Null where the stack has no IGC damage
+/// to screen by. A run that skips damage keeps the unscreened pick and says so; a run that ran damage says
+/// what the search without damage would have picked when damage changed the pick.
+fn damage_screening_json(f: &ga::ArrangementFit, ids: &mut TextIds) -> Value {
+    match &f.damage_screen {
+        ga::DamageScreen::NotApplicable => Value::Null,
+        ga::DamageScreen::Skipped => {
+            let note = text!(
+                "warn-damage-not-screened",
+                "Not screened for damage: the arrangement may change when damage runs."
+            );
+            ids.text(&note);
+            json!({ "screened": false, "note": note, "stage_one": null, "changed_note": null, "limit_note": null })
+        }
+        ga::DamageScreen::Screened {
+            unscreened,
+            cap_hit,
+        } => {
+            let (stage_one, changed_note) = match unscreened {
+                Some(u) => {
+                    let note = text!(
+                        "note-damage-changed-arrangement",
+                        "Damage changed the arrangement. Without damage the search chose {before_wide} across, {before_od} m tanks, {before_volume} m3. With damage it chose {after_wide} across, {after_od} m tanks, {after_volume} m3.",
+                        before_wide = u.n_wide,
+                        before_od = Arg::fixed(u.tank_od_m, 2),
+                        before_volume = Arg::fixed(u.cargo_volume_m3, 0),
+                        after_wide = f.n_tanks_wide,
+                        after_od = Arg::fixed(f.tank_od_m, 2),
+                        after_volume = Arg::fixed(f.cargo_volume_m3, 0),
+                    );
+                    ids.text(&note);
+                    (
+                        json!({
+                            "depth_m": num(u.depth_m),
+                            "n_tanks_wide": u.n_wide,
+                            "n_tanks_long": u.n_long,
+                            "tank_od_m": num(u.tank_od_m),
+                            "cargo_volume_m3": num(u.cargo_volume_m3),
+                        }),
+                        json!(note),
+                    )
+                }
+                None => (Value::Null, Value::Null),
+            };
+            let cap_note = cap_hit.then(|| {
+                let note = text!(
+                    "warn-damage-run-limit",
+                    "The search stopped at the damage-run limit: the arrangement is the best that passed damage until then."
+                );
+                ids.text(&note);
+                note
+            });
+            json!({ "screened": true, "note": Value::Null, "stage_one": stage_one, "changed_note": changed_note, "limit_note": cap_note })
+        }
+    }
+}
+
 /// Issue #675: the gas tank arrangements the search tried and what became of each, for the app.
 /// An explanation, not a result: it is one of the `UNHASHED_KEYS`.
 fn fit_tried_json(tried: &[ga::TriedArrangement], ids: &mut TextIds) -> Value {
@@ -3358,12 +3416,11 @@ fn simulate_gas(
         sightline_sizing_limit_m: blind.sizing_light_m,
         sightline_limit_source: blind.light_rule.clone(),
         is_code: is_code_options,
+        damage_run_cap: crate::damage::damage_run_cap(),
         ..FitOptions::default()
     };
     // Issue #935: the search screens by damage with the run's threads, progress and cancel.
-    let runner = crate::damage::ThreadedRunner {
-        control: &rules.damage,
-    };
+    let runner = crate::damage::ThreadedRunner::new(&rules.damage);
     let f = ga::fit_with(l, b, cargo_key, t_max, &options, &runner)
         .map_err(|e| Stop::Raised(e.kind.to_string(), e.message))?;
     let r = &f.engine_result;
@@ -3543,6 +3600,7 @@ fn simulate_gas(
         warnings.push(note);
     }
     let fit_tried = fit_tried_json(&f.tried, &mut ids);
+    let damage_screening = damage_screening_json(&f, &mut ids);
     let powering_block = powering_json(
         p,
         options.machinery.as_ref(),
@@ -3622,7 +3680,7 @@ fn simulate_gas(
             &fit_hull,
             &damaged_conditions,
             rho,
-            &rules.damage,
+            &runner.following_control(),
         )
         .map_err(|_| {
             Stop::Raised(
@@ -3731,6 +3789,7 @@ fn simulate_gas(
             "stability": stability,
             "stability_marks": stability_marks,
             "fit_tried": fit_tried,
+            "damage_screening": damage_screening,
             "cost_masses": r.gas_basis.as_ref().map_or(Value::Null, |b| crate::cost::with_stern_items(crate::cost::with_hull_panels(match &powering_block {
                 // Issue #353: the Option's own battery and Installed Power, not a tug's.
                 Some(pw) => crate::cost::self_propelled_gas_masses(

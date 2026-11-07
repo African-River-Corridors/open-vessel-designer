@@ -79,12 +79,17 @@ fn in_hold_the_depth_is_the_tank_top_plus_the_gap_and_a_standing_height_takes_it
         depth(&hold)
     );
     assert_eq!(hold["arrangement"]["depth_follows_tank"], true);
-    // Issue #935: the search screens by IGC 2.7 damage. The two-across 13.28 m tanks this design chose before do
-    // not survive a side breach across the hold bulkhead, so it carries one 16 m tank across, and the hull is
-    // deeper than the ratio default (17.903 m against 15.95 m). Label: snapshot, printed by the code.
-    assert_eq!(hold["arrangement"]["n_wide"], 1);
-    assert_eq!(hold["arrangement"]["tank_od_m"], 16.0);
-    assert!((depth(&hold) - 17.903).abs() < 0.0006, "{}", depth(&hold));
+    // Issue #935: the search screens by IGC 2.7 damage and refines a failing size down to about 0.1 m. The
+    // two-across 13.28 m tanks this design chose before do not survive a side breach across the hold bulkhead; the
+    // refined pick is two across at 11.72 m, which carries more than one 16 m tank (the first screen gave that).
+    // Label: snapshot, printed by the code.
+    assert_eq!(hold["arrangement"]["n_wide"], 2);
+    assert!(
+        (hold["arrangement"]["tank_od_m"].as_f64().unwrap() - 11.718).abs() < 0.001,
+        "{}",
+        hold["arrangement"]["tank_od_m"]
+    );
+    assert!((depth(&hold) - 13.621).abs() < 0.0006, "{}", depth(&hold));
 
     let two = run(&design(json!({ "tank_top_above_deck_m": 2.0 })));
     let top2 = two["arrangement"]["tank_top_above_keel_m"]
@@ -96,13 +101,11 @@ fn in_hold_the_depth_is_the_tank_top_plus_the_gap_and_a_standing_height_takes_it
         "{} vs {top2}",
         depth(&two)
     );
-    // Standing 2 m high saves at least 2.3 m of depth: the same tank would, and a smaller one more.
-    assert!(
-        depth(&hold) - depth(&two) > 2.29,
-        "{} {}",
-        depth(&hold),
-        depth(&two)
-    );
+    // Issue #935: the two depths are for different picks, so they are not compared: with the tank top 2 m above
+    // the deck the search picks one 16 m tank across at 15.603 m. Label: snapshot, printed by the code. The rule above (the depth follows the tank) holds for each.
+    assert_eq!(two["arrangement"]["n_wide"], 1);
+    assert_eq!(two["arrangement"]["tank_od_m"], 16.0);
+    assert!((depth(&two) - 15.603).abs() < 0.0006, "{}", depth(&two));
 }
 
 #[test]

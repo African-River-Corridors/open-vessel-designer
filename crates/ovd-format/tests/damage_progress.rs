@@ -86,27 +86,25 @@ fn the_hook_runs_on_the_calling_thread_counts_up_and_can_cancel() {
         );
         assert_eq!(calls[0].0.done, 0);
         // Issue #935: the search runs damage on each candidate that passes stability, then the answer's run
-        // follows. Each run reports its own count, from 0 to its total, which never falls within a run (a run's
-        // sizing and rooms passes skip damage); the last run is the answer's.
-        let mut runs: Vec<Vec<DamageProgress>> = Vec::new();
-        for (p, _) in calls.iter() {
-            if p.done == 0 {
-                runs.push(Vec::new());
-            }
-            runs.last_mut().unwrap().push(*p);
-        }
-        for run in &runs {
-            assert!(
-                run.iter().all(|p| p.total == run[0].total),
-                "{workers} workers: the total changed within a run"
-            );
-            assert!(
-                run.windows(2).all(|w| w[0].done <= w[1].done),
-                "{workers} workers: the count fell"
-            );
-            assert_eq!(run.last().unwrap().done, run[0].total, "{workers} workers");
-        }
-        assert_eq!(runs.last().unwrap()[0].total, total, "{workers} workers");
+        // follows. The count is cumulative over those runs: `done` never falls and only the first call has 0
+        // done; `total` is the cases of the runs so far (the search does not know how many runs it will make)
+        // and never falls; the last call has every case done, and the answer's own cases are the last run's
+        // share of the total.
+        assert!(
+            calls.windows(2).all(|w| w[0].0.done <= w[1].0.done),
+            "{workers} workers: the count fell"
+        );
+        assert!(
+            calls.windows(2).all(|w| w[0].0.total <= w[1].0.total),
+            "{workers} workers: the total fell"
+        );
+        assert_eq!(calls.iter().filter(|(p, _)| p.done == 0).count(), 1);
+        let last = calls.last().unwrap().0;
+        assert_eq!(last.done, last.total, "{workers} workers");
+        assert!(
+            last.total >= total,
+            "{workers} workers: {last:?} against {total}"
+        );
 
         // Cancel after 3 cases: the run fails, says so, and the hook is not called again.
         let (control, calls) = recording(Some(3));

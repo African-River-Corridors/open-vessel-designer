@@ -125,11 +125,11 @@ fn a_candidate_rejected_by_damage_names_the_rule_and_the_case() {
 }
 
 /// The search runs damage once per candidate that passes stability and has more cargo than the winner, and a
-/// run counts its damage runs. Label: snapshot: 5 runs in the search at a 12 m cap and 9 at 13 m, and one more
+/// run counts its damage runs. Label: snapshot: 7 runs in the search at a 12 m cap and 11 at 13 m (the refinement between sizes included), and one more
 /// for the answer (the answer's run is the same one until the reuse of PR 4).
 #[test]
 fn the_search_counts_its_damage_runs() {
-    for (cap, runs) in [(12.0, 6), (13.0, 10)] {
+    for (cap, runs) in [(12.0, 8), (13.0, 12)] {
         let before = ovd_format::damage::damage_runs_started();
         let _ = reference(json!({"max_tank_od_m": cap}));
         assert_eq!(
@@ -184,4 +184,128 @@ fn a_cancel_stops_the_search() {
     }
     // The first damage run started and was cancelled: no second candidate ran.
     assert_eq!(ovd_format::damage::damage_runs_started() - before, 1);
+}
+
+/// The reference design as a new Option, run at stage 1 (damage skipped: `not run`) and at stage 2 (damage run):
+/// (results, hash) of each.
+fn two_stages(extra: Value) -> ((Value, String), (Value, String)) {
+    use ovd_format::damage::DamageControl;
+    let mut inputs = json!({
+        "cargo": { "value": "LNG", "source": "typed" },
+        "hull_form": { "value": "raked_box", "source": "typed" },
+        "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+        "length_overall_m": { "value": 140.0, "source": "typed" },
+        "beam_m": { "value": 29.0, "source": "typed" },
+        "moulded_depth_m": { "value": 12.0, "source": "typed" },
+        "service_area": { "value": "coastal-and-river", "source": "typed" },
+        "loading_conditions": { "value": "is_code_2008", "source": "typed" }
+    });
+    for (k, v) in extra.as_object().unwrap() {
+        inputs[k] = json!({ "value": v, "source": "typed" });
+    }
+    let file = json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": inputs }]
+    });
+    let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+    let option = &filled.design.unwrap().options[0];
+    let run = |control: &DamageControl| match ovd_format::run_option_with_damage(
+        option,
+        ovd_format::rule_set::built_in(),
+        &[],
+        control,
+    ) {
+        RunOutcome::Results { results, hash } => (results, hash),
+        other => panic!("{other:?}"),
+    };
+    let skip = DamageControl {
+        run: false,
+        progress: None,
+    };
+    (run(&skip), run(&DamageControl::default()))
+}
+
+/// Stage 1 (damage not run) keeps the unscreened pick and says it was not screened; stage 2 screens, and says
+/// what stage 1 had picked when the pick changes. The hash is stable for the same stage, and differs between the
+/// stages exactly when the pick differs. Label: snapshot (a 12 m cap gives 12.0 m at stage 1 and 11.5 m at stage
+/// 2, an 11 m cap gives 11.0 m at both).
+#[test]
+fn stage_one_says_it_is_not_screened_and_stage_two_says_what_it_changed() {
+    let ((one, h1), (two, h2)) = two_stages(json!({ "max_tank_od_m": 12.0 }));
+    assert_eq!(one["damage_status"], "not run");
+    assert_eq!(one["damage_screening"]["screened"], false);
+    assert!(
+        one["damage_screening"]["note"]
+            .as_str()
+            .unwrap()
+            .starts_with("Not screened for damage")
+    );
+    assert_eq!((od(&one), od(&two)), (12.0, 11.5));
+    assert_eq!(two["damage_screening"]["screened"], true);
+    assert_eq!(
+        two["damage_screening"]["stage_one"]["tank_od_m"],
+        json!(12.0)
+    );
+    assert!(
+        two["damage_screening"]["changed_note"]
+            .as_str()
+            .unwrap()
+            .starts_with("Damage changed the arrangement")
+    );
+    assert_ne!(h1, h2, "the pick moved, so the hash moves");
+    // The hash is stable for the same stage.
+    let ((_, h1b), (_, h2b)) = two_stages(json!({ "max_tank_od_m": 12.0 }));
+    assert_eq!((h1, h2), (h1b, h2b));
+
+    // A pick that survives damage does not move: no change note, and the same hash at both stages.
+    let ((one, h1), (two, h2)) = two_stages(json!({ "max_tank_od_m": 11.0 }));
+    assert_eq!((od(&one), od(&two)), (11.0, 11.0));
+    assert_eq!(one["damage_screening"]["screened"], false);
+    assert_eq!(two["damage_screening"]["screened"], true);
+    assert!(two["damage_screening"]["stage_one"].is_null());
+    assert!(two["damage_screening"]["changed_note"].is_null());
+    assert_eq!(h1, h2);
+}
+
+/// With no cap the search does not stop at the first size that passes: 13.28 m, 12.78 m, 12.28 m and 11.78 m fail
+/// (two across), 11.28 m passes with less cargo than one 16 m tank across, and the search refines the diameter
+/// between 11.78 m and 11.28 m, so the pick is two across at about 11.5 m (18,224 m3 at 11.5 m), not one 16 m tank
+/// (17,708 m3). Label: snapshot, printed by the code.
+#[test]
+fn with_no_cap_the_pick_is_two_across_at_about_11_5_m_not_one_16_m_tank() {
+    let r = reference(json!({}));
+    assert_eq!(igc_fails(&r), Vec::<String>::new());
+    assert_eq!(r["arrangement"]["n_wide"], 2);
+    let tank = od(&r);
+    assert!((11.4..=11.7).contains(&tank), "{tank}");
+    let chosen = r["fit_tried"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["outcome"] == "chosen")
+        .unwrap();
+    let volume = chosen["cargo_volume_m3"].as_f64().unwrap();
+    assert!(volume >= 18_200.0, "{volume}");
+    assert!(volume > 17_708.0);
+}
+
+fn chosen_volume(r: &Value) -> f64 {
+    r["fit_tried"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["outcome"] == "chosen")
+        .unwrap()["cargo_volume_m3"]
+        .as_f64()
+        .unwrap()
+}
+
+/// Removing the size cap never gives less cargo: a cap of 12 m is a limit on what the search may pick, so the
+/// uncapped pick carries at least what the capped one does (the damage screen once gave 17,708 m3 with no cap
+/// against 18,224 m3 at 12 m). Label: property.
+#[test]
+fn removing_the_cap_never_gives_less_cargo() {
+    let capped = chosen_volume(&reference(json!({ "max_tank_od_m": 12.0 })));
+    let uncapped = chosen_volume(&reference(json!({})));
+    assert!(uncapped + 1e-6 >= capped, "{uncapped} against {capped}");
 }

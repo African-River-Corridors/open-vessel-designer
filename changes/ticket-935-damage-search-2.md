@@ -1,10 +1,10 @@
 <!-- unreleased -->
-- Arrangement search (issue #935): on a stack that evaluates IGC 2.7 damage survival (`igc-2g` 3.0.0 and later), the search runs the damage cases on each candidate that passes the cheap checks and stability, from the most cargo down, and the first that also passes damage wins. A candidate turned down by damage names the Rule, the condition and the case in the list of arrangements tried. On the 140 x 29 x 12 m coastal LNG reference design a cap of 12 m or 13 m now gives 11.5 m tanks (it gave 12.0 m with 4 failing damage rows and 13.0 m with 24). A run that skips damage does not screen. The damage progress hook now reports one count per damage run (the search's runs, then the answer's). The size limit is provisional until #1009 (the free surface of the cargo in a breached tank) lands.
+- Arrangement search (issue #935): on a stack that evaluates IGC 2.7 damage survival (`igc-2g` 3.0.0 and later), the search runs the damage cases on each candidate that passes the cheap checks and stability, from the most cargo down. A size that fails damage is refined downward, between it and the next size down, to about 0.1 m, and the pick is the most cargo among the candidates that pass. One search works out at most 24 damage runs; at the limit it keeps the best pass so far and says so. A candidate turned down by damage names the Rule, the condition and the case in the list of arrangements tried. On the 140 x 29 x 12 m coastal LNG reference design the pick is two across at about 11.5 m (the unscreened search gave 13.28 m, which fails a side breach across the hold bulkhead). A run that skips damage (the first stage of the app and the Python API) does not screen: it keeps the unscreened pick and says so in `damage_screening`, and the run that follows says what the first stage had picked when damage changes it. The damage progress count is now cumulative over the search's runs and the answer's. The size limit is provisional until #1009 (the free surface of the cargo in a breached tank) lands.
 
 <!-- design-impact -->
 ### ticket/935-damage-search-2 (2026-11-07)
 
-Between `main 72eb5da` and `this branch 20b411b9`.
+Between `main 964b33b` and `this branch a8e0cd0b`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|

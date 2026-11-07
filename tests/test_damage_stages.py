@@ -66,9 +66,14 @@ def test_progress_counts_up_to_the_total(coastal, with_damage):
     simulate_damage(coastal, progress=lambda done, total: calls.append((done, total)))
     total = with_damage["damage_cases"]
     assert total > 3
-    assert {t for _, t in calls} == {total}
+    # Issue #935: the search runs damage on each candidate that passes stability, then the answer's run follows.
+    # The count is cumulative over those runs: done never falls, total is the cases of the runs so far and never
+    # falls, and the last call has every case done. The answer's own cases are the last run's share of it.
+    assert calls[0][0] == 0
     assert all(a <= b for (a, _), (b, _) in zip(calls, calls[1:])), "done fell"
-    assert calls[-1] == (total, total)
+    assert all(a <= b for (_, a), (_, b) in zip(calls, calls[1:])), "total fell"
+    assert calls[-1][0] == calls[-1][1]
+    assert calls[-1][1] >= total
 
 
 @pytest.mark.slow

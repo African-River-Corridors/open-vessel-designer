@@ -88,11 +88,17 @@ fn skipped_then_run_is_byte_equal_to_one_full_run() {
         assert_eq!(cases_worked_out(&skipped), 0, "{area}");
         if area == "coastal-and-river" {
             // Issue #935: the search screens by IGC 2.7 damage when damage runs. A run that skips damage does not
-            // screen, so it may choose a larger tank (the arrangement flag "not screened" comes with the switch
-            // of #923 in a later PR of #935). It never chooses a smaller one.
+            // screen, keeps the unscreened pick and says so (`damage_screening`); it never picks a smaller tank.
+            // The hash is stable for the same stage (a full run after a skipped one equals the full run before it)
+            // and moves between the two stages exactly when the pick moves.
             let od = |r: &Value| r["arrangement"]["tank_od_m"].as_f64().unwrap();
             assert!(od(&skipped) >= od(&before), "{area}");
+            assert_eq!(skipped["damage_screening"]["screened"], false, "{area}");
+            assert!(skipped["damage_screening"]["note"].is_string(), "{area}");
+            assert_eq!(before["damage_screening"]["screened"], true, "{area}");
             assert_eq!(h0, h2, "{area}");
+            let same_pick = before["arrangement"] == skipped["arrangement"];
+            assert_eq!(h0 == h1, same_pick, "{area}");
         } else {
             // Skipping changes no other part of the results, and not the hash.
             assert_eq!(without_damage(&before), without_damage(&skipped), "{area}");
