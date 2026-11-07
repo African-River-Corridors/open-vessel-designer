@@ -4,7 +4,19 @@
   // the trace's order within each group. The app computes nothing: every field comes from the trace.
   // Units are the trace's. Only the table body scrolls, when the list is longer than the panel.
   import { t } from "../i18n.svelte";
-  import { OUTCOMES, outcomeRank, type Outcome } from "../ruleOutcomes";
+  import { OUTCOMES, outcomeRank, outcomeTag, type Outcome } from "../ruleOutcomes";
+
+  /** An outcome this build does not know is shown in the engine's own words and warned about once: never as a known label, never as a pass. */
+  const warned = new Set<string>();
+  function tagOf(outcome: string): { mark: string; tone: string; label: string | null; words: string } {
+    const known = (OUTCOMES as Record<string, { mark: string; tone: string; label: string }>)[outcome];
+    if (known) return { ...known, words: "" };
+    if (!warned.has(outcome)) {
+      warned.add(outcome);
+      console.warn(`Rule Trace: unknown outcome "${outcome}"`);
+    }
+    return { mark: "?", tone: outcomeTag(outcome).tone, label: null, words: outcome };
+  }
 
   interface Row {
     rule: string | null;
@@ -79,10 +91,10 @@
         </thead>
         <tbody>
           {#each ordered as r, i (i)}
-            {@const o = OUTCOMES[r.outcome] ?? OUTCOMES["not evaluated"]}
+            {@const o = tagOf(r.outcome)}
             <tr class={o.tone} data-testid="rule-check-row" data-outcome={r.outcome} data-ok={r.outcome !== "fail"} data-governing={r.governing}>
               <td data-testid="rule-cell-result">
-                <span class="tag {o.tone}"><span aria-hidden="true">{o.mark}</span> {t(o.label)}</span>
+                <span class="tag {o.tone}"><span aria-hidden="true">{o.mark}</span> {o.label ? t(o.label) : o.words}</span>
                 {#if r.governing}<span class="mark" title={t("app-rules-governing-hint")}>{t("app-rules-governing")}</span>{/if}
               </td>
               <th scope="row" data-testid="rule-cell-rule">

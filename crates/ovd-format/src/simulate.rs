@@ -1131,6 +1131,19 @@ fn tank_report(
         [
             ("lpg_carriage_condition", text("lpg_carriage_condition")),
             ("design_pressure_mpa", num(design_pressure)),
+            // Issue #926: `igc_4_23_1_2_minimum` (a null pressure), `default` (a profile value the
+            // file did not type) or `typed`.
+            (
+                "design_pressure_basis",
+                json!(if design_pressure_by_rule(p) {
+                    "igc_4_23_1_2_minimum"
+                } else {
+                    match p.get("tank_design_pressure_basis").and_then(Value::as_str) {
+                        Some("default") => "default",
+                        _ => "typed",
+                    }
+                }),
+            ),
             ("liquid_pressure", text("tank_liquid_pressure")),
             ("liquid_pressure_accel", opt_num(liquid.0)),
             ("liquid_pressure_density_kg_m3", num(liquid.1)),

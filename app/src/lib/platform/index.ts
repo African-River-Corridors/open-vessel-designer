@@ -17,6 +17,8 @@ export type {
   DeckItems,
   PropulsorPart,
   Waterline,
+  DamageProgress,
+  DamageEnd,
 } from "./types";
 
 let current: Platform | null = null;

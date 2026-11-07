@@ -100,12 +100,37 @@ export interface Waterline {
   group: number | null;
 }
 
+/** Issue #924: how far a damage run is, as the platform reports it. */
+export interface DamageProgress {
+  option: string;
+  done: number;
+  total: number;
+}
+
+/**
+ * How a damage run ended. `done`: the results are kept; `stale`: the Option changed while it ran, so
+ * they were not; `cancelled`: stopped; `failed`: the engine refused (`message` says why). Only `done`
+ * leaves the Option with damage results; evaluate again after any of them.
+ */
+export interface DamageEnd {
+  option: string;
+  outcome: "done" | "stale" | "cancelled" | "failed";
+  message?: string | null;
+}
+
 export interface Platform {
   /** "tauri" for the desktop app, "web" for the browser build. */
   readonly kind: "tauri" | "web";
   snapshot(): Promise<Snapshot>;
   inputSchema(): Promise<Schema>;
   evaluate(): Promise<Evaluation>;
+  /**
+   * Issue #924: run the damage cases of an Option, off the page's main thread, calling `onProgress` as
+   * cases finish. Resolves when the run ends, however it ends.
+   */
+  runDamage(option: string, onProgress: (p: DamageProgress) => void): Promise<DamageEnd>;
+  /** Stop the damage run under way; its `runDamage` resolves as `cancelled`. */
+  cancelDamage(): Promise<void>;
   /** Each of these returns null when the user cancels a dialog. */
   newFile(): Promise<Snapshot | null>;
   openFile(): Promise<Snapshot | null>;

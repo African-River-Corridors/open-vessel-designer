@@ -19,6 +19,7 @@ import box_oracle as oracle  # noqa: E402
 import stern_oracle  # noqa: E402
 import tank_oracle  # noqa: E402
 import vent_oracle  # noqa: E402
+import openings_oracle  # noqa: E402
 
 CASES_DIR = HERE.parent / "cases"
 
@@ -447,6 +448,87 @@ def stern_document(c: dict) -> dict:
     }
 
 
+#: The deckhouse openings of IGC 3.2.4.1 and 3.2.4.2 (issue #913): the load line length L and a list of openings,
+#: each with its distance from the deckhouse front, chosen for this corpus. `openings_oracle.py` works the verdicts
+#: out from the text of the IGC Code. The boundary cases sit exactly on each limit (4 % of L, 3 m at least, 5 m at
+#: most) and a step under it.
+OPENINGS_HULL = {"length_overall_m": 100.0, "beam_m": 14.0, "depth_m": 4.5}
+
+
+def door(name, distance, space="accommodation", face="side", kind="entrance", **flags) -> dict:
+    return {"name": name, "kind": kind, "space": space, "face": face,
+            "distance_from_front_m": distance, **flags}
+
+
+def openings_base(id_: str, title: str, note: str, l_icll_m: float, *openings) -> dict:
+    return {"id": id_, "kind": "openings", "title": title, "note": note,
+            "inputs": {**OPENINGS_HULL, "l_icll_m": l_icll_m, "openings": list(openings)}}
+
+
+OPENINGS_BASES = [
+    openings_base("openings_side_entrance_l140_4_99", "Side entrance 4.99 m from the deckhouse front, L = 140 m",
+                  "4 % of 140 m is 5.6 m, over the 5 m the zone need not exceed: the entrance must be at least 5 m from the front.",
+                  140.0, door("side door", 4.99)),
+    openings_base("openings_side_entrance_l140_5_00", "Side entrance 5.00 m from the deckhouse front, L = 140 m",
+                  "On the limit: 5.00 m meets it.", 140.0, door("side door", 5.0)),
+    openings_base("openings_side_entrance_l70_2_99", "Side entrance 2.99 m from the deckhouse front, L = 70 m",
+                  "4 % of 70 m is 2.8 m, under the 3 m the zone is not less than: the entrance must be at least 3 m from the front.",
+                  70.0, door("side door", 2.99)),
+    openings_base("openings_side_entrance_l70_3_00", "Side entrance 3.00 m from the deckhouse front, L = 70 m",
+                  "On the limit: 3.00 m meets it.", 70.0, door("side door", 3.0)),
+    openings_base("openings_side_entrance_l100_3_99", "Side entrance 3.99 m from the deckhouse front, L = 100 m",
+                  "4 % of 100 m is 4.0 m, between the 3 m and the 5 m: 3.99 m is inside the zone.",
+                  100.0, door("side door", 3.99)),
+    openings_base("openings_side_entrance_l100_4_00", "Side entrance 4.00 m from the deckhouse front, L = 100 m",
+                  "On the limit: 4.00 m, 4 % of 100 m, meets it.", 100.0, door("side door", 4.0)),
+    openings_base("openings_front_door", "Accommodation door on the deckhouse front",
+                  "An entrance that faces the cargo area is never allowed, whatever the length.", 100.0,
+                  door("front door", 0.0, face="front"), door("aft door", 12.0, face="aft")),
+    openings_base("openings_aft_door_only", "Accommodation door on the end bulkhead away from the cargo area",
+                  "No distance is asked of an opening on the end bulkhead not facing the cargo area.", 100.0,
+                  door("aft door", 0.5, face="aft")),
+    openings_base("openings_wheelhouse_door_gas_tight", "Wheelhouse side door 1.0 m from the front, designed gas-tight",
+                  "3.2.4.2: a wheelhouse door may stand within the limits if the wheelhouse can be made gas-tight rapidly.",
+                  140.0, door("wheelhouse door", 1.0, space="wheelhouse", gas_tight=True)),
+    openings_base("openings_wheelhouse_door_not_gas_tight", "Wheelhouse side door 1.0 m from the front, not designed gas-tight",
+                  "Within the limits and not designed gas-tight: not allowed.",
+                  140.0, door("wheelhouse door", 1.0, space="wheelhouse", gas_tight=False)),
+    openings_base("openings_wheelhouse_door_front", "Gas-tight wheelhouse door on the deckhouse front",
+                  "Strict reading (issue #913): the wheelhouse is a control station (IGC 1.2.17), so no wheelhouse door "
+                  "may face the cargo area, gas-tight or not.", 140.0,
+                  door("wheelhouse door", 0.0, space="wheelhouse", face="front", gas_tight=True)),
+    openings_base("openings_wheelhouse_window_front", "Openable wheelhouse window on the deckhouse front, not designed gas-tight",
+                  "3.2.4.2: a wheelhouse window facing the cargo area may open only if the wheelhouse can be made gas-tight "
+                  "rapidly; one not designed so is held to the limit, and at the front it is at distance 0.",
+                  140.0, door("wheelhouse window", 0.0, space="wheelhouse", face="front", kind="window",
+                              openable=True, gas_tight=False)),
+    openings_base("openings_window_openable_front", "Openable accommodation window on the deckhouse front",
+                  "3.2.4.2: a window facing the cargo area is fixed.",
+                  140.0, door("window", 0.0, face="front", kind="window", openable=True)),
+]
+
+#: The same two sides of each limit for the three other distance Rules, at the three lengths where each number of
+#: the limit governs: L = 70 m (the 3 m floor), L = 100 m (4 % of L) and L = 140 m (the 5 m cap).
+for _l, _limit in ((70.0, 3.0), (100.0, 4.0), (140.0, 5.0)):
+    for _side, _d in (("under", round(_limit - 0.01, 2)), ("at", _limit)):
+        _tag = f"l{int(_l)}_{str(_d).replace('.', '_')}"
+        _verb = "inside the zone" if _side == "under" else "on the limit, which meets it"
+        OPENINGS_BASES += [
+            openings_base(f"openings_air_inlet_{_tag}",
+                          f"Machinery space air inlet on a side, {_d} m from the front, L = {int(_l)} m",
+                          f"3.2.4.1: air inlets on a side keep the distance of entrances; {_d} m is {_verb}.",
+                          _l, door("engine air inlet", _d, space="machinery", kind="air_inlet")),
+            openings_base(f"openings_window_openable_{_tag}",
+                          f"Openable accommodation window on a side, {_d} m from the front, L = {int(_l)} m",
+                          f"3.2.4.2: windows within the distance of 3.2.4.1 are fixed; {_d} m is {_verb}.",
+                          _l, door("window", _d, kind="window", openable=True)),
+            openings_base(f"openings_wheelhouse_door_not_gas_tight_{_tag}",
+                          f"Wheelhouse side door, not designed gas-tight, {_d} m from the front, L = {int(_l)} m",
+                          f"3.2.4.2: a wheelhouse door within the limits must be designed gas-tight; {_d} m is {_verb}.",
+                          _l, door("wheelhouse door", _d, space="wheelhouse", gas_tight=False)),
+        ]
+
+
 def vent_document(c: dict) -> dict:
     """A cargo vent exit case (`kind: vent`): the inputs, and the oracle's verdict for each Rule."""
     expected = {k: {kk: vv for kk, vv in v.items() if kk != "compare"}
@@ -488,7 +570,30 @@ def vent_document(c: dict) -> dict:
     }
 
 
+def openings_document(c: dict) -> dict:
+    """A deckhouse openings case (`kind: openings`): L, the openings, and the oracle's verdict for each Rule."""
+    return {
+        "id": c["id"], "title": c["title"], "kind": "openings",
+        "inputs": {k: v for k, v in c["inputs"].items()},
+        "expected": openings_oracle.verdicts(c["inputs"]),
+        "provenance": {
+            "verdict_basis": "derived",
+            "inputs_basis": "chosen for this corpus (not from a publication)",
+            "source": "evaluation/oracle/openings_oracle.py (the text of IGC Code 3.2.4.1 and 3.2.4.2)",
+            "edition": "IGC Code, resolution MSC.370(93), as adopted 22 May 2014; MSC.411(97), MSC.441(99), "
+                       "MSC.476(102), MSC.492(104), MSC.523(106) and MSC.566(109) read, none changes 3.2.4",
+            "locator": "IGC 3.2.4.1, 3.2.4.2, 1.2.17, 1.2.31 (MSC.370-93.pdf, annex pp. 32-33)",
+            "licence": "inputs and oracle: this repository (see LICENSE); the limits are quoted from the texts",
+            "confidence": "high for the verdicts (the oracle states each limit as the text prints it); the case is "
+                          "not an external published example",
+            "note": c["note"],
+        },
+    }
+
+
 def case_document(c: dict) -> dict:
+    if c.get("kind") == "openings":
+        return openings_document(c)
     if c.get("kind") == "vent":
         return vent_document(c)
     if c.get("kind") == "tank":
@@ -560,7 +665,7 @@ def render(doc: dict) -> str:
 def main(argv: list[str]) -> int:
     check = "--check" in argv
     bad = 0
-    for c in BASE_CASES + TANK_BASES + STERN_BASES + VENT_BASES:
+    for c in BASE_CASES + TANK_BASES + STERN_BASES + VENT_BASES + OPENINGS_BASES:
         path = CASES_DIR / f"{c['id']}.yaml"
         text = render(case_document(c))
         if check:

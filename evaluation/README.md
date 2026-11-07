@@ -49,6 +49,22 @@ rule id: IGC 8.2.10.3 (the greater of B/3 and 6 m), 8.2.10.4 (6 m) and 8.2.11.1 
 limit by 0.005 m, on three beams (14 m: the 6 m governs; 24 m: B/3 governs; 30 m: the 25 m cap governs). The Rules do
 not apply on `river-only`; a Rust test (`crates/ovd-format/tests/vent_rules.rs`) covers that.
 
+### Openings cases (`kind: openings`, issue #913)
+
+An openings case is a gas Option on `coastal-and-river` service with the load line length `l_icll_m` (L of IGC 1.2.31)
+and a list of deckhouse openings, each with a `kind`, a `space`, a `face`, its `distance_from_front_m`, and for a
+window or a door whether it is `openable` and `gas_tight`. The runner selects `igc-2g` 4.0.0 and compares the five
+opening Rules keyed by rule id: IGC 3.2.4.1 (no entrance, air inlet or intake faces the cargo area; side entrances and
+air inlets at least 4 % of L, 3 m at least, 5 m at most, from the deckhouse front) and 3.2.4.2 (openable windows in
+that zone; wheelhouse side doors and windows not designed gas-tight). A Rule has one verdict for the case, the
+verdict of its worst opening. `oracle/openings_oracle.py` works the verdicts out from the text; it shares no code with
+the engine. The boundary cases sit exactly on each limit and 0.01 m under it, at L = 70 m (the 3 m floor), 100 m
+(4 % of L) and 140 m (the 5 m cap), so a rule mutation of any number of the limit changes a verdict. The wheelhouse is a
+control station (IGC 1.2.17), so a wheelhouse door on the front fails whether it is gas-tight or not (the maintainer's
+strict reading of 3.2.4.2). The harness places the openings on a 20 m deckhouse; the engine works each distance from
+the position, so the case tests the engine's own measuring too. The Rules apply to a stern with placed openings; a
+container-block stern has them `not evaluated`, which a Rust test covers (`crates/ovd-format/tests/igc_openings.rs`).
+
 ### Triage
 
 Each disagreement outside the grid error goes in one bucket, in this order:
