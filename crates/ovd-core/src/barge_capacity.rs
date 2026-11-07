@@ -1345,8 +1345,7 @@ fn arrangement(inp: &BargeCapacityInputs, class: CargoClass) -> Result<Arrangeme
             a.arrangement_style = d.arrangement_style;
             // Issue #780: the berths the deckhouse rooms are sized from.
             a.rooms_basis = d.rooms_basis;
-            if d.arrangement_style.has_aft_deckhouse() && inp.air_draft_limit_m.is_none()
-            {
+            if d.arrangement_style.has_aft_deckhouse() && inp.air_draft_limit_m.is_none() {
                 a.wheelhouse_max_lift_m = 0.0;
             }
             a.propulsion = inp.propulsion.clone();

@@ -29,7 +29,10 @@ fn the_key_names_the_style_and_the_list_holds_it() {
         ArrangementStyle::from_key("wheelhouse_forward"),
         Some(ArrangementStyle::WheelhouseForward)
     );
-    assert_eq!(ArrangementStyle::WheelhouseForward.key(), "wheelhouse_forward");
+    assert_eq!(
+        ArrangementStyle::WheelhouseForward.key(),
+        "wheelhouse_forward"
+    );
     assert!(ovd_core::aft_arrangement::ARRANGEMENT_STYLES.contains(&"wheelhouse_forward"));
     // Like the deckhouse, it holds its accommodation in a house aft; unlike it, the wheelhouse is forward.
     assert!(ArrangementStyle::WheelhouseForward.has_aft_deckhouse());
@@ -40,10 +43,18 @@ fn the_key_names_the_style_and_the_list_holds_it() {
 #[test]
 fn the_machinery_and_the_accommodation_stay_aft_and_the_wheelhouse_goes_forward() {
     let r = compute(&forward_inputs()).unwrap();
-    let aft = r.deckhouse.as_ref().expect("the accommodation house stays aft");
+    let aft = r
+        .deckhouse
+        .as_ref()
+        .expect("the accommodation house stays aft");
     let fwd = r.forward_house.as_ref().expect("a forward house");
     // The block ends where the deckhouse ends: the wheelhouse no longer adds to it.
-    assert!(r.length_m <= aft.x_fwd_m + 1e-9, "{} vs {}", r.length_m, aft.x_fwd_m);
+    assert!(
+        r.length_m <= aft.x_fwd_m + 1e-9,
+        "{} vs {}",
+        r.length_m,
+        aft.x_fwd_m
+    );
     assert!(aft.x_aft_m == 0.0 && aft.tiers >= 1);
     // The wheelhouse stands on the forward house, at its forward end, and clear of the block.
     assert!(r.wheelhouse_x1_m == fwd.x_fwd_m);
@@ -55,7 +66,11 @@ fn the_machinery_and_the_accommodation_stay_aft_and_the_wheelhouse_goes_forward(
     assert!(fwd.base_m == 6.0 && fwd.top_m > fwd.base_m);
     // Fixed: no lift, and no check that the eye clears the cargo (the cargo is behind the eye).
     assert_eq!(r.wheelhouse_lift_m, 0.0);
-    assert!(r.checks.iter().all(|c| c.name != "wheelhouse_sees_over_cargo"));
+    assert!(
+        r.checks
+            .iter()
+            .all(|c| c.name != "wheelhouse_sees_over_cargo")
+    );
     // No accommodation unit stands on deck.
     assert!(r.container_units.is_empty());
 }
@@ -82,7 +97,12 @@ fn the_forward_house_steel_and_the_wheelhouse_steel_are_forward_of_the_block() {
         gas_combustion_unit: false,
     };
     let items = stern_block_mass(&i, &r, &m, 1.0);
-    let by = |l: &str| items.iter().find(|x| x.label == l).unwrap_or_else(|| panic!("{l}"));
+    let by = |l: &str| {
+        items
+            .iter()
+            .find(|x| x.label == l)
+            .unwrap_or_else(|| panic!("{l}"))
+    };
     let house = by("forward house steel");
     let fwd = r.forward_house.as_ref().unwrap();
     assert!((house.lcg_m - (fwd.x_aft_m + fwd.x_fwd_m) / 2.0).abs() < 1e-9);
@@ -112,7 +132,9 @@ fn a_house_that_took_cargo_length_says_so() {
     let r = compute(&i).unwrap();
     assert_eq!(r.forward_house.as_ref().unwrap().cargo_length_lost_m, 2.5);
     assert!(
-        r.warnings.iter().any(|w| w.to_string().contains("2.50 m of cargo length")),
+        r.warnings
+            .iter()
+            .any(|w| w.to_string().contains("2.50 m of cargo length")),
         "{:?}",
         r.warnings
     );

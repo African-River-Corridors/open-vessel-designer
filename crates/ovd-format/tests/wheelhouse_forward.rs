@@ -92,11 +92,9 @@ fn a_short_forepeak_makes_the_house_take_cargo_length_and_the_results_say_so() {
     let lost = f(&r["drawing"]["aft_arrangement"]["forward_house"]["cargo_length_lost_m"]);
     assert!(lost > 0.0, "{lost}");
     assert!(
-        r["warnings"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|w| w.as_str().is_some_and(|w| w.contains("takes") && w.contains("of cargo length"))),
+        r["warnings"].as_array().unwrap().iter().any(|w| w
+            .as_str()
+            .is_some_and(|w| w.contains("takes") && w.contains("of cargo length"))),
         "{}",
         r["warnings"]
     );
@@ -114,8 +112,17 @@ fn a_short_forepeak_makes_the_house_take_cargo_length_and_the_results_say_so() {
 #[test]
 fn the_other_styles_have_no_forward_house() {
     for style in ["container_block", "deckhouse"] {
-        let r = results_of(&design(110.0, 11.4, 6.0, json!({ "arrangement_style": style })));
-        assert!(r["drawing"]["aft_arrangement"].get("forward_house").is_none());
+        let r = results_of(&design(
+            110.0,
+            11.4,
+            6.0,
+            json!({ "arrangement_style": style }),
+        ));
+        assert!(
+            r["drawing"]["aft_arrangement"]
+                .get("forward_house")
+                .is_none()
+        );
         assert_eq!(r["stern_arrangement"]["style"], json!(style));
     }
 }
@@ -133,7 +140,10 @@ fn the_forward_house_joins_the_gross_tonnage_and_the_steel() {
     let deckhouse = f(&aft["deckhouse"]["volume_m3"]);
     // The enclosed volume of the two houses is what the gross tonnage takes as deckhouse volume.
     let counted = f(&r["gross_tonnage"]["deckhouse_volume_m3"]);
-    assert!((counted - deckhouse - house).abs() < 1e-6, "{counted} {deckhouse} {house}");
+    assert!(
+        (counted - deckhouse - house).abs() < 1e-6,
+        "{counted} {deckhouse} {house}"
+    );
     let items: Vec<&str> = r["stern_block_mass"]["items"]
         .as_array()
         .unwrap()
@@ -155,7 +165,9 @@ fn the_aft_house_needs_no_extra_tiers_for_a_sightline_the_wheelhouse_forward_doe
             6.0,
             json!({ "arrangement_style": style, "bow_rake_length_m": 20.0 }),
         ));
-        r["drawing"]["aft_arrangement"]["deckhouse"]["tiers"].as_i64().unwrap()
+        r["drawing"]["aft_arrangement"]["deckhouse"]["tiers"]
+            .as_i64()
+            .unwrap()
     };
     assert!(tiers("wheelhouse_forward") <= tiers("deckhouse"));
 }

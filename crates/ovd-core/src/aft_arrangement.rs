@@ -1414,7 +1414,14 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
         if forward {
             // Issue #994: the wheelhouse stands on the forward house, at its forward end. The house
             // is not a zone of the block (it lies over the forepeak, past the block's length).
-            let site = forward_site(inp, if n_units > 0 { py_max(dh_x1, cont_x1) } else { dh_x1 });
+            let site = forward_site(
+                inp,
+                if n_units > 0 {
+                    py_max(dh_x1, cont_x1)
+                } else {
+                    dh_x1
+                },
+            );
             wh_x1 = site.x_fwd_m;
             wh_x0 = py_max(wh_x1 - inp.wheelhouse_length_m, site.x_aft_m);
         } else {
