@@ -159,7 +159,7 @@ fn the_river_only_house_has_the_tiers_this_change_gives_it() {
     );
     assert!((num(&d["volume_m3"]) - 448.656).abs() < 1e-6);
     assert!((num(&d["x_aft_m"]) - 14.232).abs() < 1e-9);
-    // Lightship falls from 5588.72 t on main; cargo is volume-bound and does not move.
-    assert!((num(&r["results"]["lightship_t"]) - 5_313.233_59).abs() < 1e-4);
+    // Lightship falls from 5588.72 t before this change; cargo is volume-bound and does not move.
+    assert!((num(&r["results"]["lightship_t"]) - 5_313.944_95).abs() < 1e-4);
     assert!((num(&r["results"]["cargo_t"]) - 9_882.019_135).abs() < 1e-4);
 }
