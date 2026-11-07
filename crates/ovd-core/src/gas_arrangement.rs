@@ -1261,7 +1261,7 @@ impl Search<'_> {
             // the negative clearance goes on to `capacity`, which cannot make a tank over the cap
             // (the diameter is then at most the cap) and a candidate with it is turned down by
             // the rule check below: the rule needs at least 0.45 m (`d(V)` is at least 0.8 m, the
-            // insulation is the fixed 350 mm), and `cs + 1e-9 < need` holds for every negative
+            // insulation is the tank design's thickness: 350 mm when this was searched, and the profile range runs to 1000 mm, which this argument does not cover), and `cs + 1e-9 < need` holds for every negative
             // `cs`. So `None` comes back either way. Searched with the mutant built in: 15 000
             // random inputs (both rulesets of the time, caps 0.2 to 8.2 m, beams 0.3 to 14.3 m, 1 to 5 tanks
             // wide), the branch reached in at least 10 068 of them, no difference in any field.

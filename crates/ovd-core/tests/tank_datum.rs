@@ -8,8 +8,9 @@
 //! Label: property. Each test states a relation between the engine's outputs. No printed number.
 
 use ovd_core::barge_capacity::{
-    BargeCapacityInputs, DEFAULT_TANK_DESIGN_PRESSURE_MPA, DEFAULT_TANK_INSULATION_MM,
-    DEFAULT_TANK_MATERIAL, DEFAULT_TANK_STRUCTURE_FACTOR, TankDesign, compute, dome_volume_m3,
+    BargeCapacityInputs, DEFAULT_TANK_DESIGN_PRESSURE_MPA, DEFAULT_TANK_MATERIAL,
+    DEFAULT_TANK_STRUCTURE_FACTOR, LEGACY_SIMULATE_INSULATION_MM, TankDesign, compute,
+    dome_volume_m3,
 };
 use ovd_core::models::BargeInputs;
 use ovd_core::pressure_vessel::calculate_wall_thicknesses;
@@ -37,7 +38,7 @@ fn the_tank_design_defaults_are_what_the_engine_used_before() {
         (
             DEFAULT_TANK_DESIGN_PRESSURE_MPA,
             DEFAULT_TANK_MATERIAL,
-            DEFAULT_TANK_INSULATION_MM,
+            LEGACY_SIMULATE_INSULATION_MM,
             DEFAULT_TANK_STRUCTURE_FACTOR
         ),
         (0.5, "9Ni", 350.0, 1.30)
