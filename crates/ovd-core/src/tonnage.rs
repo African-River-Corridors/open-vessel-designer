@@ -113,11 +113,11 @@ pub fn enclosed_volume(
             .aft_arrangement
             .as_ref()
             .map_or(0.0, |a| stern_block_above_deck_m3(a, unit_height_m)),
-        deckhouse_m3: result
-            .aft_arrangement
-            .as_ref()
-            .and_then(|a| a.deckhouse.as_ref())
-            .map_or(0.0, |d| d.volume_m3),
+        // Issue #994: the forward house of `wheelhouse_forward` is enclosed volume too.
+        deckhouse_m3: result.aft_arrangement.as_ref().map_or(0.0, |a| {
+            a.deckhouse.as_ref().map_or(0.0, |d| d.volume_m3)
+                + a.forward_house.as_ref().map_or(0.0, |f| f.volume_m3)
+        }),
     }
 }
 

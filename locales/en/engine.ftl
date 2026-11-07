@@ -18,12 +18,15 @@ check-wheelhouse-fits-beam = wheelhouse { $width } m wide on a { $beam } m beam
 check-name-deckhouse-has-a-footprint = deckhouse has a footprint
 check-deckhouse-has-a-footprint = deckhouse { $length } m over the machinery space x { $width } m wide (the { $beam } m beam less a side deck each side)
 check-name-deckhouse-tier-count = deckhouse tier count
-check-deckhouse-tier-count = { $tiers } tier(s) of { $tier_area } m2 hold the { $required } m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over { $max } tiers is a tall house over a short machinery space (ESTIMATE limit)
+check-deckhouse-tier-count-rooms-only = { $tiers } tier(s) for rooms ({ $room_area } m2 each, holding the { $required } m2 of accommodation floor); over { $max } tiers is a tall house over a short machinery space (ESTIMATE limit)
+check-deckhouse-tier-count = { $tiers } tier(s): { $room_tiers } for rooms ({ $room_area } m2 each, holding the { $required } m2 of accommodation floor) and { $access_tiers } for access ({ $access_area } m2 each, lifting the wheelhouse eye over the cargo); over { $max } tiers is a tall house over a short machinery space (ESTIMATE limit)
 warn-aft-deckhouse-no-outfit = The deckhouse carries no outfit mass: the outfit of the accommodation units left with them, and no outfit rate has been found, so the lightship is under-stated and GM over-stated until the calibration set (issue #782) gives one.
 warn-aft-deckhouse-estimates = Deckhouse stern: the tier height, the side deck and the tier limit are ESTIMATES. A fixed wheelhouse is given the tiers its Blind Distance needs, to the stricter of ES-TRIN 7.02(2) and, on a coastal Option, SOLAS V/22.1.1: the first pass sizes the eye for a waterline at the keel, which is never too low and can add a tier; a second pass on the trimmed light waterline of the first keeps the lower tier count only if the sightline still passes.
 warn-aft-deckhouse-interim-floor = The accommodation floor of the deckhouse is the interim stand-in (the floor of the 40 ft accommodation units the Option holds): no crew gave berths to size rooms from.
 warn-aft-deckhouse-rooms-estimates = Deckhouse rooms (ES-TRIN 2025/1 Chapter 15): the galley, the work-clothes room, the washbasins, the showers and the stairway are required but the text gives no floor area, so each has a stated ESTIMATE area, marked estimate in the rooms table with its working. The cabin, communal room, toilet and corridor areas are worked from the paragraphs the table cites.
 warn-aft-deckhouse-mlc-applied = This Service Area reaches sea, so each room is sized to the greater of MLC 2006 Standard A3.1 (as amended, 2022 consolidated text) and ES-TRIN 2025/1 Chapter 15; the rooms table names the governing source of each. No exemption is applied: not those for ships under 3,000 GT or 200 GT, nor the coastal-trade relaxation of the hospital. The day rooms and the hospital have ESTIMATE areas, as the text gives none.
+warn-aft-forward-house-estimates = Wheelhouse forward: the wheelhouse stands in a house over the forepeak, with a watch room and a muster point; the machinery and the main accommodation stay aft. The house length, the clear deck forward of it, its one tier and its tier height are ESTIMATES. The crew is split across the cargo deck: a second escape route, a second muster point and an unmanned or lightly manned engine room are inputs for the hazard study, not computed checks. No gas-cargo vessel in service has this layout.
+warn-aft-forward-house-cargo-length = The forepeak is too short for the forward house: the house takes { $lost } m of cargo length.
 check-accom-beside-wheelhouse = { $units } x 40 ft units beside a { $wheelhouse } m wheelhouse need { $needed } m of { $beam } m beam
 check-accom-beside-wheelhouse-rows = { $units } x 40 ft units beside a { $wheelhouse } m wheelhouse need { $needed } m of { $beam } m beam; they go in a row aft of the cab instead, which lengthens the block
 check-name-accom-beside-wheelhouse = accom beside wheelhouse
@@ -43,9 +46,11 @@ check-deckhouse-clear-height = tier height { $tier } m less { $allowance } m for
 ## crates/ovd-core/src/barge_capacity.rs
 
 warn-barge-bulk-gm = Bulk GM is first-order (assumed lightship KG); cargo-shift/angle-of-repose not modelled — confirm with a full intact-stability booklet.
-check-wheelhouse-blind-distance = blind distance ahead of the bow { $blind } m <= { $limit } m, light (ES-TRIN 7.02(2)); lift used { $lift } m of { $max_lift } m
-check-wheelhouse-blind-distance-fails = blind distance ahead of the bow over { $limit } m, light (ES-TRIN 7.02(2)): lift needed { $needed } m of { $max_lift } m
+check-wheelhouse-blind-distance = blind distance ahead of the bow { $blind } m <= { $limit } m, light (limit from the Rule Sets of the stack: { $source }); lift used { $lift } m of { $max_lift } m
+check-wheelhouse-blind-distance-fails = blind distance ahead of the bow over { $limit } m, light (limit from the Rule Sets of the stack: { $source }): lift needed { $needed } m of { $max_lift } m
 warn-aft-blind-distance-lift = The blind distance needs { $needed } m of lift; the column gives { $max_lift } m. Raise the column or lower the cargo top.
+check-name-wheelhouse-wing-sees-hull-side = wheelhouse wing sees hull side
+check-wheelhouse-wing-sees-hull-side = wing reaches { $wing } m from the centreline; the hull side is at { $half } m (the cargo stands out to { $cargo } m): the view aft along the hull side (SOLAS V/22.1.4, 22.1.6) is { $short } m short
 check-feasible-geometry = cargo volume must be positive (tank/hold fits)
 check-name-feasible-geometry = feasible geometry
 check-name-not-overloaded = not overloaded
@@ -62,8 +67,11 @@ check-trim-in-range = the hull floats within { $limit } degrees of trim (every c
 check-trim-no-balance = no trim balances the load: { $conditions }
 check-name-trim-in-range = trim in range
 warn-barge-pushed = PUSHED barge: crew, battery and propulsion are on the tug and are NOT in this hull's lightship, capacity or air draft. The tug is a separate vessel and must be costed and air-draft-gated separately.
+warn-blind-distance-laden-limit-only = The Rule Sets limit the laden Blind Distance to { $limit } m but set no light limit, so the wheelhouse is not sized to a Blind Distance and the laden Rule is only checked.
 warn-vent-mast-lowerable = A lowerable cargo vent mast is not backed by a practice source: none was found for lowering cargo vent masts. Class or flag acceptance is needed. The river air drafts leave the mast out; the sea air draft keeps it.
 warn-vent-mast-distance = The cargo vent mast stands { $achieved } m from the nearest openings and { $target } m is asked; no position in the cargo area is further. Lengthen the cargo area or move the openings aft.
+check-air-draft-condition-laden-stands-in = laden (the light draught is not worked)
+warn-air-draft-over-bridge-limit = The { $condition } air draft { $governing } m (laden { $laden } m) is over the bridge limit { $limit } m by { $over } m ({ $source }). The highest point is the { $point }, { $top } m above the keel. The vessel cannot pass under a bridge of that clearance. The wheelhouse of a tug is not counted for a pushed or ATB design.
 check-name-gm-positive = gm positive
 check-gm-positive = hopper intact GM { $gm } m >= 0.15 m (first-order; KG_light @0.5D)
 warn-steel-mass-disagreement = The lightship uses { $top_down } t of hull steel (top-down); the cost prices { $bottom_up } t (bottom-up). They differ by { $delta } t ({ $pct } %), more than the { $limit } % limit (an Estimate). The cost keeps the bottom-up mass.
@@ -267,8 +275,8 @@ note-atb-method-unverified = The ATB's resistance is that of its Equivalent Hull
 note-formation-method-unverified = The Formation's resistance is that of its Equivalent Hull (the barges and the pusher as one hull) by the single-hull method, times the Formation resistance allowance. The method is unverified.
 note-formation-coupling-force = Coupling force between the pusher and the pushed craft: { $force } kN (ES-TRIN 2025/1, ESI-III-6 2.1: 270 x P_B x L_S / B_S, with P_B { $power } kW, L_S { $ls } m taken as the pusher length, B_S { $bs } m).
 note-formation-service-margins = Service margins, shown and not used to size the tug: the still-water power in deep water at the design speed, { $p0 } kW, x the sea margin 1.15 x the engine margin 1/0.90 (MAN B&W, Basic Principles of Ship Propulsion, p. 27 and Fig. 17) = { $total } kW, for an installed power of { $installed } kW.
-warn-formation-blind-distance-lift = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. The Blind Distance light is { $blind } m, more than { $limit } m (ES-TRIN 7.02(2)).
-warn-formation-blind-distance-hidden = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. At that height the barges hide the water ahead (ES-TRIN 7.02(2): at most { $limit } m).
+warn-formation-blind-distance-lift = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. The Blind Distance light is { $blind } m, more than { $limit } m (limit from the Rule Sets of the stack).
+warn-formation-blind-distance-hidden = The tug's view over the barges needs { $needed } m of wheelhouse lift; the tug gives { $max_lift } m. At that height the barges hide the water ahead (limit from the Rule Sets of the stack: at most { $limit } m).
 
 ## crates/ovd-format/src/gas_fuel.rs
 
@@ -447,6 +455,7 @@ msg-containment-cargo = `{ $input }` = { $containment } cannot carry { $cargo } 
 msg-freeboard-depth = `{ $input }` = { $freeboard } must be less than `{ $depth_input }` = { $depth } (hard limit)
 msg-whole-number = `{ $input }` = { $value } must be a whole number (hard limit)
 msg-insulation-disagree = `{ $input }` is { $kind } but `{ $thickness_input }` is { $thickness }: the type and the thickness disagree (soft check); accepted
+msg-insulation-defaults-of-other-type = `{ $input }` is { $typed }, but `{ $conductivity }` and `{ $density }` still hold the defaults for { $default }: type the values for { $typed } (soft check); accepted
 msg-loading-above-marvs = `{ $input }` = { $value }: the vapour pressure of { $cargo } there is { $pressure } bar, above the MARVS of { $marvs } bar absolute; the tank is loaded to the filling limit, not above (soft check); accepted
 msg-stress-from-input = `{ $input }`
 msg-stress-from-basis = the `published_design` allowable stress basis

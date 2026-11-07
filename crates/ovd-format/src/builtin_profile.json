@@ -533,7 +533,7 @@
           }
         ]
       },
-      "basis": "The kind of insulation on the tank. The engine uses one density for every kind (60 kg/m3, carried over from the original engine); the type is recorded and shown with the results. The default depends on the Cargo and the carriage condition"
+      "basis": "The kind of insulation on the tank. The type is recorded and shown with the results; it does not set the conductivity or the density, which are their own inputs (Tank insulation conductivity, Tank insulation density). The default depends on the Cargo and the carriage condition"
     },
     "tank_insulation_thickness_mm": {
       "default_by_table": {
@@ -565,6 +565,56 @@
       "hard": { "ge": 0, "le": 1000 },
       "soft": { "min": 0, "max": 400 },
       "basis": "The insulation on the tank, in mm. The tank outer diameter is measured to the outside of this layer: the clearances and the drawing use that face, and the steel diameter is the outer diameter less twice this thickness. The default depends on the Cargo and the carriage condition"
+    },
+    "tank_insulation_conductivity_w_per_mk": {
+      "default_by_table": {
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "rows": [
+          {
+            "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
+            "value": 0.026,
+            "status": "estimate",
+            "source": "Stand-in: the foam value of the other rows (Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3). The tank itself is uninsulated: Owner's published Form C sheet and general arrangement drawing of a pressurised LPG carrier built 2007",
+            "basis": "Not used while the thickness is 0: no heat leak is worked out. The value is the foam value, as a stand-in if you add insulation"
+          },
+          {
+            "when": {},
+            "value": 0.026,
+            "status": "estimate",
+            "source": "Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3: polyurethane foam of 96 kg/m3, 0.0266 W/m.K at 200 K and 0.0248 at 230 K (the table prints mW/m.K; its values show W/m.K). Hand check of the example's tank in issue #918",
+            "basis": "Polyurethane foam, at the mean of the cargo and the ambient temperature (about 215 K). It is also the basis for an insulation panel: no maker's data was found for the panel. Foam without a vacuum is 0.035 to 0.055 W/m.K and vacuum perlite 0.001 to 0.016 W/m.K, so type your own value for another system"
+          }
+        ]
+      },
+      "unit": "W/m.K",
+      "hard": { "gt": 0, "le": 10 },
+      "soft": { "min": 0.001, "max": 0.06 },
+      "basis": "The thermal conductivity of the tank insulation. The heat leak (and so the boil-off) and the holding time read it. It is the value for the default insulation type of the Cargo; if you type another Insulation type, type its value too. The default depends on the Cargo and the carriage condition"
+    },
+    "tank_insulation_density_kg_m3": {
+      "default_by_table": {
+        "by": ["cargo_containment", "cargo", "lpg_carriage_condition"],
+        "rows": [
+          {
+            "when": { "cargo": ["LPG_propane", "LPG_butane", "LPG_mix"], "lpg_carriage_condition": "fully_pressurised" },
+            "value": 96.0,
+            "status": "estimate",
+            "source": "Stand-in: the value of the other rows. The tank itself is uninsulated: Owner's published Form C sheet and general arrangement drawing of a pressurised LPG carrier built 2007: 17.65 barg, 0 to 45 C, tanks not insulated",
+            "basis": "Not used while the thickness is 0 (no insulation, so no mass). The value stands in for a thickness you type, so the insulation then has a mass"
+          },
+          {
+            "when": {},
+            "value": 96.0,
+            "status": "estimate",
+            "source": "Lee et al., J. Mar. Sci. Eng. 2021, 9, 36, Table 3: the polyurethane foam of the conductivity value is 96 kg/m3. Issue #918; maintainer decision on #919",
+            "basis": "The density of the foam that the conductivity is for (96 kg/m3), for polyurethane foam. For the insulation panel it stands in for a panel with facings, whose density no maker data was found for. The engine used 60 kg/m3 before (carried over from the original engine), which has no source. A file saved before this input keeps 60. Perlite is 40 to 300 kg/m3: type your own value for another system"
+          }
+        ]
+      },
+      "unit": "kg/m3",
+      "hard": { "ge": 0, "le": 2000 },
+      "soft": { "min": 0, "max": 300 },
+      "basis": "The density of the tank insulation. The insulation mass is its volume times this. The default depends on the Cargo and the carriage condition"
     },
     "tank_structure_factor": {
       "default_by_table": {
@@ -956,6 +1006,13 @@
       "hard": { "gt": 0, "le": 1000 },
       "soft": { "min": 3.0, "max": 40.0 },
       "basis": "catalogue air drafts span 3.0 to 35.5 m"
+    },
+    "bridge_clearance_m": {
+      "default": null,
+      "unit": "m",
+      "hard": { "gt": 0, "le": 1000 },
+      "soft": { "min": 3.0, "max": 40.0 },
+      "basis": "the clearance under the lowest fixed bridge on the route, above the water (issue #991). Type it from the route's own bridge data: no Service Area has a default, as the lowest bridge differs from one waterway to the next. For orientation only, and unverified (the document was not read; the figures are as a secondary summary gives them): the UNECE Inventory of Main Standards and Parameters of the E Waterway Network (ECE/TRANS/SC.3/144) is said to give 5.25 m, 7.00 m and 9.10 m minimum heights under bridges for two, three and four container layers, and to ask for 9.10 m on routes linked to the coast. The air draft is the vessel's own: the wheelhouse of a tug is not counted for a pushed or ATB design. An air draft over it gives a warning that names the highest point, never a block: the design stands. Unlike the air-draft limit, which is a design limit and blocks. none: no bridge limit is given, so no warning"
     },
     "downflooding_angle_deg": {
       "default": null,
@@ -1408,7 +1465,7 @@
       "default": "blind_distance",
       "status": "sourced",
       "source": "ES-TRIN 2025, Article 7.02(2): the blind distance ahead of the bow, a distance rather than a margin",
-      "basis": "How the wheelhouse sightline is checked: margin (today's check: the eye clears the cargo top by a margin) or blind_distance (the distance ahead hidden by the cargo, the deck units and the bow, ES-TRIN 7.02(2): at most 250 m, unladen; the wheelhouse lifts as far as that needs, up to its maximum lift; issue #354). A file saved before keeps margin"
+      "basis": "How the wheelhouse sightline is checked: margin (today's check: the eye clears the cargo top by a margin) or blind_distance (the distance ahead hidden by the cargo, the deck units and the bow; the wheelhouse lifts as far as the limit needs, up to its maximum lift; issue #354). The limit is read from the blocking Rules of the stack's Rule Sets, not typed (issue #989): ES-TRIN 7.02(2), 250 m unladen, in both default stacks, and on a coastal stack SOLAS V/22.1.1 as well, two ship lengths or 500 m, whichever is less, light and laden. The least limit of a condition binds. A file saved before keeps margin"
     },
     "stern_block_mass_included": {
       "default": true,

@@ -4,11 +4,16 @@
 //! Hand sums, on a 20.0 m beam, 6.0 m depth, no machinery (the thruster room, 3.50 m, is the
 //! machinery run), six 40 ft accommodation units in the container block:
 //! - Deckhouse width: 20.0 - 2 x 0.8 side deck = 18.4 m; one tier 3.50 x 18.4 = 64.4 m2.
-//! - Accommodation floor held: 6 x 12.192 x 2.438 = 178.344576 m2; 178.344576 / 64.4 = 2.77 -> 3 tiers.
-//! - Tier height 2.6 m (an estimate), so the top is 6.0 + 3 x 2.6 = 13.8 m; the wheelhouse floor
-//!   stands there and its top at 13.8 + 3.4 = 17.2 m.
-//! - Volume 3 x 64.4 x 2.6 = 502.32 m3; steel at 0.057 t/m3 (Schneekluth and Bertram, Table 5.2,
-//!   p. 164, layer I, an unverified estimate) = 28.63224 t. The wheelhouse (3.6 m long) stands at
+//! - Accommodation floor held: 6 x 12.192 x 2.438 = 178.344576 m2. Issue #943: the floor needed is
+//!   that plus the service allowance (20 m2) plus one stairway (1.6 m2) for each tier above the
+//!   first. Three tiers: 178.344576 + 20 + 3.2 = 201.54 m2 against 3 x 64.4 = 193.2 m2, too little;
+//!   four tiers: 203.14 m2 against 257.6 m2 -> 4 tiers. Each would be 203.14 / (4 x 18.4) = 2.76 m
+//!   long, but a room tier is not shorter than the wheelhouse (3.6 m) and the house is only 3.5 m,
+//!   so each is the full 3.5 m.
+//! - Tier height 2.6 m (an estimate), so the top is 6.0 + 4 x 2.6 = 16.4 m; the wheelhouse floor
+//!   stands there and its top at 16.4 + 3.4 = 19.8 m.
+//! - Volume 4 x 64.4 x 2.6 = 669.76 m3; steel at 0.057 t/m3 (Schneekluth and Bertram, Table 5.2,
+//!   p. 164, layer I, an unverified estimate) = 38.17632 t. The wheelhouse (3.6 m long) stands at
 //!   the deckhouse front and cannot start aft of the stern, so here it is 3.5 m long: steel
 //!   3.5 x 6.4 x 3.4 = 76.16 m3 x 0.057 = 4.34112 t.
 //!
@@ -74,10 +79,10 @@ fn a_deckhouse_has_the_tiers_the_accommodation_needs() {
         "{}",
         d.required_area_m2
     );
-    assert_eq!(d.tiers, 3);
-    assert!(close(d.top_m, 13.8), "{}", d.top_m);
-    assert!(close(d.area_m2, 193.2), "{}", d.area_m2);
-    assert!(close(d.volume_m3, 502.32), "{}", d.volume_m3);
+    assert_eq!(d.tiers, 4);
+    assert!(close(d.top_m, 16.4), "{}", d.top_m);
+    assert!(close(d.area_m2, 257.6), "{}", d.area_m2);
+    assert!(close(d.volume_m3, 669.76), "{}", d.volume_m3);
     assert!(close(d.x_fwd_m, 3.5) && d.x_aft_m == 0.0);
     assert!(!d.wheelhouse_elevating);
 }
@@ -111,12 +116,12 @@ fn battery_units_still_stand_on_deck_forward_of_the_deckhouse() {
 fn the_wheelhouse_stands_on_the_top_tier_at_the_deckhouse_front() {
     let r = compute(&deckhouse_inputs()).unwrap();
     let d = r.deckhouse.as_ref().unwrap();
-    assert!(close(r.wheelhouse_floor_lowered_m, 13.8));
-    assert!(close(r.wheelhouse_top_lowered_m, 17.2));
+    assert!(close(r.wheelhouse_floor_lowered_m, 16.4));
+    assert!(close(r.wheelhouse_top_lowered_m, 19.8));
     assert!(close(r.wheelhouse_x1_m, d.x_fwd_m));
     // The block's tallest point is the wheelhouse top: no battery unit stands on this hull.
     assert!(
-        close(r.block_top_lowered_m, 17.2),
+        close(r.block_top_lowered_m, 19.8),
         "{}",
         r.block_top_lowered_m
     );
@@ -125,20 +130,20 @@ fn the_wheelhouse_stands_on_the_top_tier_at_the_deckhouse_front() {
     i.sightline_obstruction_m = Some(30.0);
     let r = compute(&i).unwrap();
     assert_eq!(r.wheelhouse_lift_m, 0.0);
-    assert!(r.deckhouse.as_ref().unwrap().tiers > 3);
+    assert!(r.deckhouse.as_ref().unwrap().tiers > 4);
 }
 
 #[test]
 fn an_elevating_wheelhouse_lifts_from_the_top_tier() {
-    // D4: with an air-draft limit the wheelhouse elevates. Eye 13.8 + 1.5 = 15.3 m; the sightline
-    // needs 15.0 + 0.5 = 15.5 m: a lift of 0.2 m.
+    // D4: with an air-draft limit the wheelhouse elevates. Eye 16.4 + 1.5 = 17.9 m; the sightline
+    // needs 18.0 + 0.5 = 18.5 m: a lift of 0.6 m.
     let mut i = deckhouse_inputs();
     i.wheelhouse_max_lift_m = 6.0;
-    i.sightline_obstruction_m = Some(15.0);
+    i.sightline_obstruction_m = Some(18.0);
     let r = compute(&i).unwrap();
     assert!(r.deckhouse.as_ref().unwrap().wheelhouse_elevating);
-    assert!(close(r.wheelhouse_lift_m, 0.2), "{}", r.wheelhouse_lift_m);
-    assert!(close(r.wheelhouse_floor_raised_m, 14.0));
+    assert!(close(r.wheelhouse_lift_m, 0.6), "{}", r.wheelhouse_lift_m);
+    assert!(close(r.wheelhouse_floor_raised_m, 17.0));
 }
 
 #[test]
@@ -176,7 +181,7 @@ fn the_deckhouse_steel_is_volume_times_the_textbook_rate() {
     let items = mass_items(&r, &i);
     let get = |n: &str| items.iter().find(|(l, _)| l == n).map(|(_, m)| *m);
     assert!(
-        close(get("deckhouse steel").unwrap(), 28.632_24),
+        close(get("deckhouse steel").unwrap(), 38.176_32),
         "{items:?}"
     );
     assert!(
@@ -250,7 +255,7 @@ fn a_fixed_wheelhouse_gets_tiers_until_its_eye_clears_the_cargo() {
     );
     // An elevating wheelhouse lifts instead of adding tiers.
     i.wheelhouse_max_lift_m = 12.0;
-    assert_eq!(compute(&i).unwrap().deckhouse.unwrap().tiers, 3);
+    assert_eq!(compute(&i).unwrap().deckhouse.unwrap().tiers, 4);
 }
 
 #[test]
@@ -289,43 +294,59 @@ fn the_second_pass_on_the_light_waterline_never_adds_a_tier_and_keeps_the_sightl
 }
 
 #[test]
-fn on_a_hull_under_125_m_solas_governs_the_fixed_wheelhouse_and_adds_a_tier() {
-    // Issue #779, maintainer decision: a coastal deckhouse is sized to the stricter of the 250 m
-    // ES-TRIN Blind Distance and SOLAS V/22.1.1, min(2 L, 500 m). Under 125 m, 2 L is under 250 m, so
-    // SOLAS governs; at and over 125 m ES-TRIN does.
-    use ovd_core::barge_capacity::{BargeCapacityInputs, compute as capacity};
-    use ovd_core::wheelhouse::solas_v22_limit_m;
-    assert_eq!(solas_v22_limit_m(44.9), None);
-    assert_eq!(solas_v22_limit_m(110.0), Some(220.0));
-    assert_eq!(solas_v22_limit_m(300.0), Some(500.0));
-    let run = |loa: f64, solas: bool| {
-        let mut i = BargeCapacityInputs::new(loa, 11.4, 6.0);
-        i.cargo_type = "LPG_propane".to_string();
-        i.self_propelled = true;
-        i.sightline_limit_m = Some(250.0);
-        i.solas_v22_sizing = solas;
-        i.aft_design.arrangement_style = ArrangementStyle::Deckhouse;
-        i.aft_design.wheelhouse_max_lift_m = 0.0;
-        let r = capacity(&i).unwrap();
-        let tiers = r
-            .aft_arrangement
-            .as_ref()
-            .unwrap()
-            .deckhouse
-            .as_ref()
-            .unwrap()
-            .tiers;
-        (tiers, r.sightline.as_ref().unwrap().blind_distance_m)
-    };
-    // 60 m: the ES-TRIN sizing leaves a light Blind Distance of 234.7 m, over 2 L = 120 m; SOLAS adds
-    // the tier that brings it to 105.0 m.
-    let (es_trin_tiers, es_trin_blind) = run(60.0, false);
-    let (solas_tiers, blind) = run(60.0, true);
-    assert_eq!((es_trin_tiers, solas_tiers), (3, 4));
+fn a_tighter_blind_distance_limit_adds_a_tier_to_the_fixed_wheelhouse() {
+    // Issue #989: the limit is an input, read from the Rule Sets of the stack (ES-TRIN 250 m, and under
+    // 125 m SOLAS V/22.1.1: 2 L). The wheelhouse is sized to the one it is given, the least that binds.
+    // On a 60 m hull the 250 m limit leaves a light Blind Distance of 234.7 m; 2 L = 120 m adds a tier.
+    let (loose_tiers, loose_blind) = deckhouse_run(60.0, Some(250.0), None);
+    let (tight_tiers, tight_blind) = deckhouse_run(60.0, Some(250.0), Some(120.0));
+    let (blocking_tiers, _) = deckhouse_run(60.0, Some(120.0), None);
+    assert_eq!((loose_tiers, tight_tiers), (3, 4));
+    assert_eq!(blocking_tiers, tight_tiers);
     assert!(
-        es_trin_blind > 120.0 && blind <= 120.0 + 1e-9,
-        "{es_trin_blind}, {blind}"
+        loose_blind > 120.0 && tight_blind <= 120.0 + 1e-9,
+        "{loose_blind}, {tight_blind}"
     );
-    // At 125 m and over the two limits are the same, so the tiers are too.
-    assert_eq!(run(130.0, true).0, run(130.0, false).0);
+}
+
+#[test]
+fn a_warning_only_solas_limit_still_sizes_the_fixed_wheelhouse_but_130_m_is_unchanged() {
+    // Issue #779, ADR 0007, kept by #989: an old file's coastal stack holds SOLAS V/22.1.1 as a warning
+    // (`solas-v22` 1.x). The house is still sized to min(250 m, 2 L), as before, and the Rule only warns:
+    // the blocking limit stays at 250 m. At 125 m and over the two limits are the same, so the tiers are too.
+    assert_eq!(
+        deckhouse_run(60.0, Some(250.0), Some(120.0)).0,
+        deckhouse_run(60.0, Some(120.0), None).0
+    );
+    assert!(
+        deckhouse_run(60.0, Some(250.0), Some(120.0)).0 > deckhouse_run(60.0, Some(250.0), None).0
+    );
+    assert_eq!(
+        deckhouse_run(130.0, Some(250.0), Some(250.0)).0,
+        deckhouse_run(130.0, Some(250.0), None).0
+    );
+    assert!(deckhouse_run(60.0, Some(250.0), Some(120.0)).1 <= 120.0 + 1e-9);
+}
+
+/// A fixed-wheelhouse deckhouse hull of `loa` m with a blocking light limit and a sizing limit (the least
+/// of the blocking and warning Rules); (tiers, light Blind Distance).
+fn deckhouse_run(loa: f64, limit: Option<f64>, sizing: Option<f64>) -> (u32, f64) {
+    use ovd_core::barge_capacity::{BargeCapacityInputs, compute as capacity};
+    let mut i = BargeCapacityInputs::new(loa, 11.4, 6.0);
+    i.cargo_type = "LPG_propane".to_string();
+    i.self_propelled = true;
+    i.sightline_limit_m = limit;
+    i.sightline_sizing_limit_m = sizing;
+    i.aft_design.arrangement_style = ArrangementStyle::Deckhouse;
+    i.aft_design.wheelhouse_max_lift_m = 0.0;
+    let r = capacity(&i).unwrap();
+    let tiers = r
+        .aft_arrangement
+        .as_ref()
+        .unwrap()
+        .deckhouse
+        .as_ref()
+        .unwrap()
+        .tiers;
+    (tiers as u32, r.sightline.as_ref().unwrap().blind_distance_m)
 }

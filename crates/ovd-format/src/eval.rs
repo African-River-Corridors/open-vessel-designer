@@ -534,7 +534,42 @@ pub(crate) fn aft_json(r: &AftArrangementResult) -> Value {
     if let Some(d) = &r.deckhouse {
         v["deckhouse"] = deckhouse_json(d);
     }
+    // Issue #994: the forward house, for `wheelhouse_forward` only.
+    if let Some(f) = &r.forward_house {
+        v["forward_house"] = json!({
+            "x_aft_m": num(f.x_aft_m),
+            "x_fwd_m": num(f.x_fwd_m),
+            "width_m": num(f.width_m),
+            "base_m": num(f.base_m),
+            "tiers": f.tiers,
+            "tier_height_m": num(f.tier_height_m),
+            "top_m": num(f.top_m),
+            "tier_area_m2": num(f.tier_area_m2),
+            "area_m2": num(f.area_m2),
+            "volume_m3": num(f.volume_m3),
+            "cargo_length_lost_m": num(f.cargo_length_lost_m),
+            "holds": ovd_core::aft_arrangement::forward_house_sizes::HOLDS,
+            "size_status": "estimate",
+        });
+    }
+    // Issue #994: what the wings of the forward wheelhouse see aft.
+    if let Some(w) = &r.wing_view {
+        v["wing_view"] = wing_view_json(w);
+    }
     v
+}
+
+/// The view aft from the wings of a forward wheelhouse (issue #994). Cameras are an open item.
+pub(crate) fn wing_view_json(w: &ovd_core::rear_view::WingView) -> Value {
+    json!({
+        "wing_y_m": num(w.wing_y_m),
+        "cargo_outboard_y_m": num(w.cargo_outboard_y_m),
+        "hull_half_beam_m": num(w.hull_half_beam_m),
+        "short_by_m": num(w.short_by_m),
+        "sees_full_hull_side": w.sees_full_hull_side,
+        "cameras": "open_item",
+        "cameras_note": ovd_core::rear_view::CAMERAS_OPEN_ITEM,
+    })
 }
 
 /// The deckhouse of a stern block (issue #779, spec 0011 D3, D4, D6). The sizes are estimates, and
@@ -548,9 +583,21 @@ fn deckhouse_json(d: &ovd_core::aft_arrangement::Deckhouse) -> Value {
         "tiers": d.tiers,
         "tier_height_m": num(d.tier_height_m),
         "top_m": num(d.top_m),
+        "tiers_plan": d.tiers_plan.iter().map(|t| json!({
+            "kind": t.kind.key(),
+            "x_aft_m": num(t.x_aft_m),
+            "x_fwd_m": num(t.x_fwd_m),
+            "width_m": num(t.width_m),
+            "base_m": num(t.base_m),
+            "area_m2": num(t.area_m2()),
+        })).collect::<Vec<_>>(),
         "tier_area_m2": num(d.tier_area_m2),
         "area_m2": num(d.area_m2),
         "volume_m3": num(d.volume_m3),
+        "room_tiers": d.tiers_plan.iter().filter(|t| t.kind == ovd_core::aft_arrangement::TierKind::Rooms).count(),
+        "access_tiers": d.tiers_plan.iter().filter(|t| t.kind == ovd_core::aft_arrangement::TierKind::Access).count(),
+        "service_allowance_m2": num(ovd_core::aft_arrangement::deckhouse_sizes::SERVICE_ALLOWANCE_M2),
+        "service_allowance_basis": ovd_core::aft_arrangement::deckhouse_sizes::SERVICE_ALLOWANCE_BASIS,
         "required_area_m2": num(d.required_area_m2),
         "required_area_basis": d.required_area_basis,
         "wheelhouse": if d.wheelhouse_elevating { "elevating" } else { "fixed" },

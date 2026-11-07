@@ -346,6 +346,15 @@ pub static MEASURES: &[MeasureDef] = &[
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {
+        id: "wheelhouse.ship_length",
+        unit: "m",
+        object: ObjectType::Option,
+        value: ValueKind::Number,
+        args: &[],
+        method: "The length overall of the ship whose blind distance is limited (SOLAS V/22.1.1: two ship lengths): the Option's length overall, or for a Formation whose tug has a sightline the length of the unit, tug and barges (issue #989)",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
         id: "powering.speed_through_water_kmh",
         unit: "km/h",
         object: ObjectType::Option,
@@ -436,6 +445,24 @@ pub static MEASURES: &[MeasureDef] = &[
         value: ValueKind::Bool,
         args: &[],
         method: "Whether the helmsman's field of unobstructed vision meets 7.02(3); the model has no window geometry",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "wheelhouse.wing_sees_hull_side",
+        unit: "-",
+        object: ObjectType::Option,
+        value: ValueKind::Bool,
+        args: &[],
+        method: "Whether a wing of a forward wheelhouse sees the full hull side aft (SOLAS V/22.1.4, 22.1.6): the wing reaches the hull side: its outboard end (the side of the forward house, until the wing reach is an input) is at least the hull half-beam from the centreline, whatever the cargo does. On plan only; no camera is credited (issue #994). Only an Option with the wheelhouse forward has a value",
+        method_status: MethodStatus::Unverified,
+    },
+    MeasureDef {
+        id: "wheelhouse.wing_short_by",
+        unit: "m",
+        object: ObjectType::Option,
+        value: ValueKind::Number,
+        args: &[],
+        method: "How far the wing of a forward wheelhouse falls short of the hull side (the hull half-beam less the wing's reach, m); nought when it does not (issue #994). Only an Option with the wheelhouse forward has a value",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {
@@ -870,7 +897,7 @@ pub static MEASURES: &[MeasureDef] = &[
         object: ObjectType::DamageCase,
         value: ValueKind::Bool,
         args: &[],
-        method: "The damaged hull meets the damage criteria of the Rule's set. ADN 2025 9.3.2.15.2 and 9.3.3.15.2 (liquid bulk): the heel at the stage of equilibrium is at most 12 degrees and, beyond it, the righting lever reaches 0.05 m with an area of 0.0065 m.rad up to 27 degrees. IGC 2.7.1.2 and 2.7.2.1 (gas, spec 0012): a heel of at most 30 degrees and a range of 20 degrees from the equilibrium with 0.1 m and 0.0175 m.rad, on every IS Code loading condition; a breached Type C tank loses its cargo, an intact one keeps its buoyancy in a flooded hold. Lost buoyancy method on the Sections Table, final stage of flooding only: the intermediate stages, the non-watertight openings and the flooding of undamaged compartments are not modelled. Probabilistic damage stability (SOLAS II-1 Part B-1) is not applied: OVD's vessels are outside its scope (ADR 0011; research note docs/research/damage-stability.md, 2.4)",
+        method: "The damaged hull meets the damage criteria of the Rule's set. ADN 2025 9.3.2.15.2 and 9.3.3.15.2 (liquid bulk): the heel at the stage of equilibrium is at most 12 degrees and, beyond it, the righting lever reaches 0.05 m with an area of 0.0065 m.rad up to 27 degrees. IGC 2.7.1.2 and 2.7.2.1 (gas, spec 0012): a heel of at most 30 degrees and a range of 20 degrees from the equilibrium with 0.1 m and 0.0175 m.rad, on every IS Code loading condition; a breached Type C tank loses its cargo, an intact one keeps its buoyancy in a flooded hold. Lost buoyancy method on the Sections Table for the final stage of flooding; the intermediate stages are by added mass (see `stability.damage_stage_heel`). The non-watertight openings and the flooding of undamaged compartments are not modelled. Probabilistic damage stability (SOLAS II-1 Part B-1) is not applied: OVD's vessels are outside its scope (ADR 0011; research note docs/research/damage-stability.md, 2.4)",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {
@@ -879,7 +906,7 @@ pub static MEASURES: &[MeasureDef] = &[
         object: ObjectType::DamageCase,
         value: ValueKind::Number,
         args: &[],
-        method: "The largest angle of heel of the damaged hull at any stage of flooding: the intermediate stages at 25, 50 and 75 % of the final flood and the final stage (spec 0012 D15). Intermediate stages by added mass: every damaged Space holds the same fraction of its final water, level and upright, as a mass at its centroid, with the free surface of its gross surface (ES-TRIN 2025/1 28.03(4)(e)); a breached tank's cargo stays aboard until the final stage. A stage with no floating position has no value",
+        method: "The largest angle of heel of the damaged hull at any stage of flooding: the intermediate stages at 25, 50 and 75 % of the final flood and the final stage (spec 0012 D15). Intermediate stages by added mass: every damaged Space holds the same fraction of its final water, level and upright, as a mass at its centroid, with the free surface of its gross surface (ES-TRIN 2025/1 28.03(4)(e)); a breached tank holds sea water to the stage's fraction of its flood and keeps its cargo for the rest (its share of the cargo leaves in step with the inflow, spec 0012 D18a; IGC gives no stage method), the cargo of an intact tank stays aboard. A stage with no floating position has no value",
         method_status: MethodStatus::Unverified,
     },
     MeasureDef {

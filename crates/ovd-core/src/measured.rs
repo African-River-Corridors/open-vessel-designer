@@ -45,6 +45,10 @@ pub struct Measured {
     /// no wheelhouse of its own (issue #355).
     pub blind_distance_light_m: Option<f64>,
     pub blind_distance_laden_m: Option<f64>,
+    /// Issue #989: the length overall of the unit (tug and barges) of a Formation whose tug has a
+    /// sightline, in place of the Option's own `length_overall_m` (the barge's) for the Rules: SOLAS V/22.1.1
+    /// limits the blind distance of the ship, and the ship is the unit. `None`: the Option's own length.
+    pub unit_length_overall_m: Option<f64>,
     /// The speed through the water at the installed power, kn, laden, in each environment of the
     /// powering, by the environment's name. Empty for a hull with no machinery of its own.
     pub speeds_kn: Vec<(String, f64)>,
@@ -156,6 +160,19 @@ pub fn loading_condition_kind(name: &str) -> &'static str {
         "Lightship, no ballast" => "lightship-no-ballast",
         "Light" => "legacy-light",
         _ => "standard",
+    }
+}
+
+impl Measured {
+    /// The view aft from the wings of a forward wheelhouse (issue #994); `None` for any other style.
+    pub fn wing_view(&self) -> Option<&crate::rear_view::WingView> {
+        self.vessel
+            .as_ref()?
+            .result
+            .aft_arrangement
+            .as_ref()?
+            .wing_view
+            .as_ref()
     }
 }
 
@@ -559,11 +576,16 @@ impl Measured {
                 }
                 _ => false,
             },
+            "wheelhouse.ship_length" => true,
             "powering.speed_through_water_kmh" => !self.speeds_kn.is_empty(),
             "powering.speed_over_design" => {
                 !self.speeds_kn.is_empty() && self.design_speed_kn.is_some()
             }
             "wheelhouse.lift_enough" => self.lift_enough.is_some(),
+            // Issue #994: the wing view of a forward wheelhouse.
+            "wheelhouse.wing_sees_hull_side" | "wheelhouse.wing_short_by" => {
+                self.wing_view().is_some()
+            }
             // Issue #781: the deckhouse rooms of a deckhouse stern; none on the container block.
             id if id.starts_with("rooms.") => self.rooms().is_some_and(|r| !r.rows.is_empty()),
             "powering.depth_over_draught" => self.depth_over_draught.is_some(),
@@ -750,6 +772,16 @@ impl Measured {
         }
         if let Some(name) = m.id.strip_prefix("rooms.") {
             return self.rooms_value(name, m);
+        }
+        if m.id == "wheelhouse.wing_sees_hull_side" || m.id == "wheelhouse.wing_short_by" {
+            let w = self
+                .wing_view()
+                .ok_or_else(|| "the Option has no forward wheelhouse".to_string())?;
+            return Ok(if m.id == "wheelhouse.wing_short_by" {
+                MeasureValue::Number(w.short_by_m)
+            } else {
+                MeasureValue::Bool(w.sees_full_hull_side)
+            });
         }
         if m.id == "wheelhouse.lift_enough" {
             return self

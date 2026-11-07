@@ -241,6 +241,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -471,7 +475,7 @@
           "source": "default"
         }
       },
-      "results_hash": "64c27c013c38ed399160b43d940c974ab863c95335e7f011ae74485fe79cd57b"
+      "results_hash": "60fd6cb13cac624fb18bdc7a28130ce66a8c402745cf48d1e7f5b33fbe221c55"
     }
   ],
   "defaults_profile": "built-in"

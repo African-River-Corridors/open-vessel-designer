@@ -46,7 +46,12 @@ def test_simulate_reads_numbers_written_as_text(text):
     # Re-pinned (issue #937: a key left out takes the Defaults Profile value, the gas tank wall, design
     # pressure and insulation among them, and the run's rooms and consumables are in the lightship;
     # #932 rows 3, 5 to 13); was 1470.3520725239787.
-    assert out["results"]["cargo_t"] == pytest.approx(1803.8724019746735, rel=1e-9, abs=1e-9)
+    # Re-pinned (issue #943: the deckhouse is sized from what it holds; the tank fit, which depends on
+    # the house, now picks 12.0 m tanks where it picked 11.0 m, so this tank-volume-bound hull carries
+    # more; lightship rises, as the larger tanks add a tier (4 to 5) and the house grows taller with
+    # them, and the light air draft rises from 18.36 to 20.92 m; the house area still falls, 941 to
+    # 291 m2); was 1803.8724019746735.
+    assert out["results"]["cargo_t"] == pytest.approx(2131.1339550254584, rel=1e-9, abs=1e-9)
 
 
 def test_simulate_reads_every_number_as_text():

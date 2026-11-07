@@ -179,6 +179,12 @@ choice-tank-insulation-type-panel = Insulation panel
 input-tank-insulation-thickness-mm = Tank insulation thickness
 input-tank-insulation-thickness-mm-default-by = Cargo, LPG carriage condition
 
+input-tank-insulation-conductivity-w-per-mk = Tank insulation conductivity
+input-tank-insulation-conductivity-w-per-mk-default-by = Cargo, LPG carriage condition
+
+input-tank-insulation-density-kg-m3 = Tank insulation density
+input-tank-insulation-density-kg-m3-default-by = Cargo, LPG carriage condition
+
 input-holding-profile = Holding-time profile
 
 input-holding-preset = Holding-time preset
@@ -501,6 +507,8 @@ input-wheelhouse-max-lift-m = Wheelhouse maximum lift
 
 input-air-draft-limit-m = Air-draft limit
 
+input-bridge-clearance-m = Bridge clearance
+
 input-draught-limit-m = Draught limit
 
 input-lock-length-m = Lock length
@@ -628,6 +636,7 @@ input-arrangement-style = Arrangement Style
 input-arrangement-style-default-by = service_area
 choice-arrangement-style-container-block = Container block
 choice-arrangement-style-deckhouse = Deckhouse
+choice-arrangement-style-wheelhouse-forward = Wheelhouse forward
 
 input-crew = Crew
 

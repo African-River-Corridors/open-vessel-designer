@@ -36,7 +36,13 @@ pub const DEFAULT_WHEELHOUSE_LENGTH_M: f64 = 3.60;
 pub const DEFAULT_WHEELHOUSE_WIDTH_M: f64 = 6.40;
 pub const DEFAULT_WHEELHOUSE_HEIGHT_M: f64 = 3.40;
 pub const DEFAULT_WHEELHOUSE_GAP_M: f64 = 0.30;
+/// The eye height the engine reads when an input is absent, and what a file saved before the input
+/// existed keeps (ADR 0007: its results do not move): 1.50 m, an estimate carried over from the original
+/// engine. A new Option takes [`ES_TRIN_EYE_ABOVE_FLOOR_M`] from the Defaults Profile.
 pub const DEFAULT_WHEELHOUSE_EYE_ABOVE_FLOOR_M: f64 = 1.50;
+/// The helmsman's eye above the wheelhouse floor at the steering position: 1.65 m, as ES-TRIN 2025/1
+/// Art. 7.02(3) states (issue #990). The sightline of a tug has no input for it, so it reads this.
+pub const ES_TRIN_EYE_ABOVE_FLOOR_M: f64 = 1.65;
 pub const DEFAULT_SIGHTLINE_MARGIN_M: f64 = 0.50;
 pub const DEFAULT_WHEELHOUSE_MAX_LIFT_M: f64 = 6.00;
 
@@ -53,10 +59,15 @@ pub enum ArrangementStyle {
     ContainerBlock,
     /// The rules-sized deckhouse stern (the default of a new coastal Option).
     Deckhouse,
+    /// Issue #994: the machinery and the main accommodation stay aft, in a deckhouse as in
+    /// `Deckhouse`, but the wheelhouse stands in a small house over the forepeak, with a watch room
+    /// and a muster point. No gas-cargo vessel in service has this layout, so a design that takes it
+    /// is flagged for a hazard study.
+    WheelhouseForward,
 }
 
 /// The keys of [`ArrangementStyle`], as the `arrangement_style` input names them.
-pub const ARRANGEMENT_STYLES: [&str; 2] = ["container_block", "deckhouse"];
+pub const ARRANGEMENT_STYLES: [&str; 3] = ["container_block", "deckhouse", "wheelhouse_forward"];
 
 impl ArrangementStyle {
     /// The key the `arrangement_style` input holds.
@@ -64,7 +75,19 @@ impl ArrangementStyle {
         match self {
             Self::ContainerBlock => "container_block",
             Self::Deckhouse => "deckhouse",
+            Self::WheelhouseForward => "wheelhouse_forward",
         }
+    }
+
+    /// The style holds the accommodation in a deckhouse over the machinery space (no 40 ft
+    /// accommodation unit on deck): `Deckhouse` and `WheelhouseForward`.
+    pub fn has_aft_deckhouse(self) -> bool {
+        matches!(self, Self::Deckhouse | Self::WheelhouseForward)
+    }
+
+    /// The wheelhouse stands in a house forward, not on the aft deckhouse (issue #994).
+    pub fn is_wheelhouse_forward(self) -> bool {
+        self == Self::WheelhouseForward
     }
 
     /// The style a key names; `None` for any other text.
@@ -72,6 +95,7 @@ impl ArrangementStyle {
         match key {
             "container_block" => Some(Self::ContainerBlock),
             "deckhouse" => Some(Self::Deckhouse),
+            "wheelhouse_forward" => Some(Self::WheelhouseForward),
             _ => None,
         }
     }
@@ -92,6 +116,16 @@ pub mod deckhouse_sizes {
     /// The side deck each side of the deckhouse, so the deckhouse is the beam less two of them (m).
     /// An estimate: a passage along the side of a cargo hull.
     pub const SIDE_DECK_M: f64 = 0.8;
+    /// The service space a deckhouse holds beyond the rooms table (m2): the engine casing, a
+    /// workshop, stores and a CO2 room. ESTIMATE (issue #943): no source was read. Basis: a casing
+    /// trunk 2.0 m x 3.0 m (6 m2), a workshop of 8 m2 and stores of 6 m2. Replaced when the
+    /// calibration set (issue #782) gives a sourced value. Held once, on the room tiers.
+    pub const SERVICE_ALLOWANCE_M2: f64 = 20.0;
+    /// What the service allowance rests on.
+    pub const SERVICE_ALLOWANCE_BASIS: &str =
+        "estimate: casing 6 m2, workshop 8 m2 and stores 6 m2; no source read (issue #943)";
+    /// A stairway between two tiers (m2): the `stairs` row of the rooms table (`rooms.rs`).
+    pub const ACCESS_STAIR_M2: f64 = 1.6;
     /// The most tiers over the machinery space before the model warns (an estimate).
     pub const MAX_TIERS: i64 = 4;
     /// The accommodation floor a deckhouse must provide per 40 ft accommodation unit the Option
@@ -103,6 +137,32 @@ pub mod deckhouse_sizes {
     /// A hull that reaches sea: the rooms are sized to the greater of MLC 2006 A3.1 and ES-TRIN 15.
     pub const REQUIRED_AREA_BASIS_SEA: &str = "the rooms of the crew's berths, each sized to the greater of MLC 2006 Standard A3.1 and ES-TRIN 2025/1 Chapter 15 (this Service Area reaches sea); no exemption applied (issues #780, #892)";
     pub const REQUIRED_AREA_BASIS: &str = "interim: the floor area of the 40 ft accommodation units the Option holds, until the rooms are sized (issue #780)";
+}
+
+/// The forward house of the `wheelhouse_forward` style (issue #994). All are **estimates**: no source
+/// for any of them was read.
+pub mod forward_house_sizes {
+    /// The length of the house over the forepeak (m): the wheelhouse (3.6 m by default) over a watch
+    /// room and a muster point, with a stair and the fore end's mooring access. ESTIMATE.
+    pub const LENGTH_M: f64 = 8.0;
+    /// The deck space kept clear forward of the house for the anchor and the mooring winches (m).
+    /// ESTIMATE. An obstruction ahead of the eye (a winch) is not modelled; the bow is.
+    pub const BOW_CLEAR_M: f64 = 3.0;
+    /// The house has one tier below the wheelhouse: the watch room and the muster point.
+    pub const TIERS: i64 = 1;
+    /// What the house holds, in the order the results list it.
+    pub const HOLDS: [&str; 3] = ["wheelhouse", "watch room", "muster point"];
+}
+
+/// Where the forward house stands on the hull, from the capacity run (issue #994): metres forward of
+/// the stern, and the cargo length the house took if the forepeak is too short for it.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ForwardHouseSite {
+    pub x_aft_m: f64,
+    pub x_fwd_m: f64,
+    /// Zero when the house stands over the forepeak; else the length the house took from the cargo
+    /// zone (the fall-back of D1 B).
+    pub cargo_length_lost_m: f64,
 }
 
 /// The design values of the stern block that a design chooses (not ISO dimensions, not genset
@@ -389,6 +449,9 @@ pub struct AftArrangementInputs {
     /// Blind Distance (the capacity run works it out); the house gets tiers to reach it. `None`:
     /// no such need. Not read by the container block or an elevating wheelhouse.
     pub wheelhouse_eye_min_m: Option<f64>,
+    /// Issue #994: where the forward house stands, for `WheelhouseForward` (the capacity run works it
+    /// out from the bow). `None`: the house follows the deck items of the block.
+    pub forward_house_site: Option<ForwardHouseSite>,
 }
 
 impl AftArrangementInputs {
@@ -432,6 +495,7 @@ impl AftArrangementInputs {
             arrangement_style: ArrangementStyle::ContainerBlock,
             rooms_basis: None,
             wheelhouse_eye_min_m: None,
+            forward_house_site: None,
         }
     }
 
@@ -538,6 +602,75 @@ pub struct AftArrangementResult {
     /// Issue #779: the deckhouse, when the Arrangement Style is `deckhouse`; `None` for the
     /// container block.
     pub deckhouse: Option<Deckhouse>,
+    /// Issue #994: the forward house, when the Arrangement Style is `wheelhouse_forward`.
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub forward_house: Option<ForwardHouse>,
+    /// Issue #994: what the wings of the forward wheelhouse see aft. Set by the capacity run, which
+    /// knows the cargo; `None` for every other style and for a bare `compute`.
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub wing_view: Option<crate::rear_view::WingView>,
+}
+
+/// The forward house of the `wheelhouse_forward` style (issue #994): a house over the forepeak with
+/// the wheelhouse on top. x is metres forward of the stern, z metres above the keel.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct ForwardHouse {
+    pub x_aft_m: f64,
+    pub x_fwd_m: f64,
+    /// The beam less a side deck each side (m).
+    pub width_m: f64,
+    /// The floor of the tier: the main deck (m above the keel).
+    pub base_m: f64,
+    pub tiers: i64,
+    pub tier_height_m: f64,
+    /// The top of the tier, where the wheelhouse stands (m above the keel).
+    pub top_m: f64,
+    pub tier_area_m2: f64,
+    pub area_m2: f64,
+    pub volume_m3: f64,
+    /// The length the house took from the cargo zone; zero over the forepeak.
+    pub cargo_length_lost_m: f64,
+}
+
+/// What a tier of the deckhouse holds (issue #943).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+pub enum TierKind {
+    /// A tier that holds rooms: the accommodation floor.
+    Rooms,
+    /// A tier that only lifts the wheelhouse: a stair and the wheelhouse's own plan.
+    Access,
+}
+
+impl TierKind {
+    pub const fn key(self) -> &'static str {
+        match self {
+            TierKind::Rooms => "rooms",
+            TierKind::Access => "access",
+        }
+    }
+}
+
+/// The plan of one tier of the deckhouse (issue #943): x is metres forward of the stern, z metres
+/// above the keel.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub struct TierPlan {
+    pub x_aft_m: f64,
+    pub x_fwd_m: f64,
+    pub width_m: f64,
+    /// The floor of this tier (m above the keel).
+    pub base_m: f64,
+    pub kind: TierKind,
+}
+
+impl TierPlan {
+    /// The floor of the tier (m2).
+    pub fn area_m2(&self) -> f64 {
+        py_max(self.x_fwd_m - self.x_aft_m, 0.0) * self.width_m
+    }
 }
 
 /// The deckhouse of the `deckhouse` Arrangement Style (spec 0011 D3, D4, D6; issue #779): tiers
@@ -558,11 +691,17 @@ pub struct Deckhouse {
     pub tier_height_m: f64,
     /// The top of the top tier, where the wheelhouse stands (m above the keel).
     pub top_m: f64,
-    /// The floor of one tier (m2).
+    /// The plan of each tier, lowest first (issue #943). `tiers` is its length.
+    pub tiers_plan: Vec<TierPlan>,
+    /// The centre of the tiers' volume: x forward of the stern and z above the keel (m).
+    pub lcg_m: f64,
+    pub kcg_m: f64,
+    /// The floor of the first tier (m2).
     pub tier_area_m2: f64,
-    /// All tiers' floor (m2): the area the deckhouse cost line prices.
+    /// All tiers' floor (m2): the area the deckhouse cost line prices. The sum of the tier plans.
     pub area_m2: f64,
-    /// The volume of all the tiers (m3), the enclosed volume that joins the gross tonnage.
+    /// The volume of all the tiers (m3), the enclosed volume that joins the gross tonnage. The sum
+    /// of the tier plans, each one tier high.
     pub volume_m3: f64,
     /// The accommodation floor the tiers must hold (m2).
     pub required_area_m2: f64,
@@ -696,8 +835,8 @@ pub fn stern_block_mass(
         items.push(MassItem {
             label: "deckhouse steel",
             mass_t: rate * d.volume_m3,
-            lcg_m: (d.x_aft_m + d.x_fwd_m) / 2.0,
-            kcg_m: (d.base_m + d.top_m) / 2.0,
+            lcg_m: d.lcg_m,
+            kcg_m: d.kcg_m,
         });
         let wheelhouse_m3 = (res.wheelhouse_x1_m - res.wheelhouse_x0_m).max(0.0)
             * res.wheelhouse_width_m
@@ -708,13 +847,23 @@ pub fn stern_block_mass(
             lcg_m: wheelhouse_lcg,
             kcg_m: wheelhouse_kcg,
         });
+        // Issue #994: the forward house, steel by volume x rate, as the deckhouse is.
+        if let Some(f) = &res.forward_house {
+            items.push(MassItem {
+                label: "forward house steel",
+                mass_t: rate * f.volume_m3,
+                lcg_m: (f.x_aft_m + f.x_fwd_m) / 2.0,
+                kcg_m: (f.base_m + f.top_m) / 2.0,
+            });
+        }
         // A fixed wheelhouse has no lift column (D4).
         if d.wheelhouse_elevating {
             items.push(MassItem {
                 label: "lift column",
                 mass_t: LIFT_COLUMN_T,
                 lcg_m: wheelhouse_lcg,
-                kcg_m: d.top_m,
+                // The wheelhouse floor lowered: the top of the deckhouse (or of the forward house).
+                kcg_m: res.wheelhouse_floor_lowered_m,
             });
         }
     } else {
@@ -1089,19 +1238,38 @@ fn size_deckhouse(inp: &AftArrangementInputs, x_fwd: f64) -> Deckhouse {
         (Some(r), _) => (r.total_m2, REQUIRED_AREA_BASIS_ROOMS),
         (None, _) => (interim, REQUIRED_AREA_BASIS),
     };
-    // A whole number of tiers, and at least one: the wheelhouse needs a house to stand on. A
-    // quotient a hair over a whole number (rounding) does not add a tier.
-    let tiers = if tier_area > 0.0 && required > 0.0 {
-        py_max(libm::ceil(required / tier_area - 1e-9), 1.0) as i64
+    // Issue #943: room tiers hold what the rooms need; access tiers only lift the wheelhouse.
+    // The floor needed is the rooms (or the interim floor), one stairway for each room tier above
+    // the first (the rooms table counts one), and the service allowance. The room tiers share it
+    // evenly, front-aligned, so each is `floor_needed / (n x width)` long, cut from the aft end,
+    // and not shorter than the wheelhouse.
+    let floor_for = |n: i64| required + (n - 1) as f64 * ACCESS_STAIR_M2 + SERVICE_ALLOWANCE_M2;
+    let mut n_rooms: i64 = 1;
+    if tier_area > 0.0 {
+        while n_rooms < 64 && n_rooms as f64 * tier_area < floor_for(n_rooms) - 1e-9 {
+            n_rooms += 1;
+        }
+    }
+    let room_len = if width > 0.0 {
+        py_min(
+            py_max(
+                floor_for(n_rooms) / (n_rooms as f64 * width),
+                inp.wheelhouse_length_m,
+            ),
+            length,
+        )
     } else {
-        1
+        length
     };
     // A fixed wheelhouse cannot lift, so the house is as tall as the sightline needs (spec 0011
-    // sec. 2: the wheelhouse floor height from the sightline): the eye must clear what stands
-    // forward of it by the margin. An elevating wheelhouse lifts instead.
+    // sec. 2): the eye must clear what stands forward of it by the margin. An elevating
+    // wheelhouse lifts instead.
+    // Issue #994: the wheelhouse of `wheelhouse_forward` is not on this house, so nothing here is
+    // raised for its sightline.
     let tiers = match (inp.sightline_obstruction_m, inp.wheelhouse_eye_min_m) {
-        (None, None) => tiers,
-        (_, _) if inp.wheelhouse_max_lift_m > 0.0 => tiers,
+        _ if inp.arrangement_style.is_wheelhouse_forward() => n_rooms,
+        (None, None) => n_rooms,
+        (_, _) if inp.wheelhouse_max_lift_m > 0.0 => n_rooms,
         (obstruction, eye_min) => {
             let by_margin = obstruction.map(|o| o + inp.sightline_margin_m);
             let eye = match (by_margin, eye_min) {
@@ -1112,29 +1280,107 @@ fn size_deckhouse(inp: &AftArrangementInputs, x_fwd: f64) -> Deckhouse {
             };
             let floor_needed = eye - inp.wheelhouse_eye_above_floor_m;
             let for_sight = libm::ceil((floor_needed - inp.depth) / TIER_HEIGHT_M - 1e-9);
-            if for_sight > tiers as f64 {
+            if for_sight > n_rooms as f64 {
                 for_sight as i64
             } else {
-                tiers
+                n_rooms
             }
         }
     };
     let top = inp.depth + tiers as f64 * TIER_HEIGHT_M;
+    // An access tier: the wheelhouse plan and a stairway, front-aligned under the wheelhouse.
+    let access_w = py_min(inp.wheelhouse_width_m, width);
+    let access_len = if access_w > 0.0 {
+        py_min(inp.wheelhouse_length_m + ACCESS_STAIR_M2 / access_w, length)
+    } else {
+        0.0
+    };
+    let tiers_plan: Vec<TierPlan> = (0..tiers)
+        .map(|i| {
+            let rooms_tier = i < n_rooms;
+            let (len, w) = if rooms_tier {
+                (room_len, width)
+            } else {
+                (access_len, access_w)
+            };
+            TierPlan {
+                x_aft_m: py_max(length - len, 0.0),
+                x_fwd_m: length,
+                width_m: w,
+                base_m: inp.depth + i as f64 * TIER_HEIGHT_M,
+                kind: if rooms_tier {
+                    TierKind::Rooms
+                } else {
+                    TierKind::Access
+                },
+            }
+        })
+        .collect();
+    let area: f64 = tiers_plan.iter().map(TierPlan::area_m2).sum();
+    let volume = area * TIER_HEIGHT_M;
+    // The centre of the tiers' volume (x, z), for the steel's centre of gravity.
+    let (mut mx, mut mz) = (0.0, 0.0);
+    for t in &tiers_plan {
+        let v = t.area_m2() * TIER_HEIGHT_M;
+        mx += v * (t.x_aft_m + t.x_fwd_m) / 2.0;
+        mz += v * (t.base_m + TIER_HEIGHT_M / 2.0);
+    }
+    let (lcg, kcg) = if volume > 0.0 {
+        (mx / volume, mz / volume)
+    } else {
+        (length / 2.0, (inp.depth + top) / 2.0)
+    };
     Deckhouse {
-        x_aft_m: 0.0,
+        x_aft_m: tiers_plan.first().map_or(0.0, |t| t.x_aft_m),
         x_fwd_m: length,
         width_m: width,
         base_m: inp.depth,
         tiers,
         tier_height_m: TIER_HEIGHT_M,
         top_m: top,
-        tier_area_m2: tier_area,
-        area_m2: tiers as f64 * tier_area,
-        volume_m3: tiers as f64 * tier_area * TIER_HEIGHT_M,
+        tier_area_m2: tiers_plan.first().map_or(0.0, TierPlan::area_m2),
+        area_m2: area,
+        volume_m3: volume,
+        lcg_m: lcg,
+        kcg_m: kcg,
+        tiers_plan,
         required_area_m2: required,
         required_area_basis: required_basis.to_string(),
         rooms,
         wheelhouse_elevating: inp.wheelhouse_max_lift_m > 0.0,
+    }
+}
+
+/// Where the forward house stands: the site the capacity run gave, else just forward of the block's
+/// deck items (issue #994).
+fn forward_site(inp: &AftArrangementInputs, deck_len: f64) -> ForwardHouseSite {
+    inp.forward_house_site.unwrap_or(ForwardHouseSite {
+        x_aft_m: deck_len,
+        x_fwd_m: deck_len + forward_house_sizes::LENGTH_M,
+        cargo_length_lost_m: 0.0,
+    })
+}
+
+/// Size the forward house of `wheelhouse_forward` (issue #994): one tier the beam less a side deck
+/// each side wide, from the main deck, with the wheelhouse on top.
+fn size_forward_house(inp: &AftArrangementInputs, site: &ForwardHouseSite) -> ForwardHouse {
+    use deckhouse_sizes::{SIDE_DECK_M, TIER_HEIGHT_M};
+    let width = py_max(inp.beam - 2.0 * SIDE_DECK_M, 0.0);
+    let length = py_max(site.x_fwd_m - site.x_aft_m, 0.0);
+    let tiers = forward_house_sizes::TIERS;
+    let tier_area = length * width;
+    ForwardHouse {
+        x_aft_m: site.x_aft_m,
+        x_fwd_m: site.x_fwd_m,
+        width_m: width,
+        base_m: inp.depth,
+        tiers,
+        tier_height_m: TIER_HEIGHT_M,
+        top_m: inp.depth + tiers as f64 * TIER_HEIGHT_M,
+        tier_area_m2: tier_area,
+        area_m2: tiers as f64 * tier_area,
+        volume_m3: tiers as f64 * tier_area * TIER_HEIGHT_M,
+        cargo_length_lost_m: site.cargo_length_lost_m,
     }
 }
 
@@ -1144,7 +1390,8 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
     let gas = inp.is_gas_fuelled();
     // Issue #779: the deckhouse holds the accommodation (D6, aft only), so no 40 ft accommodation
     // unit stands on deck; the battery units still do.
-    let deckhouse_style = inp.arrangement_style == ArrangementStyle::Deckhouse;
+    let deckhouse_style = inp.arrangement_style.has_aft_deckhouse();
+    let forward = inp.arrangement_style.is_wheelhouse_forward();
     let accom_units_on_deck = if deckhouse_style {
         0
     } else {
@@ -1291,18 +1538,33 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
                 cont_x1,
             ));
         }
-        // The wheelhouse stands on the top tier, at the deckhouse front (D4).
-        wh_x1 = dh_x1;
-        wh_x0 = py_max(wh_x1 - inp.wheelhouse_length_m, 0.0);
-        zones.push((
-            if inp.wheelhouse_max_lift_m > 0.0 {
-                "WHEELHOUSE ON DECKHOUSE (LIFTING)".to_string()
-            } else {
-                "WHEELHOUSE ON DECKHOUSE (FIXED)".to_string()
-            },
-            wh_x0,
-            wh_x1,
-        ));
+        if forward {
+            // Issue #994: the wheelhouse stands on the forward house, at its forward end. The house
+            // is not a zone of the block (it lies over the forepeak, past the block's length).
+            let site = forward_site(
+                inp,
+                if n_units > 0 {
+                    py_max(dh_x1, cont_x1)
+                } else {
+                    dh_x1
+                },
+            );
+            wh_x1 = site.x_fwd_m;
+            wh_x0 = py_max(wh_x1 - inp.wheelhouse_length_m, site.x_aft_m);
+        } else {
+            // The wheelhouse stands on the top tier, at the deckhouse front (D4).
+            wh_x1 = dh_x1;
+            wh_x0 = py_max(wh_x1 - inp.wheelhouse_length_m, 0.0);
+            zones.push((
+                if inp.wheelhouse_max_lift_m > 0.0 {
+                    "WHEELHOUSE ON DECKHOUSE (LIFTING)".to_string()
+                } else {
+                    "WHEELHOUSE ON DECKHOUSE (FIXED)".to_string()
+                },
+                wh_x0,
+                wh_x1,
+            ));
+        }
     } else if beside {
         // The cab stands at the forward end of the units, between them.
         cont_x1 = cont_x0 + inp.container_length_m;
@@ -1327,7 +1589,15 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
         wh_x1 = wh_x0 + inp.wheelhouse_length_m;
         zones.push(("WHEELHOUSE (LIFTING)".to_string(), wh_x0, wh_x1));
     }
-    let deck_len = if deckhouse_style && n_units > 0 {
+    // The wheelhouse of `wheelhouse_forward` is not on the block: its deck items are the house
+    // over the machinery and the battery units.
+    let deck_len = if forward {
+        if n_units > 0 {
+            py_max(dh_x1, cont_x1)
+        } else {
+            dh_x1
+        }
+    } else if deckhouse_style && n_units > 0 {
         py_max(wh_x1, cont_x1)
     } else {
         wh_x1
@@ -1423,14 +1693,21 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
     let cont_top = deck + inp.container_foundation_m + inp.container_height_m;
 
     // Issue #779: on a deckhouse the wheelhouse stands on the top tier.
-    let wh_floor_lo = match &deckhouse {
-        Some(d) => d.top_m,
-        None => deck,
+    let forward_house = forward.then(|| {
+        let site = forward_site(inp, deck_len);
+        size_forward_house(inp, &site)
+    });
+    let wh_floor_lo = match (&forward_house, &deckhouse) {
+        (Some(f), _) => f.top_m,
+        (None, Some(d)) => d.top_m,
+        (None, None) => deck,
     };
     let wh_top_lo = wh_floor_lo + inp.wheelhouse_height_m;
 
     let mut lift = 0.0;
-    if let Some(obstruction) = inp.sightline_obstruction_m {
+    // Issue #994: the eye is forward of the cargo, which gives no obstruction ahead of it, so
+    // there is nothing to lift over; the bow is judged by the Blind Distance (`wheelhouse`).
+    if let (Some(obstruction), false) = (inp.sightline_obstruction_m, forward) {
         // The eye must sit `margin` above the tallest thing forward of it.
         let eye_lo = wh_floor_lo + inp.wheelhouse_eye_above_floor_m;
         let needed = obstruction + inp.sightline_margin_m;
@@ -1504,6 +1781,13 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
     ];
     let mut warnings: Vec<Text> = Vec::new();
     if let Some(d) = &deckhouse {
+        let n_kind = |k: TierKind| d.tiers_plan.iter().filter(|t| t.kind == k).count();
+        let area_of = |k: TierKind| {
+            d.tiers_plan
+                .iter()
+                .find(|t| t.kind == k)
+                .map_or(0.0, TierPlan::area_m2)
+        };
         // No unit stands on deck unless a battery does: the two unit checks have nothing to say.
         if n_units == 0 {
             checks.retain(|c| c.name != "containers_fit_beam" && c.name != "units_fit_in_one_row");
@@ -1522,14 +1806,29 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
         checks.push(Check::with_severity(
             "deckhouse_tier_count",
             d.tiers <= deckhouse_sizes::MAX_TIERS,
-            text!(
-                "check-deckhouse-tier-count",
-                "{tiers} tier(s) of {tier_area} m2 hold the {required} m2 of accommodation floor and, for a fixed wheelhouse, lift the eye over the cargo; over {max} tiers is a tall house over a short machinery space (ESTIMATE limit)",
-                tiers = d.tiers,
-                tier_area = Arg::fixed(d.tier_area_m2, 1),
-                required = Arg::fixed(d.required_area_m2, 1),
-                max = deckhouse_sizes::MAX_TIERS,
-            ),
+            if n_kind(TierKind::Access) == 0 {
+                // No tier only lifts the wheelhouse: say nothing of access tiers.
+                text!(
+                    "check-deckhouse-tier-count-rooms-only",
+                    "{tiers} tier(s) for rooms ({room_area} m2 each, holding the {required} m2 of accommodation floor); over {max} tiers is a tall house over a short machinery space (ESTIMATE limit)",
+                    tiers = d.tiers,
+                    room_area = Arg::fixed(area_of(TierKind::Rooms), 1),
+                    required = Arg::fixed(d.required_area_m2, 1),
+                    max = deckhouse_sizes::MAX_TIERS,
+                )
+            } else {
+                text!(
+                    "check-deckhouse-tier-count",
+                    "{tiers} tier(s): {room_tiers} for rooms ({room_area} m2 each, holding the {required} m2 of accommodation floor) and {access_tiers} for access ({access_area} m2 each, lifting the wheelhouse eye over the cargo); over {max} tiers is a tall house over a short machinery space (ESTIMATE limit)",
+                    tiers = d.tiers,
+                    room_tiers = n_kind(TierKind::Rooms),
+                    room_area = Arg::fixed(area_of(TierKind::Rooms), 1),
+                    access_tiers = n_kind(TierKind::Access),
+                    access_area = Arg::fixed(area_of(TierKind::Access), 1),
+                    required = Arg::fixed(d.required_area_m2, 1),
+                    max = deckhouse_sizes::MAX_TIERS,
+                )
+            },
             "warning",
         ));
         warnings.push(Text::fixed(
@@ -1572,6 +1871,24 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
                     ));
                 }
             }
+        }
+    }
+    if let Some(f) = &forward_house {
+        warnings.push(Text::fixed(
+            "warn-aft-forward-house-estimates",
+            "Wheelhouse forward: the wheelhouse stands in a house over the forepeak, with a watch room and a \
+             muster point; the machinery and the main accommodation stay aft. The house length, the \
+             clear deck forward of it, its one tier and its tier height are ESTIMATES. The crew is split \
+             across the cargo deck: a second escape route, a second muster point and an unmanned or \
+             lightly manned engine room are inputs for the hazard study, not computed checks. No \
+             gas-cargo vessel in service has this layout.",
+        ));
+        if f.cargo_length_lost_m > 1e-9 {
+            warnings.push(text!(
+                "warn-aft-forward-house-cargo-length",
+                "The forepeak is too short for the forward house: the house takes {lost} m of cargo length.",
+                lost = Arg::fixed(f.cargo_length_lost_m, 2),
+            ));
         }
     }
     if gas {
@@ -1647,7 +1964,7 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
              the block.",
         ));
     }
-    if let Some(obstruction) = inp.sightline_obstruction_m {
+    if let (Some(obstruction), false) = (inp.sightline_obstruction_m, forward) {
         let cleared = (wh_floor_hi + inp.wheelhouse_eye_above_floor_m)
             >= (obstruction + inp.sightline_margin_m - 1e-9);
         // An error: the sightline is a real arrangement limit, and an arrangement that fails it is
@@ -1725,12 +2042,22 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
         wheelhouse_floor_raised_m: wh_floor_hi,
         wheelhouse_top_raised_m: wh_top_hi,
         wheelhouse_lift_m: lift_used,
-        wheelhouse_width_m: match &deckhouse {
-            Some(d) => py_min(inp.wheelhouse_width_m, d.width_m),
-            None => inp.wheelhouse_width_m,
+        wheelhouse_width_m: match (&forward_house, &deckhouse) {
+            (Some(f), _) => py_min(inp.wheelhouse_width_m, f.width_m),
+            (None, Some(d)) => py_min(inp.wheelhouse_width_m, d.width_m),
+            (None, None) => inp.wheelhouse_width_m,
         },
         wheelhouse_height_m: inp.wheelhouse_height_m,
-        block_top_lowered_m: if deckhouse.is_some() && n_units == 0 {
+        block_top_lowered_m: if forward {
+            // The block's own top: the aft deckhouse and the battery units. The house forward is
+            // read through the wheelhouse top.
+            let aft_top = deckhouse.as_ref().map_or(deck, |d| d.top_m);
+            if n_units == 0 {
+                py_max(aft_top, wh_top_lo)
+            } else {
+                py_max(py_max(aft_top, cont_top), wh_top_lo)
+            }
+        } else if deckhouse.is_some() && n_units == 0 {
             wh_top_lo
         } else {
             py_max(cont_top, wh_top_lo)
@@ -1763,6 +2090,8 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
         machinery: machinery.clone(),
         deck_length_m: deck_len,
         deckhouse,
+        forward_house,
+        wing_view: None,
     })
 }
 

@@ -81,10 +81,15 @@ pub struct FitOptions {
     pub stern_geometry: Option<crate::stern_form::SternGeometry>,
     /// Issue #352: the machinery of a specified Propulsor (`BargeCapacityInputs::machinery`).
     pub machinery: Option<crate::machinery::MachineryInputs>,
-    /// Issue #354: the Blind Distance limit (`BargeCapacityInputs::sightline_limit_m`).
+    /// Issue #354: the Blind Distance limit (`BargeCapacityInputs::sightline_limit_m`). Issue #989: read
+    /// from the Rule Sets of the stack by [`blind_limits`], the limit the Rule Trace checks.
     pub sightline_limit_m: Option<f64>,
-    /// Issue #779: size a fixed deckhouse wheelhouse to SOLAS V/22.1.1 as well (a coastal Option).
-    pub solas_v22_sizing: bool,
+    /// Issue #989: the laden limit (`BargeCapacityInputs::sightline_limit_laden_m`).
+    pub sightline_limit_laden_m: Option<f64>,
+    /// Issue #989: the light limit a fixed deckhouse is sized to (`BargeCapacityInputs::sightline_sizing_limit_m`).
+    pub sightline_sizing_limit_m: Option<f64>,
+    /// Issue #989: the id of the Rule that gives the light limit.
+    pub sightline_limit_source: Option<String>,
     pub self_propelled: bool,
     pub depths: Vec<f64>,
     pub tanks_wide: Vec<i64>,
@@ -162,6 +167,10 @@ pub struct FitOptions {
     pub required_freeboard_m: f64,
     /// Air draft limit of the light condition (m), as the capacity check reads it. `None`: none.
     pub air_draft_limit_m: Option<f64>,
+    /// Issue #991: the bridge clearance of the route and where it comes from (`BargeCapacityInputs`):
+    /// an air draft over it warns.
+    pub bridge_clearance_m: Option<f64>,
+    pub bridge_clearance_source: Option<String>,
     /// The stern block's design values for every candidate (a self-propelled hull only).
     pub aft_design: AftDesign,
     /// Issue #822: the cargo vent mast of every candidate (see the fields of the same names in
@@ -271,6 +280,82 @@ impl MeasureSource for CandidateSource<'_> {
     }
 }
 
+/// Issue #989: the Blind Distance limits of a design, read from the Rule Sets of its stack. A Rule gives
+/// a limit when it measures `wheelhouse.blind_distance`, blocks, and applies to the design (its
+/// Applicability and its set's, as the Rule Trace reads them); the limit is the Rule's own, worked from
+/// the design's inputs (SOLAS V/22.1.1 reads the length overall). The least limit of each condition
+/// binds, and the id of its Rule says where it came from. A stack with no such Rule gives no limit, and
+/// a Rule that only warns gives no blocking limit, but it sizes a fixed deckhouse (`sizing_light_m`).
+///
+/// This is the one reading the arrangement search sizes the wheelhouse to and the Rule Trace checks the
+/// result against: the Trace evaluates the same Rules, so the limit it shows is the one used here. The
+/// limit is worked by evaluating the Rules with a Blind Distance of 0, which passes, so only the limit
+/// is read from the row.
+pub fn blind_limits(rules: &[RuleSet], inputs: &RuleInputs) -> crate::wheelhouse::BlindLimits {
+    use crate::rules::Consequence;
+    let sets: Vec<RuleSet> = rules
+        .iter()
+        .filter_map(|set| {
+            let mut one = set.clone();
+            one.rules
+                .retain(|r| r.measure.id == "wheelhouse.blind_distance");
+            (!one.rules.is_empty()).then_some(one)
+        })
+        .collect();
+    let mut out = crate::wheelhouse::BlindLimits::default();
+    if sets.is_empty() {
+        return out;
+    }
+    let measured = Measured {
+        blind_distance_light_m: Some(0.0),
+        blind_distance_laden_m: Some(0.0),
+        ..Measured::default()
+    };
+    let refs: Vec<&RuleSet> = sets.iter().collect();
+    let trace = evaluate(
+        &refs,
+        &CandidateSource {
+            measured: &measured,
+            inputs,
+        },
+    );
+    for row in &trace.rows {
+        let (Some(measure), Some(limit), Some(rule)) = (&row.measure, row.limit, &row.rule) else {
+            continue;
+        };
+        if !matches!(row.outcome, Outcome::Pass | Outcome::Fail) {
+            continue;
+        }
+        let blocks = row.consequence == Some(Consequence::Block);
+        if !blocks && row.consequence != Some(Consequence::Warn) {
+            continue;
+        }
+        let condition = measure
+            .args
+            .iter()
+            .find_map(|(k, v)| match (k.as_str(), v) {
+                ("condition", ArgValue::Text(t)) => Some(t.as_str()),
+                _ => None,
+            });
+        if condition == Some("light") && out.sizing_light_m.is_none_or(|least| limit < least) {
+            out.sizing_light_m = Some(limit);
+        }
+        if !blocks {
+            continue;
+        }
+        let (slot, source) = match condition {
+            Some("light") => (&mut out.light_m, &mut out.light_rule),
+            Some("laden") => (&mut out.laden_m, &mut out.laden_rule),
+            _ => continue,
+        };
+        if slot.is_none_or(|least| limit < least) {
+            *slot = Some(limit);
+            *source = Some(rule.clone());
+        }
+    }
+    out
+}
+
 /// What the Rule Trace of a candidate reads: its checks (named as a result lists them), its
 /// stability conditions (none before the costly stage) and its tank and separation values.
 fn candidate_measured(
@@ -366,7 +451,9 @@ impl Default for FitOptions {
             stern_geometry: None,
             machinery: None,
             sightline_limit_m: None,
-            solas_v22_sizing: false,
+            sightline_limit_laden_m: None,
+            sightline_sizing_limit_m: None,
+            sightline_limit_source: None,
             self_propelled: true,
             depths: DEFAULT_DEPTHS_M.to_vec(),
             tanks_wide: DEFAULT_TANKS_WIDE.to_vec(),
@@ -405,6 +492,8 @@ impl Default for FitOptions {
             water_density_t_per_m3: DEFAULT_WATER_DENSITY,
             required_freeboard_m: DEFAULT_REQUIRED_FREEBOARD_M,
             air_draft_limit_m: None,
+            bridge_clearance_m: None,
+            bridge_clearance_source: None,
             aft_design: AftDesign::default(),
             river_only: false,
             vent_stub_m: crate::vent_mast::DEFAULT_VENT_STUB_M,
@@ -1160,7 +1249,9 @@ impl Search<'_> {
         inp.stern_geometry = self.o.stern_geometry.clone();
         inp.machinery = self.o.machinery.clone();
         inp.sightline_limit_m = self.o.sightline_limit_m;
-        inp.solas_v22_sizing = self.o.solas_v22_sizing;
+        inp.sightline_limit_laden_m = self.o.sightline_limit_laden_m;
+        inp.sightline_sizing_limit_m = self.o.sightline_sizing_limit_m;
+        inp.sightline_limit_source = self.o.sightline_limit_source.clone();
         inp.block_coefficient = self.o.block_coefficient;
         inp.n_tanks_wide = Some(nw);
         inp.n_tanks_long = nl;
@@ -1207,6 +1298,8 @@ impl Search<'_> {
         inp.tank_design = self.o.tank_design.clone();
         inp.water_density = self.o.water_density_t_per_m3;
         inp.air_draft_limit_m = self.o.air_draft_limit_m;
+        inp.bridge_clearance_m = self.o.bridge_clearance_m;
+        inp.bridge_clearance_source = self.o.bridge_clearance_source.clone();
         inp.aft_design = self.o.aft_design.clone();
         inp.river_only = self.o.river_only;
         inp.vent_stub_m = self.o.vent_stub_m;
@@ -1261,7 +1354,7 @@ impl Search<'_> {
             // the negative clearance goes on to `capacity`, which cannot make a tank over the cap
             // (the diameter is then at most the cap) and a candidate with it is turned down by
             // the rule check below: the rule needs at least 0.45 m (`d(V)` is at least 0.8 m, the
-            // insulation is the fixed 350 mm), and `cs + 1e-9 < need` holds for every negative
+            // insulation is the tank design's thickness: 350 mm when this was searched, and the profile range runs to 1000 mm, which this argument does not cover), and `cs + 1e-9 < need` holds for every negative
             // `cs`. So `None` comes back either way. Searched with the mutant built in: 15 000
             // random inputs (both rulesets of the time, caps 0.2 to 8.2 m, beams 0.3 to 14.3 m, 1 to 5 tanks
             // wide), the branch reached in at least 10 068 of them, no difference in any field.

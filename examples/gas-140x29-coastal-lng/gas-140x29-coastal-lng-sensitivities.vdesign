@@ -113,6 +113,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -359,6 +367,10 @@
           "source": "typed"
         },
         "air_draft_limit_m": {
+          "value": null,
+          "source": "default"
+        },
+        "bridge_clearance_m": {
           "value": null,
           "source": "default"
         },
@@ -620,7 +632,7 @@
           "source": "default"
         }
       },
-      "results_hash": "ff7874cb92b888db5dff960476379baef53d789366c96b0cfce5b35bdb1b4ac7"
+      "results_hash": "bda7f2e0f9081cb239272f3ac1b970880c46027a47a3d058495a6438eb01fabf"
     },
     {
       "name": "J bow 12 m",
@@ -731,6 +743,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -977,6 +997,10 @@
           "source": "default"
         },
         "air_draft_limit_m": {
+          "value": null,
+          "source": "default"
+        },
+        "bridge_clearance_m": {
           "value": null,
           "source": "default"
         },
@@ -1238,7 +1262,7 @@
           "source": "default"
         }
       },
-      "results_hash": "bac9a98881c2fb7f8c1d7f47f651057a594a2819ea8be2cf8236026fa3032bec"
+      "results_hash": "55b903afdbb5e6d4dff6e3a96e5b40d7133f3f212ced7fcb63dce7139b9a8b8a"
     },
     {
       "name": "K both",
@@ -1349,6 +1373,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -1595,6 +1627,10 @@
           "source": "typed"
         },
         "air_draft_limit_m": {
+          "value": null,
+          "source": "default"
+        },
+        "bridge_clearance_m": {
           "value": null,
           "source": "default"
         },
@@ -1856,7 +1892,7 @@
           "source": "default"
         }
       },
-      "results_hash": "f7726b9ecb3b943f6d0c14a669c3213c8e0ad2fe0fe131e561dc1d59820e1d8c"
+      "results_hash": "e54733ba1647cefa07932346b0e2301d2c0909689ce385fd6912213d3db4d568"
     },
     {
       "name": "L depth 14",
@@ -1967,6 +2003,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -2213,6 +2257,10 @@
           "source": "typed"
         },
         "air_draft_limit_m": {
+          "value": null,
+          "source": "default"
+        },
+        "bridge_clearance_m": {
           "value": null,
           "source": "default"
         },
@@ -2474,7 +2522,7 @@
           "source": "default"
         }
       },
-      "results_hash": "828b9091819edfb24ad833691597dfd832e878756497d0bbcb41d470e839e698"
+      "results_hash": "2215a77d0f1b63e93075cb11565c0ce9ce852f134e4876644701e17d983d5deb"
     },
     {
       "name": "M river",
@@ -2583,6 +2631,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -2831,6 +2887,10 @@
           "source": "default"
         },
         "air_draft_limit_m": {
+          "value": null,
+          "source": "default"
+        },
+        "bridge_clearance_m": {
           "value": null,
           "source": "default"
         },
@@ -3074,7 +3134,7 @@
           "source": "default"
         }
       },
-      "results_hash": "d46d0f236ab5cf89ded5995e3d70786508551e77b9f84915af9630c5d1b2aee3"
+      "results_hash": "cf42e893ca009fe6bfa49b4eccb527626ed35cce890d1defeaa5bc1fcf339582"
     },
     {
       "name": "N1 Cb 0.97",
@@ -3189,6 +3249,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -3454,6 +3522,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -3712,7 +3784,7 @@
           "source": "default"
         }
       },
-      "results_hash": "9d8015d5d6753a6a1a24d2cc3b696ad358c94dca568e148342dfd33401c6e3cf"
+      "results_hash": "8198f98c3c498215b632d78699a23a77dbfd562313dc5995bcd44c8b27a24f5a"
     },
     {
       "name": "N2 Cb 0.96",
@@ -3827,6 +3899,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -4092,6 +4172,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -4350,7 +4434,7 @@
           "source": "default"
         }
       },
-      "results_hash": "212e8502d7b26936638344b92cf5cf105cd27e76e2d560a65c9f2ceac482fc1e"
+      "results_hash": "06de07147ee38aa26dfda235b340934922addc3852c88f6e2e538e2afac9e12f"
     },
     {
       "name": "N3 Cb 0.95",
@@ -4465,6 +4549,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -4730,6 +4822,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -4988,7 +5084,7 @@
           "source": "default"
         }
       },
-      "results_hash": "f2e4991279ff97d51682bb5ab07858998230e97ca0c2188544c5211481d6c669"
+      "results_hash": "752516b7d56a6560191dbfaa896547217bfe644c9c580719b849095debccc8ef"
     },
     {
       "name": "N4 Cb 0.92",
@@ -5103,6 +5199,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -5368,6 +5472,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -5626,7 +5734,7 @@
           "source": "default"
         }
       },
-      "results_hash": "8b07e6fcb1adafc48356146ed365a7328d1db48b8221f44e6eb1b34694b7d018"
+      "results_hash": "a0e92bd13d90acf9ae06da460bd41cab7e7e936c42133f99f061159ef901f333"
     },
     {
       "name": "N5 Cb 0.87",
@@ -5741,6 +5849,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -6006,6 +6122,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -6264,7 +6384,7 @@
           "source": "default"
         }
       },
-      "results_hash": "ba60408f656c0458a08612ee97118e9077528fedc80dd83abce946e7aa7ad8cd"
+      "results_hash": "671652c709151f9270ce8774ae7e29c5b8811815ca0b7df2e313eb807832234c"
     },
     {
       "name": "N6 Cb 0.84",
@@ -6379,6 +6499,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -6644,6 +6772,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -6902,7 +7034,7 @@
           "source": "default"
         }
       },
-      "results_hash": "7eefc481d74800a422cc8f0ba316f1ade39727d2608cad136c858a782bf8dc5d"
+      "results_hash": "d42c3e7097bfca3e142930f4972f1601839dd138ef3185ee32dfe934e50fa101"
     },
     {
       "name": "N7 Cb 0.81",
@@ -7017,6 +7149,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -7282,6 +7422,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -7540,7 +7684,7 @@
           "source": "default"
         }
       },
-      "results_hash": "fb60b005c26d9dbda768c9f5cb39aa3cd751cd7f7c20edc52b281e57a57842ed"
+      "results_hash": "6e4096951eae597686a13e042f8e96de1b128c6319e58e1082e6f5e0f933cb78"
     },
     {
       "name": "N8 Cb 0.77",
@@ -7655,6 +7799,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -7920,6 +8072,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -8178,7 +8334,7 @@
           "source": "default"
         }
       },
-      "results_hash": "6ea625393fe272de039251c048a2167013315ac9ea14d1a07b787af0bd632c53"
+      "results_hash": "dfcf336ac0b6e87b1cc57cf92c88c5137cd67d4ae2626dee38c71a97fdfeec0b"
     },
     {
       "name": "N9 Cb 0.74",
@@ -8293,6 +8449,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -8558,6 +8722,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -8816,7 +8984,7 @@
           "source": "default"
         }
       },
-      "results_hash": "9ed1e6cb59b8ca5abf4b888439d6ab199e458dc6e25c6cf19b92d33d387114d2"
+      "results_hash": "f8018ca2abf978471f6401a213dfb0e64dd748cbd53f8eedbf34f9295ccc1074"
     },
     {
       "name": "P1 Cb 0.97",
@@ -8931,6 +9099,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -9196,6 +9372,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -9454,7 +9634,7 @@
           "source": "default"
         }
       },
-      "results_hash": "9a6938ee9e17bd454fdc3e8bec8a79f593d353cbac34300da7cd7c3491644484"
+      "results_hash": "181b04356c79b3f5e3d8e767e7cf571a0fd02a443be94bfdcbba853237df3fa0"
     },
     {
       "name": "P2 Cb 0.96",
@@ -9569,6 +9749,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -9834,6 +10022,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -10092,7 +10284,7 @@
           "source": "default"
         }
       },
-      "results_hash": "5f49513a18f3fd709dca5775070e9751933be8a796b56decb5cece34ac8d45d8"
+      "results_hash": "7e42b984aef437ee1a1aba268201d6b1f2e8ad60881932cf79611dbef9fb4721"
     },
     {
       "name": "P3 Cb 0.95",
@@ -10207,6 +10399,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -10472,6 +10672,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -10730,7 +10934,7 @@
           "source": "default"
         }
       },
-      "results_hash": "8ee4272fc625e813b087f71107fd6d8bdca0482bc162e1d529a8e18d2529f0be"
+      "results_hash": "341ad0ed39c0cc59dd54bb11b83a8b15564c24ee96bcfae576fd8cb348804772"
     },
     {
       "name": "P4 Cb 0.92",
@@ -10845,6 +11049,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -11110,6 +11322,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -11368,7 +11584,7 @@
           "source": "default"
         }
       },
-      "results_hash": "1ccdc69d48510482d2265a70eaec7ec62f787b1161043a09d76483ba9d3132d6"
+      "results_hash": "4edf6410c7c86815e02a78b718653f30841806aa464d1d557f62c4d36fb979cc"
     },
     {
       "name": "P5 Cb 0.87",
@@ -11483,6 +11699,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -11748,6 +11972,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -12006,7 +12234,7 @@
           "source": "default"
         }
       },
-      "results_hash": "a588db77db74d70dbdf2a4854974aa50ba81c2c71c0de62ae347e80e64c50a62"
+      "results_hash": "ec66e5fdecac78beb5e022a4b6e06745aab7dbe36cad8049befc8ae34696e940"
     },
     {
       "name": "P6 Cb 0.84",
@@ -12121,6 +12349,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -12386,6 +12622,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -12644,7 +12884,7 @@
           "source": "default"
         }
       },
-      "results_hash": "e819c3d0e50b88b51c1b8dc47ccc838047a0a307e12dd212b0dea765c6295acd"
+      "results_hash": "b9aa6b97b83e9dfa274af46d089300e9ce3e9ae8a645dfb5cfd52fa9bbe4799d"
     },
     {
       "name": "P7 Cb 0.81",
@@ -12759,6 +12999,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -13024,6 +13272,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -13282,7 +13534,7 @@
           "source": "default"
         }
       },
-      "results_hash": "8f561557be1aa77c62f6e144578383133f32eea343fb39021bb9545fc174fda8"
+      "results_hash": "2a2cd981a69df472631b06df6df4932810a2f1175c5390cbec5f450cb126fba8"
     },
     {
       "name": "P8 Cb 0.77",
@@ -13397,6 +13649,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -13662,6 +13922,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -13920,7 +14184,7 @@
           "source": "default"
         }
       },
-      "results_hash": "9a4a069c01968e5c391ee72b38bbc5ab94aa6d7e4881db82ad5f6b8f54d94ec8"
+      "results_hash": "fe361f2945ec6d7af33dd53f09cbceee63d4627c7db5cb3fbb4371b37af9ce60"
     },
     {
       "name": "P9 Cb 0.74",
@@ -14033,6 +14297,14 @@
         },
         "tank_insulation_thickness_mm": {
           "value": 330.0,
+          "source": "default"
+        },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
           "source": "default"
         },
         "holding_profile": {
@@ -14300,6 +14572,10 @@
           "value": null,
           "source": "default"
         },
+        "bridge_clearance_m": {
+          "value": null,
+          "source": "default"
+        },
         "draught_limit_m": {
           "value": null,
           "source": "default"
@@ -14558,7 +14834,7 @@
           "source": "default"
         }
       },
-      "results_hash": "cb7be950ddd7fdea8512f05b0b781c68db5dabd30feab1a36cebe731d1e5ceb6"
+      "results_hash": "deba36f7349ffc18a7a89b239cb39c11dc22921d52bc6815666068e754c7c541"
     }
   ],
   "defaults_profile": "built-in"

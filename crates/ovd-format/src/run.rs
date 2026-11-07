@@ -214,6 +214,8 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         "tank_allowable_stress_mpa",
         "tank_insulation_type",
         "tank_insulation_thickness_mm",
+        "tank_insulation_conductivity_w_per_mk",
+        "tank_insulation_density_kg_m3",
         "tank_structure_factor",
         "bow_rake_length_to_depth_ratio",
         "bow_rake_max_length_m",
@@ -278,11 +280,21 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
     put("eta_d", "propulsive_efficiency");
     put("speed_max_kn", "max_speed_kn");
     put("air_draft_limit_m", "air_draft_limit_m");
+    // Issue #991: the bridge clearance of the route, and where it came from, for the warning.
+    put("bridge_clearance_m", "bridge_clearance_m");
     // Issue #779: a coastal deckhouse is sized to SOLAS V/22 as well as ES-TRIN.
     put("service_area", "service_area");
     put("draught_limit_m", "draught_limit_m");
     put("downflooding_angle_deg", "downflooding_angle_deg");
     put("downflooding_openings", "downflooding_openings");
+    if let Some(i) = option.input("bridge_clearance_m")
+        && !i.value.is_null()
+    {
+        p.insert(
+            "bridge_clearance_source".into(),
+            json!(format!("{} input bridge_clearance_m", i.source.as_str())),
+        );
+    }
     // A null wall thickness asks for the pressure-vessel formula (issue #292); `put` leaves nulls
     // out, and a key left out means the engine's old fixed 25 mm.
     // In the same way a null dome size asks for the dome rule (issue #316), and a null design
@@ -372,8 +384,8 @@ pub use arc_rules::load::canonical_json;
 /// (`structure_geometry`) stay outside, like the meshes: `ovd run --json` stores them only on request
 /// (`--steel-list`), so the hash covers what a results file stores. The gross tonnage
 /// (`gross_tonnage`, issue #777) is outside the hash until a Rule or a result reads it, so adding it
-/// moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results. The stern arrangement (`stern_arrangement`, issue #887) is a summary of what the drawing block holds, for the Stern & crew view; it too is outside the hash. So are `damage_status` (`run`, `not run` or `not applicable`) and `damage_cases` (the number of damage cases, counted even when damage is skipped), issue #923: when damage runs they add to the results and move no saved hash.
-pub const UNHASHED_KEYS: [&str; 22] = [
+/// moved no saved hash. The air draft report (`air_draft_report`, issue #991: the air draft light and laden, the highest point, the bridge clearance) is outside it, so adding it moved no saved hash. The per-condition river and sea air drafts (`air_drafts`, issue #888) are outside it too, so that no saved hash moves: the river top is in the hash through the hashed air drafts, but the sea top (wheelhouse raised, vent exit always) is not otherwise in the results. The stern arrangement (`stern_arrangement`, issue #887) is a summary of what the drawing block holds, for the Stern & crew view; it too is outside the hash. So are `damage_status` (`run`, `not run` or `not applicable`) and `damage_cases` (the number of damage cases, counted even when damage is skipped), issue #923: when damage runs they add to the results and move no saved hash. `boil_off_detail` (the U-value, the heat leak per tank, the tank outer area and the boil-off per day, issue #919) is outside it: each is worked from inputs and results that are in the hash, so hashing them would move every saved LNG hash with no physical change.
+pub const UNHASHED_KEYS: [&str; 24] = [
     "drawing",
     "stability_marks",
     "cost_masses",
@@ -392,10 +404,12 @@ pub const UNHASHED_KEYS: [&str; 22] = [
     "crew",
     "rooms",
     "air_drafts",
+    "air_draft_report",
     "stern_arrangement",
     "holding_time",
     "damage_status",
     "damage_cases",
+    "boil_off_detail",
 ];
 
 /// SHA-256 of a text, as lower-case hex.
@@ -692,6 +706,7 @@ pub(crate) fn run_option_detail(
                     option,
                     &params,
                     crate::convoy::counts(option).unwrap_or((1, 1)),
+                    &rules,
                     &mut v,
                 );
                 // Issue #464: the gas a gas-fuelled Option burns, and its boil-off check.
@@ -730,6 +745,17 @@ pub(crate) fn run_option_detail(
                 let sightline = &v["sightline"];
                 measured.blind_distance_light_m = sightline["blind_distance_light_m"].as_f64();
                 measured.blind_distance_laden_m = sightline["blind_distance_laden_m"].as_f64();
+                // Issue #989: a Formation with no wheelhouse of its own is judged on its tug's view over the
+                // barges, light and laden, and SOLAS on the length of the unit.
+                let formation_sight = &v["formation"]["sightline"];
+                if sightline.is_null() && formation_sight.is_object() {
+                    measured.blind_distance_light_m =
+                        formation_sight["blind_distance_light_m"].as_f64();
+                    measured.blind_distance_laden_m =
+                        formation_sight["blind_distance_laden_m"].as_f64();
+                    measured.unit_length_overall_m =
+                        v["formation"]["equivalent_hull"]["length_m"].as_f64();
+                }
                 let speeds_of = if v["powering"].is_null() {
                     &v["formation"]
                 } else {
@@ -948,7 +974,12 @@ fn settle_rooms(
     params: &mut Map<String, Value>,
     rules: &RunRules,
 ) -> (Outcome, crate::simulate::Measured, bool) {
-    if params.get("arrangement_style").and_then(Value::as_str) != Some("deckhouse") {
+    // Issue #994: the forward-wheelhouse style holds its accommodation in a deckhouse aft, so its
+    // rooms are sized from the berths too.
+    if !matches!(
+        params.get("arrangement_style").and_then(Value::as_str),
+        Some("deckhouse" | "wheelhouse_forward")
+    ) {
         let (outcome, measured) = simulate_params_measured(params, rules);
         return (outcome, measured, true);
     }
@@ -1111,8 +1142,11 @@ fn stern_arrangement_of(
         // D4: fixed on the deckhouse, unless an air-draft limit is set and the wheelhouse can lift.
         Some(d) => {
             let mut block = json!({
-                "style": "deckhouse",
+                "style": if aft.forward_house.is_some() { "wheelhouse_forward" } else { "deckhouse" },
                 "tiers": d.tiers,
+                // Issue #943: the tiers that hold rooms, and those that only lift the wheelhouse.
+                "room_tiers": d.tiers_plan.iter().filter(|t| t.kind == ovd_core::aft_arrangement::TierKind::Rooms).count(),
+                "access_tiers": d.tiers_plan.iter().filter(|t| t.kind == ovd_core::aft_arrangement::TierKind::Access).count(),
                 "wheelhouse": if d.wheelhouse_elevating { "elevating" } else { "fixed" },
                 "wheelhouse_basis": if d.wheelhouse_elevating {
                     "air_draft_limit"
@@ -1122,6 +1156,10 @@ fn stern_arrangement_of(
                     "no_air_draft_limit"
                 },
             });
+            // Issue #994: the view aft from the wings of a forward wheelhouse; cameras are open.
+            if let Some(w) = &aft.wing_view {
+                block["rear_view"] = crate::eval::wing_view_json(w);
+            }
             // Issue #912: the openings of the deckhouse (outside the results hash, like the block).
             if let Some(p) = &measured.openings {
                 block["openings"] = openings_json(p);

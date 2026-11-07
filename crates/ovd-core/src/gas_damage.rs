@@ -15,11 +15,11 @@ use arc_rules::model::RuleSet;
 
 use crate::compartments::{Space, SpaceKind};
 use crate::damage_cases::{
-    BoxExtents, DamageCase, Permeability, PermeabilityTable, deck_edge_immersed, gas_flooding,
-    without_breached_cargo,
+    BoxExtents, DamageCase, Permeability, PermeabilityTable, breached_cargo_at_stage,
+    deck_edge_immersed, gas_flooding, without_breached_cargo,
 };
 use crate::damage_stability::{
-    DamageCriteria, DamageOutcome, Floats, FloodedVolume, assess, intermediate_stages,
+    DamageCriteria, DamageOutcome, Floats, FloodedVolume, assess, intermediate_stages_releasing,
     righting_lever_at,
 };
 use crate::hydrostatics::Hull;
@@ -153,7 +153,7 @@ pub fn gas_damage_plan(set: &RuleSet, spaces: &[Space], hull: &Hull) -> Result<G
         criteria: DamageCriteria::IGC_2_7,
         stage_criteria: DamageCriteria::IGC_2_7,
         set_key: set.key(),
-        method: "lost buoyancy, final stage of flooding (IGC 2.7.1.2, 2.7.2.1)",
+        method: "lost buoyancy, final stage (IGC 2.7.1.2, 2.7.2.1); intermediate stages by added mass at 25, 50 and 75 % (IGC 2.7.1.3): a breached tank holds sea water to the stage's fraction of its flood and keeps its cargo for the rest (IGC 2.5.3)",
         full_load_only: false,
     })
 }
@@ -377,12 +377,13 @@ pub fn run_case(
         start,
         &run.criteria,
     );
-    // Issue #760: the intermediate stages, by added mass with the cargo still aboard (D15 to D18).
-    let stages = intermediate_stages(
+    // Issue #760, #988: the intermediate stages, by added mass; a breached tank has let out the stage's fraction
+    // of its cargo and holds sea water to the same fraction (D15 to D18).
+    let stages = intermediate_stages_releasing(
         &hull.table,
         &f.flooded,
         &outcome,
-        (mass, g),
+        &|fraction| breached_cargo_at_stage(fraction, mass, g, cargo, spaces, &f.breached),
         density,
         start,
         &run.stage_criteria,

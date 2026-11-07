@@ -892,7 +892,17 @@ fn tank_design_of(p: &Map<String, Value>) -> R<ovd_core::barge_capacity::TankDes
         insulation_thickness_mm: get_or(
             p,
             "tank_insulation_thickness_mm",
-            b::DEFAULT_TANK_INSULATION_MM,
+            b::LEGACY_SIMULATE_INSULATION_MM,
+        )?,
+        insulation_conductivity_w_per_mk: get_or(
+            p,
+            "tank_insulation_conductivity_w_per_mk",
+            b::DEFAULT_TANK_INSULATION_CONDUCTIVITY_W_PER_MK,
+        )?,
+        insulation_density_kg_m3: get_or(
+            p,
+            "tank_insulation_density_kg_m3",
+            b::DEFAULT_TANK_INSULATION_DENSITY_KG_M3,
         )?,
         structure_factor: get_or(p, "tank_structure_factor", b::DEFAULT_TANK_STRUCTURE_FACTOR)?,
     })
@@ -1151,6 +1161,14 @@ fn tank_report(
             (
                 "insulation_thickness_mm",
                 num(design.insulation_thickness_mm),
+            ),
+            (
+                "insulation_conductivity_w_per_mk",
+                num(design.insulation_conductivity_w_per_mk),
+            ),
+            (
+                "insulation_density_kg_m3",
+                num(design.insulation_density_kg_m3),
             ),
             ("structure_factor", num(design.structure_factor)),
             (
@@ -1461,6 +1479,8 @@ fn simulate_once_inner(
     inp.water_density = rho;
     inp.required_freeboard = freeboard;
     inp.air_draft_limit_m = air_draft_limit;
+    inp.bridge_clearance_m = truthy_float(p, "bridge_clearance_m")?;
+    inp.bridge_clearance_source = bridge_source_of(p);
     // The end spaces. A key left out keeps the core default, the value the engine always used.
     inp.bow_rake_to_depth_ratio = get_or(
         p,
@@ -1490,8 +1510,11 @@ fn simulate_once_inner(
         t_design,
         (&hull, rho),
     )?;
-    inp.sightline_limit_m = sightline_limit_of(p, self_propelled);
-    inp.solas_v22_sizing = solas_v22_sizing_of(p);
+    let blind = sightline_limits_of(p, self_propelled, rules);
+    inp.sightline_limit_m = blind.light_m;
+    inp.sightline_limit_laden_m = blind.laden_m;
+    inp.sightline_sizing_limit_m = blind.sizing_light_m;
+    inp.sightline_limit_source = blind.light_rule;
     // The hold design values. A key left out keeps the core default, which is the value the engine
     // used before these were inputs.
     inp.wing_void_width = get_or(p, "hold_wing_void_width_m", inp.wing_void_width)?;
@@ -1999,6 +2022,87 @@ fn simulate_once_inner(
         ),
         ids,
     )
+    .map(|v| {
+        with_air_draft_report(
+            v,
+            &r,
+            (
+                inp.bridge_clearance_m,
+                inp.bridge_clearance_source.clone(),
+                inp.ballast_capacity_t,
+            ),
+        )
+    })
+}
+
+/// Issue #991: where the bridge clearance comes from, for the warning: the `run` layer names the source of
+/// the Option's input (`bridge_clearance_source`); the Python API has none, so the value is a typed one.
+fn bridge_source_of(p: &Map<String, Value>) -> Option<String> {
+    p.get("bridge_clearance_m").filter(|v| !v.is_null())?;
+    Some(
+        p.get("bridge_clearance_source")
+            .and_then(Value::as_str)
+            .unwrap_or("typed input bridge_clearance_m")
+            .to_string(),
+    )
+}
+
+/// Issue #991: the `air_draft_report` block of the results: the air draft, light and laden, with the
+/// highest point named, and the bridge clearance of the route when one is given, with its source and
+/// whether the air draft is over it. A warning, never a block: the warning itself is in `warnings`. The
+/// block is outside the results hash (`UNHASHED_KEYS`), so no saved hash moves. Each air draft is the
+/// river one (the wheelhouse lowered for transit; the vent exit when the mast does not lower).
+fn with_air_draft_report(
+    mut v: Value,
+    r: &BargeCapacityResult,
+    bridge: (Option<f64>, Option<String>, f64),
+) -> Value {
+    let Some(point) = r.highest_point else {
+        return v;
+    };
+    let (limit, source, ballast_capacity_t) = bridge;
+    let ballasted = ballast_capacity_t > 0.0;
+    let worked = if ballasted {
+        r.air_draft_ballast_m
+    } else {
+        r.air_draft_light_m
+    };
+    // A light air draft that is not worked (not finite) is not "under the limit": the laden one stands in.
+    let light_worked = worked.filter(|g| g.is_finite());
+    let laden_now = v["results"]["air_draft_loaded_m"].as_f64();
+    let governing = light_worked.or(laden_now);
+    let condition = match (light_worked, ballasted) {
+        (Some(_), true) => "ballasted light",
+        (Some(_), false) => "light",
+        (None, _) => "laden (the light draught is not worked)",
+    };
+    let bridge_limit = limit.map_or(Value::Null, |limit| {
+        json!({
+            "limit_m": num(limit),
+            "source": source,
+            "condition": condition,
+            "air_draft_m": opt_num(governing),
+            "over_m": governing.map_or(Value::Null, |g| num((g - limit).max(0.0))),
+            "exceeded": governing.is_some_and(|g| g.is_finite() && g > limit + 1e-9),
+        })
+    });
+    let laden = v["results"]["air_draft_loaded_m"].clone();
+    if let Some(o) = v.as_object_mut() {
+        o.insert(
+            "air_draft_report".to_string(),
+            json!({
+                "highest_point": {
+                    "key": point.key,
+                    "label": point.label(),
+                    "top_above_keel_m": num(point.top_above_keel_m),
+                },
+                "light_m": opt_num(r.air_draft_light_m),
+                "laden_m": laden,
+                "bridge_limit": bridge_limit,
+            }),
+        );
+    }
+    v
 }
 
 /// Issue #331: the `liquid` block, for a liquid bulk Cargo only, so a dry bulk result keeps its keys.
@@ -2317,18 +2421,72 @@ fn powering_json(
     })))
 }
 
-/// Whether the Option reaches the sea, so a fixed deckhouse wheelhouse is also sized to SOLAS V/22
-/// (issue #779): its Service Area is `coastal-and-river`. River-only keeps ES-TRIN alone.
-fn solas_v22_sizing_of(p: &Map<String, Value>) -> bool {
-    p.get("service_area").and_then(Value::as_str) == Some("coastal-and-river")
+/// Issue #354, #989: the Blind Distance limits of a self-propelled hull whose sightline is checked as a
+/// distance, read from the Rule Sets of the stack by [`ovd_core::gas_arrangement::blind_limits`]: the
+/// blocking Rules that measure `wheelhouse.blind_distance` and apply to the design. The stack follows the
+/// Service Area (ES-TRIN 7.02(2) is in both default stacks, SOLAS V/22.1.1 in the coastal one), so the
+/// limit does too. The margin method has none (`None`). A run reads the stack of its Option; the Python
+/// API gives `simulate` no Option, so it reads the default stack of the Service Area at the highest
+/// built-in versions, as a new Option stores it. No constant sets a limit.
+fn sightline_limits_of(
+    p: &Map<String, Value>,
+    self_propelled: bool,
+    rules: &RunRules,
+) -> ovd_core::wheelhouse::BlindLimits {
+    let method = p.get("sightline_method").and_then(Value::as_str);
+    // Issue #994: a forward wheelhouse is always checked as a Blind Distance, whatever the method: its
+    // eye is ahead of the cargo, so the margin over the cargo means nothing. Its limits are those of
+    // the stack, as for the blind-distance method.
+    let forward = p.get("arrangement_style").and_then(Value::as_str) == Some("wheelhouse_forward");
+    if !(self_propelled && (method == Some("blind_distance") || forward)) {
+        return ovd_core::wheelhouse::BlindLimits::default();
+    }
+    if !rules.inputs.applicability.is_empty() {
+        return ovd_core::gas_arrangement::blind_limits(&rules.sets, &rules.inputs);
+    }
+    let (sets, inputs) = default_sightline_rules(p);
+    ovd_core::gas_arrangement::blind_limits(&sets, &inputs)
 }
 
-/// Issue #354: the Blind Distance limit of a self-propelled hull whose sightline is checked as a
-/// distance (ES-TRIN 7.02(2), 250 m until the Rule Sets of #355); `None` for the margin method.
-fn sightline_limit_of(p: &Map<String, Value>, self_propelled: bool) -> Option<f64> {
-    let method = p.get("sightline_method").and_then(Value::as_str);
-    (self_propelled && method == Some("blind_distance"))
-        .then_some(ovd_core::wheelhouse::ES_TRIN_BLIND_DISTANCE_M)
+/// The Rule Sets and inputs [`sightline_limits_of`] reads when the run has no Option: the default stack of
+/// the Service Area (issue #989), and the few inputs the Blind Distance Rules read.
+fn default_sightline_rules(
+    p: &Map<String, Value>,
+) -> (Vec<ovd_core::rules::RuleSet>, ga::RuleInputs) {
+    let area = p
+        .get("service_area")
+        .and_then(Value::as_str)
+        .unwrap_or("river-only");
+    let gas = p.get("vessel").and_then(Value::as_str) == Some("gas_barge");
+    let library = crate::rule_set::built_in();
+    let ids = crate::profile::Profile::built_in()
+        .default_stack(area, gas)
+        .unwrap_or_default();
+    let sets: Vec<ovd_core::rules::RuleSet> = ids
+        .iter()
+        .filter_map(|id| library.latest(id))
+        .cloned()
+        .collect();
+    let mut inputs = ga::RuleInputs::default();
+    inputs
+        .applicability
+        .push(("service_area".to_string(), area.to_string()));
+    if let Some(loa) = p.get("loa_m").and_then(Value::as_f64) {
+        inputs.applicability.push((
+            "length_band".to_string(),
+            ovd_core::measured::length_band(loa).to_string(),
+        ));
+        for id in ["input.length_overall_m", "wheelhouse.ship_length"] {
+            if let Some(info) = crate::trace::measure_info(id) {
+                inputs.measures.push((
+                    id.to_string(),
+                    info,
+                    ovd_core::rule_trace::MeasureValue::Number(loa),
+                ));
+            }
+        }
+    }
+    (sets, inputs)
 }
 
 /// The machinery of a specified Propulsor (issue #352), or `None` for an `unspecified` one (today's
@@ -2886,7 +3044,7 @@ fn machinery_steel_json(m: &ovd_core::aft_arrangement::MachinerySummary) -> Valu
 /// results keep their hash).
 fn sightline_json(r: &BargeCapacityResult) -> Option<Value> {
     let s = r.sightline.as_ref()?;
-    Some(json!({
+    let mut block = json!({
         "method": "blind_distance",
         "limit_m": num(s.limit_m),
         "blind_distance_light_m": num(s.blind_distance_m),
@@ -2896,7 +3054,13 @@ fn sightline_json(r: &BargeCapacityResult) -> Option<Value> {
         "eye_raised_m": num(s.eye_raised_m),
         "floor_raised_m": num(s.floor_raised_m),
         "lift_enough": s.enough,
-    }))
+    });
+    // Issue #989: the laden limit, only when a Rule of the stack gives one, so a design with none keeps
+    // its block as it was.
+    if let (Some(limit), Some(o)) = (r.blind_limit_laden_m, block.as_object_mut()) {
+        o.insert("limit_laden_m".to_string(), num(limit));
+    }
+    Some(block)
 }
 
 /// The `powering` block (issue #353) joins a machinery's results only, and the `sightline` block
@@ -3042,6 +3206,7 @@ fn simulate_gas(
     } else {
         None
     };
+    let blind = sightline_limits_of(p, self_propelled, rules);
     let options = FitOptions {
         // Issue #741: the `structure` block of the Hull, for the panel model of each arrangement.
         structure: structure_block(p)?,
@@ -3143,6 +3308,8 @@ fn simulate_gas(
         water_density_t_per_m3: rho,
         required_freeboard_m: fb,
         air_draft_limit_m: truthy_float(p, "air_draft_limit_m")?,
+        bridge_clearance_m: truthy_float(p, "bridge_clearance_m")?,
+        bridge_clearance_source: bridge_source_of(p),
         // Issue #822: the cargo vent mast; the Service Area is always given (issue #925).
         river_only: p.get("service_area").and_then(Value::as_str) == Some("river-only"),
         vent_stub_m: get_or(p, "vent_stub_m", ovd_core::vent_mast::DEFAULT_VENT_STUB_M)?,
@@ -3156,8 +3323,10 @@ fn simulate_gas(
         rules: rules.sets.clone(),
         rule_inputs: rules.inputs.clone(),
         machinery: gas_machinery,
-        sightline_limit_m: sightline_limit_of(p, self_propelled),
-        solas_v22_sizing: solas_v22_sizing_of(p),
+        sightline_limit_m: blind.light_m,
+        sightline_limit_laden_m: blind.laden_m,
+        sightline_sizing_limit_m: blind.sizing_light_m,
+        sightline_limit_source: blind.light_rule.clone(),
         is_code: is_code_options,
         ..FitOptions::default()
     };
@@ -3535,6 +3704,17 @@ fn simulate_gas(
         ),
         ids,
     )
+    .map(|v| {
+        with_air_draft_report(
+            v,
+            r,
+            (
+                f.engine_inputs.bridge_clearance_m,
+                f.engine_inputs.bridge_clearance_source.clone(),
+                f.engine_inputs.ballast_capacity_t,
+            ),
+        )
+    })
     .map(|mut v| {
         if !gas_damage_block.is_null()
             && let Some(o) = v.as_object_mut()

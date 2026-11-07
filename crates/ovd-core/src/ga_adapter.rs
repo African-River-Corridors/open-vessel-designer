@@ -127,7 +127,11 @@ fn tank_result(
     // outer diameter. Read the inner diameter the capacity model already reported; fall back to
     // the build-up only if it is absent.
     let wall = opt_truthy_or(inp.tank_wall_thickness, 25.0) / 1000.0;
-    let insul = res.insulation_thickness_mm.unwrap_or(350.0) / 1000.0;
+    // The thickness of the result, or the one the tank was designed with: never a stand-in (#919).
+    let insul = res
+        .insulation_thickness_mm
+        .unwrap_or(inp.tank_design.insulation_thickness_mm)
+        / 1000.0;
     let idia = match res.tank_inner_diameter_m {
         Some(d) => d,
         None => od - 2.0 * insul - 2.0 * wall,
@@ -235,7 +239,9 @@ pub fn to_ga(
     gi.n_tanks_wide = res.n_tanks_wide.unwrap_or(0);
     gi.n_tanks_long = inp.n_tanks_long;
     gi.tank_wall_thickness = Some(opt_truthy_or(inp.tank_wall_thickness, 25.0));
-    gi.insulation_thickness = res.insulation_thickness_mm.unwrap_or(350.0);
+    gi.insulation_thickness = res
+        .insulation_thickness_mm
+        .unwrap_or(inp.tank_design.insulation_thickness_mm);
     // The dome in force: by the dome rule (issue #316) it is the converged tank's.
     gi.dome_height = res
         .gas_basis

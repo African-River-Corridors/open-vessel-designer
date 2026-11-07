@@ -92,6 +92,10 @@ const BUILT_IN: &[(&str, &str)] = &[
         "rules/solas-v22/1.1.0.json",
         include_str!("../rules/solas-v22/1.1.0.json"),
     ),
+    (
+        "rules/solas-v22/2.0.0.json",
+        include_str!("../rules/solas-v22/2.0.0.json"),
+    ),
     // Issue #781: two SOLAS II-2 paragraphs named as gaps, not coded (the text is not in the library).
     (
         "rules/solas-ii-2/1.0.0.json",

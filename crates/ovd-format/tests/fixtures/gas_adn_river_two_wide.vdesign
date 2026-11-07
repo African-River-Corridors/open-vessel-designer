@@ -149,6 +149,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -411,6 +419,10 @@
           "source": "default"
         },
         "air_draft_limit_m": {
+          "value": null,
+          "source": "default"
+        },
+        "bridge_clearance_m": {
           "value": null,
           "source": "default"
         },
@@ -688,7 +700,7 @@
           "source": "default"
         }
       },
-      "results_hash": "c16b1eed3edb2fe64bfd01b597c334ae1eb53856c3a842b44fda9ccc22071306"
+      "results_hash": "ca0923f6f0f097a1bdbe741e28d6a81c4ee3b65103f48948e5b336618c627bb0"
     }
   ],
   "defaults_profile": "built-in"

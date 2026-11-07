@@ -55,7 +55,7 @@ START, END = "<!-- design-impact:start -->", "<!-- design-impact:end -->"
 # Top-level results keys that are not results (drawing geometry, what a view marks). The results hash
 # leaves them out too: UNHASHED_KEYS in crates/ovd-format/src/run.rs. tests/test_design_impact_unhashed_keys.py
 # checks that the two lists agree.
-UNHASHED_KEYS = ("drawing", "stability_marks", "cost_masses", "cost", "text_ids", "rule_trace", "calibration", "damage", "marpol_damage", "damage_by_rule", "oil_outflow", "fit_tried", "steel_list", "structure_geometry", "gross_tonnage", "crew", "rooms", "air_drafts", "stern_arrangement", "holding_time", "damage_status", "damage_cases")
+UNHASHED_KEYS = ("drawing", "stability_marks", "cost_masses", "cost", "text_ids", "rule_trace", "calibration", "damage", "marpol_damage", "damage_by_rule", "oil_outflow", "fit_tried", "steel_list", "structure_geometry", "gross_tonnage", "crew", "rooms", "air_drafts", "air_draft_report", "stern_arrangement", "holding_time", "damage_status", "damage_cases", "boil_off_detail")
 
 LABEL = "design-change"
 MAX_ROWS = 40
@@ -103,6 +103,8 @@ OPTIONAL_INPUT_CASES = (
     ("propulsive_efficiency", "bauxite", "box_hold", "self_propelled", 90.0, 14.0, 4.5,
      {"propulsive_efficiency": 0.55, "max_speed_kn": 9.0}),
     ("air_draft_limit_m", "bauxite", "box_hold", "pushed_barge", 90.0, 14.0, 4.5, {"air_draft_limit_m": 6.0}),
+    # Issue #991: a bridge clearance under the hull's air draft gives a warning (a gas hull's tank dome is its highest point).
+    ("bridge_clearance_m", "LNG", "type_c_tanks", "self_propelled", 90.0, 14.0, 5.5, {"bridge_clearance_m": 9.1}),
     # Issue #912: a typed list of deckhouse openings stands in for the default layout.
     ("deckhouse_openings", "bauxite", "box_hold", "self_propelled", 90.0, 14.0, 4.5,
      {"arrangement_style": "deckhouse",
@@ -311,6 +313,11 @@ OPTIONAL_INPUT_CASES = (
      {"tank_insulation_type": "pu_foam"}),
     ("tank_insulation_thickness_mm", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"tank_insulation_thickness_mm": 200.0}),
+    # Issue #919: the insulation's conductivity (the boil-off) and density (the insulation mass), on LNG.
+    ("tank_insulation_conductivity_w_per_mk", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"tank_insulation_conductivity_w_per_mk": 0.052}),
+    ("tank_insulation_density_kg_m3", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+     {"tank_insulation_density_kg_m3": 120.0}),
     ("tank_structure_factor", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"tank_structure_factor": 1.2}),
     # The holding-time profile inputs (issue #869): input only, so no result moves.

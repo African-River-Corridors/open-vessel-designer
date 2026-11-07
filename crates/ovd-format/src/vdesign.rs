@@ -185,7 +185,7 @@ pub const WHEELHOUSE_TYPES: &[&str] = &["elevating", "fixed"];
 /// How the stern is laid out (spec 0011 D3, issue #779): today's container block, or a deckhouse of
 /// tiers over the machinery space. Held in step with `ovd_core::aft_arrangement::ARRANGEMENT_STYLES`
 /// by a test.
-pub const ARRANGEMENT_STYLES: &[&str] = &["container_block", "deckhouse"];
+pub const ARRANGEMENT_STYLES: &[&str] = &["container_block", "deckhouse", "wheelhouse_forward"];
 /// The manning Rule Sets the crew model runs on (spec 0011 D13, issue #778): `liberia-man-001`
 /// (the coastal default), `uk-msn-1868` (officers from the UK guidance) and `ccnr-rpn-19` (the
 /// river-only default). Held in step with `ovd_core::crew::MANNING_RULE_SETS` by a test.
@@ -214,6 +214,8 @@ pub const TABLE_DEFAULTS: &[&str] = &[
     "tank_material",
     "tank_insulation_type",
     "tank_insulation_thickness_mm",
+    "tank_insulation_conductivity_w_per_mk",
+    "tank_insulation_density_kg_m3",
     "tank_structure_factor",
     "tank_dome_height_m",
     "tank_dome_diameter_m",
@@ -375,6 +377,11 @@ pub const GAS_TANK_WALL_THICKNESS_MM: f64 = 25.0;
 /// `models::BargeInputs` defaults).
 pub const GAS_TANK_DESIGN_PRESSURE_MPA: f64 = 0.5;
 pub const GAS_TANK_INSULATION_MM: f64 = 350.0;
+/// The insulation conductivity and density the engine used before they were inputs (issue #919): a
+/// file saved before them keeps these, so its results do not move. A later change of the profile
+/// default does not move an old file.
+pub const GAS_TANK_INSULATION_CONDUCTIVITY_W_PER_MK: f64 = 0.026;
+pub const GAS_TANK_INSULATION_DENSITY_KG_M3: f64 = 60.0;
 pub const GAS_TANK_STRUCTURE_FACTOR: f64 = 1.30;
 
 /// The aft block values fixed in the engine before they were inputs (`aft_arrangement` and
@@ -743,6 +750,18 @@ pub const LEGACY_FIXED_INPUTS: &[LegacyFixed] = &[
         applies_to: AppliesTo::Only("type_c_tanks"),
         formations: None,
         value: GAS_TANK_INSULATION_MM,
+    },
+    LegacyFixed {
+        name: "tank_insulation_conductivity_w_per_mk",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        formations: None,
+        value: GAS_TANK_INSULATION_CONDUCTIVITY_W_PER_MK,
+    },
+    LegacyFixed {
+        name: "tank_insulation_density_kg_m3",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        formations: None,
+        value: GAS_TANK_INSULATION_DENSITY_KG_M3,
     },
     LegacyFixed {
         name: "tank_structure_factor",
@@ -1162,6 +1181,12 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
     // Issue #912: a file saved before types no deckhouse openings; the engine places the default layout.
     LegacyFixedJson {
         name: "deckhouse_openings",
+        applies_to: AppliesTo::All,
+        value: "null",
+    },
+    // Issue #991: a file saved before gives no bridge clearance, so no bridge warning.
+    LegacyFixedJson {
+        name: "bridge_clearance_m",
         applies_to: AppliesTo::All,
         value: "null",
     },
@@ -1923,6 +1948,7 @@ pub const CHOICE_LABELS: &[(&str, &str)] = &[
     ("bv_nr467", "BV NR467"),
     ("bv_nr217", "BV NR217"),
     ("deckhouse", "Deckhouse"),
+    ("wheelhouse_forward", "Wheelhouse forward"),
     ("fixed", "Fixed"),
     ("margin", "Margin over the obstruction"),
     ("blind_distance", "Blind distance (ES-TRIN 7.02)"),
@@ -2508,6 +2534,20 @@ pub const INPUTS: &[InputSpec] = &[
     only(
         "tank_insulation_thickness_mm",
         "Tank insulation thickness",
+        NUM,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    only(
+        "tank_insulation_conductivity_w_per_mk",
+        "Tank insulation conductivity",
+        NUM,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    only(
+        "tank_insulation_density_kg_m3",
+        "Tank insulation density",
         NUM,
         "type_c_tanks",
         Group::GasTanks,
@@ -3244,6 +3284,13 @@ pub const INPUTS: &[InputSpec] = &[
     spec(
         "air_draft_limit_m",
         "Air-draft limit",
+        NUM_OR_NONE,
+        false,
+        Group::WaterwayLimits,
+    ),
+    spec(
+        "bridge_clearance_m",
+        "Bridge clearance",
         NUM_OR_NONE,
         false,
         Group::WaterwayLimits,
@@ -5816,6 +5863,43 @@ fn cross_checks(
                 thickness = number(thickness)
             )),
             &["tank_insulation_type", "tank_insulation_thickness_mm"],
+        );
+    }
+    // The conductivity and the density default to the values of the default insulation type of the
+    // Cargo (issue #919; design Q1). A type typed other than that one, with either value still the
+    // default, gets a warning: the two values are not those of the typed type.
+    if let Some(typed) = inputs
+        .iter()
+        .find(|(k, i)| k == "tank_insulation_type" && i.source == Source::Typed)
+        .and_then(|(_, i)| i.value.as_str())
+        && typed != "unspecified"
+        && let Ok(Some(default)) =
+            table_default_for("tank_insulation_type", inputs, &Map::new(), profile)
+        && let Some(default) = default.as_str()
+        && default != typed
+        && [
+            "tank_insulation_conductivity_w_per_mk",
+            "tank_insulation_density_kg_m3",
+        ]
+        .iter()
+        .any(|n| {
+            inputs
+                .iter()
+                .any(|(k, i)| k == n && i.source != Source::Typed)
+        })
+    {
+        report.warning_text(
+            at(text!(
+                "msg-insulation-defaults-of-other-type",
+                "`{input}` is {typed}, but `{conductivity}` and `{density}` still hold the \
+                 defaults for {default}: type the values for {typed} (soft check); accepted",
+                input = Arg::input("tank_insulation_type"),
+                typed = typed,
+                conductivity = Arg::input("tank_insulation_conductivity_w_per_mk"),
+                density = Arg::input("tank_insulation_density_kg_m3"),
+                default = default
+            )),
+            &["tank_insulation_type"],
         );
     }
     // An LPG Cargo is not loaded warmer than the temperature at which its vapour pressure is the

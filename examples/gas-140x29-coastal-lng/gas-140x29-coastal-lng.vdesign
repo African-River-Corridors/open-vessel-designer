@@ -113,6 +113,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -359,6 +367,10 @@
           "source": "default"
         },
         "air_draft_limit_m": {
+          "value": null,
+          "source": "default"
+        },
+        "bridge_clearance_m": {
           "value": null,
           "source": "default"
         },
@@ -620,7 +632,7 @@
           "source": "default"
         }
       },
-      "results_hash": "a6d0aca8294fa0d108f8bf4996af7bf1e3565b1b49428092ac9e6c436e4499e6"
+      "results_hash": "63830cce3605a1268ff8d481abd4191459f28318bdf4b09a8e1c067ea2a32412"
     },
     {
       "name": "B profile",
@@ -731,6 +743,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -977,6 +997,10 @@
           "source": "default"
         },
         "air_draft_limit_m": {
+          "value": null,
+          "source": "default"
+        },
+        "bridge_clearance_m": {
           "value": null,
           "source": "default"
         },
@@ -1238,7 +1262,7 @@
           "source": "default"
         }
       },
-      "results_hash": "1f73394c4d7dd19580365f85baa1fffad1612ce0cb15bfc50d35985e088b6422"
+      "results_hash": "23a2b26e238f97da639dacb621487640c2a6e08f67aff3a05235c1ff37298361"
     },
     {
       "name": "C deep",
@@ -1349,6 +1373,14 @@
           "value": 330.0,
           "source": "default"
         },
+        "tank_insulation_conductivity_w_per_mk": {
+          "value": 0.026,
+          "source": "default"
+        },
+        "tank_insulation_density_kg_m3": {
+          "value": 96.0,
+          "source": "default"
+        },
         "holding_profile": {
           "value": [
             {
@@ -1595,6 +1627,10 @@
           "source": "default"
         },
         "air_draft_limit_m": {
+          "value": null,
+          "source": "default"
+        },
+        "bridge_clearance_m": {
           "value": null,
           "source": "default"
         },
@@ -1856,7 +1892,7 @@
           "source": "default"
         }
       },
-      "results_hash": "8673c19b596bae183b449b848eb4e3f9134db650012c55dc738cb570757a3f76"
+      "results_hash": "561e72336a1ec0eef7109e7a880ed9e03790bc530ba1ef8af53a2a64594a660c"
     }
   ],
   "defaults_profile": "built-in"

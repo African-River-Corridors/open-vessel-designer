@@ -115,7 +115,18 @@ pub const DEFAULT_TANK_DESIGN_PRESSURE_MPA: f64 = 0.5;
 pub const DEFAULT_TANK_MATERIAL: &str = "9Ni";
 /// The tank head type the engine used before it was an input (issue #375).
 pub const DEFAULT_TANK_HEAD_TYPE: &str = "hemisphere";
-pub const DEFAULT_TANK_INSULATION_MM: f64 = 350.0;
+/// The insulation thickness the original engine used (mm): the `TankDesign` default, and what the raw
+/// `simulate::simulate` eval entry (the one `calibration.py` and `api_scenarios` call, not Python
+/// `ovd.simulate.simulate`, which goes through `fill` and `run`) takes for a key it is handed without
+/// one. A Design never reads it: the thickness is an input, from the Defaults Profile or typed
+/// (issue #919).
+pub const LEGACY_SIMULATE_INSULATION_MM: f64 = 350.0;
+/// The thermal conductivity the heat leak used before it was an input (W/m.K, issue #919): the
+/// polyurethane foam value of [`crate::gas_fuel::INSULATION_CONDUCTIVITY_W_PER_MK`].
+pub const DEFAULT_TANK_INSULATION_CONDUCTIVITY_W_PER_MK: f64 =
+    crate::gas_fuel::INSULATION_CONDUCTIVITY_W_PER_MK;
+/// The insulation density the tank mass used before it was an input (kg/m3, issue #919).
+pub const DEFAULT_TANK_INSULATION_DENSITY_KG_M3: f64 = 60.0;
 pub const DEFAULT_TANK_STRUCTURE_FACTOR: f64 = 1.30;
 /// Default gap between the wing tank and the cargo tank, per side (m).
 pub const DEFAULT_WING_TANK_GAP_M: f64 = 0.6;
@@ -169,6 +180,10 @@ pub struct TankDesign {
     pub allowable_stress_mpa: Option<f64>,
     /// Insulation thickness (mm). The tank outer diameter is the outside of it.
     pub insulation_thickness_mm: f64,
+    /// Insulation thermal conductivity (W/m.K): the boil-off and the holding time read it (issue #919).
+    pub insulation_conductivity_w_per_mk: f64,
+    /// Insulation density (kg/m3): the insulation mass reads it (issue #919).
+    pub insulation_density_kg_m3: f64,
     /// Internal stiffeners, supports and saddles as a multiple of the shell weight.
     pub structure_factor: f64,
     /// The liquid pressure added to the design pressure in the wall formula (issue #374).
@@ -186,7 +201,9 @@ impl Default for TankDesign {
             design_pressure_igc_minimum: false,
             material: DEFAULT_TANK_MATERIAL.to_string(),
             allowable_stress_mpa: None,
-            insulation_thickness_mm: DEFAULT_TANK_INSULATION_MM,
+            insulation_thickness_mm: LEGACY_SIMULATE_INSULATION_MM,
+            insulation_conductivity_w_per_mk: DEFAULT_TANK_INSULATION_CONDUCTIVITY_W_PER_MK,
+            insulation_density_kg_m3: DEFAULT_TANK_INSULATION_DENSITY_KG_M3,
             structure_factor: DEFAULT_TANK_STRUCTURE_FACTOR,
             liquid_pressure: LiquidPressure::None,
             design_temperature_c: None,
@@ -219,6 +236,12 @@ pub struct BargeCapacityInputs {
     pub required_freeboard: f64,
     /// Bridge clearance limit (m), checked against the LIGHT condition.
     pub air_draft_limit_m: Option<f64>,
+    /// Issue #991: the clearance of the lowest bridge on the route (m). Unlike `air_draft_limit_m`, which
+    /// is a design limit that blocks, an air draft over it only warns: the design stands, and the warning
+    /// names the highest point.
+    pub bridge_clearance_m: Option<f64>,
+    /// Issue #991: where the bridge clearance comes from (typed, a default), for the warning.
+    pub bridge_clearance_source: Option<String>,
     /// Ballast the empty leg can carry (t)
     pub ballast_capacity_t: f64,
 
@@ -288,15 +311,25 @@ pub struct BargeCapacityInputs {
     /// Issue #350: the Stern Form, when it is not today's square stern: it corrects the LCB of the
     /// trim. `None`: a square stern.
     pub stern_geometry: Option<crate::stern_form::SternGeometry>,
-    /// Issue #354: `Some(limit)` checks the sightline as a Blind Distance (ES-TRIN 7.02(2)) in the
-    /// light condition, and lifts the wheelhouse to meet it; `None`: today's margin over the cargo.
+    /// Issue #354: `Some(limit)` checks the sightline as a Blind Distance in the light condition, and
+    /// lifts the wheelhouse to meet it; `None`: today's margin over the cargo. Issue #989: the limit is
+    /// the least blocking limit of the Rule Sets of the stack ([`crate::wheelhouse::BlindLimits`]), the
+    /// one the Rule Trace checks the result against; no constant sets it.
     pub sightline_limit_m: Option<f64>,
+    /// Issue #989: the limit in the laden condition, from the same Rule Sets (SOLAS V/22.1.1 holds in all
+    /// conditions of draught). `Some` makes the lift meet it too. It binds only beside a light limit: with
+    /// no light limit the sightline is not worked as a distance.
+    pub sightline_limit_laden_m: Option<f64>,
+    /// Issue #989: the light limit a fixed deckhouse wheelhouse is sized to: the least of the blocking and
+    /// the warning Rules' limits ([`crate::wheelhouse::BlindLimits::sizing_light_m`]). A coastal stack that
+    /// holds SOLAS V/22.1.1 as a warning (`solas-v22` 1.x) sizes the house to two lengths and only warns.
+    /// `None`: the light limit.
+    pub sightline_sizing_limit_m: Option<f64>,
+    /// Issue #989: the id of the Rule that gives the light limit, for the check's message.
+    pub sightline_limit_source: Option<String>,
     /// Issue #779: the trimmed light waterline (draught aft, draught forward) of a first pass, which
     /// the second pass sizes a fixed deckhouse wheelhouse to. `None`: the keel.
     pub light_waterline_hint: Option<(f64, f64)>,
-    /// Issue #779: a fixed deckhouse wheelhouse is sized to the stricter of the Blind Distance limit
-    /// and SOLAS V/22.1.1 ([`crate::wheelhouse::solas_v22_limit_m`]); `true` for a coastal Option.
-    pub solas_v22_sizing: bool,
     /// Issue #352: the machinery of a specified Propulsor; it sets the stern block's run below deck
     /// and its mass items. `None`: today's stern block.
     pub machinery: Option<crate::machinery::MachineryInputs>,
@@ -381,6 +414,8 @@ impl BargeCapacityInputs {
             water_density: 1.0,
             required_freeboard: 0.3,
             air_draft_limit_m: None,
+            bridge_clearance_m: None,
+            bridge_clearance_source: None,
             ballast_capacity_t: 0.0,
             aft: None,
             aft_design: AftDesign::default(),
@@ -411,8 +446,10 @@ impl BargeCapacityInputs {
             stern_block_mass: None,
             stern_geometry: None,
             sightline_limit_m: None,
+            sightline_limit_laden_m: None,
+            sightline_sizing_limit_m: None,
+            sightline_limit_source: None,
             light_waterline_hint: None,
-            solas_v22_sizing: false,
             machinery: None,
             dome_height: DEFAULT_TANK_DOME_HEIGHT_M,
             dome_diameter: DEFAULT_TANK_DOME_DIAMETER_M,
@@ -509,6 +546,33 @@ pub struct GasBasis {
     pub weights: WeightBreakdown,
 }
 
+/// The highest fixed point of a vessel with the wheelhouse lowered for transit, which sets the air draft
+/// (issue #991): its key and its top above the keel. The keys: `tank_dome` (the dome top of a gas
+/// tank), `hatch_coaming` (a dry bulk hold), `deck` (a liquid bulk hull), `stern_block` (the deck
+/// units and the wheelhouse lowered), `deckhouse` (the top tier of a deckhouse, wheelhouse fixed) and
+/// `vent_mast` (the vent exit of a gas hull whose mast does not lower).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct HighestPoint {
+    pub key: &'static str,
+    pub top_above_keel_m: f64,
+}
+
+impl HighestPoint {
+    /// The name of the point, in English, for a message.
+    pub fn label(&self) -> &'static str {
+        match self.key {
+            "tank_dome" => "tank dome",
+            "tank_top" => "tank top (the tank has no dome)",
+            "hatch_coaming" => "hatch coaming",
+            "deck" => "deck",
+            "stern_block" => "stern block (deck units, wheelhouse lowered)",
+            "deckhouse" => "deckhouse",
+            "vent_mast" => "vent mast exit",
+            _ => "highest point",
+        }
+    }
+}
+
 /// Volume-bound capacity and the resulting full-load hydrostatics.
 #[derive(Debug, Clone, PartialEq)]
 pub struct BargeCapacityResult {
@@ -529,6 +593,8 @@ pub struct BargeCapacityResult {
     pub deadweight_t: f64,
     pub freeboard_m: f64,
     pub air_draft_top_above_keel_m: f64,
+    /// Issue #991: the highest point that sets `air_draft_top_above_keel_m`.
+    pub highest_point: Option<HighestPoint>,
     pub overloaded: bool,
 
     // Gas design detail (`None` for bulk)
@@ -601,6 +667,8 @@ pub struct BargeCapacityResult {
     /// Distance at the same lift; `None` with the margin method or no wheelhouse.
     pub sightline: Option<crate::wheelhouse::Sightline>,
     pub blind_distance_laden_m: Option<f64>,
+    /// Issue #989: the laden limit the lift met, when the Rule Sets give one.
+    pub blind_limit_laden_m: Option<f64>,
     pub gas_basis: Option<GasBasis>,
     /// The liquid bulk layout: Spaces, volumes, free surfaces and the lightship items (crude oil).
     pub liquid: Option<LiquidBulkResult>,
@@ -846,6 +914,7 @@ fn gas_volumetric(
     // The wall formula takes the steel diameter, inside the insulation (issue #292).
     base.wall_formula_on_steel_diameter = true;
     base.insulation_thickness = inp.tank_design.insulation_thickness_mm;
+    base.insulation_density = inp.tank_design.insulation_density_kg_m3;
     base.tank_structure_factor = inp.tank_design.structure_factor;
     // The mass of the steel is the material's, whether the wall is fixed or from the formula. (The
     // dataclass default is 9Ni's 7.85 t/m3, so a design on the default material is unchanged.)
@@ -1345,9 +1414,7 @@ fn arrangement(inp: &BargeCapacityInputs, class: CargoClass) -> Result<Arrangeme
             a.arrangement_style = d.arrangement_style;
             // Issue #780: the berths the deckhouse rooms are sized from.
             a.rooms_basis = d.rooms_basis;
-            if d.arrangement_style == crate::aft_arrangement::ArrangementStyle::Deckhouse
-                && inp.air_draft_limit_m.is_none()
-            {
+            if d.arrangement_style.has_aft_deckhouse() && inp.air_draft_limit_m.is_none() {
                 a.wheelhouse_max_lift_m = 0.0;
             }
             a.propulsion = inp.propulsion.clone();
@@ -1417,8 +1484,24 @@ fn arrangement(inp: &BargeCapacityInputs, class: CargoClass) -> Result<Arrangeme
         CargoClass::LiquidBulk => (0.0, 0.0, None),
     };
 
+    // Issue #994: the forward house stands over the forepeak, the length of the bow rake. If the
+    // rake is too short for the house and the clear deck ahead of it, the house takes cargo length
+    // (D1 B), and the site says how much.
+    let mut bow_void_m = rake + fwd_sep;
+    if inp.self_propelled && aft_in.arrangement_style.is_wheelhouse_forward() {
+        use crate::aft_arrangement::{ForwardHouseSite, forward_house_sizes as fh};
+        let needed = fh::LENGTH_M + fh::BOW_CLEAR_M;
+        let lost = (needed - rake).max(0.0);
+        bow_void_m = rake + lost + fwd_sep;
+        aft_in.forward_house_site = Some(ForwardHouseSite {
+            x_aft_m: inp.loa - fh::BOW_CLEAR_M - fh::LENGTH_M,
+            x_fwd_m: inp.loa - fh::BOW_CLEAR_M,
+            cargo_length_lost_m: lost,
+        });
+    }
+
     Ok(Arrangement {
-        bow_void_m: rake + fwd_sep,
+        bow_void_m,
         stern_void_m: block_len + aft_sep,
         rake_m: rake,
         aft_inputs: aft_in,
@@ -1467,10 +1550,9 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
     let mut again = inp.clone();
     again.light_waterline_hint = Some(light);
     let second = compute_once(&again)?;
-    let limit = match crate::wheelhouse::solas_v22_limit_m(inp.loa) {
-        Some(solas) if inp.solas_v22_sizing => inp.sightline_limit_m.map(|l| l.min(solas)),
-        _ => inp.sightline_limit_m,
-    };
+    let limit = inp
+        .sightline_limit_m
+        .map(|l| inp.sightline_sizing_limit_m.map_or(l, |s| s.min(l)));
     let passes = second
         .sightline
         .as_ref()
@@ -1573,6 +1655,16 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // Second pass on the aft block: the wheelhouse has to see over the cargo, and the cargo top
     // is only known now. The length is unchanged by the lift.
     let cargo_top_above_keel = h_top;
+    // Issue #991: the highest point of the vessel, with the wheelhouse lowered, which sets the air draft.
+    let mut highest = HighestPoint {
+        key: match class {
+            CargoClass::Gas if detail.dome_items.is_empty() => "tank_top",
+            CargoClass::Gas => "tank_dome",
+            CargoClass::DryBulk => "hatch_coaming",
+            CargoClass::LiquidBulk => "deck",
+        },
+        top_above_keel_m: h_top,
+    };
     let mut aft_second = arr.aft_inputs.clone();
     aft_second.sightline_obstruction_m = Some(cargo_top_above_keel);
     // Issue #779: a fixed deckhouse wheelhouse cannot lift for the Blind Distance, so the house is
@@ -1582,7 +1674,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     if inp.self_propelled
         && aft_second.arrangement_style == crate::aft_arrangement::ArrangementStyle::Deckhouse
         && aft_second.wheelhouse_max_lift_m <= 0.0
-        && let Some(limit) = inp.sightline_limit_m
+        && let Some(limit) = inp.sightline_limit_m.or(inp.sightline_sizing_limit_m)
     {
         let probe = compute_aft_arrangement(&aft_second)?;
         let units = (!probe.container_units.is_empty())
@@ -1604,11 +1696,11 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
                 },
                 None => crate::wheelhouse::Waterline::even(0.0, inp.loa),
             },
-            // The stricter of the two limits sizes the eye (maintainer decision, issue #779).
-            match crate::wheelhouse::solas_v22_limit_m(inp.loa) {
-                Some(solas) if inp.solas_v22_sizing => limit.min(solas),
-                _ => limit,
-            },
+            // The least limit of the stack's Rules, blocking or warning, sizes the eye (issue #989, #779). The laden limit
+            // does not size it: the laden waterline stands higher, which shortens the Blind Distance,
+            // and no Rule of the built-in sets has a laden limit under the light one. The Rule Trace
+            // still checks the laden row.
+            inp.sightline_sizing_limit_m.map_or(limit, |s| s.min(limit)),
         );
     }
     let aft = compute_aft_arrangement(&aft_second)?;
@@ -1616,6 +1708,16 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // The tallest fixed point of the vessel with the wheelhouse lowered for transit. A pushed
     // barge carries none of it: the block is on the tug.
     let (mut aft, mut h_top_navigating) = if inp.self_propelled {
+        if aft.block_top_lowered_m > h_top {
+            highest = HighestPoint {
+                key: if aft.deckhouse.is_some() {
+                    "deckhouse"
+                } else {
+                    "stern_block"
+                },
+                top_above_keel_m: aft.block_top_lowered_m,
+            };
+        }
         h_top = py_max(h_top, aft.block_top_lowered_m);
         let nav = py_max(h_top, aft.wheelhouse_top_raised_m);
         (Some(aft), nav)
@@ -1652,7 +1754,15 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
                     shield_top_m: detail.weather_shield_top_above_keel_m,
                     dome_top_m: cargo_top_above_keel,
                     stub_m: inp.vent_stub_m,
-                    mast_x_m: inp.loa - arr.rake_m,
+                    // Issue #994: with the forward house taking cargo length, the cargo area ends
+                    // at the cargo zone's forward end, not where the rake begins.
+                    mast_x_m: if aft_second.arrangement_style.is_wheelhouse_forward() {
+                        inp.loa
+                            - (arr.bow_void_m
+                                - arr.separation.as_ref().map_or(0.0, |s| s.fwd_separation_m))
+                    } else {
+                        inp.loa - arr.rake_m
+                    },
                     cargo_area_aft_x_m: aft_x,
                     entrance_m: inp.entrance_distance_m,
                     engine_room_vent_inlet_m: inp.engine_room_vent_inlet_distance_m,
@@ -1667,6 +1777,12 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     if let Some(exit) = vent_exit {
         h_top_navigating = py_max(h_top_navigating, exit);
         if !inp.vent_mast_lowerable {
+            if exit > h_top {
+                highest = HighestPoint {
+                    key: "vent_mast",
+                    top_above_keel_m: exit,
+                };
+            }
             h_top = py_max(h_top, exit);
         }
     }
@@ -1807,6 +1923,9 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // limit needs, up to its maximum; the check of the margin method gives way to it.
     let mut sightline = None;
     let mut blind_distance_laden_m = None;
+    // Issue #994: a forward wheelhouse always has its Blind Distance worked (the format layer reads the
+    // limits of the stack for it, as for the blind-distance method): only what stands ahead of the eye
+    // (the bow) counts.
     if let (Some(limit), Some(a)) = (inp.sightline_limit_m, aft.as_mut()) {
         let waterline = |name: &str, t: f64| match trim_conditions.iter().find(|(n, _)| *n == name)
         {
@@ -1826,22 +1945,26 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         );
         let eye_x = a.wheelhouse_x1_m;
         let eye_height = aft_second.wheelhouse_eye_above_floor_m;
-        let s = crate::wheelhouse::assess(
+        let light_water = waterline("Light", light_draft);
+        let laden_water = waterline("Laden", draft);
+        // Issue #989: the laden limit binds beside the light one.
+        let laden_limit = inp.sightline_limit_laden_m.map(|l| (&laden_water, l));
+        let s = crate::wheelhouse::assess_conditions(
             eye_x,
             a.wheelhouse_floor_lowered_m + eye_height,
             eye_height,
             aft_second.wheelhouse_max_lift_m,
             &obstructions,
             inp.loa,
-            &waterline("Light", light_draft),
-            limit,
+            (&light_water, limit),
+            laden_limit,
         );
         blind_distance_laden_m = Some(crate::wheelhouse::blind_distance(
             eye_x,
             s.eye_raised_m,
             &obstructions,
             inp.loa,
-            &waterline("Laden", draft),
+            &laden_water,
         ));
         a.wheelhouse_lift_m = s.lift_used_m;
         a.wheelhouse_floor_raised_m = s.floor_raised_m;
@@ -1852,17 +1975,19 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         let blind_message = if s.enough {
             text!(
                 "check-wheelhouse-blind-distance",
-                "blind distance ahead of the bow {blind} m <= {limit} m, light (ES-TRIN 7.02(2)); lift used {lift} m of {max_lift} m",
+                "blind distance ahead of the bow {blind} m <= {limit} m, light (limit from the Rule Sets of the stack: {source}); lift used {lift} m of {max_lift} m",
                 blind = Arg::fixed(s.blind_distance_m, 1),
                 limit = Arg::fixed(limit, 0),
+                source = Arg::cite(inp.sightline_limit_source.clone().unwrap_or_default()),
                 lift = Arg::fixed(s.lift_used_m, 2),
                 max_lift = Arg::fixed(aft_second.wheelhouse_max_lift_m, 2),
             )
         } else {
             text!(
                 "check-wheelhouse-blind-distance-fails",
-                "blind distance ahead of the bow over {limit} m, light (ES-TRIN 7.02(2)): lift needed {needed} m of {max_lift} m",
+                "blind distance ahead of the bow over {limit} m, light (limit from the Rule Sets of the stack: {source}): lift needed {needed} m of {max_lift} m",
                 limit = Arg::fixed(limit, 0),
+                source = Arg::cite(inp.sightline_limit_source.clone().unwrap_or_default()),
                 needed = Arg::fixed(s.lift_needed_m, 2),
                 max_lift = Arg::fixed(aft_second.wheelhouse_max_lift_m, 2),
             )
@@ -1888,6 +2013,34 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         }
         air_draft_navigating_light = h_top_navigating - light_draft;
         sightline = Some(s);
+    }
+    let blind_limit_laden_m = sightline.as_ref().and(inp.sightline_limit_laden_m);
+
+    // Issue #994: what the wings of the forward wheelhouse see aft along the hull side. No camera is
+    // credited (`rear_view::CAMERAS_OPEN_ITEM`).
+    if let Some(a) = aft.as_mut()
+        && let Some(f) = &a.forward_house
+    {
+        let half_beam = inp.beam / 2.0;
+        let cargo_y = half_beam
+            - detail
+                .side_clearance_m
+                .unwrap_or(crate::aft_arrangement::deckhouse_sizes::SIDE_DECK_M);
+        let w = crate::rear_view::wing_view(f.width_m / 2.0, cargo_y, half_beam);
+        a.checks.push(Check::with_severity(
+            "wheelhouse_wing_sees_hull_side",
+            w.sees_full_hull_side,
+            text!(
+                "check-wheelhouse-wing-sees-hull-side",
+                "wing reaches {wing} m from the centreline; the hull side is at {half} m (the cargo stands out to {cargo} m): the view aft along the hull side (SOLAS V/22.1.4, 22.1.6) is {short} m short",
+                wing = Arg::fixed(w.wing_y_m, 2),
+                cargo = Arg::fixed(w.cargo_outboard_y_m, 2),
+                half = Arg::fixed(w.hull_half_beam_m, 2),
+                short = Arg::fixed(w.short_by_m, 2),
+            ),
+            "warning",
+        ));
+        a.wing_view = Some(w);
     }
 
     // A geometry error is error text: it stays English, with no Message Id.
@@ -2003,6 +2156,18 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     if let Some(s) = &sep {
         warnings.extend(s.warnings.iter().cloned());
     }
+    // Issue #989: a stack that limits the laden Blind Distance but not the light one gives the lift
+    // nothing to be sized to: say so rather than leave the laden Rule to fail alone.
+    if inp.self_propelled
+        && inp.sightline_limit_m.is_none()
+        && let Some(laden) = inp.sightline_limit_laden_m
+    {
+        warnings.push(text!(
+            "warn-blind-distance-laden-limit-only",
+            "The Rule Sets limit the laden Blind Distance to {limit} m but set no light limit, so the wheelhouse is not sized to a Blind Distance and the laden Rule is only checked.",
+            limit = Arg::fixed(laden, 0),
+        ));
+    }
     if let Some(v) = &vent_mast {
         if v.lowerable {
             warnings.push(Text::fixed(
@@ -2019,6 +2184,61 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
                     2
                 ),
                 target = Arg::fixed(v.target_distance_m, 2),
+            ));
+        }
+    }
+    // Issue #991: an air draft over the bridge clearance of the route is a warning, never a block: the
+    // design stands, and the warning names the highest point. The governing condition is the one the
+    // air-draft limit check uses (light, ballasted where ballast is carried).
+    if let Some(limit) = inp.bridge_clearance_m {
+        let ballasted = inp.ballast_capacity_t > 0.0;
+        let worked = if ballasted {
+            air_draft_ballast
+        } else {
+            air_draft_light
+        };
+        // A light draught that is not worked (not finite) is not "under the limit": the laden air draft
+        // stands in, and the message says so.
+        let (governing, condition) = if worked.is_finite() {
+            (
+                worked,
+                if ballasted {
+                    Text::fixed(
+                        "check-air-draft-condition-ballasted-light",
+                        "ballasted light",
+                    )
+                } else {
+                    Text::fixed("check-air-draft-condition-light", "light")
+                },
+            )
+        } else {
+            // The laden draught may not be worked either (the same failed float); the level draught of
+            // the full load then stands in for it.
+            let laden = if air_draft.is_finite() {
+                air_draft
+            } else {
+                h_top - level(total_weight)?
+            };
+            (
+                laden,
+                Text::fixed(
+                    "check-air-draft-condition-laden-stands-in",
+                    "laden (the light draught is not worked)",
+                ),
+            )
+        };
+        if governing.is_finite() && governing > limit + 1e-9 {
+            warnings.push(text!(
+                "warn-air-draft-over-bridge-limit",
+                "The {condition} air draft {governing} m (laden {laden} m) is over the bridge limit {limit} m by {over} m ({source}). The highest point is the {point}, {top} m above the keel. The vessel cannot pass under a bridge of that clearance. The wheelhouse of a tug is not counted for a pushed or ATB design.",
+                condition = condition,
+                governing = Arg::fixed(governing, 2),
+                laden = Arg::fixed(if air_draft.is_finite() { air_draft } else { governing }, 2),
+                limit = Arg::fixed(limit, 2),
+                over = Arg::fixed(governing - limit, 2),
+                source = Arg::cite(inp.bridge_clearance_source.clone().unwrap_or_default()),
+                point = Arg::cite(highest.label()),
+                top = Arg::fixed(highest.top_above_keel_m, 2),
             ));
         }
     }
@@ -2075,6 +2295,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         deadweight_t: displacement - lightship,
         freeboard_m: freeboard,
         air_draft_top_above_keel_m: h_top,
+        highest_point: Some(highest),
         overloaded,
         tank_outer_diameter_m: detail.tank_outer_diameter_m,
         n_tanks_wide: detail.n_tanks_wide,
@@ -2114,6 +2335,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         trim_conditions,
         sightline,
         blind_distance_laden_m,
+        blind_limit_laden_m,
         stern_geometry: inp.stern_geometry.clone(),
         hull_spec: Some(hull.spec.clone()),
         tank_rules: detail.tank_rules,
