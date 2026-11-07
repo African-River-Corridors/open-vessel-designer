@@ -2434,7 +2434,11 @@ fn sightline_limits_of(
     rules: &RunRules,
 ) -> ovd_core::wheelhouse::BlindLimits {
     let method = p.get("sightline_method").and_then(Value::as_str);
-    if !(self_propelled && method == Some("blind_distance")) {
+    // Issue #994: a forward wheelhouse is always checked as a Blind Distance, whatever the method: its
+    // eye is ahead of the cargo, so the margin over the cargo means nothing. Its limits are those of
+    // the stack, as for the blind-distance method.
+    let forward = p.get("arrangement_style").and_then(Value::as_str) == Some("wheelhouse_forward");
+    if !(self_propelled && (method == Some("blind_distance") || forward)) {
         return ovd_core::wheelhouse::BlindLimits::default();
     }
     if !rules.inputs.applicability.is_empty() {

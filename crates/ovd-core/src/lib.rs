@@ -59,6 +59,7 @@ pub mod pyfmt;
 pub mod pyint;
 pub mod pystr;
 mod pystr_tables;
+pub mod rear_view;
 pub mod resistance;
 pub mod rooms;
 pub mod rule_trace;

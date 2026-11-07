@@ -163,6 +163,19 @@ pub fn loading_condition_kind(name: &str) -> &'static str {
     }
 }
 
+impl Measured {
+    /// The view aft from the wings of a forward wheelhouse (issue #994); `None` for any other style.
+    pub fn wing_view(&self) -> Option<&crate::rear_view::WingView> {
+        self.vessel
+            .as_ref()?
+            .result
+            .aft_arrangement
+            .as_ref()?
+            .wing_view
+            .as_ref()
+    }
+}
+
 /// The rooms measures (issue #781): which room row, and what is read from it.
 impl Measured {
     /// The rooms table of a deckhouse stern, when the run sized one (issue #780).
@@ -569,6 +582,10 @@ impl Measured {
                 !self.speeds_kn.is_empty() && self.design_speed_kn.is_some()
             }
             "wheelhouse.lift_enough" => self.lift_enough.is_some(),
+            // Issue #994: the wing view of a forward wheelhouse.
+            "wheelhouse.wing_sees_hull_side" | "wheelhouse.wing_short_by" => {
+                self.wing_view().is_some()
+            }
             // Issue #781: the deckhouse rooms of a deckhouse stern; none on the container block.
             id if id.starts_with("rooms.") => self.rooms().is_some_and(|r| !r.rows.is_empty()),
             "powering.depth_over_draught" => self.depth_over_draught.is_some(),
@@ -755,6 +772,16 @@ impl Measured {
         }
         if let Some(name) = m.id.strip_prefix("rooms.") {
             return self.rooms_value(name, m);
+        }
+        if m.id == "wheelhouse.wing_sees_hull_side" || m.id == "wheelhouse.wing_short_by" {
+            let w = self
+                .wing_view()
+                .ok_or_else(|| "the Option has no forward wheelhouse".to_string())?;
+            return Ok(if m.id == "wheelhouse.wing_short_by" {
+                MeasureValue::Number(w.short_by_m)
+            } else {
+                MeasureValue::Bool(w.sees_full_hull_side)
+            });
         }
         if m.id == "wheelhouse.lift_enough" {
             return self

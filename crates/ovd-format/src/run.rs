@@ -1156,6 +1156,10 @@ fn stern_arrangement_of(
                     "no_air_draft_limit"
                 },
             });
+            // Issue #994: the view aft from the wings of a forward wheelhouse; cameras are open.
+            if let Some(w) = &aft.wing_view {
+                block["rear_view"] = crate::eval::wing_view_json(w);
+            }
             // Issue #912: the openings of the deckhouse (outside the results hash, like the block).
             if let Some(p) = &measured.openings {
                 block["openings"] = openings_json(p);

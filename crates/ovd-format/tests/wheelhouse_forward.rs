@@ -173,6 +173,52 @@ fn the_aft_house_needs_no_extra_tiers_for_a_sightline_the_wheelhouse_forward_doe
 }
 
 #[test]
+fn the_forward_eye_is_checked_as_a_blind_distance_and_the_wing_view_is_reported() {
+    let r = results_of(&design(
+        110.0,
+        11.4,
+        6.0,
+        json!({ "arrangement_style": "wheelhouse_forward", "bow_rake_length_m": 20.0 }),
+    ));
+    // The Blind Distance is worked out whatever the sightline method: only the bow is ahead of the eye.
+    let s = &r["sightline"];
+    assert_eq!(f(&s["lift_needed_m"]), 0.0, "{s}");
+    assert_eq!(s["lift_enough"], json!(true));
+    assert!(f(&s["blind_distance_light_m"]) < 50.0, "{s}");
+    // The wing view is in the stern block and the stern arrangement, with cameras an open item.
+    let w = &r["drawing"]["aft_arrangement"]["wing_view"];
+    // The wing is at the side of the house, a side deck (0.8 m) inside the hull side: it does not
+    // see the full hull side, whatever the cargo does, and the result says by how much.
+    assert_eq!(w["sees_full_hull_side"], json!(false), "{w}");
+    assert!(
+        (f(&w["hull_half_beam_m"]) - f(&w["wing_y_m"]) - 0.8).abs() < 1e-9,
+        "{w}"
+    );
+    assert!((f(&w["short_by_m"]) - 0.8).abs() < 1e-9, "{w}");
+    assert_eq!(w["cameras"], json!("open_item"));
+    assert_eq!(r["stern_arrangement"]["rear_view"], *w);
+    let checks = r["checks"].as_array().unwrap();
+    let wing = checks
+        .iter()
+        .find(|c| c["name"] == json!("wheelhouse wing sees hull side"))
+        .unwrap_or_else(|| panic!("the wing check is listed in {checks:?}"));
+    assert_eq!(wing["ok"], w["sees_full_hull_side"]);
+    assert_eq!(wing["severity"], json!("warning"));
+}
+
+#[test]
+fn the_other_styles_have_no_wing_view() {
+    let r = results_of(&design(
+        110.0,
+        11.4,
+        6.0,
+        json!({ "arrangement_style": "deckhouse" }),
+    ));
+    assert!(r["drawing"]["aft_arrangement"].get("wing_view").is_none());
+    assert!(r["stern_arrangement"].get("rear_view").is_none());
+}
+
+#[test]
 fn the_vent_mast_is_never_inside_the_forward_house_at_any_rake() {
     // Default rake (9.6 m on a 6 m depth: the house takes cargo length) and a long rake (it does not).
     for extra in [
@@ -188,4 +234,28 @@ fn the_vent_mast_is_never_inside_the_forward_house_at_any_rake() {
             "mast {mast} m is inside the house, which starts at {house} m ({extra})"
         );
     }
+}
+
+#[test]
+fn the_forward_eye_is_checked_against_the_limit_of_the_stack_of_its_service_area() {
+    let limit = |area: &str, method: &str| {
+        let r = results_of(&design(
+            110.0,
+            11.4,
+            6.0,
+            json!({
+                "arrangement_style": "wheelhouse_forward",
+                "bow_rake_length_m": 20.0,
+                "service_area": area,
+                "sightline_method": method
+            }),
+        ));
+        f(&r["sightline"]["limit_m"])
+    };
+    // River and estuary: ES-TRIN 7.02(2), 250 m. Coastal: SOLAS V/22.1.1 asks two lengths (220 m of a
+    // 110 m ship), the least of the stack's limits. The margin method changes neither: the forward eye
+    // is always checked as a distance.
+    assert_eq!(limit("river-only", "margin"), 250.0);
+    assert_eq!(limit("river-only", "blind_distance"), 250.0);
+    assert_eq!(limit("coastal-and-river", "margin"), 220.0);
 }

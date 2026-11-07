@@ -49,6 +49,8 @@ warn-barge-bulk-gm = Bulk GM is first-order (assumed lightship KG); cargo-shift/
 check-wheelhouse-blind-distance = blind distance ahead of the bow { $blind } m <= { $limit } m, light (limit from the Rule Sets of the stack: { $source }); lift used { $lift } m of { $max_lift } m
 check-wheelhouse-blind-distance-fails = blind distance ahead of the bow over { $limit } m, light (limit from the Rule Sets of the stack: { $source }): lift needed { $needed } m of { $max_lift } m
 warn-aft-blind-distance-lift = The blind distance needs { $needed } m of lift; the column gives { $max_lift } m. Raise the column or lower the cargo top.
+check-name-wheelhouse-wing-sees-hull-side = wheelhouse wing sees hull side
+check-wheelhouse-wing-sees-hull-side = wing reaches { $wing } m from the centreline; the hull side is at { $half } m (the cargo stands out to { $cargo } m): the view aft along the hull side (SOLAS V/22.1.4, 22.1.6) is { $short } m short
 check-feasible-geometry = cargo volume must be positive (tank/hold fits)
 check-name-feasible-geometry = feasible geometry
 check-name-not-overloaded = not overloaded
