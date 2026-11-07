@@ -3360,7 +3360,11 @@ fn simulate_gas(
         is_code: is_code_options,
         ..FitOptions::default()
     };
-    let f = ga::fit(l, b, cargo_key, t_max, &options)
+    // Issue #935: the search screens by damage with the run's threads, progress and cancel.
+    let runner = crate::damage::ThreadedRunner {
+        control: &rules.damage,
+    };
+    let f = ga::fit_with(l, b, cargo_key, t_max, &options, &runner)
         .map_err(|e| Stop::Raised(e.kind.to_string(), e.message))?;
     let r = &f.engine_result;
     let d = f.depth_m;

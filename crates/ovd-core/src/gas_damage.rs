@@ -114,6 +114,7 @@ pub fn permeability_table(set: &RuleSet, table_id: &str) -> Result<PermeabilityT
 
 /// What a gas damage run is given: the cases, the Permeability Table, the criteria of the final stage and of the
 /// intermediate stages, and how the block names its Rule Set and its method.
+#[derive(Debug, Clone)]
 pub struct GasRun {
     pub cases: Vec<DamageCase>,
     pub table: PermeabilityTable,
@@ -503,4 +504,48 @@ pub fn run_serial(
         out.push_condition(run, hull, c, &state, density, runs);
     }
     out
+}
+
+/// The message of a run that the progress hook cancelled (the `Raised` kind is `Cancelled`).
+pub const DAMAGE_CANCELLED: &str = "damage stability was cancelled";
+
+/// A damage run was cancelled (by the progress hook of `ovd-format`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Cancelled;
+
+/// How the arrangement search works out the damage of a candidate (issue #935). The search is in this crate,
+/// which has no threads and no clock, so the caller supplies the runner: `ovd-format` gives one that runs the
+/// cases on worker threads, reports progress and honours a cancel; [`SerialRunner`] is the plain loop.
+pub trait DamageRunner {
+    /// Whether the search screens candidates by damage at all (a run told to skip damage says no).
+    fn enabled(&self) -> bool {
+        true
+    }
+
+    /// The cases of `run` on every condition of `conditions`. `Err(Cancelled)` stops the search.
+    fn run(
+        &self,
+        run: &GasRun,
+        spaces: &[Space],
+        hull: &Hull,
+        conditions: &[LoadedCondition],
+        density: f64,
+    ) -> Result<GasDamageRun, Cancelled>;
+}
+
+/// The serial runner: no threads, no progress, no cancel.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SerialRunner;
+
+impl DamageRunner for SerialRunner {
+    fn run(
+        &self,
+        run: &GasRun,
+        spaces: &[Space],
+        hull: &Hull,
+        conditions: &[LoadedCondition],
+        density: f64,
+    ) -> Result<GasDamageRun, Cancelled> {
+        Ok(run_serial(run, spaces, hull, conditions, density))
+    }
 }
