@@ -8,7 +8,7 @@
 //! bollard pull and, for a pusher, the coupling force. The result of the barge itself does not
 //! change.
 
-use crate::simulate::formation_curves;
+use crate::simulate::{RunRules, formation_curves};
 use crate::text_ids::TextIds;
 use crate::vdesign::DesignOption;
 use ovd_core::atb::{TugTyped, notch_for_tug, tug_from_barge};
@@ -51,16 +51,6 @@ struct TugInputs {
     blind_distance: bool,
     /// The tug's wheelhouse lifts (`tug_wheelhouse_type`).
     elevating: bool,
-    /// Issue #989: the light Blind Distance limit of the Option's stack of Rule Sets, the one its Rule
-    /// Trace checks. `None`: no blocking Rule of the stack limits it, so no sightline is worked.
-    blind_limit_m: Option<f64>,
-}
-
-/// The light Blind Distance limit the Rule Sets of the Option's stack give (issue #989).
-fn blind_limit_of(option: &DesignOption) -> Option<f64> {
-    let selection = crate::trace::stack_for(crate::rule_set::built_in(), option, &[]).ok()?;
-    let sets: Vec<ovd_core::rules::RuleSet> = selection.sets.iter().map(|s| (*s).clone()).collect();
-    ovd_core::gas_arrangement::blind_limits(&sets, &crate::trace::rule_inputs(option)).light_m
 }
 
 fn number(option: &DesignOption, name: &str) -> Option<f64> {
@@ -97,7 +87,6 @@ fn tug_inputs(option: &DesignOption) -> Result<TugInputs, String> {
         allowance: number(option, "formation_resistance_allowance").unwrap_or(1.0),
         blind_distance: text_of("tug_sightline_method").as_deref() == Some("blind_distance"),
         elevating: text_of("tug_wheelhouse_type").as_deref() != Some("fixed"),
-        blind_limit_m: blind_limit_of(option),
     })
 }
 
@@ -328,6 +317,7 @@ pub(crate) fn add_formation(
     option: &DesignOption,
     p: &Map<String, Value>,
     counts: (u64, u64),
+    rules: &RunRules,
     v: &mut Value,
 ) {
     let kind = option
@@ -350,7 +340,7 @@ pub(crate) fn add_formation(
         Some("towed_barge") => Kind::Towed,
         _ => Kind::Pushed,
     };
-    let block = match build(option, p, counts, join_kind, v, &mut notes) {
+    let block = match build(option, p, counts, join_kind, rules, v, &mut notes) {
         Ok(b) => b,
         Err(message) => json!({ "tug_included": true, "error": message }),
     };
@@ -392,6 +382,7 @@ fn build(
     p: &Map<String, Value>,
     counts: (u64, u64),
     kind: Kind,
+    rules: &RunRules,
     v: &mut Value,
     notes: &mut Vec<ovd_core::text::Text>,
 ) -> Result<Value, String> {
@@ -626,7 +617,15 @@ fn build(
     }
     // Issue #360: the tug's view over the barges ahead, when its sightline is a Blind Distance.
     if tug.blind_distance
-        && let Some(s) = sightline(&tug, &r.dims, join, barge.0, v, &mut notes2)?
+        && let Some(s) = sightline(
+            &tug,
+            &r.dims,
+            join,
+            barge.0,
+            (r.hull.length_m, rules),
+            v,
+            &mut notes2,
+        )?
         && let Some(o) = block.as_object_mut()
     {
         o.insert("sightline".into(), s);
@@ -639,6 +638,26 @@ fn build(
     Ok(block)
 }
 
+/// The Option's Rule inputs with the length overall of the unit (tug and barges) in place of the barge's: the
+/// length SOLAS V/22.1.1 reads for a Formation (issue #989). The band follows it.
+pub(crate) fn unit_rule_inputs(
+    base: &ovd_core::gas_arrangement::RuleInputs,
+    unit_length_m: f64,
+) -> ovd_core::gas_arrangement::RuleInputs {
+    let mut out = base.clone();
+    for (name, value) in &mut out.applicability {
+        if name == "length_band" {
+            *value = ovd_core::measured::length_band(unit_length_m).to_string();
+        }
+    }
+    for (id, _, value) in &mut out.measures {
+        if id == "input.length_overall_m" {
+            *value = ovd_core::rule_trace::MeasureValue::Number(unit_length_m);
+        }
+    }
+    out
+}
+
 /// The sightline of a pusher or an ATB tug over its barges (issue #360, spec 0007 "Wheelhouse,
 /// sightline and air draft"): the eye at the forward face of the wheelhouse, at mid-length of the tug
 /// (an Estimate), the floor lowered on the tug's deck; each barge's highest point light and laden
@@ -649,6 +668,7 @@ fn sightline(
     dims: &TugDims,
     join: Join,
     barge_length_m: f64,
+    (unit_length_m, rules): (f64, &RunRules),
     v: &Value,
     notes: &mut Vec<ovd_core::text::Text>,
 ) -> Result<Option<Value>, String> {
@@ -692,7 +712,14 @@ fn sightline(
         max_lift_m: max_lift,
         bow_x_m: first_aft_x + in_line as f64 * barge_length_m,
     };
-    let Some(limit) = tug.blind_limit_m else {
+    // Issue #989: the limits come from the Rule Sets of the run's stack, as the Rule Trace reads them. The
+    // ship SOLAS V/22.1.1 speaks of is the unit, tug and barges, so two lengths is worked on the unit's
+    // length overall (the Equivalent Hull's), not the barge's.
+    let limits = ovd_core::gas_arrangement::blind_limits(
+        &rules.sets,
+        &unit_rule_inputs(&rules.inputs, unit_length_m),
+    );
+    let Some(limit) = limits.light_m else {
         return Ok(None);
     };
     let (s, laden_m) = convoy_sightline(&sight, &light, &laden, limit);
@@ -715,7 +742,7 @@ fn sightline(
         ));
     }
     let num = crate::eval::num;
-    Ok(Some(json!({
+    let mut out = json!({
         "limit_m": num(limit),
         "eye_x_m": num(sight.eye_x_m),
         "eye_lowered_above_water_m": num(sight.eye_lowered_m),
@@ -728,7 +755,12 @@ fn sightline(
         "blind_distance_light_m": num(s.blind_distance_m),
         "blind_distance_laden_m": num(laden_m),
         "enough": s.enough,
-    })))
+    });
+    // Issue #989: the laden limit of the stack's Rules, when one is given; the Rule Trace checks it.
+    if let (Some(l), Some(o)) = (limits.laden_m, out.as_object_mut()) {
+        o.insert("limit_laden_m".into(), num(l));
+    }
+    Ok(Some(out))
 }
 
 /// The tug as its GA needs it (`drawing.tug`, issue #360): its size, its propulsors, the machinery

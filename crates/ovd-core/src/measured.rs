@@ -45,6 +45,10 @@ pub struct Measured {
     /// no wheelhouse of its own (issue #355).
     pub blind_distance_light_m: Option<f64>,
     pub blind_distance_laden_m: Option<f64>,
+    /// Issue #989: the length overall of the unit (tug and barges) of a Formation whose tug has a
+    /// sightline, in place of the Option's own `length_overall_m` (the barge's) for the Rules: SOLAS V/22.1.1
+    /// limits the blind distance of the ship, and the ship is the unit. `None`: the Option's own length.
+    pub unit_length_overall_m: Option<f64>,
     /// The speed through the water at the installed power, kn, laden, in each environment of the
     /// powering, by the environment's name. Empty for a hull with no machinery of its own.
     pub speeds_kn: Vec<(String, f64)>,

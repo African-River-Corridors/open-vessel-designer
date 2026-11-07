@@ -507,6 +507,11 @@ impl MeasureSource for OptionMeasures<'_> {
     }
 
     fn value(&self, m: &MeasureRef, index: usize) -> Result<MeasureValue, String> {
+        if m.id == "input.length_overall_m"
+            && let Some(unit) = self.measured.unit_length_overall_m
+        {
+            return Ok(MeasureValue::Number(unit));
+        }
         if let Some(name) = m.id.strip_prefix("input.") {
             let stored = self
                 .option
@@ -692,6 +697,9 @@ impl MeasureSource for OptionMeasures<'_> {
                 );
             }
             "length_band" => {
+                if let Some(unit) = self.measured.unit_length_overall_m {
+                    return Some(length_band(unit).to_string());
+                }
                 return self
                     .option
                     .input("length_overall_m")?
