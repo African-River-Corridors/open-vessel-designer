@@ -1748,7 +1748,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
     // Issue #822: the cargo vent mast of a gas hull. The air draft takes its exit: the river top
     // (wheelhouse lowered) and the sea top (wheelhouse raised) each rise to it where it stands above
     // them. A mast that lowers for transit leaves the river top as it was; the sea top keeps it.
-    let vent_mast = match (class, detail.tank_top_above_keel_m) {
+    let mut vent_mast = match (class, detail.tank_top_above_keel_m) {
         (CargoClass::Gas, Some(tank_top)) => {
             let sep_in = inp.separation.clone().unwrap_or_default();
             let (end_space, from_cargo_area) = match &arr.separation {
@@ -1810,6 +1810,14 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         }
         _ => None,
     };
+    // Issue #992: the mast reads the cargo top as the dome top; when that top is the weather shield
+    // (it stands higher than the domes), the term that governs the exit is the shield's.
+    if detail.shield_is_highest
+        && let Some(v) = vent_mast.as_mut()
+        && v.governs == crate::vent_mast::Governs::DomeTop
+    {
+        v.governs = crate::vent_mast::Governs::ShieldTop;
+    }
     let vent_exit = vent_mast.as_ref().map(|v| v.exit_above_keel_m);
     if let Some(exit) = vent_exit {
         h_top_navigating = py_max(h_top_navigating, exit);

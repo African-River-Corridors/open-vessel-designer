@@ -70,6 +70,9 @@ pub enum Governs {
     WorkingArea,
     /// ADN: the dome top and the stub.
     DomeTop,
+    /// ADN: the top of the weather shield over tanks standing above the deck and the stub (issue
+    /// #992); the shield is higher than the domes.
+    ShieldTop,
 }
 
 impl Governs {
@@ -78,6 +81,7 @@ impl Governs {
             Governs::Deck => "deck",
             Governs::WorkingArea => "working_area",
             Governs::DomeTop => "dome_top",
+            Governs::ShieldTop => "shield_top",
         }
     }
 }

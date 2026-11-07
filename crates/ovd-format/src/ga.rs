@@ -211,6 +211,9 @@ struct Hull {
     vent_mast: Option<VentDraw>,
     /// The river and sea air drafts of the laden and light conditions (`air_drafts`, issue #888).
     air_drafts: Option<AirDraftsDraw>,
+    /// The weather shield is drawn as not watertight (issue #992): the results hold the block
+    /// `arrangement.above_deck`, whose shield has no watertight flag.
+    shield_open: bool,
     /// The names of the checks that fail (`results.checks` with `ok` false), as plain capitals.
     failed_checks: Vec<String>,
     /// The Notch of an ATB barge and its tug (`drawing.atb`, issue #363); `None` for any other
@@ -747,6 +750,7 @@ fn read_hull(results: &Value) -> Result<Hull, String> {
         aft: read_aft(results),
         vent_mast: read_vent_mast(results),
         air_drafts: read_air_drafts(results),
+        shield_open: results["arrangement"]["above_deck"]["weather_shield_watertight"] == false,
         failed_checks: failed_checks(results),
         atb: read_atb(results),
         containment,
@@ -754,6 +758,16 @@ fn read_hull(results: &Value) -> Result<Hull, String> {
 }
 
 impl Hull {
+    /// The label of the weather shield: with tanks standing above the deck (issue #992) it says the
+    /// shield is not watertight (no buoyancy and no freeboard credit).
+    fn shield_label(&self) -> String {
+        if self.shield_open {
+            label!("draw-weather-shield-open", "WEATHER SHIELD, NOT WATERTIGHT")
+        } else {
+            label!("draw-weather-shield", "WEATHER SHIELD")
+        }
+    }
+
     fn freeboard(&self) -> f64 {
         self.depth - self.draught
     }
@@ -1453,7 +1467,7 @@ fn elevation_gas_detail(c: &mut Canvas, h: &Hull, labels: &mut Vec<(String, [f64
             &[[x0, foot], [x0, top], [x1, top], [x1, foot]],
             false,
         );
-        labels.push((label!("draw-weather-shield", "WEATHER SHIELD"), [x1, top]));
+        labels.push((h.shield_label(), [x1, top]));
     }
     if let (Some((rise, half_base)), Some((length, starts, _))) = (h.dome(), h.tank_layout()) {
         let r = od / 2.0;
@@ -2613,10 +2627,7 @@ fn section_gas_detail(
             &[[-half, foot], [-half, top], [half, top], [half, foot]],
             false,
         );
-        labels.push((
-            label!("draw-weather-shield", "WEATHER SHIELD"),
-            [-half, top],
-        ));
+        labels.push((h.shield_label(), [-half, top]));
     }
     // a cradle under each tank: the underside arc, a little outside the tank, and its two legs
     let radius = r + CRADLE_CLEARANCE_M;

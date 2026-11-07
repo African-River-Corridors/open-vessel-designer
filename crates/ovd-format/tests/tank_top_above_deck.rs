@@ -327,3 +327,104 @@ fn the_side_area_is_the_cargo_zone_length_times_the_shield_height() {
             .is_sign_positive()
     );
 }
+
+/// The 140 x 29 m coastal LNG barge of the worked example, feasible, so damage stability runs on the
+/// default Rule Set stack of a new design.
+fn example(extra: Value) -> Value {
+    let mut base = json!({
+        "cargo": "LNG", "hull_form": "raked_box", "formation": { "kind": "self_propelled" },
+        "length_overall_m": 140.0, "beam_m": 29.0, "cargo_containment": "type_c_tanks",
+        "min_freeboard_m": 1.81, "max_tank_od_m": 12.0, "tanks_in_line": 2.0,
+        "aft_end_space_m": 0.6, "fwd_end_space_m": 0.5, "max_speed_kn": 12.0,
+        "service_area": "coastal-and-river"
+    });
+    for (k, v) in extra.as_object().unwrap() {
+        base[k] = v.clone();
+    }
+    let inputs: serde_json::Map<String, Value> = base
+        .as_object()
+        .unwrap()
+        .iter()
+        .map(|(k, v)| (k.clone(), json!({ "value": v, "source": "typed" })))
+        .collect();
+    json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": inputs }]
+    })
+}
+
+fn hold_tops(case: &Value) -> Vec<f64> {
+    case["flooded"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|s| s["name"].as_str().unwrap().starts_with('H'))
+        .map(|s| {
+            s["section_m"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|p| p[1].as_f64().unwrap())
+                .fold(f64::MIN, f64::max)
+        })
+        .collect()
+}
+
+/// Damage with the tanks standing above the deck or in hold. A side breach across the bulkhead between
+/// the tank rows floods both holds; a hold ends at the deck, so what stands above the deck (the tank
+/// tops, the shield) gives no buoyancy; the governing case is named; and a shield on or off leaves
+/// the hull's buoyancy (its hydrostatic table) as it was.
+/// Label: rule (design note D4; IGC 2.7 cases as the engine works them), not a published value.
+#[test]
+fn damage_floods_both_holds_across_the_bulkhead_and_nothing_above_the_deck_floats() {
+    for h in [0.0, 2.0] {
+        let r = run(&example(json!({ "tank_top_above_deck_m": h })));
+        assert_eq!(r["damage_status"], "run", "h {h}");
+        let d = &r["damage"];
+        let across = d["cases"].as_array().unwrap().iter().any(|c| {
+            let f = c["flooded"].as_array().unwrap();
+            let has = |n: &str| f.iter().any(|s| s.as_str() == Some(n));
+            has("H1C") && has("H2C")
+        });
+        assert!(across, "h {h}: no case floods both holds");
+        // The governing case is named, and its holds end at the deck.
+        let gov = &d["governing"][0];
+        assert!(!gov["case"].as_str().unwrap().is_empty());
+        for top in hold_tops(gov) {
+            assert!(
+                (top - depth(&r)).abs() < 1e-6,
+                "h {h}: hold top {top} vs depth {}",
+                depth(&r)
+            );
+        }
+    }
+    // The shield gives no buoyancy: the hull's hydrostatic table does not read it.
+    let on = run(&example(json!({ "tank_top_above_deck_m": 2.0 })));
+    let off = run(&example(
+        json!({ "tank_top_above_deck_m": 2.0, "weather_shield_thickness_mm": 0.0 }),
+    ));
+    assert_eq!(on["hydrostatic_table"], off["hydrostatic_table"]);
+    assert_eq!(depth(&on), depth(&off));
+}
+
+/// The side elevation names the shield as not watertight when the tanks stand above the deck, and keeps
+/// its old label without the input (so existing drawings are unchanged).
+#[test]
+fn the_general_arrangement_says_the_shield_is_not_watertight_only_with_the_input() {
+    let with = run(&example(json!({ "tank_top_above_deck_m": 2.0 })));
+    let views = ovd_format::ga::ga_views(&with).unwrap();
+    let text = views
+        .all()
+        .iter()
+        .map(|(_, v)| v.to_string())
+        .collect::<String>();
+    assert!(text.contains("WEATHER SHIELD, NOT WATERTIGHT"));
+    let without = run(&example(json!({ "moulded_depth_m": 12.0 })));
+    let text = ovd_format::ga::ga_views(&without)
+        .unwrap()
+        .all()
+        .iter()
+        .map(|(_, v)| v.to_string())
+        .collect::<String>();
+    assert!(text.contains("WEATHER SHIELD") && !text.contains("NOT WATERTIGHT"));
+}

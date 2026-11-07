@@ -1441,6 +1441,17 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
                         if let Some(a) = v.get_mut("arrangement").and_then(Value::as_object_mut) {
                             a.insert("depth_passes".to_string(), json!(passes));
                         }
+                        // The cap was reached with the depth still moving: say so, the results are
+                        // for the depth the last run gave.
+                        if let Some(g) = got
+                            && (g - depth).abs() > 0.0015
+                            && let Some(w) = v.get_mut("warnings").and_then(Value::as_array_mut)
+                        {
+                            w.push(json!(format!(
+                                "The depth that follows the tank did not settle in {passes} runs \
+                                 ({depth} m, then {g} m); the results are for {g} m."
+                            )));
+                        }
                         *measured = m;
                         return finish_once(v, measured);
                     }
