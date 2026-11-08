@@ -370,6 +370,52 @@ fn hold_tops(case: &Value) -> Vec<f64> {
         .collect()
 }
 
+/// KN (m) at `deg` of heel of the full load departure condition: GZ plus KG times sin(heel).
+fn kn_at(r: &Value, deg: f64) -> f64 {
+    let c = r["stability"]["conditions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["name"] == "Full load, departure")
+        .unwrap();
+    let gz = c["gz"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p[0].as_f64() == Some(deg))
+        .unwrap()[1]
+        .as_f64()
+        .unwrap();
+    gz + c["kg_m"].as_f64().unwrap() * libm::sin(deg.to_radians())
+}
+
+/// The volume (m3) of the holds flooded in the governing damage case: each hold section's area
+/// times its length.
+fn hold_volume(r: &Value) -> f64 {
+    r["damage"]["governing"][0]["flooded"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|s| s["name"].as_str().unwrap().starts_with('H'))
+        .map(|s| {
+            let pts: Vec<[f64; 2]> = s["section_m"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|p| [p[0].as_f64().unwrap(), p[1].as_f64().unwrap()])
+                .collect();
+            let n = pts.len();
+            let area = (0..n)
+                .map(|i| pts[i][0] * pts[(i + 1) % n][1] - pts[(i + 1) % n][0] * pts[i][1])
+                .sum::<f64>()
+                .abs()
+                / 2.0;
+            let x = s["x_m"].as_array().unwrap();
+            area * (x[1].as_f64().unwrap() - x[0].as_f64().unwrap())
+        })
+        .sum()
+}
+
 /// Damage with the tanks standing above the deck or in hold. A side breach across the bulkhead between
 /// the tank rows floods both holds; a hold ends at the deck, so what stands above the deck (the tank
 /// tops, the shield) gives no buoyancy; the governing case is named; and a shield on or off leaves
@@ -398,13 +444,31 @@ fn damage_floods_both_holds_across_the_bulkhead_and_nothing_above_the_deck_float
             );
         }
     }
-    // The shield gives no buoyancy: the hull's hydrostatic table does not read it.
+    // The shield gives no buoyancy: at the same depth the righting lever at large heel, with the
+    // weight height taken out (KN = GZ + KG sin(heel)), and the volume of the flooded holds are the
+    // same with the shield on or off. A shield that floated would stand the deck edge higher and
+    // raise KN at 50 and 60 degrees, and would add to the holds.
     let on = run(&example(json!({ "tank_top_above_deck_m": 2.0 })));
     let off = run(&example(
         json!({ "tank_top_above_deck_m": 2.0, "weather_shield_thickness_mm": 0.0 }),
     ));
-    assert_eq!(on["hydrostatic_table"], off["hydrostatic_table"]);
     assert_eq!(depth(&on), depth(&off));
+    assert_eq!(above(&on)["weather_shield_fitted"], true);
+    assert_eq!(above(&off)["weather_shield_fitted"], false);
+    for deg in [50.0, 60.0] {
+        let (a, b) = (kn_at(&on, deg), kn_at(&off, deg));
+        // The shield's mass (about 1.4 % of the displacement) moves KN a little; its buoyancy would
+        // move it by a great deal more.
+        assert!(
+            (a / b - 1.0).abs() < 0.01,
+            "KN at {deg}: {a} with the shield, {b} without"
+        );
+    }
+    let (va, vb) = (hold_volume(&on), hold_volume(&off));
+    assert!(
+        (va / vb - 1.0).abs() < 1e-9,
+        "flooded hold volume {va} with the shield, {vb} without"
+    );
 }
 
 /// The side elevation names the shield as not watertight when the tanks stand above the deck, and keeps
