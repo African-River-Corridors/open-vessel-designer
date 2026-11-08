@@ -505,6 +505,9 @@ pub fn option_vessel_run(option: &DesignOption) -> Result<VesselRun, String> {
             run: false,
             progress: None,
         },
+        budget: Default::default(),
+        pass: crate::simulate::PassRole::Normal,
+        choose_tanks_along: false,
     };
     let (outcome, measured) = simulate_params_measured(&params, &rules);
     match outcome {
@@ -704,6 +707,12 @@ pub(crate) fn run_option_detail(
         sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
         inputs: rule_inputs(option),
         damage: damage.clone(),
+        budget: Default::default(),
+        pass: crate::simulate::PassRole::Normal,
+        // Issue #935: a typed number of tanks along pins the search; the Defaults Profile's lets it choose.
+        choose_tanks_along: !option
+            .input("tanks_in_line")
+            .is_some_and(|i| i.source == Source::Typed),
     };
     let mut params = params;
     let (outcome, mut measured, _rooms_settled) =

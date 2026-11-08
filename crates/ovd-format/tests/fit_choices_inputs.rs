@@ -89,8 +89,15 @@ fn the_two_inputs_are_gas_tank_inputs_that_leave_a_file_saved_before_as_it_was()
 #[test]
 fn a_fixed_number_of_tanks_across_reaches_the_search() {
     let auto = run(&design(json!({})));
+    // Issue #935: one row per number across and per number along the search tried (2, 3 and 4 along).
     assert_eq!(
         auto["fit_tried"].as_array().unwrap().len(),
+        9,
+        "1, 2 and 3 across tried, each at 2, 3 and 4 along"
+    );
+    let pinned = run(&design(json!({ "tanks_in_line": 2 })));
+    assert_eq!(
+        pinned["fit_tried"].as_array().unwrap().len(),
         3,
         "1, 2 and 3 across tried"
     );
@@ -181,7 +188,8 @@ fn the_wing_tank_warning_shows_with_no_wing_tank_and_a_least_side_space_clears_i
 /// the design is infeasible; the list of arrangements names the rows. Label: snapshot, printed by the code.
 #[test]
 fn with_damage_on_three_across_is_turned_down_by_igc_2_7_and_nothing_passes() {
-    let r = run(&block(json!({})));
+    // At the profile's two along: the search with the choice of 3 and 4 along may find a hull that passes.
+    let r = run(&block(json!({ "tanks_in_line": 2 })));
     assert_eq!(r["arrangement"]["feasible"], false);
     assert!(
         r["fit_tried"]

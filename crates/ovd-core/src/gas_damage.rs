@@ -527,6 +527,22 @@ pub trait DamageRunner {
     /// total from it, so the fraction done never falls while runs start.
     fn plan(&self, _runs: usize) {}
 
+    /// The damage runs this runner has already worked out for the whole run (the searches of its depth passes
+    /// share one budget), so the cap of the search counts them.
+    fn runs_used(&self) -> usize {
+        0
+    }
+
+    /// The verdicts a search of this run already worked out for a candidate with this key (an earlier depth pass
+    /// built the same candidate), if any: reusing them costs no damage run, and a later pass that runs out of
+    /// budget keeps what an earlier one found.
+    fn recall(&self, _key: &str) -> Option<Vec<DamageVerdict>> {
+        None
+    }
+
+    /// Keep the verdicts of a candidate for [`DamageRunner::recall`].
+    fn remember(&self, _key: &str, _verdicts: &[DamageVerdict]) {}
+
     /// The cases of `run` on every condition of `conditions`. `Err(Cancelled)` stops the search.
     fn run(
         &self,

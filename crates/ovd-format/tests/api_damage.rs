@@ -125,3 +125,21 @@ fn a_hull_with_no_damage_rule_set_is_not_applicable_and_the_hook_is_not_called()
     assert_eq!(text(&r), text(&simulate(&p, true)));
     assert!(calls.borrow().is_empty());
 }
+
+/// Issue #935: what a pass of a run is for, and whether the number of tanks along was typed, are the run's own
+/// (`RunRules`), not parameters: a parameter map that carries the names of the old internal keys is refused as an
+/// unknown input, and cannot reach the results.
+#[test]
+fn parameters_cannot_set_the_role_of_a_pass_or_the_choice_of_tanks_along() {
+    let p = typed(EXAMPLE);
+    for key in ["__settle_discard", "__settle_last", "__tanks_in_line_typed"] {
+        let mut with = p.clone();
+        with.insert(key.to_string(), json!(true));
+        let case = json!({ "fn": "simulate", "args": { "params": with, "damage": false } });
+        let err = eval("api", &case).expect_err("the key is refused");
+        assert!(
+            err.to_string().contains(&format!("unknown input `{key}`")),
+            "{err}"
+        );
+    }
+}

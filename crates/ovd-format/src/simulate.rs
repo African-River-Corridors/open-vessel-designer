@@ -513,6 +513,8 @@ fn no_wing_tank_note(r: &BargeCapacityResult, gap_m: f64) -> Option<Text> {
 /// to screen by. A run that skips damage keeps the unscreened pick and says so; a run that ran damage says
 /// what the search without damage would have picked when damage changed the pick.
 fn damage_screening_json(f: &ga::ArrangementFit, ids: &mut TextIds) -> Value {
+    // Whether the number of tanks along was chosen from several (damage screened, not pinned) or is the profile's.
+    let tanks_along = json!({ "n": f.n_tanks_long, "chosen_from": if f.tanks_along_tried.len() > 1 { json!(f.tanks_along_tried) } else { Value::Null } });
     match &f.damage_screen {
         ga::DamageScreen::NotApplicable => Value::Null,
         ga::DamageScreen::Skipped => {
@@ -521,7 +523,7 @@ fn damage_screening_json(f: &ga::ArrangementFit, ids: &mut TextIds) -> Value {
                 "Not screened for damage: the arrangement may change when damage runs."
             );
             ids.text(&note);
-            json!({ "screened": false, "note": note, "stage_one": null, "changed_note": null, "limit_note": null, "planned_runs": f.damage_planned_runs })
+            json!({ "screened": false, "note": note, "stage_one": null, "changed_note": null, "limit_note": null, "planned_runs": f.damage_planned_runs, "tanks_along": tanks_along })
         }
         ga::DamageScreen::Screened {
             unscreened,
@@ -531,11 +533,13 @@ fn damage_screening_json(f: &ga::ArrangementFit, ids: &mut TextIds) -> Value {
                 Some(u) => {
                     let note = text!(
                         "note-damage-changed-arrangement",
-                        "Damage changed the arrangement. Without damage the search chose {before_wide} across, {before_od} m tanks, {before_volume} m3. With damage it chose {after_wide} across, {after_od} m tanks, {after_volume} m3.",
+                        "Damage changed the arrangement. Without damage the search chose {before_wide} across by {before_long} along, {before_od} m tanks, {before_volume} m3. With damage it chose {after_wide} across by {after_long} along, {after_od} m tanks, {after_volume} m3.",
                         before_wide = u.n_wide,
+                        before_long = u.n_long,
                         before_od = Arg::fixed(u.tank_od_m, 2),
                         before_volume = Arg::fixed(u.cargo_volume_m3, 0),
                         after_wide = f.n_tanks_wide,
+                        after_long = f.n_tanks_long,
                         after_od = Arg::fixed(f.tank_od_m, 2),
                         after_volume = Arg::fixed(f.cargo_volume_m3, 0),
                     );
@@ -561,7 +565,7 @@ fn damage_screening_json(f: &ga::ArrangementFit, ids: &mut TextIds) -> Value {
                 ids.text(&note);
                 note
             });
-            json!({ "screened": true, "note": Value::Null, "stage_one": stage_one, "changed_note": changed_note, "limit_note": cap_note, "planned_runs": f.damage_planned_runs })
+            json!({ "screened": true, "note": Value::Null, "stage_one": stage_one, "changed_note": changed_note, "limit_note": cap_note, "planned_runs": f.damage_planned_runs, "tanks_along": tanks_along })
         }
     }
 }
@@ -1333,6 +1337,9 @@ fn unstored_rules(p: &Map<String, Value>) -> RunRules {
             sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
             inputs: ga::RuleInputs::default(),
             damage: crate::damage::DamageControl::default(),
+            budget: Default::default(),
+            pass: PassRole::Normal,
+            choose_tanks_along: false,
         },
         Err(_) => RunRules::default(),
     }
@@ -1346,6 +1353,29 @@ pub struct RunRules {
     pub inputs: ga::RuleInputs,
     /// Issue #923: whether to work out damage stability, and the progress hook. Default: run, no hook.
     pub damage: crate::damage::DamageControl,
+    /// Issue #935: what the passes of one run share when they work damage out: the budget of damage runs, the
+    /// planned total and the fraction done. One run, one budget: the depth passes of a standing height search
+    /// again, and the whole run stays within the cap.
+    pub budget: std::rc::Rc<crate::damage::RunBudget>,
+    /// Issue #935: which pass of the run this is (the depth passes of a standing height). Set by the run, never by
+    /// a file or the parameters.
+    pub pass: PassRole,
+    /// Issue #935: the arrangement search may choose the number of tanks along from 2, 3 and 4 (the Option left it
+    /// to the Defaults Profile; a typed number pins it).
+    pub choose_tanks_along: bool,
+}
+
+/// What a pass of a run is for (issue #935). A standing height settles the depth over several passes, each of
+/// which searches again; only the pass that gives the results works its answer's damage out.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum PassRole {
+    /// A pass whose results are used unless it gives another depth than it was given (then it is run again).
+    #[default]
+    Normal,
+    /// A pass whose depth is all that is used: no answer's damage.
+    Discard,
+    /// The last pass the settling allows: its results are used whatever depth it gives.
+    Last,
 }
 
 /// The step a default propeller diameter sized to the light draught is rounded down to (m).
@@ -1474,18 +1504,34 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
         let mut depth = probed;
         if depth.is_none() {
             // No candidate passed the cheap checks: the full run finds the closest, as before.
-            let first = simulate_once_inner(p, &mut Measured::default(), rules)?;
+            // Only its depth is used, so it works no answer's damage out.
+            let first_rules = RunRules {
+                pass: PassRole::Discard,
+                ..rules.clone()
+            };
+            let first = simulate_once_inner(p, &mut Measured::default(), &first_rules)?;
             depth = first
                 .get("dims")
                 .and_then(|d| d.get("depth_m"))
                 .and_then(Value::as_f64);
         }
         if let Some(depth) = depth {
+            let pass = std::cell::Cell::new(0);
             let ((mut v, m), passes, last, got) = settle_depth(depth, DEPTH_SETTLE_RUNS, |d| {
                 let mut q = p.clone();
                 q.insert("depth_m".to_string(), json!(d));
+                // The last pass the settling allows keeps its answer's damage whatever depth it gives.
+                pass.set(pass.get() + 1);
+                let pass_rules = RunRules {
+                    pass: if pass.get() >= DEPTH_SETTLE_RUNS {
+                        PassRole::Last
+                    } else {
+                        PassRole::Normal
+                    },
+                    ..rules.clone()
+                };
                 let mut m = Measured::default();
-                let v = simulate_once_inner(&q, &mut m, rules)?;
+                let v = simulate_once_inner(&q, &mut m, &pass_rules)?;
                 let got = v
                     .get("dims")
                     .and_then(|d| d.get("depth_m"))
@@ -3498,6 +3544,8 @@ fn simulate_gas(
         sightline_limit_source: blind.light_rule.clone(),
         is_code: is_code_options,
         damage_run_cap: crate::damage::damage_run_cap(),
+        // Issue #935: a number of tanks along the designer typed pins the search; the profile's default does not.
+        choose_tanks_along: rules.choose_tanks_along,
         ..FitOptions::default()
     };
     // Issue #992: with a standing height every candidate is capped by its own depth less the
@@ -3515,7 +3563,7 @@ fn simulate_gas(
         return Ok((json!({ "probe_depth": depth }), Measured::default()));
     }
     // Issue #935: the search screens by damage with the run's threads, progress and cancel.
-    let runner = crate::damage::ThreadedRunner::new(&rules.damage);
+    let runner = crate::damage::ThreadedRunner::new(&rules.damage, &rules.budget);
     let f = ga::fit_with(l, b, cargo_key, t_arg, &options, &runner)
         .map_err(|e| Stop::Raised(e.kind.to_string(), e.message))?;
     // The draught the hull allows is the winner's own depth less the freeboard (issue #992).
@@ -3775,13 +3823,26 @@ fn simulate_gas(
         let model = ovd_core::vessel_model::assemble(&vessel_inputs);
         let spaces: Vec<ovd_core::compartments::Space> =
             model.spaces.iter().map(|c| c.space.clone()).collect();
+        // Issue #935: a depth pass that will be run again with the depth it gave (a standing height) does not work
+        // its answer's damage out: its results are not used, and the run keeps within its budget of damage runs.
+        let discard = standing
+            && (rules.pass == PassRole::Discard
+                || (rules.pass == PassRole::Normal && (d0 - f.depth_m).abs() > DEPTH_SETTLED_M));
+        let control = if discard {
+            crate::damage::DamageControl {
+                run: false,
+                progress: None,
+            }
+        } else {
+            runner.following_control()
+        };
         stages = crate::damage::gas_damage_stages(
             (igc_set, adn_set, es_trin_set),
             &spaces,
             &fit_hull,
             &damaged_conditions,
             rho,
-            &runner.following_control(),
+            &control,
         )
         .map_err(|_| {
             Stop::Raised(
@@ -3789,6 +3850,9 @@ fn simulate_gas(
                 crate::damage::DAMAGE_CANCELLED.to_string(),
             )
         })?;
+        if control.run {
+            runner.finish_stage(stages.cases);
+        }
     }
     // A damage Rule in the stack that its set does not evaluate is `not evaluated`, not `not applicable`.
     let unevaluated = |id: &str, set: &str, over_110: bool| {

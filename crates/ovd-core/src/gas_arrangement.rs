@@ -70,6 +70,8 @@ pub const DEFAULT_EXTRA_CLEARANCE_M: [f64; 4] = [0.5, 1.0, 1.5, 2.0];
 pub const DEFAULT_REQUIRED_FREEBOARD_M: f64 = 0.3;
 /// Issue #935: the most damage runs one search works out (the maintainer's choice at the gate).
 pub const DEFAULT_DAMAGE_RUN_CAP: usize = 24;
+/// Issue #935: the numbers of tanks along the search chooses from.
+pub const TANKS_ALONG_CHOICES: [i64; 3] = [2, 3, 4];
 /// Issue #935: the diameter the search refines a failing size to, between it and the next size down (m).
 const DAMAGE_REFINE_STEP_M: f64 = 0.1;
 /// Issue #992: with the tanks in hold (a standing height of 0), the gap between the tank top and
@@ -312,6 +314,10 @@ pub struct FitOptions {
     /// that passed damage so far and says it stopped (not wall time, which would give different answers on
     /// different machines).
     pub damage_run_cap: usize,
+    /// Issue #935: the search chooses the number of tanks along from 2, 3 and 4 (screened by damage) when the stack
+    /// screens by IGC 2.7 damage and the run does not skip damage. `false`: the number is [`FitOptions::tanks_in_line`]
+    /// (a typed value pins it). The first evaluation (damage not run) keeps `tanks_in_line`.
+    pub choose_tanks_along: bool,
 }
 
 /// What the IS Code 2008 loading conditions of a candidate need beyond its own result (issue #426).
@@ -631,6 +637,7 @@ impl Default for FitOptions {
             rule_inputs: RuleInputs::default(),
             is_code: None,
             damage_run_cap: DEFAULT_DAMAGE_RUN_CAP,
+            choose_tanks_along: false,
         }
     }
 }
@@ -700,6 +707,8 @@ pub struct ArrangementFit {
     /// Issue #935: the most damage runs the search expects (0: nothing to screen by), for the estimate before a
     /// damage run.
     pub damage_planned_runs: usize,
+    /// Issue #935: the numbers of tanks along the search tried (one: pinned, or damage not screened).
+    pub tanks_along_tried: Vec<i64>,
 }
 
 /// Issue #935: how the arrangement search treated IGC 2.7 damage survival.
@@ -1357,6 +1366,29 @@ fn igc_damage_set(o: &FitOptions) -> Option<&RuleSet> {
     })
 }
 
+/// What identifies a candidate across the depth passes of one run (issue #935): the number of tanks along and
+/// across, the tank diameter, the side space and the depth, to the millimetre. A later pass builds the same
+/// candidate with the same hull and spaces, and a lightship that moves a little with the installed power of the
+/// pass's depth, so its damage verdicts are close to the earlier pass's: the search reuses them to choose, and the
+/// answer's own damage run, which is the one the results and the Rule Trace read, works them out afresh.
+fn candidate_key(c: &Candidate) -> String {
+    let r = &c.result;
+    format!(
+        "{}|{}|{:.3}|{:.3}|{:.3}",
+        c.inputs.n_tanks_long,
+        c.inputs.n_tanks_wide.unwrap_or(0),
+        opt_or_zero(r.tank_outer_diameter_m),
+        opt_or_zero(r.side_clearance_m),
+        c.depth,
+    )
+}
+
+/// Issue #935: whether the search has used its damage runs: the cap counts this search's runs and the runs the
+/// runner has worked out for the rest of the run (the depth passes of a standing height share one budget).
+fn out_of_runs(s: &Search<'_>) -> bool {
+    s.damage_runs.max(s.runner.runs_used()) >= s.o.damage_run_cap
+}
+
 /// Issue #935: work out the IGC damage of a candidate that passed the cheap checks and stability, as the answer's
 /// run does (same conditions, same cargo, same spaces), and keep the verdicts on it. Does nothing when the stack
 /// does not evaluate IGC 2.7, the runner is told to skip, or the candidate has no loading conditions with weights.
@@ -1374,6 +1406,13 @@ fn screen_damage(s: &mut Search<'_>, c: &mut Candidate) -> Result<Screened, PyEr
         return Ok(Screened::Done);
     };
     if !s.runner.enabled() || c.result.gas_basis.is_none() {
+        return Ok(Screened::Done);
+    }
+    // Issue #935: a candidate an earlier depth pass of this run screened keeps its verdicts, passing or not: the
+    // same candidate costs no damage run, and a pass that runs out of budget keeps what the earlier ones found.
+    let key = candidate_key(c);
+    if let Some(verdicts) = s.runner.recall(&key) {
+        c.damage = Some(verdicts);
         return Ok(Screened::Done);
     }
     let Some(spec) = c.result.hull_spec.as_ref() else {
@@ -1401,7 +1440,7 @@ fn screen_damage(s: &mut Search<'_>, c: &mut Candidate) -> Result<Screened, PyEr
     let Ok(plan) = gas_damage::gas_damage_plan(set, &spaces, &hull) else {
         return Ok(Screened::Done);
     };
-    if s.damage_runs >= o.damage_run_cap {
+    if out_of_runs(s) {
         s.cap_hit = true;
         return Ok(Screened::CapReached);
     }
@@ -1413,6 +1452,7 @@ fn screen_damage(s: &mut Search<'_>, c: &mut Candidate) -> Result<Screened, PyEr
             message: gas_damage::DAMAGE_CANCELLED.to_string(),
         })?;
     s.damage_runs += 1;
+    s.runner.remember(&key, &run.verdicts);
     c.damage = Some(run.verdicts);
     Ok(Screened::Done)
 }
@@ -1502,6 +1542,9 @@ struct Search<'a> {
     damage_runs: usize,
     /// Issue #935: the search reached `damage_run_cap` and stopped screening.
     cap_hit: bool,
+    /// Issue #935: the numbers of tanks along the search tries, the profile's first (just `tanks_in_line` when it
+    /// is pinned, or when damage is not screened).
+    along: Vec<i64>,
     /// Issue #992: stop after the cheap stage and take the most cargo among the candidates that pass
     /// it (the probe of [`probe_depth`]); the costly stability stage does not run.
     cheap_only: bool,
@@ -1790,113 +1833,116 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
         unscreened_best: None,
         planned_runs: 0,
     };
-    for &d in &o.depths {
-        for &nw in &o.tanks_wide {
-            let mut cands: Vec<Built> = Vec::new();
-            if let Some(x) = s.build(d, nw, o.tanks_in_line)? {
-                cands.push(x);
-            }
-            let mut more: Vec<Built> = Vec::new();
-            for (inp0, r0) in &cands {
-                if opt_or_zero(r0.tank_outer_diameter_m) == 0.0 {
-                    continue;
+    for along in s.along.clone() {
+        for &d in &o.depths {
+            for &nw in &o.tanks_wide {
+                let mut cands: Vec<Built> = Vec::new();
+                if let Some(x) = s.build(d, nw, along)? {
+                    cands.push(x);
                 }
-                let Some(side) = r0.side_clearance_m else {
-                    continue;
-                };
-                for &extra in &o.extra_clearance_m {
-                    s.tried += 1;
-                    let mut i2 = inp0.clone();
-                    i2.side_clearance_override_m = Some(side + extra);
-                    let mut r2 = capacity(&i2)?;
-                    // Issue #992: a wider side space gives a smaller tank, so the depth that
-                    // follows the tank is settled again for this variant.
-                    if o.standing_mode() {
-                        let mut settled = false;
-                        for _ in 0..DEPTH_SETTLE_ROUNDS {
-                            let h = o
-                                .standing(opt_or_zero(r2.tank_outer_diameter_m))
-                                .unwrap_or(0.0);
-                            let want = s.target_depth(tank_top_above_keel_m(&r2), h);
-                            if (want - i2.depth).abs() < 0.0015 {
-                                settled = true;
-                                break;
+                let mut more: Vec<Built> = Vec::new();
+                for (inp0, r0) in &cands {
+                    if opt_or_zero(r0.tank_outer_diameter_m) == 0.0 {
+                        continue;
+                    }
+                    let Some(side) = r0.side_clearance_m else {
+                        continue;
+                    };
+                    for &extra in &o.extra_clearance_m {
+                        s.tried += 1;
+                        let mut i2 = inp0.clone();
+                        i2.side_clearance_override_m = Some(side + extra);
+                        let mut r2 = capacity(&i2)?;
+                        // Issue #992: a wider side space gives a smaller tank, so the depth that
+                        // follows the tank is settled again for this variant.
+                        if o.standing_mode() {
+                            let mut settled = false;
+                            for _ in 0..DEPTH_SETTLE_ROUNDS {
+                                let h = o
+                                    .standing(opt_or_zero(r2.tank_outer_diameter_m))
+                                    .unwrap_or(0.0);
+                                let want = s.target_depth(tank_top_above_keel_m(&r2), h);
+                                if (want - i2.depth).abs() < 0.0015 {
+                                    settled = true;
+                                    break;
+                                }
+                                i2.depth = want;
+                                r2 = capacity(&i2)?;
                             }
-                            i2.depth = want;
-                            r2 = capacity(&i2)?;
+                            let od2 = opt_or_zero(r2.tank_outer_diameter_m);
+                            let h = o.standing(od2).unwrap_or(0.0);
+                            let why = if !settled {
+                                Some(text!(
+                                    "fit-refused-depth-not-settled",
+                                    "The depth that follows the tank does not settle, near {depth} m.",
+                                    depth = Arg::fixed(i2.depth, 2),
+                                ))
+                            } else if h > od2 + 1e-9 {
+                                Some(text!(
+                                    "fit-refused-standing-height",
+                                    "The tank top is to stand {h} m above the deck, more than the tank diameter {od} m.",
+                                    h = Arg::fixed(h, 2),
+                                    od = Arg::fixed(od2, 2),
+                                ))
+                            } else {
+                                None
+                            };
+                            if let Some(why) = why {
+                                s.refused.push((d, nw, why));
+                                continue;
+                            }
                         }
-                        let od2 = opt_or_zero(r2.tank_outer_diameter_m);
-                        let h = o.standing(od2).unwrap_or(0.0);
-                        let why = if !settled {
-                            Some(text!(
-                                "fit-refused-depth-not-settled",
-                                "The depth that follows the tank does not settle, near {depth} m.",
-                                depth = Arg::fixed(i2.depth, 2),
-                            ))
-                        } else if h > od2 + 1e-9 {
-                            Some(text!(
-                                "fit-refused-standing-height",
-                                "The tank top is to stand {h} m above the deck, more than the tank diameter {od} m.",
-                                h = Arg::fixed(h, 2),
-                                od = Arg::fixed(od2, 2),
-                            ))
-                        } else {
-                            None
-                        };
-                        if let Some(why) = why {
-                            s.refused.push((d, nw, why));
-                            continue;
+                        // Mutation survivors (#58), `&&` to `||` and `>` to `>=` below: equivalent. The
+                        // two differ from the real test only for a candidate with a tank but zero
+                        // capacity (a fill ratio of 0, or a product that underflows to 0); a tank
+                        // diameter of 0 comes with zero capacity, so `||` adds nothing else. Such a
+                        // candidate joins the search under the mutants and can never win: its payload is
+                        // 0.0 (never above the 1e-6 margin over a payload that is 0.0 or more), and
+                        // its `feasible_geometry` check fails (cargo volume must be positive), so it
+                        // is never the best passing candidate either. It is also built last, after
+                        // the base candidate, so it cannot win a tie. Searched with each mutant built
+                        // in: 12 000 random inputs (rulesets, fill ratios from 0, tank caps, depths,
+                        // clearances, 9 969 infeasible), and 175 824 direct capacity runs, none differ
+                        // in any field. `a_zero_capacity_arrangement_is_infeasible_and_carries_nothing`
+                        // guards the two facts this rests on. Not a gap in the tests.
+                        if opt_or_zero(r2.tank_outer_diameter_m) != 0.0 && r2.cargo_capacity_t > 0.0
+                        {
+                            more.push((i2, r2));
                         }
-                    }
-                    // Mutation survivors (#58), `&&` to `||` and `>` to `>=` below: equivalent. The
-                    // two differ from the real test only for a candidate with a tank but zero
-                    // capacity (a fill ratio of 0, or a product that underflows to 0); a tank
-                    // diameter of 0 comes with zero capacity, so `||` adds nothing else. Such a
-                    // candidate joins the search under the mutants and can never win: its payload is
-                    // 0.0 (never above the 1e-6 margin over a payload that is 0.0 or more), and
-                    // its `feasible_geometry` check fails (cargo volume must be positive), so it
-                    // is never the best passing candidate either. It is also built last, after
-                    // the base candidate, so it cannot win a tie. Searched with each mutant built
-                    // in: 12 000 random inputs (rulesets, fill ratios from 0, tank caps, depths,
-                    // clearances, 9 969 infeasible), and 175 824 direct capacity runs, none differ
-                    // in any field. `a_zero_capacity_arrangement_is_infeasible_and_carries_nothing`
-                    // guards the two facts this rests on. Not a gap in the tests.
-                    if opt_or_zero(r2.tank_outer_diameter_m) != 0.0 && r2.cargo_capacity_t > 0.0 {
-                        more.push((i2, r2));
                     }
                 }
-            }
-            for (inp, r) in cands.into_iter().chain(more) {
-                // With a standing height (issue #992) the depth is the candidate's own, and the
-                // draught cap is the less of the limit and its own depth less the freeboard.
-                let dep = inp.depth;
-                let t_cap = match o.standing_mode().then_some(()) {
-                    Some(_) => t_max.min(dep - o.required_freeboard_m),
-                    None => t_max,
-                };
-                let j = derate_candidate(&r, loa, beam, dep, t_cap, o.water_density_t_per_m3)?;
-                let cheap = cheap_checks(&r, &j, dep, o);
-                // With Rule Sets: the trace before stability (its stability Rules are not yet
-                // evaluated, so they cannot fail here).
-                let cheap_failed = if o.rules.is_empty() {
-                    cheap.iter().filter(|k| k.is_error() && !k.ok).count()
-                } else {
-                    failing_groups(&candidate_failures(
-                        &candidate_measured(&r, &j, &inp, dep, &cheap, Vec::new()),
-                        o,
-                    ))
-                    .len()
-                };
-                pool.all.push(Candidate {
-                    cheap_failed,
-                    tonnage: ranked_cargo(&r, &j, &inp, o),
-                    depth: dep,
-                    search_depth: d,
-                    result: r,
-                    journey: j,
-                    inputs: inp,
-                    damage: None,
-                });
+                for (inp, r) in cands.into_iter().chain(more) {
+                    // With a standing height (issue #992) the depth is the candidate's own, and the
+                    // draught cap is the less of the limit and its own depth less the freeboard.
+                    let dep = inp.depth;
+                    let t_cap = match o.standing_mode().then_some(()) {
+                        Some(_) => t_max.min(dep - o.required_freeboard_m),
+                        None => t_max,
+                    };
+                    let j = derate_candidate(&r, loa, beam, dep, t_cap, o.water_density_t_per_m3)?;
+                    let cheap = cheap_checks(&r, &j, dep, o);
+                    // With Rule Sets: the trace before stability (its stability Rules are not yet
+                    // evaluated, so they cannot fail here).
+                    let cheap_failed = if o.rules.is_empty() {
+                        cheap.iter().filter(|k| k.is_error() && !k.ok).count()
+                    } else {
+                        failing_groups(&candidate_failures(
+                            &candidate_measured(&r, &j, &inp, dep, &cheap, Vec::new()),
+                            o,
+                        ))
+                        .len()
+                    };
+                    pool.all.push(Candidate {
+                        cheap_failed,
+                        tonnage: ranked_cargo(&r, &j, &inp, o),
+                        depth: dep,
+                        search_depth: d,
+                        result: r,
+                        journey: j,
+                        inputs: inp,
+                        damage: None,
+                    });
+                }
             }
         }
     }
@@ -1911,72 +1957,130 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
     }
     // Issue #935: tell the runner how many damage runs to plan for, so its progress is a fixed total that shrinks at
     // the end (the fraction done never falls), and keep it for the results (the estimate before a damage run).
-    if igc_damage_set(o).is_some() && o.is_code.is_some() {
-        let mut groups: Vec<(f64, i64)> = Vec::new();
+    // Over every number of tanks along the search tries: the candidates that pass the cheap checks and three
+    // refinement steps for each depth, number across and number along, within the cap, which bounds the search.
+    let screening = igc_damage_set(o).is_some() && o.is_code.is_some();
+    if screening {
+        let mut groups: Vec<(f64, i64, i64)> = Vec::new();
         for &i in &order {
             let g = (
                 pool.all[i].search_depth,
                 pool.all[i].inputs.n_tanks_wide.unwrap_or(0),
+                pool.all[i].inputs.n_tanks_long,
             );
             if !groups.contains(&g) {
                 groups.push(g);
             }
         }
-        pool.planned_runs = (order.len() + 3 * groups.len()).clamp(1, o.damage_run_cap.max(1));
+        // Within the runs the budget still holds: the runner's earlier passes of this run have used some.
+        let left = o.damage_run_cap.saturating_sub(s.runner.runs_used()).max(1);
+        pool.planned_runs = (order.len() + 3 * groups.len()).clamp(1, left);
         if s.runner.enabled() {
             s.runner.plan(pool.planned_runs);
         }
     }
     let mut top = 0.0;
     let mut unscreened_top = 0.0;
-    for i in order {
-        if pool.best.is_some() && pool.all[i].tonnage < top - 1e-6 {
-            break;
-        }
-        // Issue #935: damage is the slowest part, so it runs last, on a candidate that passed everything else.
-        let mut ok = passes_all(&pool.all[i], o);
-        // What a search without damage would pick: the same rule as the pick below, on the candidates that
-        // passed before damage.
-        if ok {
-            match pool.unscreened_best {
-                None => {
-                    unscreened_top = pool.all[i].tonnage;
-                    pool.unscreened_best = Some(i);
-                }
-                Some(w) if i < w && pool.all[i].tonnage >= unscreened_top - 1e-6 => {
-                    pool.unscreened_best = Some(i);
-                }
-                Some(_) => {}
-            }
-        }
-        if ok && igc_damage_set(o).is_some() {
-            if screen_damage(s, &mut pool.all[i])? == Screened::CapReached {
+    'counts: for along in s.along.clone() {
+        // The candidates of this number of tanks along, from the most cargo down.
+        let in_count: Vec<usize> = order
+            .iter()
+            .copied()
+            .filter(|&i| pool.all[i].inputs.n_tanks_long == along)
+            .collect();
+        for i in in_count {
+            // A candidate with less cargo than the best pass cannot win, whatever number along it has.
+            if pool.best.is_some() && pool.all[i].tonnage < top - 1e-6 {
                 break;
             }
-            ok = passes_all(&pool.all[i], o);
-        }
-        let c = &pool.all[i];
-        if !ok {
-            pool.assessed_failed.push(i);
-        } else {
-            match pool.best {
-                None => {
-                    top = c.tonnage;
-                    pool.best = Some(i);
-                    if stop_at_first_pass {
-                        break;
+            // Issue #935: damage is the slowest part, so it runs last, on a candidate that passed everything else.
+            let mut ok = passes_all(&pool.all[i], o);
+            // What a search without damage would pick: the same rule as the pick below, on the candidates of the
+            // profile's number of tanks along that passed before damage (the first evaluation keeps that number).
+            if ok && along == o.tanks_in_line {
+                match pool.unscreened_best {
+                    None => {
+                        unscreened_top = pool.all[i].tonnage;
+                        pool.unscreened_best = Some(i);
                     }
+                    Some(w) if i < w && pool.all[i].tonnage >= unscreened_top - 1e-6 => {
+                        pool.unscreened_best = Some(i);
+                    }
+                    Some(_) => {}
                 }
-                Some(w) if i < w => pool.best = Some(i),
-                Some(_) => {}
+            }
+            if ok && screening {
+                if screen_damage(s, &mut pool.all[i])? == Screened::CapReached {
+                    break 'counts;
+                }
+                ok = passes_all(&pool.all[i], o);
+            }
+            if !ok {
+                pool.assessed_failed.push(i);
+            } else {
+                match pool.best {
+                    None => {
+                        top = pool.all[i].tonnage;
+                        pool.best = Some(i);
+                        if stop_at_first_pass {
+                            break 'counts;
+                        }
+                    }
+                    Some(w) if better_pick(&pool.all, i, w) => {
+                        top = top.max(pool.all[i].tonnage);
+                        pool.best = Some(i);
+                    }
+                    Some(_) => {}
+                }
+            }
+        }
+        // Issue #935: a size that fails damage is refined between it and the next size down.
+        if screening && s.runner.enabled() && !s.cap_hit {
+            refine_failed_groups(s, &mut pool, t_max, along)?;
+            if let Some(b) = pool.best {
+                top = top.max(pool.all[b].tonnage);
             }
         }
     }
-    // Issue #935: a size that fails damage is refined between it and the next size down.
-    if igc_damage_set(o).is_some() && s.runner.enabled() && o.is_code.is_some() {
-        refine_failed_groups(s, &mut pool, t_max)?;
-    }
     Ok(pool)
+}
+
+/// What the pick compares of a candidate (issue #935, addendum D3).
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct PickKey {
+    tonnage: f64,
+    tanks: i64,
+    along: i64,
+    od_m: f64,
+    index: usize,
+}
+
+/// Whether `a` is a better pick than `b`: the most cargo, and where two carry the same (to 1e-6 t) and have a
+/// different number of tanks along, the fewest tanks, then the fewest along, then the larger diameter. Within one
+/// number along, the first built stays, as before.
+fn better_key(a: &PickKey, b: &PickKey) -> bool {
+    if a.tonnage > b.tonnage + 1e-6 {
+        return true;
+    }
+    if a.tonnage < b.tonnage - 1e-6 {
+        return false;
+    }
+    if a.along == b.along {
+        return a.index < b.index;
+    }
+    (a.tanks, a.along, -a.od_m) < (b.tanks, b.along, -b.od_m)
+}
+
+/// [`better_key`] of candidates `i` and `w` of `all`.
+fn better_pick(all: &[Candidate], i: usize, w: usize) -> bool {
+    let key = |k: usize| PickKey {
+        tonnage: all[k].tonnage,
+        tanks: opt_count(all[k].result.n_tanks_total),
+        along: all[k].inputs.n_tanks_long,
+        od_m: opt_or_zero(all[k].result.tank_outer_diameter_m),
+        index: k,
+    };
+    better_key(&key(i), &key(w))
 }
 
 /// Issue #935: the sizes the grid offers are one clearance step apart (about 1 m of diameter for two across), and
@@ -1990,14 +2094,20 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
 /// and joins the pool, a fail moves the upper bound down. The pass is not monotone (research section 4a), so this
 /// finds a pass between the two bounds, not the largest possible. Every damage run counts against the cap; on
 /// reaching it the search keeps the best pass so far.
-fn refine_failed_groups(s: &mut Search<'_>, pool: &mut Pool, t_max: f64) -> Result<(), PyError> {
+fn refine_failed_groups(
+    s: &mut Search<'_>,
+    pool: &mut Pool,
+    t_max: f64,
+    along: i64,
+) -> Result<(), PyError> {
     let o = s.o;
     // (depth, tanks across): the smallest failing diameter of the group and the candidate that has it.
     let mut groups: Vec<(f64, i64, usize)> = Vec::new();
     for &i in &pool.assessed_failed {
         let c = &pool.all[i];
-        // A candidate that failed before damage (stability) has no damage and bounds nothing.
-        if c.damage.is_none() {
+        // Only this number of tanks along; a candidate that failed before damage (stability) has no damage and
+        // bounds nothing.
+        if c.inputs.n_tanks_long != along || c.damage.is_none() {
             continue;
         }
         // The search step it was built at (the depth follows the tank with a standing height, issue #992).
@@ -2033,6 +2143,7 @@ fn refine_failed_groups(s: &mut Search<'_>, pool: &mut Pool, t_max: f64) -> Resu
             .iter()
             .filter(|c| {
                 c.search_depth == depth
+                    && c.inputs.n_tanks_long == along
                     && c.inputs.n_tanks_wide == Some(nw)
                     && c.cheap_failed == 0
                     && opt_or_zero(c.result.tank_outer_diameter_m) < hi - 1e-9
@@ -2043,7 +2154,7 @@ fn refine_failed_groups(s: &mut Search<'_>, pool: &mut Pool, t_max: f64) -> Resu
             continue;
         }
         while hi - lo > DAMAGE_REFINE_STEP_M + 1e-9 {
-            if s.damage_runs >= o.damage_run_cap {
+            if out_of_runs(s) {
                 s.cap_hit = true;
                 return Ok(());
             }
@@ -2114,11 +2225,8 @@ fn refine_failed_groups(s: &mut Search<'_>, pool: &mut Pool, t_max: f64) -> Resu
             pool.all.push(cand);
             if passes {
                 lo = mid;
-                // The most cargo among the passes; the first of equals stays.
-                if pool
-                    .best
-                    .is_none_or(|b| pool.all[idx].tonnage > pool.all[b].tonnage + 1e-6)
-                {
+                // The most cargo among the passes (the tie-break of `better_pick`).
+                if pool.best.is_none_or(|b| better_pick(&pool.all, idx, b)) {
                     pool.best = Some(idx);
                 }
             } else {
@@ -2217,98 +2325,110 @@ fn tried_arrangements(
     pick: Option<usize>,
     refused: &[(f64, i64, Text)],
     o: &FitOptions,
+    counts: &[i64],
 ) -> Vec<TriedArrangement> {
     let nw_of = |c: &Candidate| c.inputs.n_tanks_wide.unwrap_or(0);
     let mut out = Vec::new();
-    for &d in &o.depths {
-        for &nw in &o.tanks_wide {
-            let group: Vec<usize> = (0..pool.all.len())
-                .filter(|&i| pool.all[i].search_depth == d && nw_of(&pool.all[i]) == nw)
-                .collect();
-            if group.is_empty() {
-                if let Some((_, _, why)) = refused.iter().find(|(rd, rn, _)| *rd == d && *rn == nw)
-                {
-                    out.push(TriedArrangement {
-                        depth_m: d,
-                        n_wide: nw,
-                        n_long: o.tanks_in_line,
-                        tank_od_m: 0.0,
-                        side_clearance_m: 0.0,
-                        wing_tank_width_m: 0.0,
-                        cargo_volume_m3: 0.0,
-                        cargo_t: 0.0,
-                        variants: 0,
-                        outcome: TriedOutcome::NotBuilt(why.clone()),
-                    });
-                }
-                continue;
-            }
-            let failed = |i: &usize| pool.assessed_failed.contains(i);
-            // The first of the most cargo stays (a strict comparison), as the search ranks.
-            let most_cargo = |ids: &mut dyn Iterator<Item = usize>| {
-                ids.fold(None, |best: Option<usize>, i| match best {
-                    Some(b) if pool.all[i].tonnage <= pool.all[b].tonnage + 1e-6 => Some(b),
-                    _ => Some(i),
-                })
-            };
-            let chosen = pick.filter(|p| group.contains(p));
-            let passing = most_cargo(
-                &mut group
-                    .iter()
-                    .copied()
-                    .filter(|i| pool.all[*i].cheap_failed == 0 && !failed(i)),
-            );
-            let stability_failed = most_cargo(
-                &mut group
-                    .iter()
-                    .copied()
-                    .filter(|i| pool.all[*i].cheap_failed == 0 && failed(i)),
-            );
-            let od = |i: usize| opt_or_zero(pool.all[i].result.tank_outer_diameter_m);
-            let closest = group
-                .iter()
-                .copied()
-                .fold(None, |best: Option<usize>, i| match best {
-                    Some(b)
-                        if pool.all[i].cheap_failed > pool.all[b].cheap_failed
-                            || (pool.all[i].cheap_failed == pool.all[b].cheap_failed
-                                && od(i) >= od(b) - 1e-9) =>
+    // Issue #935: one row per depth, number across and number of tanks along the search tried.
+    for (k, &nl) in counts.iter().enumerate() {
+        for &d in &o.depths {
+            for &nw in &o.tanks_wide {
+                let group: Vec<usize> = (0..pool.all.len())
+                    .filter(|&i| {
+                        pool.all[i].search_depth == d
+                            && nw_of(&pool.all[i]) == nw
+                            && pool.all[i].inputs.n_tanks_long == nl
+                    })
+                    .collect();
+                if group.is_empty() {
+                    // A size that could not be built is reported once, not for each number along.
+                    if k == 0
+                        && let Some((_, _, why)) =
+                            refused.iter().find(|(rd, rn, _)| *rd == d && *rn == nw)
                     {
-                        Some(b)
+                        out.push(TriedArrangement {
+                            depth_m: d,
+                            n_wide: nw,
+                            n_long: nl,
+                            tank_od_m: 0.0,
+                            side_clearance_m: 0.0,
+                            wing_tank_width_m: 0.0,
+                            cargo_volume_m3: 0.0,
+                            cargo_t: 0.0,
+                            variants: 0,
+                            outcome: TriedOutcome::NotBuilt(why.clone()),
+                        });
                     }
-                    _ => Some(i),
+                    continue;
+                }
+                let failed = |i: &usize| pool.assessed_failed.contains(i);
+                // The first of the most cargo stays (a strict comparison), as the search ranks.
+                let most_cargo = |ids: &mut dyn Iterator<Item = usize>| {
+                    ids.fold(None, |best: Option<usize>, i| match best {
+                        Some(b) if pool.all[i].tonnage <= pool.all[b].tonnage + 1e-6 => Some(b),
+                        _ => Some(i),
+                    })
+                };
+                let chosen = pick.filter(|p| group.contains(p));
+                let passing = most_cargo(
+                    &mut group
+                        .iter()
+                        .copied()
+                        .filter(|i| pool.all[*i].cheap_failed == 0 && !failed(i)),
+                );
+                let stability_failed = most_cargo(
+                    &mut group
+                        .iter()
+                        .copied()
+                        .filter(|i| pool.all[*i].cheap_failed == 0 && failed(i)),
+                );
+                let od = |i: usize| opt_or_zero(pool.all[i].result.tank_outer_diameter_m);
+                let closest =
+                    group
+                        .iter()
+                        .copied()
+                        .fold(None, |best: Option<usize>, i| match best {
+                            Some(b)
+                                if pool.all[i].cheap_failed > pool.all[b].cheap_failed
+                                    || (pool.all[i].cheap_failed == pool.all[b].cheap_failed
+                                        && od(i) >= od(b) - 1e-9) =>
+                            {
+                                Some(b)
+                            }
+                            _ => Some(i),
+                        });
+                let (i, outcome) = match (chosen, passing, stability_failed, closest) {
+                    (Some(i), ..) if pool.best == Some(i) => (i, TriedOutcome::Chosen),
+                    (Some(i), ..) => (
+                        i,
+                        TriedOutcome::Fails(failing_checks(&pool.all[i], o, true)),
+                    ),
+                    (None, Some(i), ..) => (i, TriedOutcome::LessCargo),
+                    (None, None, Some(i), _) => (
+                        i,
+                        TriedOutcome::Fails(failing_checks(&pool.all[i], o, true)),
+                    ),
+                    (None, None, None, Some(i)) => (
+                        i,
+                        TriedOutcome::Fails(failing_checks(&pool.all[i], o, false)),
+                    ),
+                    (None, None, None, None) => continue,
+                };
+                let c = &pool.all[i];
+                let r = &c.result;
+                out.push(TriedArrangement {
+                    depth_m: c.depth,
+                    n_wide: nw,
+                    n_long: c.inputs.n_tanks_long,
+                    tank_od_m: opt_or_zero(r.tank_outer_diameter_m),
+                    side_clearance_m: opt_or_zero(r.side_clearance_m),
+                    wing_tank_width_m: wing_tank_width(r),
+                    cargo_volume_m3: r.cargo_volume_m3,
+                    cargo_t: c.tonnage,
+                    variants: group.len() as i64,
+                    outcome,
                 });
-            let (i, outcome) = match (chosen, passing, stability_failed, closest) {
-                (Some(i), ..) if pool.best == Some(i) => (i, TriedOutcome::Chosen),
-                (Some(i), ..) => (
-                    i,
-                    TriedOutcome::Fails(failing_checks(&pool.all[i], o, true)),
-                ),
-                (None, Some(i), ..) => (i, TriedOutcome::LessCargo),
-                (None, None, Some(i), _) => (
-                    i,
-                    TriedOutcome::Fails(failing_checks(&pool.all[i], o, true)),
-                ),
-                (None, None, None, Some(i)) => (
-                    i,
-                    TriedOutcome::Fails(failing_checks(&pool.all[i], o, false)),
-                ),
-                (None, None, None, None) => continue,
-            };
-            let c = &pool.all[i];
-            let r = &c.result;
-            out.push(TriedArrangement {
-                depth_m: c.depth,
-                n_wide: nw,
-                n_long: c.inputs.n_tanks_long,
-                tank_od_m: opt_or_zero(r.tank_outer_diameter_m),
-                side_clearance_m: opt_or_zero(r.side_clearance_m),
-                wing_tank_width_m: wing_tank_width(r),
-                cargo_volume_m3: r.cargo_volume_m3,
-                cargo_t: c.tonnage,
-                variants: group.len() as i64,
-                outcome,
-            });
+            }
         }
     }
     out
@@ -2340,6 +2460,26 @@ pub fn fit(
     fit_with(loa, beam, cargo, t_max, o, &SerialRunner)
 }
 
+/// Issue #935: the numbers of tanks along the search tries: the profile's number first, then the others of 2, 3 and
+/// 4, when the search screens by IGC 2.7 damage and the number is not pinned (`choose_tanks_along`); otherwise just
+/// the profile's number.
+fn tanks_along_to_try(o: &FitOptions, runner: &dyn DamageRunner) -> Vec<i64> {
+    let mut out = vec![o.tanks_in_line];
+    if o.choose_tanks_along
+        && igc_damage_set(o).is_some()
+        && o.is_code.is_some()
+        && runner.enabled()
+    {
+        out.extend(
+            TANKS_ALONG_CHOICES
+                .iter()
+                .copied()
+                .filter(|&n| n != o.tanks_in_line),
+        );
+    }
+    out
+}
+
 /// [`fit`], with the damage of a candidate worked out by `runner` (issue #935): the caller's threads, progress
 /// and cancel. A cancelled run is `Err` with kind `Cancelled` and the message [`gas_damage::DAMAGE_CANCELLED`].
 ///
@@ -2367,22 +2507,23 @@ pub fn fit_with(
         return Ok(intact);
     }
     let first = fit_once(loa, beam, cargo, t_max, &at_share(o, levels[idx]), runner)?;
-    // One damage budget for the whole share search: the next share down draws on what the first left.
-    let left = o.damage_run_cap.saturating_sub(first.damage_runs);
+    // One damage budget for the whole run: the runner counts the runs of every search and every depth pass (a
+    // runner that does not count, the serial one, gets what the first search left).
+    let counted = runner.runs_used() > 0;
+    let used = runner.runs_used().max(first.damage_runs);
+    let left = o.damage_run_cap.saturating_sub(used);
     if first.feasible || idx + 1 >= levels.len() || left == 0 {
         return Ok(first);
     }
-    // The chosen share fails damage: the next share down, with its damage runs planned on top of the
-    // first's so the progress total never falls.
-    let after = PlanOnTop {
-        inner: runner,
-        before: first.damage_planned_runs,
-    };
+    // The chosen share fails damage: the next share down, on what the budget has left. The runner's budget plans
+    // its total on top of what is done, so the progress total never falls.
     let mut o_next = at_share(o, levels[idx + 1]);
-    o_next.damage_run_cap = left;
-    let next = fit_once(loa, beam, cargo, t_max, &o_next, &after)?;
+    if !counted {
+        o_next.damage_run_cap = left;
+    }
+    let next = fit_once(loa, beam, cargo, t_max, &o_next, runner)?;
     let runs = first.damage_runs + next.damage_runs;
-    let planned = first.damage_planned_runs + next.damage_planned_runs;
+    let planned = (first.damage_planned_runs + next.damage_planned_runs).min(o.damage_run_cap);
     let mut out = if share_better(&next, &first) {
         next
     } else {
@@ -2464,34 +2605,6 @@ impl DamageRunner for NoDamage {
     }
 }
 
-/// A runner that adds `before` to the runs a search plans (issue #992), so the second damage-screened
-/// search of the share search plans its runs on top of the first's and the total only grows.
-struct PlanOnTop<'a> {
-    inner: &'a dyn DamageRunner,
-    before: usize,
-}
-
-impl DamageRunner for PlanOnTop<'_> {
-    fn enabled(&self) -> bool {
-        self.inner.enabled()
-    }
-
-    fn plan(&self, runs: usize) {
-        self.inner.plan(self.before + runs);
-    }
-
-    fn run(
-        &self,
-        run: &gas_damage::GasRun,
-        spaces: &[crate::compartments::Space],
-        hull: &crate::hydrostatics::Hull,
-        conditions: &[lc::LoadedCondition],
-        density: f64,
-    ) -> Result<gas_damage::GasDamageRun, gas_damage::Cancelled> {
-        self.inner.run(run, spaces, hull, conditions, density)
-    }
-}
-
 /// The shares to try (issue #992): the steps of the limit, when the share is to be searched.
 fn share_levels(o: &FitOptions) -> Option<Vec<f64>> {
     if !o.standing_share_search || o.tank_top_above_deck_m.is_some() {
@@ -2524,11 +2637,12 @@ fn fit_once(
         runner,
         damage_runs: 0,
         cap_hit: false,
+        along: tanks_along_to_try(o, runner),
         cheap_only: false,
     };
     let pool = search(&mut s, t_max, false)?;
     let pick = pool.best.or_else(|| closest_to_passing(&pool.all, o));
-    let tried = tried_arrangements(&pool, pick, &s.refused, o);
+    let tried = tried_arrangements(&pool, pick, &s.refused, o, &s.along);
     // Issue #935: damage runs ran out before any candidate passed: the closest is shown, and it is not an answer.
     let cap_blocked = s.cap_hit && pool.best.is_none();
     let pool_planned_runs = pool.planned_runs;
@@ -2703,6 +2817,7 @@ fn fit_once(
         damage_runs: s.damage_runs,
         damage_screen,
         damage_planned_runs: pool_planned_runs,
+        tanks_along_tried: s.along.clone(),
         engine_result: r,
     })
 }
@@ -2732,6 +2847,7 @@ fn has_passing_arrangement(
         runner,
         damage_runs: 0,
         cap_hit: false,
+        along: vec![o.tanks_in_line],
         cheap_only: false,
     };
     Ok(search(&mut s, t_max, true)?.best.is_some())
@@ -2770,6 +2886,7 @@ pub fn probe_depth(
         runner: &SerialRunner,
         damage_runs: 0,
         cap_hit: false,
+        along: vec![o.tanks_in_line],
         cheap_only: true,
     };
     let pool = search(&mut s, t_max, false)?;
@@ -2844,54 +2961,60 @@ pub fn smallest_viable_loa_with(
 }
 
 #[cfg(test)]
+mod pick_tests {
+    use super::{PickKey, better_key};
+
+    fn key(tonnage: f64, tanks: i64, along: i64, od_m: f64, index: usize) -> PickKey {
+        PickKey {
+            tonnage,
+            tanks,
+            along,
+            od_m,
+            index,
+        }
+    }
+
+    /// Issue #935, addendum D3. Label: rule (the owner's aim is cargo; ties go to the simpler hull).
+    #[test]
+    fn more_cargo_wins_and_equal_cargo_goes_to_the_fewest_tanks_then_the_fewest_along() {
+        // More cargo wins, whatever else.
+        assert!(better_key(
+            &key(101.0, 8, 4, 9.0, 5),
+            &key(100.0, 4, 2, 12.0, 1)
+        ));
+        assert!(!better_key(
+            &key(100.0, 4, 2, 12.0, 1),
+            &key(101.0, 8, 4, 9.0, 5)
+        ));
+        // Equal cargo (to 1e-6 t), another number along: the fewest tanks.
+        assert!(better_key(
+            &key(100.0, 4, 2, 12.0, 1),
+            &key(100.0, 6, 3, 10.0, 2)
+        ));
+        assert!(!better_key(
+            &key(100.0, 6, 3, 10.0, 2),
+            &key(100.0, 4, 2, 12.0, 1)
+        ));
+        // The same number of tanks: the fewest along.
+        assert!(better_key(
+            &key(100.0, 6, 2, 10.0, 7),
+            &key(100.0, 6, 3, 10.0, 2)
+        ));
+        // Within one number along the first built stays: the diameter does not decide.
+        assert!(better_key(
+            &key(100.0, 6, 3, 10.0, 1),
+            &key(100.0, 6, 3, 11.0, 2)
+        ));
+        assert!(!better_key(
+            &key(100.0, 6, 3, 11.0, 3),
+            &key(100.0, 6, 3, 10.0, 2)
+        ));
+    }
+}
+
+#[cfg(test)]
 mod share_search_tests {
     use super::*;
-    use core::cell::Cell;
-
-    /// A runner that records the runs planned and runs nothing.
-    struct Recorder {
-        planned: Cell<usize>,
-    }
-
-    impl DamageRunner for Recorder {
-        fn plan(&self, runs: usize) {
-            self.planned.set(runs);
-        }
-
-        fn run(
-            &self,
-            _: &gas_damage::GasRun,
-            _: &[crate::compartments::Space],
-            _: &crate::hydrostatics::Hull,
-            _: &[lc::LoadedCondition],
-            _: f64,
-        ) -> Result<gas_damage::GasDamageRun, gas_damage::Cancelled> {
-            Err(gas_damage::Cancelled)
-        }
-    }
-
-    /// Issue #992: the second damage-screened search of the share search plans its runs on top of the
-    /// first's, so the planned total (and the progress fraction) only grows.
-    #[test]
-    fn the_second_search_plans_on_top_of_the_first() {
-        let rec = Recorder {
-            planned: Cell::new(0),
-        };
-        PlanOnTop {
-            inner: &rec,
-            before: 9,
-        }
-        .plan(5);
-        assert_eq!(rec.planned.get(), 14);
-        assert!(
-            PlanOnTop {
-                inner: &rec,
-                before: 9
-            }
-            .enabled()
-        );
-        assert!(!NoDamage.enabled());
-    }
 
     #[test]
     fn the_share_steps_run_from_the_limit_down_to_none_in_five_searches() {

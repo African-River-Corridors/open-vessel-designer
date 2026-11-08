@@ -86,7 +86,10 @@ fn a_file_saved_before_has_no_standing_height_and_an_explicit_none_keeps_the_old
 #[test]
 fn in_hold_the_depth_is_the_tank_top_plus_the_gap_and_a_standing_height_takes_it_off() {
     // Label: snapshot, printed by the code. Tank top above keel and diameter of the arrangement.
-    let hold = run(&design(json!({ "tank_top_above_deck_m": 0.0 })));
+    // Issue #935: the picks below are at the profile's two along; the search may choose 3 or 4 along when it is not typed.
+    let hold = run(&design(
+        json!({ "tank_top_above_deck_m": 0.0, "tanks_in_line": 2 }),
+    ));
     let top = hold["arrangement"]["tank_top_above_keel_m"]
         .as_f64()
         .unwrap();
@@ -108,7 +111,9 @@ fn in_hold_the_depth_is_the_tank_top_plus_the_gap_and_a_standing_height_takes_it
     );
     assert!((depth(&hold) - 13.621).abs() < 0.0006, "{}", depth(&hold));
 
-    let two = run(&design(json!({ "tank_top_above_deck_m": 2.0 })));
+    let two = run(&design(
+        json!({ "tank_top_above_deck_m": 2.0, "tanks_in_line": 2 }),
+    ));
     let top2 = two["arrangement"]["tank_top_above_keel_m"]
         .as_f64()
         .unwrap();
@@ -119,11 +124,11 @@ fn in_hold_the_depth_is_the_tank_top_plus_the_gap_and_a_standing_height_takes_it
         depth(&two)
     );
     // Standing 2 m high saves at least 2.3 m of depth: the same tank would, and a smaller one more. Issue #935:
-    // both picks are two across at 11.72 m (the refined size that survives damage), so the depths compare.
-    // Label: snapshot, printed by the code.
+    // both picks are two across (11.72 m in hold, 11.53 m standing 2 m: the sizes the damage refinement finds),
+    // so the depths compare. Label: snapshot, printed by the code.
     assert_eq!(two["arrangement"]["n_wide"], 2);
-    assert!((two["arrangement"]["tank_od_m"].as_f64().unwrap() - 11.718).abs() < 0.001);
-    assert!((depth(&two) - 11.321).abs() < 0.0006, "{}", depth(&two));
+    assert!((two["arrangement"]["tank_od_m"].as_f64().unwrap() - 11.531).abs() < 0.001);
+    assert!((depth(&two) - 11.134).abs() < 0.0006, "{}", depth(&two));
     assert!(
         depth(&hold) - depth(&two) > 2.29,
         "{} {}",
@@ -635,7 +640,7 @@ fn the_general_arrangement_says_the_shield_is_not_watertight_only_with_the_input
 /// limit: the search's runs (one budget for the share search, at most the limit) and the answer's own
 /// damage run (one), counted across the run. `depth_passes` is 1, so the depth was settled in one pass.
 /// Label: rule (the limit is `DEFAULT_DAMAGE_RUN_CAP`, 24; issue #935). The bound across several depth
-/// passes depends on one runner and budget per run (issue #935, part 2b).
+/// passes holds because the run has one runner and one budget (issue #935, part 2b; `damage_budget.rs`).
 #[test]
 fn a_river_design_with_a_lower_share_stays_within_the_damage_run_limit() {
     let before = ovd_format::damage::damage_runs_started();

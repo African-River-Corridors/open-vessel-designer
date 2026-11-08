@@ -14,6 +14,9 @@ fn reference(extra: Value) -> Value {
         "beam_m": { "value": 29.0, "source": "typed" },
         "moulded_depth_m": { "value": 12.0, "source": "typed" },
         "service_area": { "value": "coastal-and-river", "source": "typed" },
+        // Issue #935: these tests are about the damage screen at the profile's two along; the choice of the number
+        // along is in `damage_tanks_along.rs`.
+        "tanks_in_line": { "value": 2, "source": "typed" },
         "loading_conditions": { "value": "is_code_2008", "source": "typed" }
     });
     for (k, v) in extra.as_object().unwrap() {
@@ -198,6 +201,9 @@ fn two_stages(extra: Value) -> ((Value, String), (Value, String)) {
         "beam_m": { "value": 29.0, "source": "typed" },
         "moulded_depth_m": { "value": 12.0, "source": "typed" },
         "service_area": { "value": "coastal-and-river", "source": "typed" },
+        // Issue #935: these tests are about the damage screen at the profile's two along; the choice of the number
+        // along is in `damage_tanks_along.rs`.
+        "tanks_in_line": { "value": 2, "source": "typed" },
         "loading_conditions": { "value": "is_code_2008", "source": "typed" }
     });
     for (k, v) in extra.as_object().unwrap() {
