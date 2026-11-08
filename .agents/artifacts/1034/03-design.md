@@ -100,7 +100,7 @@ What the user sees: the summary line names the rule ("share 0.375, the most carg
 
 ### D3. Search breadth against run time
 
-Options for Niall (CPU s measured or estimated, research section 6):
+Options for the maintainer (CPU s measured or estimated, research section 6):
 
 | Option | 100 x 20 m river, limits A | 100 x 20 m, no limits | 110 m river, limits A | Coastal designs |
 |---|---|---|---|---|
