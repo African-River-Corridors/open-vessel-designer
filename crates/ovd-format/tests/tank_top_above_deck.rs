@@ -43,6 +43,27 @@ fn run(file: &Value) -> Value {
     run_with(file).0
 }
 
+/// The same run with damage skipped: the search does not screen by IGC 2.7 damage (issue #935), so the pick is the
+/// unscreened one. For the tests that compare two runs of one arrangement (a shield's mass, the probe of the depth),
+/// where a lighter or heavier hull would move the damage screen's pick and so change what is compared.
+fn run_no_damage(file: &Value) -> Value {
+    let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+    assert_eq!(filled.report.errors, Vec::<String>::new());
+    let skip = ovd_format::damage::DamageControl {
+        run: false,
+        progress: None,
+    };
+    match ovd_format::run_option_with_damage(
+        &filled.design.unwrap().options[0],
+        ovd_format::rule_set::built_in(),
+        &[],
+        &skip,
+    ) {
+        RunOutcome::Results { results, .. } => results,
+        other => panic!("{other:?}"),
+    }
+}
+
 fn depth(r: &Value) -> f64 {
     r["dims"]["depth_m"].as_f64().unwrap()
 }
@@ -101,11 +122,18 @@ fn in_hold_the_depth_is_the_tank_top_plus_the_gap_and_a_standing_height_takes_it
         "{} vs {top2}",
         depth(&two)
     );
-    // Issue #935: the two depths are for different picks, so they are not compared: with the tank top 2 m above
-    // the deck the search picks one 16 m tank across at 15.603 m. Label: snapshot, printed by the code. The rule above (the depth follows the tank) holds for each.
-    assert_eq!(two["arrangement"]["n_wide"], 1);
-    assert_eq!(two["arrangement"]["tank_od_m"], 16.0);
-    assert!((depth(&two) - 15.603).abs() < 0.0006, "{}", depth(&two));
+    // Standing 2 m high saves at least 2.3 m of depth: the same tank would, and a smaller one more. Issue #935:
+    // both picks are two across at 11.72 m (the refined size that survives damage), so the depths compare.
+    // Label: snapshot, printed by the code.
+    assert_eq!(two["arrangement"]["n_wide"], 2);
+    assert!((two["arrangement"]["tank_od_m"].as_f64().unwrap() - 11.718).abs() < 0.001);
+    assert!((depth(&two) - 11.321).abs() < 0.0006, "{}", depth(&two));
+    assert!(
+        depth(&hold) - depth(&two) > 2.29,
+        "{} {}",
+        depth(&hold),
+        depth(&two)
+    );
 }
 
 #[test]
@@ -230,7 +258,9 @@ fn in_hold_nothing_stands_above_the_deck_and_without_the_input_there_is_no_block
 /// Label: rule (design note D2); sums of the shield's own inputs, not a published value.
 #[test]
 fn a_shield_over_standing_tanks_is_weight_and_windage_and_no_credit() {
-    let with = run(&design(json!({ "tank_top_above_deck_m": 2.0 })));
+    // Issue #935: every run of this test skips damage. The shield's mass would move the damage screen's pick, and
+    // the pick is not what is compared here (the shield's weight, windage and credit are).
+    let with = run_no_damage(&design(json!({ "tank_top_above_deck_m": 2.0 })));
     let a = above(&with);
     assert_eq!(a["weather_shield_fitted"], true);
     // Tank top 2.0 m above the deck plus the 1.5 m clearance of the shield.
@@ -258,7 +288,7 @@ fn a_shield_over_standing_tanks_is_weight_and_windage_and_no_credit() {
         depth(&with)
     );
     // The shield is in the lightship: with it off, the hull is lighter by its mass, at the same depth.
-    let off = run(&design(
+    let off = run_no_damage(&design(
         json!({ "tank_top_above_deck_m": 2.0, "weather_shield_thickness_mm": 0.0 }),
     ));
     assert_eq!(above(&off)["weather_shield_fitted"], false);
@@ -305,8 +335,14 @@ fn the_floor_applies_with_optimise_depth_too() {
 #[test]
 fn the_run_is_done_once_when_the_probe_and_the_run_agree() {
     for h in [0.0, 2.0] {
-        let r = run(&design(json!({ "tank_top_above_deck_m": h })));
+        // The probe does not run damage, so the two passes agree on the unscreened pick. With the damage screen
+        // (issue #935) the run may pick another arrangement than the probe, and the depth is settled again: two
+        // passes at most.
+        let r = run_no_damage(&design(json!({ "tank_top_above_deck_m": h })));
         assert_eq!(r["arrangement"]["depth_passes"], 1, "h {h}");
+        let screened = run(&design(json!({ "tank_top_above_deck_m": h })));
+        let passes = screened["arrangement"]["depth_passes"].as_u64().unwrap();
+        assert!((1..=3).contains(&passes), "h {h}: {passes} passes");
     }
 }
 
