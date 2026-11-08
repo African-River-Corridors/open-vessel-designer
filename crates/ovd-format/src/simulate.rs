@@ -1421,34 +1421,81 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
                 .and_then(|d| d.get("depth_m"))
                 .and_then(Value::as_f64);
         }
-        if let Some(mut depth) = depth {
-            let mut passes = 1;
-            loop {
+        if let Some(depth) = depth {
+            let ((mut v, m), passes, last, got) = settle_depth(depth, DEPTH_SETTLE_RUNS, |d| {
                 let mut q = p.clone();
-                q.insert("depth_m".to_string(), json!(depth));
+                q.insert("depth_m".to_string(), json!(d));
                 let mut m = Measured::default();
-                let mut v = simulate_once_inner(&q, &mut m, rules)?;
+                let v = simulate_once_inner(&q, &mut m, rules)?;
                 let got = v
                     .get("dims")
                     .and_then(|d| d.get("depth_m"))
                     .and_then(Value::as_f64);
-                match got {
-                    Some(g) if (g - depth).abs() > 0.0015 && passes < 3 => {
-                        depth = g;
-                        passes += 1;
-                    }
-                    _ => {
-                        if let Some(a) = v.get_mut("arrangement").and_then(Value::as_object_mut) {
-                            a.insert("depth_passes".to_string(), json!(passes));
-                        }
-                        *measured = m;
-                        return finish_once(v, measured);
-                    }
-                }
+                Ok(((v, m), got))
+            })?;
+            if let Some(a) = v.get_mut("arrangement").and_then(Value::as_object_mut) {
+                a.insert("depth_passes".to_string(), json!(passes));
             }
+            // The cap was reached with the depth still moving: say so. The results are for the
+            // depth the last run gave.
+            if let Some(g) = got
+                && (g - last).abs() > DEPTH_SETTLED_M
+            {
+                add_warning(&mut v, &depth_not_settled(passes, last, g));
+            }
+            *measured = m;
+            return finish_once(v, measured);
         }
     }
     finish_once(simulate_once_inner(p, measured, rules)?, measured)
+}
+
+/// Issue #992: the most runs made to settle the depth that follows the tank, and how close a run's
+/// depth must be to the one it was given (m) to count as settled.
+const DEPTH_SETTLE_RUNS: usize = 3;
+const DEPTH_SETTLED_M: f64 = 0.0015;
+
+/// Run with a depth, and again with the depth the run gave, until the two agree or `max_runs` runs
+/// are made. `run` gives the run's value and the depth it ended at (`None`: it gave none, which counts
+/// as settled). Returns the last value, the runs made, the depth of the last run and the depth it gave.
+fn settle_depth<T>(
+    first: f64,
+    max_runs: usize,
+    mut run: impl FnMut(f64) -> R<(T, Option<f64>)>,
+) -> R<(T, usize, f64, Option<f64>)> {
+    let (mut depth, mut runs) = (first, 1);
+    loop {
+        let (value, got) = run(depth)?;
+        match got {
+            Some(g) if (g - depth).abs() > DEPTH_SETTLED_M && runs < max_runs => {
+                depth = g;
+                runs += 1;
+            }
+            _ => return Ok((value, runs, depth, got)),
+        }
+    }
+}
+
+/// The warning for a depth that did not settle in `runs` runs.
+fn depth_not_settled(runs: usize, from: f64, to: f64) -> ovd_core::text::Text {
+    ovd_core::text!(
+        "msg-depth-not-settled",
+        "The depth that follows the tank did not settle in {runs} runs ({from} m, then {to} m); the results are for {to} m.",
+        runs = ovd_core::text::Arg::Count(runs as i64),
+        from = ovd_core::text::Arg::fixed(from, 3),
+        to = ovd_core::text::Arg::fixed(to, 3),
+    )
+}
+
+/// Add a warning, with its Message Id in `text_ids`, to a result.
+fn add_warning(v: &mut Value, t: &ovd_core::text::Text) {
+    if let Some(w) = v.get_mut("warnings").and_then(Value::as_array_mut) {
+        w.push(json!(t.en));
+    }
+    if let (Some(m), Some(ids)) = (&t.msg, v.get_mut("text_ids").and_then(Value::as_object_mut)) {
+        ids.entry(t.en.clone())
+            .or_insert_with(|| crate::text_ids::msg_json(m, false));
+    }
 }
 
 fn finish_once(mut v: Value, measured: &mut Measured) -> R<Value> {
@@ -4496,4 +4543,50 @@ fn gas_steel(
         &spec,
         Some((&model.hull, &holds)),
     ))
+}
+
+#[cfg(test)]
+mod depth_settle_tests {
+    use super::*;
+
+    #[test]
+    fn a_depth_that_agrees_is_run_once() {
+        let (v, runs, depth, got) =
+            settle_depth(12.0, 3, |d| Ok((d, Some(d)))).unwrap_or_else(|_| panic!("stopped"));
+        assert_eq!((v, runs, depth, got), (12.0, 1, 12.0, Some(12.0)));
+    }
+
+    #[test]
+    fn a_depth_that_moves_once_is_run_again_with_it() {
+        let (_, runs, depth, got) =
+            settle_depth(12.0, 3, |d| Ok(((), Some(if d < 12.5 { 13.0 } else { d }))))
+                .unwrap_or_else(|_| panic!("stopped"));
+        assert_eq!((runs, depth, got), (2, 13.0, Some(13.0)));
+    }
+
+    /// Label: rule. A depth that moves by a metre every run never settles: the loop stops at the cap
+    /// with the last depth and the depth that run gave, and the warning says so.
+    #[test]
+    fn a_depth_that_never_settles_stops_at_the_cap_and_the_warning_says_so() {
+        let (_, runs, depth, got) = settle_depth(10.0, 3, |d| Ok(((), Some(d + 1.0))))
+            .unwrap_or_else(|_| panic!("stopped"));
+        assert_eq!((runs, depth, got), (3, 12.0, Some(13.0)));
+        let w = depth_not_settled(runs, depth, got.unwrap());
+        assert_eq!(
+            w.en,
+            "The depth that follows the tank did not settle in 3 runs (12.000 m, then 13.000 m); the results are for 13.000 m."
+        );
+        assert_eq!(w.msg.as_ref().unwrap().id, "msg-depth-not-settled");
+        let mut v = json!({ "warnings": [], "text_ids": {} });
+        add_warning(&mut v, &w);
+        assert_eq!(v["warnings"][0], w.en);
+        assert_eq!(v["text_ids"][&w.en]["id"], "msg-depth-not-settled");
+    }
+
+    #[test]
+    fn a_run_that_gives_no_depth_counts_as_settled() {
+        let (_, runs, _, got) =
+            settle_depth(12.0, 3, |_| Ok(((), None))).unwrap_or_else(|_| panic!("stopped"));
+        assert_eq!((runs, got), (1, None));
+    }
 }
