@@ -70,6 +70,10 @@ pub const DEFAULT_REQUIRED_FREEBOARD_M: f64 = 0.3;
 /// Issue #992: with the tanks in hold (a standing height of 0), the gap between the tank top and
 /// the underside of the main deck (m). Built practice as the research for #993 gave it; an estimate.
 pub const TANKS_IN_HOLD_DECK_ALLOWANCE_M: f64 = 0.3;
+/// Issue #992: the shares of the upper limit of the standing share that the search tries, from the top
+/// down: the limit itself, three quarters, a half, a quarter and none. Five searches at most, so the
+/// share search costs at most five times the search, not five simulations.
+pub const STANDING_SHARE_STEPS: [f64; 5] = [1.0, 0.75, 0.5, 0.25, 0.0];
 /// Issue #992: how many times the build is repeated to settle a depth that follows the tank.
 const DEPTH_SETTLE_ROUNDS: usize = 8;
 
@@ -188,6 +192,11 @@ pub struct FitOptions {
     /// Issue #992: the height above the deck as a share of each candidate's tank outer diameter
     /// (0.5: the deck at the tank axis). Read only when `tank_top_above_deck_m` is `None`.
     pub tank_top_above_deck_od_fraction: Option<f64>,
+    /// Issue #992: read `tank_top_above_deck_od_fraction` as the most the share may be, and try
+    /// [`STANDING_SHARE_STEPS`] of it, from the top down to none (the deck at the keel of the tank
+    /// top, the tanks in hold), keeping the share that carries the most cargo and passes. `false`:
+    /// the share is exactly the one given.
+    pub standing_share_search: bool,
     /// Issue #992: the draught the waterway or the user allows (m), without the hull's own limit.
     /// With a standing height the depth is never less than this plus the least freeboard plus
     /// `depth_margin_m`.
@@ -560,6 +569,7 @@ impl Default for FitOptions {
             self_propelled: true,
             tank_top_above_deck_m: None,
             tank_top_above_deck_od_fraction: None,
+            standing_share_search: false,
             draught_limit_m: None,
             depth_margin_m: 0.0,
             depths: DEFAULT_DEPTHS_M.to_vec(),
@@ -632,6 +642,9 @@ impl FitOptions {
 /// The winning arrangement and its payload.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ArrangementFit {
+    /// Issue #992: the share of the tank diameter the tank top stands above the deck, when it was a
+    /// share (the one the search chose, at most the limit given); `None` for a height or no height.
+    pub standing_share: Option<f64>,
     pub loa_m: f64,
     pub beam_m: f64,
     pub depth_m: f64,
@@ -1989,6 +2002,56 @@ pub fn fit(
     t_max: f64,
     o: &FitOptions,
 ) -> Result<ArrangementFit, PyError> {
+    let Some(levels) = share_levels(o) else {
+        return fit_once(loa, beam, cargo, t_max, o);
+    };
+    // Issue #992: the share of the tank diameter is at most the limit. Search at each step and keep
+    // the best: a feasible one over an infeasible one, then the most cargo, the higher share first.
+    let mut best: Option<ArrangementFit> = None;
+    for share in levels {
+        let mut o2 = o.clone();
+        o2.tank_top_above_deck_od_fraction = Some(share);
+        o2.standing_share_search = false;
+        let f = fit_once(loa, beam, cargo, t_max, &o2)?;
+        let better = match &best {
+            None => true,
+            Some(b) => match (f.feasible, b.feasible) {
+                (true, false) => true,
+                (false, true) => false,
+                (true, true) => f.payload_t > b.payload_t + 1e-6,
+                (false, false) => {
+                    f.failed_checks.len() < b.failed_checks.len()
+                        || (f.failed_checks.len() == b.failed_checks.len()
+                            && f.payload_t > b.payload_t + 1e-6)
+                }
+            },
+        };
+        if better {
+            best = Some(f);
+        }
+    }
+    best.ok_or_else(|| PyError {
+        kind: "IndexError",
+        message: "list index out of range".to_string(),
+    })
+}
+
+/// The shares to try (issue #992): the steps of the limit, when the share is to be searched.
+fn share_levels(o: &FitOptions) -> Option<Vec<f64>> {
+    if !o.standing_share_search || o.tank_top_above_deck_m.is_some() {
+        return None;
+    }
+    o.tank_top_above_deck_od_fraction
+        .map(|limit| STANDING_SHARE_STEPS.iter().map(|k| limit * k).collect())
+}
+
+fn fit_once(
+    loa: f64,
+    beam: f64,
+    cargo: &str,
+    t_max: f64,
+    o: &FitOptions,
+) -> Result<ArrangementFit, PyError> {
     if !RULESETS.contains(&o.ruleset.as_str()) {
         return Err(value_error(
             "ruleset must be one of ('IGC_2G',)".to_string(),
@@ -2092,6 +2155,9 @@ pub fn fit(
     let containment = opt_or_zero(r.containment_inner_volume_m3);
     let tanks_for_division = n_total.max(1) as f64;
     Ok(ArrangementFit {
+        standing_share: o
+            .tank_top_above_deck_od_fraction
+            .filter(|_| o.tank_top_above_deck_m.is_none()),
         loa_m: loa,
         beam_m: beam,
         depth_m: d,
@@ -2188,17 +2254,32 @@ pub fn probe_depth(
             "ruleset must be one of ('IGC_2G',)".to_string(),
         ));
     }
-    let mut s = Search {
-        loa,
-        beam,
-        cargo,
-        o,
-        tried: 0,
-        refused: Vec::new(),
-        cheap_only: true,
-    };
-    let pool = search(&mut s, t_max, false)?;
-    Ok(pool.best.map(|i| pool.all[i].depth))
+    let levels =
+        share_levels(o).unwrap_or_else(|| vec![o.tank_top_above_deck_od_fraction.unwrap_or(0.0)]);
+    let mut best: Option<(f64, f64)> = None; // (cargo, depth)
+    for share in levels {
+        let mut o2 = o.clone();
+        if o.standing_share_search && o.tank_top_above_deck_m.is_none() {
+            o2.tank_top_above_deck_od_fraction = Some(share);
+        }
+        let mut s = Search {
+            loa,
+            beam,
+            cargo,
+            o: &o2,
+            tried: 0,
+            refused: Vec::new(),
+            cheap_only: true,
+        };
+        let pool = search(&mut s, t_max, false)?;
+        if let Some(i) = pool.best {
+            let c = &pool.all[i];
+            if best.is_none_or(|(t, _)| c.tonnage > t + 1e-6) {
+                best = Some((c.tonnage, c.depth));
+            }
+        }
+    }
+    Ok(best.map(|(_, d)| d))
 }
 
 /// Step of the upward scan of `smallest_viable_loa` (m).

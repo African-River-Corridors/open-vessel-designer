@@ -161,19 +161,53 @@ fn a_new_option_takes_the_maintainers_default_by_service_area() {
     assert_eq!(c["arrangement"]["tank_top_above_deck_m"], 2.0);
     assert_eq!(above(&c)["weather_shield_fitted"], true);
     assert!(depth(&c) < 15.95);
-    // River only: half the tank diameter, no shield.
+    // River only: up to half the tank diameter (the search may pick less), no shield.
     let r = run(&river_design(json!({})));
     let od = r["arrangement"]["tank_od_m"].as_f64().unwrap();
     let h = r["arrangement"]["tank_top_above_deck_m"].as_f64().unwrap();
-    assert!((h - 0.5 * od).abs() < 1e-9, "{h} vs half of {od}");
-    assert_eq!(r["arrangement"]["tank_top_above_deck_od_fraction"], 0.5);
+    let share = r["arrangement"]["tank_top_above_deck_od_fraction"]
+        .as_f64()
+        .unwrap();
+    assert_eq!(
+        r["arrangement"]["tank_top_above_deck_od_fraction_limit"],
+        0.5
+    );
+    assert!((0.0..=0.5).contains(&share), "share {share}");
+    assert!((h - share * od).abs() < 1e-9, "{h} vs {share} of {od}");
     assert_eq!(above(&r)["weather_shield_fitted"], false);
-    // The deck sits at the tank axis: the tank top above the keel less the depth is half the diameter.
+    // The deck sits the chosen share of the diameter below the tank top.
     let top = r["arrangement"]["tank_top_above_keel_m"].as_f64().unwrap();
     assert!(
-        (top - depth(&r) - 0.5 * od).abs() < 0.0016,
-        "{top} {} {od}",
+        (top - depth(&r) - h).abs() < 0.0016 || share == 0.0,
+        "{top} {} {h}",
         depth(&r)
+    );
+}
+
+/// Review of #1027: the maintainer's "up to the widest point" is a limit, not a fixed share. The 100 x 20 m
+/// river-only LNG barge, on a fresh fill, is feasible: at half the diameter the one tank across fails
+/// the sightline (the tank top 8 m above the deck needs 13.9 m of wheelhouse lift), so the search
+/// takes a lower share and more tanks across. Pinning the share at 0.5 (every step of the search at
+/// the limit) makes this test fail.
+/// Label: rule (design note D1: "the search may pick less if depth, freeboard or sightline need it").
+#[test]
+fn the_river_barge_is_feasible_because_the_search_takes_a_lower_share_than_half() {
+    let r = run(&river_design(json!({})));
+    assert_eq!(r["arrangement"]["feasible"], true, "{}", r["arrangement"]);
+    let share = r["arrangement"]["tank_top_above_deck_od_fraction"]
+        .as_f64()
+        .unwrap();
+    assert!(
+        share < 0.5,
+        "the share {share} is the limit, not a lower one"
+    );
+    // The share chosen is recorded and shown: in the summary lines of `ovd run`.
+    let lines = ovd_format::summary_lines("Option 1", &r);
+    assert!(
+        lines
+            .iter()
+            .any(|l| l.contains("Tank tops stand") && l.contains("share")),
+        "{lines:?}"
     );
 }
 

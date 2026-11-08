@@ -337,6 +337,8 @@ app-metric-tanks-along = Tanques no comprimento
 app-metric-tank-od = Diâmetro externo do tanque
 # status: draft
 app-metric-side-clearance = Folga lateral
+app-metric-tank-top-above-deck = Topo do tanque acima do convés
+app-metric-tank-top-share = Fração do diâmetro acima do convés
 # status: draft
 app-metric-ruleset = Conjunto de regras
 # status: draft

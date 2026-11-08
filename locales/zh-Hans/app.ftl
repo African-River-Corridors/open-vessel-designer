@@ -337,6 +337,8 @@ app-metric-tanks-along = 纵向液货舱数
 app-metric-tank-od = 液货舱外径
 # status: draft
 app-metric-side-clearance = 侧向间距
+app-metric-tank-top-above-deck = 液货舱顶部高出甲板
+app-metric-tank-top-share = 液货舱直径高出甲板的比例
 # status: draft
 app-metric-ruleset = 规范集
 # status: draft
