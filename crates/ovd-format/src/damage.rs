@@ -125,7 +125,13 @@ pub struct RunBudget {
     /// The verdicts of every candidate the searches of this run screened, by key: a later depth pass that builds
     /// the same candidate reuses them, so it costs no damage run and keeps the pass an earlier pass found.
     memo: core::cell::RefCell<
-        std::collections::HashMap<String, Vec<ovd_core::measured::DamageVerdict>>,
+        std::collections::HashMap<
+            String,
+            (
+                ovd_core::gas_damage::KeptBasis,
+                Vec<ovd_core::measured::DamageVerdict>,
+            ),
+        >,
     >,
 }
 
@@ -222,15 +228,29 @@ impl ovd_core::gas_damage::DamageRunner for ThreadedRunner<'_> {
         self.budget.runs.get()
     }
 
-    fn recall(&self, key: &str) -> Option<Vec<ovd_core::measured::DamageVerdict>> {
-        self.budget.memo.borrow().get(key).cloned()
+    fn recall(
+        &self,
+        key: &str,
+        basis: &ovd_core::gas_damage::KeptBasis,
+    ) -> Option<ovd_core::gas_damage::Kept> {
+        let memo = self.budget.memo.borrow();
+        let (kept, verdicts) = memo.get(key)?;
+        Some(ovd_core::gas_damage::Kept {
+            verdicts: verdicts.clone(),
+            stands: kept.stands_for(basis),
+        })
     }
 
-    fn remember(&self, key: &str, verdicts: &[ovd_core::measured::DamageVerdict]) {
+    fn remember(
+        &self,
+        key: &str,
+        basis: &ovd_core::gas_damage::KeptBasis,
+        verdicts: &[ovd_core::measured::DamageVerdict],
+    ) {
         self.budget
             .memo
             .borrow_mut()
-            .insert(key.to_string(), verdicts.to_vec());
+            .insert(key.to_string(), (*basis, verdicts.to_vec()));
     }
 
     fn run(

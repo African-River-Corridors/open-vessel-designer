@@ -1411,8 +1411,19 @@ fn screen_damage(s: &mut Search<'_>, c: &mut Candidate) -> Result<Screened, PyEr
     // Issue #935: a candidate an earlier depth pass of this run screened keeps its verdicts, passing or not: the
     // same candidate costs no damage run, and a pass that runs out of budget keeps what the earlier ones found.
     let key = candidate_key(c);
-    if let Some(verdicts) = s.runner.recall(&key) {
-        c.damage = Some(verdicts);
+    let basis = gas_damage::KeptBasis {
+        lightship_t: c.result.lightship_t,
+        cargo_t: c.tonnage,
+    };
+    // Issue #1038: a later pass moves the installed power, so the lightship and the fuel, a little, and a verdict
+    // can turn on that. A kept verdict is reused as it is only while the lightship and the cargo stand where they
+    // were. One that failed is reused anyway (the worst it does is leave out a size that would now pass). One that
+    // passed is screened again, unless the budget is gone: then it is the best there is, and the answer's own damage
+    // run, which decides feasibility, has the last word.
+    if let Some(kept) = s.runner.recall(&key, &basis)
+        && (kept.stands || kept.failed() || out_of_runs(s))
+    {
+        c.damage = Some(kept.verdicts);
         return Ok(Screened::Done);
     }
     let Some(spec) = c.result.hull_spec.as_ref() else {
@@ -1452,7 +1463,7 @@ fn screen_damage(s: &mut Search<'_>, c: &mut Candidate) -> Result<Screened, PyEr
             message: gas_damage::DAMAGE_CANCELLED.to_string(),
         })?;
     s.damage_runs += 1;
-    s.runner.remember(&key, &run.verdicts);
+    s.runner.remember(&key, &basis, &run.verdicts);
     c.damage = Some(run.verdicts);
     Ok(Screened::Done)
 }
