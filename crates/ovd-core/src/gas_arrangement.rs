@@ -92,9 +92,11 @@ pub fn depth_for_standing_height(tank_top_above_keel_m: f64, standing_m: f64) ->
 pub struct AboveDeck {
     /// A weather shield is fitted (its mass is in the lightship).
     pub shield_fitted: bool,
-    /// The top of the shield, or of the bare tanks, above the main deck (m); 0 when nothing stands
-    /// above it. The highest of the two is the obstruction for the sightline.
+    /// The highest of the shield top, the dome top and the tank top above the main deck (m); 0 when
+    /// nothing stands above it. It is the obstruction for the sightline.
     pub top_above_deck_m: f64,
+    /// The dome top above the deck (m); the domes pass through the shield and the deck.
+    pub dome_top_above_deck_m: f64,
     /// The shield's own top above the deck (m); 0 with no shield.
     pub shield_top_above_deck_m: f64,
     /// The projected side area above the deck (m2): the cargo zone length times the height of what
@@ -131,13 +133,21 @@ pub fn above_deck(r: &BargeCapacityResult, depth: f64) -> Option<AboveDeck> {
         let h = (tank_top - depth).max(0.0);
         (0.0, h, g.tanks.n_tanks_wide as f64 * od * h)
     };
+    let dome_top = (tank_top + inp.dome_height - depth).max(0.0);
     Some(AboveDeck {
         shield_fitted: fitted,
-        top_above_deck_m: shield_top_above.max((tank_top - depth).max(0.0)),
+        top_above_deck_m: shield_top_above
+            .max((tank_top - depth).max(0.0))
+            .max(dome_top),
+        dome_top_above_deck_m: dome_top,
         shield_top_above_deck_m: shield_top_above,
         side_area_m2: zone_len * height,
         front_area_m2: front,
-        shield_mass_t: g.weights.weather_shield,
+        shield_mass_t: if g.weights.weather_shield > 0.0 {
+            g.weights.weather_shield
+        } else {
+            0.0
+        },
     })
 }
 
@@ -1331,6 +1341,9 @@ struct Search<'a> {
     tried: i64,
     /// Issue #675: the arrangements `build` turned down, as (depth, tanks across, reason).
     refused: Vec<(f64, i64, Text)>,
+    /// Issue #992: stop after the cheap stage and take the most cargo among the candidates that pass
+    /// it (the probe of [`probe_depth`]); the costly stability stage does not run.
+    cheap_only: bool,
 }
 
 impl Search<'_> {
@@ -1400,6 +1413,7 @@ impl Search<'_> {
         inp.tank_design = self.o.tank_design.clone();
         inp.water_density = self.o.water_density_t_per_m3;
         inp.air_draft_limit_m = self.o.air_draft_limit_m;
+        inp.tank_top_above_deck_m = self.o.tank_top_above_deck_m;
         inp.bridge_clearance_m = self.o.bridge_clearance_m;
         inp.bridge_clearance_source = self.o.bridge_clearance_source.clone();
         inp.aft_design = self.o.aft_design.clone();
@@ -1711,6 +1725,10 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
         .filter(|&i| pool.all[i].cheap_failed == 0)
         .collect();
     order.sort_by(|&a, &b| pool.all[b].tonnage.total_cmp(&pool.all[a].tonnage));
+    if s.cheap_only {
+        pool.best = order.first().copied();
+        return Ok(pool);
+    }
     let mut top = 0.0;
     for i in order {
         let c = &pool.all[i];
@@ -1955,6 +1973,7 @@ pub fn fit(
         o,
         tried: 0,
         refused: Vec::new(),
+        cheap_only: false,
     };
     let pool = search(&mut s, t_max, false)?;
     let pick = pool.best.or_else(|| closest_to_passing(&pool.all, o));
@@ -1973,7 +1992,11 @@ pub fn fit(
             let nw = o.tanks_wide.first().copied().unwrap_or(1);
             let inp = s.base_inputs(d, nw, o.tanks_in_line);
             let r = capacity(&inp)?;
-            let j = derate_candidate(&r, loa, beam, d, t_max, o.water_density_t_per_m3)?;
+            let t_cap = match o.tank_top_above_deck_m {
+                Some(_) => t_max.min(d - o.required_freeboard_m),
+                None => t_max,
+            };
+            let j = derate_candidate(&r, loa, beam, d, t_cap, o.water_density_t_per_m3)?;
             Candidate {
                 cheap_failed: 1,
                 tonnage: 0.0,
@@ -2115,8 +2138,39 @@ fn has_passing_arrangement(
         o,
         tried: 0,
         refused: Vec::new(),
+        cheap_only: false,
     };
     Ok(search(&mut s, t_max, true)?.best.is_some())
+}
+
+/// Issue #992: the depth the search would settle on with a standing height, found without the costly
+/// stability stage: the depth of the candidate with the most cargo among those that pass the cheap
+/// checks. The stability stage can turn that candidate down and the full search then picks another,
+/// so a caller checks the depth `fit` gives against this one. `None` when no candidate passes the
+/// cheap checks.
+pub fn probe_depth(
+    loa: f64,
+    beam: f64,
+    cargo: &str,
+    t_max: f64,
+    o: &FitOptions,
+) -> Result<Option<f64>, PyError> {
+    if !RULESETS.contains(&o.ruleset.as_str()) {
+        return Err(value_error(
+            "ruleset must be one of ('IGC_2G',)".to_string(),
+        ));
+    }
+    let mut s = Search {
+        loa,
+        beam,
+        cargo,
+        o,
+        tried: 0,
+        refused: Vec::new(),
+        cheap_only: true,
+    };
+    let pool = search(&mut s, t_max, false)?;
+    Ok(pool.best.map(|i| pool.all[i].depth))
 }
 
 /// Step of the upward scan of `smallest_viable_loa` (m).
