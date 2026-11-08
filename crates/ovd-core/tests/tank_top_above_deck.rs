@@ -211,6 +211,10 @@ fn the_share_search_carries_at_least_the_limit_and_records_its_share() {
     .unwrap();
     let share = searched.standing_share.unwrap();
     assert!((0.0..=0.5).contains(&share), "{share}");
-    assert!(searched.payload_t >= fixed.payload_t - 1e-6);
+    assert!(searched.payload_t >= fixed.payload_t - 1e-6 || share < 0.5);
     assert!(searched.feasible || !fixed.feasible);
+    // Step down only when the limit fails (D1): where the limit passes, it is the share chosen.
+    if fixed.feasible {
+        assert_eq!(searched.standing_share, Some(0.5));
+    }
 }

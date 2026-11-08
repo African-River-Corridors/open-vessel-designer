@@ -1034,13 +1034,43 @@ mod tests {
 
         let (calls, kept) = run_damage(&mut state);
         assert!(kept);
-        // The hook saw the count reach the total the no-damage run gave.
-        assert_eq!(calls.first(), Some(&(0, total as usize)));
-        assert_eq!(calls.last(), Some(&(total as usize, total as usize)));
+        // Issue #935: the search runs damage on each candidate that passes stability, then the answer's run
+        // follows, so the count is cumulative: it starts at 0, never falls, and ends with every case done. The
+        // total the no-damage run gave counts the unscreened arrangement's cases; the last total holds the search's
+        // runs as well as the answer's.
+        assert_eq!(calls.first().map(|c| c.0), Some(0));
+        assert!(calls.windows(2).all(|w| w[0].0 <= w[1].0), "done fell");
+        // The total is planned and shrinks at the end: the fraction done never falls.
+        assert!(
+            calls
+                .windows(2)
+                .all(|w| w[0].0 as f64 / w[0].1 as f64 <= w[1].0 as f64 / w[1].1 as f64 + 1e-12),
+            "the fraction fell"
+        );
+        let last = *calls.last().unwrap();
+        assert_eq!(last.0, last.1);
         let after = results_of(&state);
         assert_eq!(after["damage_status"], "run");
-        assert_eq!(after["damage_cases"].as_u64(), Some(total));
-        assert!(!after["damage"].is_null());
+        let cases = after["damage_cases"].as_u64().unwrap();
+        assert!(cases > 0);
+        assert!(last.1 as u64 >= cases, "{last:?} against {cases} cases");
+        // The first evaluation did not screen by damage and said so; the run did.
+        assert_eq!(before["damage_screening"]["screened"], false);
+        assert!(before["damage_screening"]["note"].is_string());
+        assert_eq!(after["damage_screening"]["screened"], true);
+        let same_pick = before["arrangement"]["tank_od_m"] == after["arrangement"]["tank_od_m"]
+            && before["arrangement"]["n_wide"] == after["arrangement"]["n_wide"];
+        // The cases are those of the arrangement the run picked: equal to the first count only if the pick stayed.
+        if same_pick {
+            assert_eq!(cases, total);
+            assert!(after["damage_screening"]["changed_note"].is_null());
+        } else {
+            assert!(after["damage_screening"]["changed_note"].is_string());
+            assert_eq!(
+                after["damage_screening"]["stage_one"]["tank_od_m"],
+                before["arrangement"]["tank_od_m"]
+            );
+        }
         assert!(
             state.evaluate_json()["options"][0]["outcome"]["damage_views"].is_object(),
             "the damage drawings come from the kept run"
@@ -1090,17 +1120,34 @@ mod tests {
     }
 
     #[test]
-    fn save_writes_the_same_hash_with_and_without_a_kept_run() {
+    fn save_writes_the_hash_of_the_stage_it_shows() {
         let mut state = gas_state();
         let without = state.save_text().unwrap();
-        run_damage(&mut state);
+        // Saving again changes nothing: the hash is stable for the same stage.
         assert_eq!(state.save_text().unwrap(), without);
-        // And the hash is the one the results of the run with damage give.
-        let saved: Value = serde_json::from_str(&without).unwrap();
+        let before = results_of(&state);
+        run_damage(&mut state);
+        let after = results_of(&state);
+        // Issue #935: damage runs the search with the IGC 2.7 screen, so the stage that ran damage may pick
+        // another arrangement than the first evaluation. A save works without damage (issue #924), so it writes
+        // the hash of the first stage whatever the kept run shows: stable. The hash shown with the kept run is
+        // the saved one exactly when the pick did not move.
+        let same_pick = before["arrangement"] == after["arrangement"];
+        let saved_with: Value = serde_json::from_str(&state.save_text().unwrap()).unwrap();
+        let saved_without: Value = serde_json::from_str(&without).unwrap();
         assert_eq!(
-            saved["options"][0]["results_hash"],
-            state.evaluate_json()["options"][0]["outcome"]["results_hash"]
+            saved_with["options"][0]["results_hash"],
+            saved_without["options"][0]["results_hash"]
         );
+        // The save says which stage its hash belongs to (issue #935).
+        assert_eq!(saved_with["options"][0]["results_stage"], "unscreened");
+        let shown = &state.evaluate_json()["options"][0]["outcome"]["results_hash"];
+        assert_eq!(
+            *shown == saved_with["options"][0]["results_hash"],
+            same_pick
+        );
+        // A second save of the stage that ran damage is stable too.
+        assert_eq!(state.save_text().unwrap(), state.save_text().unwrap());
     }
 
     #[test]

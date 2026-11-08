@@ -82,6 +82,20 @@ pub(crate) fn run_gas_damage(
     density: f64,
     gauge: &Gauge,
 ) -> Result<(Vec<ovd_core::measured::DamageVerdict>, serde_json::Value), Cancelled> {
+    let out = run_gas_damage_typed(run, spaces, hull, conditions, density, gauge)?;
+    let block = damage_block(run, &out);
+    Ok((out.verdicts, block))
+}
+
+/// [`run_gas_damage`] without the JSON block: the typed run.
+pub(crate) fn run_gas_damage_typed(
+    run: &GasRun,
+    spaces: &[ovd_core::compartments::Space],
+    hull: &ovd_core::hydrostatics::Hull,
+    conditions: &[ovd_core::loading_conditions::LoadedCondition],
+    density: f64,
+    gauge: &Gauge,
+) -> Result<GasDamageRun, Cancelled> {
     let workers = damage_workers(run.cases.len());
     let mut out = GasDamageRun::default();
     for c in conditions {
@@ -93,8 +107,118 @@ pub(crate) fn run_gas_damage(
         })?;
         out.push_condition(run, hull, c, &state, density, runs);
     }
-    let block = damage_block(run, &out);
-    Ok((out.verdicts, block))
+    Ok(out)
+}
+
+/// The runner the arrangement search uses (issue #935): the cases on worker threads (issue #921), the progress
+/// hook and the cancel of the run's [`DamageControl`]. The progress is cumulative over the search's damage runs
+/// and the answer's: `done` counts every case worked out so far. The search does not know how many runs it will
+/// make, so `total` is planned: the search says how many runs it expects at most ([`DamageRunner::plan`]), and
+/// the total is that many runs of the first run's cases. It shrinks to the real total when the answer's run
+/// starts, and the fraction done never falls (a report that would lower it raises the total to keep it). A cancel
+/// stops the run under way and the search. With `control.run` false the search does not screen by damage.
+pub(crate) struct ThreadedRunner<'a> {
+    pub control: &'a DamageControl,
+    /// The cases worked out by the runs so far.
+    pub done: core::cell::Cell<usize>,
+    /// The runs the search planned for (1 until it says).
+    planned_runs: core::cell::Cell<usize>,
+    /// The total reported to the hook while the search runs: the planned runs of the first run's cases (0 until
+    /// the first run).
+    planned_total: core::cell::Cell<usize>,
+    /// The highest fraction reported so far, shared with the control of the run that follows.
+    last: std::rc::Rc<core::cell::Cell<f64>>,
+}
+
+impl<'a> ThreadedRunner<'a> {
+    pub(crate) fn new(control: &'a DamageControl) -> Self {
+        Self {
+            control,
+            done: core::cell::Cell::new(0),
+            planned_runs: core::cell::Cell::new(1),
+            planned_total: core::cell::Cell::new(0),
+            last: std::rc::Rc::new(core::cell::Cell::new(0.0)),
+        }
+    }
+
+    /// The control for the run that follows the search (the answer's damage stages): the same hook, with the
+    /// cases of the search's runs added to `done` and `total`, so the count carries on from where it stopped,
+    /// with the total now the real one.
+    pub(crate) fn following_control(&self) -> DamageControl {
+        DamageControl {
+            run: self.control.run,
+            progress: progress_hook(
+                self.control.progress.as_ref(),
+                self.done.get(),
+                None,
+                self.last.clone(),
+            ),
+        }
+    }
+}
+
+/// `hook` with `base` cases added to `done` of every report, and a total that keeps the fraction done from falling:
+/// `planned` (a fixed total, while a search runs) or `base` plus the run's own total. `None` for no hook.
+fn progress_hook(
+    hook: Option<&ProgressHook>,
+    base: usize,
+    planned: Option<usize>,
+    last: std::rc::Rc<core::cell::Cell<f64>>,
+) -> Option<ProgressHook> {
+    let hook = hook?.clone();
+    Some(std::rc::Rc::new(move |p: DamageProgress| {
+        let done = base + p.done;
+        let mut total = planned.map_or(base + p.total, |t| t.max(base + p.total));
+        let before = last.get();
+        // A report that would lower the fraction done raises the total instead.
+        if (done as f64) < before * total as f64 {
+            total = (done as f64 / before).ceil() as usize;
+        }
+        if total > 0 {
+            last.set(before.max(done as f64 / total as f64));
+        }
+        hook(DamageProgress { done, total })
+    }))
+}
+
+impl ovd_core::gas_damage::DamageRunner for ThreadedRunner<'_> {
+    fn enabled(&self) -> bool {
+        self.control.run
+    }
+
+    fn plan(&self, runs: usize) {
+        self.planned_runs.set(runs.max(1));
+    }
+
+    fn run(
+        &self,
+        run: &GasRun,
+        spaces: &[ovd_core::compartments::Space],
+        hull: &ovd_core::hydrostatics::Hull,
+        conditions: &[ovd_core::loading_conditions::LoadedCondition],
+        density: f64,
+    ) -> Result<GasDamageRun, ovd_core::gas_damage::Cancelled> {
+        let total = run.case_count(hull, conditions, density);
+        let base = self.done.get();
+        // The planned total is fixed by the first run: the planned runs of its cases.
+        if self.planned_total.get() == 0 {
+            self.planned_total.set(self.planned_runs.get() * total);
+        }
+        let gauge = Gauge::new(
+            progress_hook(
+                self.control.progress.as_ref(),
+                base,
+                Some(self.planned_total.get()),
+                self.last.clone(),
+            ),
+            total,
+        );
+        gauge.report();
+        let out = run_gas_damage_typed(run, spaces, hull, conditions, density, &gauge)
+            .map_err(|Cancelled| ovd_core::gas_damage::Cancelled)?;
+        self.done.set(base + total);
+        Ok(out)
+    }
 }
 
 fn floats_text(f: ovd_core::damage_stability::Floats) -> &'static str {
@@ -298,6 +422,24 @@ pub fn set_damage_workers(n: usize) {
     DAMAGE_WORKERS.store(n, core::sync::atomic::Ordering::Relaxed);
 }
 
+/// The most damage runs one arrangement search works out; 0 means the default of the core (issue #935).
+static DAMAGE_RUN_CAP: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
+
+/// For tests only (issue #935), hence hidden from the docs: a process-wide knob, so a test that sets it must be
+/// the only one in its test binary. Sets the damage-run limit of the arrangement search; 0 is the default (24).
+#[doc(hidden)]
+pub fn set_damage_run_cap(n: usize) {
+    DAMAGE_RUN_CAP.store(n, core::sync::atomic::Ordering::Relaxed);
+}
+
+/// The damage-run limit of the search: the knob above, or the core's default.
+pub(crate) fn damage_run_cap() -> usize {
+    match DAMAGE_RUN_CAP.load(core::sync::atomic::Ordering::Relaxed) {
+        0 => ovd_core::gas_arrangement::DEFAULT_DAMAGE_RUN_CAP,
+        n => n,
+    }
+}
+
 /// The worker count for `cases` cases: at least 1, at most one per case.
 pub(crate) fn damage_workers(cases: usize) -> usize {
     #[cfg(all(feature = "parallel", not(target_arch = "wasm32")))]
@@ -361,8 +503,7 @@ pub struct DamageProgress {
 /// [`DAMAGE_CANCELLED`]. Not `Send`: it stays on the calling thread.
 pub type ProgressHook = std::rc::Rc<dyn Fn(DamageProgress) -> ControlFlow<()>>;
 
-/// The message of a run that the progress hook cancelled (the `Raised` kind is `Cancelled`).
-pub const DAMAGE_CANCELLED: &str = "damage stability was cancelled";
+pub use ovd_core::gas_damage::DAMAGE_CANCELLED;
 
 pub use core::ops::ControlFlow;
 

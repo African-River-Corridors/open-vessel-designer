@@ -130,7 +130,26 @@ fn tanks_across_is_a_whole_number_of_at_least_one() {
 
 #[test]
 fn the_wing_tank_warning_shows_with_no_wing_tank_and_a_least_side_space_clears_it() {
-    // The issue's case: three across on the IGC minimum, which is under the wing tank gap.
+    // The issue's case: three across on the IGC minimum, which is under the wing tank gap. It does not survive
+    // IGC 2.7 damage (issue #935), so the case is run with damage skipped, which the search does not screen by:
+    // this test is about the wing tank, not about damage.
+    let run = |file: &Value| {
+        let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+        assert_eq!(filled.report.errors, Vec::<String>::new());
+        let skip = ovd_format::damage::DamageControl {
+            run: false,
+            progress: None,
+        };
+        match ovd_format::run_option_with_damage(
+            &filled.design.unwrap().options[0],
+            ovd_format::rule_set::built_in(),
+            &[],
+            &skip,
+        ) {
+            RunOutcome::Results { results, .. } => results,
+            other => panic!("{other:?}"),
+        }
+    };
     let plain = run(&block(json!({})));
     let side = plain["arrangement"]["side_clearance_m"].as_f64().unwrap();
     let chosen: Vec<&Value> = plain["fit_tried"]
@@ -155,6 +174,42 @@ fn the_wing_tank_warning_shows_with_no_wing_tank_and_a_least_side_space_clears_i
             assert!(t["wing_tank_width_m"].as_f64().unwrap() > 0.0, "{t}");
         }
     }
+}
+
+/// Issue #935: the same hull with damage on. Three across, the one arrangement that passed before, does not
+/// survive IGC 2.7 (a side breach across the hold bulkhead, full load departure), so no arrangement passes and
+/// the design is infeasible; the list of arrangements names the rows. Label: snapshot, printed by the code.
+#[test]
+fn with_damage_on_three_across_is_turned_down_by_igc_2_7_and_nothing_passes() {
+    let r = run(&block(json!({})));
+    assert_eq!(r["arrangement"]["feasible"], false);
+    assert!(
+        r["fit_tried"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|t| t["outcome"] != "chosen")
+    );
+    let three = r["fit_tried"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["n_wide"] == 3)
+        .unwrap();
+    assert_eq!(three["outcome"], "fails");
+    let names: Vec<&str> = three["reasons"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|k| k["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "igc/2.7.1.2/heel-any-stage",
+            "igc/2.7.1.3/intermediate-residual-stability"
+        ]
+    );
 }
 
 #[test]

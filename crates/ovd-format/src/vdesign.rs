@@ -3865,6 +3865,37 @@ pub struct DesignOption {
     pub inputs: Vec<(String, StoredInput)>,
     /// SHA-256 of the canonical JSON of this Option's results, as the file stored it (ADR 0007).
     pub results_hash: Option<String>,
+    /// Issue #935: which stage the stored hash belongs to. The arrangement search screens by IGC 2.7 damage only
+    /// when damage runs, so the first stage (damage not run) and the run with damage can pick different
+    /// arrangements and give different hashes. `ovd run` compares like with like. Unhashed. A file without it
+    /// (saved before the screen) holds an unscreened hash.
+    pub results_stage: Option<ResultsStage>,
+}
+
+/// Which stage of a run a stored results hash belongs to (issue #935).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ResultsStage {
+    /// Damage not run: the arrangement search does not screen by damage.
+    Unscreened,
+    /// Damage run: the search screens by damage.
+    Screened,
+}
+
+impl ResultsStage {
+    pub fn key(self) -> &'static str {
+        match self {
+            ResultsStage::Unscreened => "unscreened",
+            ResultsStage::Screened => "screened",
+        }
+    }
+
+    pub fn from_key(key: &str) -> Option<ResultsStage> {
+        match key {
+            "unscreened" => Some(ResultsStage::Unscreened),
+            "screened" => Some(ResultsStage::Screened),
+            _ => None,
+        }
+    }
 }
 
 impl DesignOption {
@@ -3902,6 +3933,9 @@ impl Design {
                 let mut option = json!({ "name": o.name, "inputs": inputs });
                 if let Some(h) = &o.results_hash {
                     option["results_hash"] = json!(h);
+                    if let Some(stage) = o.results_stage {
+                        option["results_stage"] = json!(stage.key());
+                    }
                 }
                 option
             })
@@ -4436,7 +4470,7 @@ fn read_design(
             continue;
         };
         for key in raw.as_object().into_iter().flat_map(|o| o.keys()) {
-            if !["name", "inputs", "results_hash"].contains(&key.as_str()) {
+            if !["name", "inputs", "results_hash", "results_stage"].contains(&key.as_str()) {
                 report.warning_text(
                     of_option(
                         name,
@@ -4501,6 +4535,22 @@ fn read_design(
                 of_option(
                     name,
                     Text::fixed("msg-results-hash-text", "`results_hash` must be text"),
+                ),
+                &[],
+            ),
+        }
+        match raw.get("results_stage") {
+            None | Some(Value::Null) => {}
+            Some(Value::String(s)) if ResultsStage::from_key(s).is_some() => {
+                option.results_stage = ResultsStage::from_key(s);
+            }
+            Some(_) => report.error_text(
+                of_option(
+                    name,
+                    Text::fixed(
+                        "msg-results-stage-value",
+                        "`results_stage` must be `unscreened` or `screened`",
+                    ),
                 ),
                 &[],
             ),
@@ -5085,6 +5135,7 @@ fn read_option(
         name: name.into(),
         inputs,
         results_hash: None,
+        results_stage: None,
     }
 }
 

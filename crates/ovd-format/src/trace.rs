@@ -188,6 +188,7 @@ fn write_rule_sets(option: &mut DesignOption, list: Vec<Value>) {
         None => option.inputs.push(("rule_sets".into(), stored)),
     }
     option.results_hash = None;
+    option.results_stage = None;
 }
 
 /// Reset the `default` entries of the Option's `rule_sets` to the default stack of its Service Area
