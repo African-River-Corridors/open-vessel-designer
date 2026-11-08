@@ -2081,9 +2081,12 @@ fn refine_failed_groups(s: &mut Search<'_>, pool: &mut Pool, t_max: f64) -> Resu
             }
             // The depth and the draught cap are the candidate's own, as the search builds them.
             let dep = inp.depth;
-            let t_cap = match o.tank_top_above_deck_m {
-                Some(_) => t_max.min(dep - o.required_freeboard_m),
-                None => t_max,
+            // With a standing height or a share the draught cap is also the candidate's own depth less the
+            // freeboard (issue #992), as the search builds it.
+            let t_cap = if o.standing_mode() {
+                t_max.min(dep - o.required_freeboard_m)
+            } else {
+                t_max
             };
             let j = derate_candidate(&r, s.loa, s.beam, dep, t_cap, o.water_density_t_per_m3)?;
             let cheap = cheap_checks(&r, &j, dep, o);
