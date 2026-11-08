@@ -832,6 +832,7 @@ fn run(args: &[&str]) -> Result<bool, String> {
                     "status": r.outcome.status(),
                     "results_hash": hash,
                     "hash_status": r.hash_status.as_str(),
+                    "screen_changes_pick": r.screen_changes_pick,
                     "results": stored_results(results, flags.steel_list),
                 }),
                 RunOutcome::NotAvailable(m) | RunOutcome::Failed(m) => serde_json::json!({
@@ -860,11 +861,16 @@ fn run(args: &[&str]) -> Result<bool, String> {
                         println!("{line}");
                     }
                     let note = match r.hash_status {
+                        HashStatus::Matches if r.screen_changes_pick => {
+                            "matches the file's unscreened stage; the damage screen changes the pick"
+                        }
                         HashStatus::Matches => "matches the file",
                         HashStatus::Differs { .. } => "DIFFERS from the file",
                         HashStatus::NotStored | HashStatus::NotChecked => "none saved in the file",
                     };
-                    println!("  Results hash {} ({note})", &hash[..12]);
+                    // Issue #935: like with like: the hash of the stage the file's hash belongs to.
+                    let shown = r.unscreened_hash.as_deref().unwrap_or(hash);
+                    println!("  Results hash {} ({note})", &shown[..12]);
                     // Issue #274: a stored Rule Set whose rules differ from the file, or that has
                     // a newer built-in version.
                     for w in results["rule_trace"]["warnings"]

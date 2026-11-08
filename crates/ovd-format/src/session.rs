@@ -649,6 +649,9 @@ impl DesignSession {
         let mut stored = design.clone();
         for (o, raw_option) in stored.options.iter_mut().zip(&raw_options) {
             o.results_hash = raw_option["results_hash"].as_str().map(String::from);
+            o.results_stage = raw_option["results_stage"]
+                .as_str()
+                .and_then(crate::vdesign::ResultsStage::from_key);
         }
         // Damage is outside the hash, so the check runs without it (issue #924).
         let no_damage = DamageControl {
@@ -816,6 +819,7 @@ impl DesignSession {
         }
         let option = &mut self.design.options[i];
         option.results_hash = None;
+        option.results_stage = None;
         let mut write = |name: &str, value: Value, source: Source| {
             let stored = StoredInput { value, source };
             match option.inputs.iter_mut().find(|(n, _)| n == name) {
@@ -896,6 +900,7 @@ impl DesignSession {
     fn pick_scheme(&mut self, i: usize, value: Value) {
         let option = &mut self.design.options[i];
         option.results_hash = None;
+        option.results_stage = None;
         option.inputs.retain(|(n, _)| n != "vessel_class");
         if value.is_null() {
             option.inputs.retain(|(n, _)| n != "vessel_scheme");
@@ -1012,6 +1017,7 @@ impl DesignSession {
         let i = self.index_of(option)?;
         self.design.options[i].inputs.retain(|(n, _)| n != name);
         self.design.options[i].results_hash = None;
+        self.design.options[i].results_stage = None;
         self.drop_dependent_defaults(i, name);
         self.normalise();
         Ok(&self.design)
@@ -1183,6 +1189,11 @@ impl DesignSession {
                 RunOutcome::Results { results, .. } => Some(results_hash(&results)),
                 _ => o.results_hash.take(),
             };
+            // Issue #935: a save runs without damage, so its hash is the unscreened stage's.
+            o.results_stage = o
+                .results_hash
+                .is_some()
+                .then_some(crate::vdesign::ResultsStage::Unscreened);
         }
         Ok(design.to_text())
     }
@@ -1214,6 +1225,7 @@ impl DesignSession {
     fn put(&mut self, i: usize, name: &str, value: Value) {
         let option = &mut self.design.options[i];
         option.results_hash = None;
+        option.results_stage = None;
         let stored = StoredInput {
             value,
             source: Source::Typed,
@@ -1346,6 +1358,7 @@ impl DesignSession {
             option.inputs = inputs;
             if option.results_hash.is_none() {
                 option.results_hash = from_fill.results_hash.clone();
+                option.results_stage = from_fill.results_stage;
             }
         }
         if filled_design.defaults_profile.is_some() {

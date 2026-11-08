@@ -821,3 +821,68 @@ fn steel_list_is_an_option_of_json_only() {
     assert!(!out.status.success());
     assert!(stderr(&out).contains("--steel-list"), "{}", stderr(&out));
 }
+
+/// Issue #935: a file's hash belongs to a stage. `ovd fill` stamps the unscreened stage's hash and says so
+/// (`results_stage`), and `ovd run` compares like with like: the damage run's search may pick another arrangement
+/// than the file's, and the run says "the damage screen changes the pick" instead of a bare `differs`.
+/// Label: snapshot, the 140 x 29 x 12 m coastal LNG design with a 12 m size cap (12.0 m unscreened, 11.5 m with
+/// damage) and with an 11 m cap (11.0 m both ways).
+#[test]
+fn run_compares_the_unscreened_stamp_with_the_unscreened_stage_and_says_when_the_screen_changes_the_pick()
+ {
+    let dir = temp_dir("results-stage");
+    for (cap, changes) in [(12.0, true), (11.0, false)] {
+        let raw = dir.join(format!("cap-{cap}-raw.vdesign"));
+        write_json(
+            &raw,
+            &json!({
+                "format": "vdesign", "format_version": 3, "engine_version": "0.3.0",
+                "options": [{ "name": "Option 1", "inputs": {
+                    "cargo": { "value": "LNG", "source": "typed" },
+                    "hull_form": { "value": "raked_box", "source": "typed" },
+                    "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+                    "length_overall_m": { "value": 140.0, "source": "typed" },
+                    "beam_m": { "value": 29.0, "source": "typed" },
+                    "moulded_depth_m": { "value": 12.0, "source": "typed" },
+                    "max_tank_od_m": { "value": cap, "source": "typed" },
+                    "service_area": { "value": "coastal-and-river", "source": "typed" },
+                    "loading_conditions": { "value": "is_code_2008", "source": "typed" }
+                } }]
+            }),
+        );
+        let file = dir.join(format!("cap-{cap}.vdesign"));
+        let r = ovd(&["fill", "--as-new", p(&raw), p(&file)]);
+        assert!(r.status.success(), "{}", stderr(&r));
+        let stamped = read_json(&file);
+        assert_eq!(
+            stamped["options"][0]["results_stage"], "unscreened",
+            "cap {cap}"
+        );
+        // A run with damage compares with the unscreened stage: the hash matches either way.
+        let json_out: Value =
+            serde_json::from_str(&stdout(&ovd(&["run", "--json", p(&file)]))).unwrap();
+        assert_eq!(
+            json_out["options"][0]["hash_status"], "matches",
+            "cap {cap}"
+        );
+        assert_eq!(
+            json_out["options"][0]["screen_changes_pick"], changes,
+            "cap {cap}"
+        );
+        let text = stdout(&ovd(&["run", p(&file)]));
+        assert_eq!(
+            text.contains("the damage screen changes the pick"),
+            changes,
+            "cap {cap}:\n{text}"
+        );
+        // A run that skips damage is the unscreened stage itself.
+        let skipped: Value =
+            serde_json::from_str(&stdout(&ovd(&["run", "--json", "--no-damage", p(&file)])))
+                .unwrap();
+        assert_eq!(skipped["options"][0]["hash_status"], "matches", "cap {cap}");
+        assert_eq!(
+            skipped["options"][0]["screen_changes_pick"], false,
+            "cap {cap}"
+        );
+    }
+}

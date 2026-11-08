@@ -335,6 +335,9 @@ msg-shipd-constraint = `{ $input }` fails ShipD constraint { $index } ({ $name }
 
 warn-channel-no-bottom-width = The channel has a depth but no bottom width, so squat, the Schijf limiting speed and the blockage are not checked and the speed curves are for deep water only. The draught limit still uses the depth. Give the channel bottom width to check them.
 warn-fit-no-wing-tank = No wing ballast tank: the side space { $side } m is not more than the wing tank gap { $gap } m. For a wing tank, set `{ $input }` above { $gap } m.
+warn-damage-not-screened = Not screened for damage: the arrangement may change when damage runs.
+note-damage-changed-arrangement = Damage changed the arrangement. Without damage the search chose { $before_wide } across, { $before_od } m tanks, { $before_volume } m3. With damage it chose { $after_wide } across, { $after_od } m tanks, { $after_volume } m3.
+warn-damage-run-limit = The search stopped at the damage-run limit: the arrangement is the best that passed damage until then.
 msg-depth-not-settled = The depth that follows the tank did not settle in { $runs } runs ({ $from } m, then { $to } m); the results are for { $to } m.
 check-name-intact-gm-at-reported-cargo = intact gm at reported cargo
 check-intact-gm-reported-cargo = intact GM { $gm } m >= 0.15 m at the reported cargo { $cargo } t, draught { $draught } m (first-order; cargo KG of the full hold; KG_light @0.5D)
@@ -400,6 +403,7 @@ msg-option-unknown-key = unknown key `{ $key }` is ignored
 msg-choice = `{ $input }` = { $value } must be one of: { $choices }
 msg-results-hash-shape = `results_hash` must be 64 hex digits
 msg-results-hash-text = `results_hash` must be text
+msg-results-stage-value = `results_stage` must be `unscreened` or `screened`
 msg-ruleset-exact-renamed = IGC_2G_EXACT is now IGC_2G: the same per-tank rule of IGC 2.4.1.1
 msg-ruleset-per-tank = IGC_2G now uses the per-tank rule of IGC 2.4.1.1 (d(Vc) from the gross volume of each tank, dome included, measured plate to plate per 2.4.2), so results may change
 msg-input-note = `{ $input }`: { $note }

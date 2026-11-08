@@ -83,9 +83,26 @@ fn the_hook_sees_done_reach_total() {
     let total = r["damage_cases"].as_u64().unwrap() as usize;
     let calls = calls.borrow();
     assert!(total > 3);
-    assert!(calls.iter().all(|c| c.1 == total));
-    assert!(calls.windows(2).all(|w| w[0].0 <= w[1].0));
-    assert_eq!(calls.last().unwrap(), &(total, total));
+    // Issue #935: the search runs damage on each candidate that passes stability, then the answer's run follows.
+    // The count is cumulative over those runs: `done` and the fraction done never fall, `total` is planned (the
+    // search does not know how many runs it will make) and shrinks to the real total at the end, and the last call
+    // has every case done. The answer's own
+    // cases (`damage_cases`) are the last run's share of it.
+    assert_eq!(calls[0].0, 0);
+    assert!(calls.windows(2).all(|w| w[0].0 <= w[1].0), "done fell");
+    // The total is planned (the runs the search expects), so it may shrink at the end: the fraction done never falls.
+    assert!(
+        calls
+            .windows(2)
+            .all(|w| w[0].0 as f64 / w[0].1 as f64 <= w[1].0 as f64 / w[1].1 as f64 + 1e-12),
+        "the fraction fell"
+    );
+    let last = *calls.last().unwrap();
+    assert_eq!(last.0, last.1);
+    assert!(
+        last.1 >= total,
+        "{last:?} against {total} cases in the answer"
+    );
 }
 
 #[test]
