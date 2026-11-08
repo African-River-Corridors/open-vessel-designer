@@ -630,3 +630,29 @@ fn the_general_arrangement_says_the_shield_is_not_watertight_only_with_the_input
         .collect::<String>();
     assert!(text.contains("WEATHER SHIELD") && !text.contains("NOT WATERTIGHT"));
 }
+
+/// The whole run of a river-only design with a share below 0.5 and damage on stays within the damage-run
+/// limit: the search's runs (one budget for the share search, at most the limit) and the answer's own
+/// damage run (one), counted across the run. `depth_passes` is 1, so the depth was settled in one pass.
+/// Label: rule (the limit is `DEFAULT_DAMAGE_RUN_CAP`, 24; issue #935). The bound across several depth
+/// passes depends on one runner and budget per run (issue #935, part 2b).
+#[test]
+fn a_river_design_with_a_lower_share_stays_within_the_damage_run_limit() {
+    let before = ovd_format::damage::damage_runs_started();
+    let r = run(&river_design(json!({})));
+    let runs = ovd_format::damage::damage_runs_started() - before;
+    assert_eq!(r["damage_status"], "run");
+    let share = r["arrangement"]["tank_top_above_deck_od_fraction"]
+        .as_f64()
+        .unwrap();
+    assert!(
+        share < 0.5,
+        "share {share}: the test needs a share below the limit"
+    );
+    assert_eq!(r["arrangement"]["depth_passes"], 1);
+    let limit = ovd_core::gas_arrangement::DEFAULT_DAMAGE_RUN_CAP + 1;
+    assert!(
+        runs <= limit,
+        "{runs} damage runs across the whole run, limit {limit}"
+    );
+}

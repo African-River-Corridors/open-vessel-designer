@@ -2359,27 +2359,14 @@ pub fn fit_with(
     // no damage, and stops at the first that passes them. Stage 2 screens that share by damage, and
     // the next share down too if it fails. So the damage screen runs on at most two shares: at most
     // twice `damage_run_cap` damage runs, not five times.
-    let mut chosen: Option<(usize, ArrangementFit)> = None;
-    for (i, share) in levels.iter().enumerate() {
-        let f = fit_once(loa, beam, cargo, t_max, &at_share(o, *share), &NoDamage)?;
-        let done = f.feasible;
-        let better = chosen.as_ref().is_none_or(|(_, b)| share_better(&f, b));
-        if better {
-            chosen = Some((i, f));
-        }
-        if done {
-            break;
-        }
-    }
-    let (idx, intact) = chosen.ok_or_else(|| PyError {
-        kind: "IndexError",
-        message: "list index out of range".to_string(),
-    })?;
+    let (idx, intact) = share_stage_one(loa, beam, cargo, t_max, o, &levels)?;
     if !runner.enabled() {
         return Ok(intact);
     }
     let first = fit_once(loa, beam, cargo, t_max, &at_share(o, levels[idx]), runner)?;
-    if first.feasible || idx + 1 >= levels.len() {
+    // One damage budget for the whole share search: the next share down draws on what the first left.
+    let left = o.damage_run_cap.saturating_sub(first.damage_runs);
+    if first.feasible || idx + 1 >= levels.len() || left == 0 {
         return Ok(first);
     }
     // The chosen share fails damage: the next share down, with its damage runs planned on top of the
@@ -2388,14 +2375,9 @@ pub fn fit_with(
         inner: runner,
         before: first.damage_planned_runs,
     };
-    let next = fit_once(
-        loa,
-        beam,
-        cargo,
-        t_max,
-        &at_share(o, levels[idx + 1]),
-        &after,
-    )?;
+    let mut o_next = at_share(o, levels[idx + 1]);
+    o_next.damage_run_cap = left;
+    let next = fit_once(loa, beam, cargo, t_max, &o_next, &after)?;
     let runs = first.damage_runs + next.damage_runs;
     let planned = first.damage_planned_runs + next.damage_planned_runs;
     let mut out = if share_better(&next, &first) {
@@ -2406,6 +2388,34 @@ pub fn fit_with(
     out.damage_runs = runs;
     out.damage_planned_runs = planned;
     Ok(out)
+}
+
+/// The first stage of the share search (issue #992): the shares from the limit down, each searched on the
+/// intact checks with no damage, stopping at the first that passes them. Returns the index of the share
+/// kept and its answer; with none passing, the best of the shares by [`share_better`].
+fn share_stage_one(
+    loa: f64,
+    beam: f64,
+    cargo: &str,
+    t_max: f64,
+    o: &FitOptions,
+    levels: &[f64],
+) -> Result<(usize, ArrangementFit), PyError> {
+    let mut chosen: Option<(usize, ArrangementFit)> = None;
+    for (i, share) in levels.iter().enumerate() {
+        let f = fit_once(loa, beam, cargo, t_max, &at_share(o, *share), &NoDamage)?;
+        let done = f.feasible;
+        if chosen.as_ref().is_none_or(|(_, b)| share_better(&f, b)) {
+            chosen = Some((i, f));
+        }
+        if done {
+            break;
+        }
+    }
+    chosen.ok_or_else(|| PyError {
+        kind: "IndexError",
+        message: "list index out of range".to_string(),
+    })
 }
 
 /// The options at one share of the tank diameter, searched no further.
@@ -2741,33 +2751,26 @@ pub fn probe_depth(
             "ruleset must be one of ('IGC_2G',)".to_string(),
         ));
     }
-    // With a share to search, the first share from the limit down that has a candidate through the
-    // cheap checks, as the first stage of `fit_with` takes it (stability can still turn it down).
-    let levels =
-        share_levels(o).unwrap_or_else(|| vec![o.tank_top_above_deck_od_fraction.unwrap_or(0.0)]);
-    for share in levels {
-        let mut o2 = o.clone();
-        if o.standing_share_search && o.tank_top_above_deck_m.is_none() {
-            o2.tank_top_above_deck_od_fraction = Some(share);
-        }
-        let mut s = Search {
-            loa,
-            beam,
-            cargo,
-            o: &o2,
-            tried: 0,
-            refused: Vec::new(),
-            runner: &SerialRunner,
-            damage_runs: 0,
-            cap_hit: false,
-            cheap_only: true,
-        };
-        let pool = search(&mut s, t_max, false)?;
-        if let Some(i) = pool.best {
-            return Ok(Some(pool.all[i].depth));
-        }
+    // With a share to search, the depth of the share the first stage of `fit_with` keeps: the same
+    // intact searches, so the run that follows settles in one pass.
+    if let Some(levels) = share_levels(o) {
+        let (_, f) = share_stage_one(loa, beam, cargo, t_max, o, &levels)?;
+        return Ok(Some(f.depth_m));
     }
-    Ok(None)
+    let mut s = Search {
+        loa,
+        beam,
+        cargo,
+        o,
+        tried: 0,
+        refused: Vec::new(),
+        runner: &SerialRunner,
+        damage_runs: 0,
+        cap_hit: false,
+        cheap_only: true,
+    };
+    let pool = search(&mut s, t_max, false)?;
+    Ok(pool.best.map(|i| pool.all[i].depth))
 }
 
 /// Step of the upward scan of `smallest_viable_loa` (m).
