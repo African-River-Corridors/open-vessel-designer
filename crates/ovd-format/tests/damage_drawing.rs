@@ -110,6 +110,9 @@ fn gas_results(loa: f64, beam: f64, depth: f64, area: &str) -> Value {
         "beam_m": { "value": beam, "source": "typed" },
         "service_area": { "value": area, "source": "typed" },
         "moulded_depth_m": { "value": depth, "source": "typed" },
+        // Issue #935: the search chooses the number of tanks along from 2, 3 and 4 when it is not typed. These
+        // sheets are checked on the two-along layout; the leaders of the 3 and 4 along sheets are a separate issue.
+        "tanks_in_line": { "value": 2, "source": "typed" },
         "loading_conditions": { "value": "is_code_2008", "source": "typed" }
     });
     let file = json!({

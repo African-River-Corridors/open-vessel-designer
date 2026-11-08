@@ -379,6 +379,13 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         p.insert("beam_m".to_string(), json!(d.beam_m));
         p.insert("depth_m".to_string(), json!(d.depth_m));
     }
+    // Issue #935: a typed number of tanks along pins the search; the Defaults Profile's lets it choose from 2, 3 and 4.
+    if option
+        .input("tanks_in_line")
+        .is_some_and(|i| i.source == Source::Typed)
+    {
+        p.insert("__tanks_in_line_typed".to_string(), Value::Bool(true));
+    }
     Ok(p)
 }
 

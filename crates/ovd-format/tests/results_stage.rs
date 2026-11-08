@@ -21,6 +21,7 @@ fn design(cap: f64) -> String {
             "beam_m": { "value": 29.0, "source": "typed" },
             "moulded_depth_m": { "value": 12.0, "source": "typed" },
             "max_tank_od_m": { "value": cap, "source": "typed" },
+            "tanks_in_line": { "value": 2, "source": "typed" },
             "service_area": { "value": "coastal-and-river", "source": "typed" },
             "loading_conditions": { "value": "is_code_2008", "source": "typed" }
         } }]

@@ -90,7 +90,10 @@ fn a_file_saved_before_has_no_standing_height_and_a_result_without_one_has_no_ne
 #[test]
 fn in_hold_the_depth_is_the_tank_top_plus_the_gap_and_a_standing_height_takes_it_off() {
     // Label: snapshot, printed by the code. Tank top above keel and diameter of the arrangement.
-    let hold = run(&design(json!({ "tank_top_above_deck_m": 0.0 })));
+    // Issue #935: the picks below are at the profile's two along; the search may choose 3 or 4 along when it is not typed.
+    let hold = run(&design(
+        json!({ "tank_top_above_deck_m": 0.0, "tanks_in_line": 2 }),
+    ));
     let top = hold["arrangement"]["tank_top_above_keel_m"]
         .as_f64()
         .unwrap();
@@ -112,7 +115,9 @@ fn in_hold_the_depth_is_the_tank_top_plus_the_gap_and_a_standing_height_takes_it
     );
     assert!((depth(&hold) - 13.621).abs() < 0.0006, "{}", depth(&hold));
 
-    let two = run(&design(json!({ "tank_top_above_deck_m": 2.0 })));
+    let two = run(&design(
+        json!({ "tank_top_above_deck_m": 2.0, "tanks_in_line": 2 }),
+    ));
     let top2 = two["arrangement"]["tank_top_above_keel_m"]
         .as_f64()
         .unwrap();

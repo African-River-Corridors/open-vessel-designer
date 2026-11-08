@@ -513,6 +513,8 @@ fn no_wing_tank_note(r: &BargeCapacityResult, gap_m: f64) -> Option<Text> {
 /// to screen by. A run that skips damage keeps the unscreened pick and says so; a run that ran damage says
 /// what the search without damage would have picked when damage changed the pick.
 fn damage_screening_json(f: &ga::ArrangementFit, ids: &mut TextIds) -> Value {
+    // Whether the number of tanks along was chosen from several (damage screened, not pinned) or is the profile's.
+    let tanks_along = json!({ "n": f.n_tanks_long, "chosen_from": if f.tanks_along_tried.len() > 1 { json!(f.tanks_along_tried) } else { Value::Null } });
     match &f.damage_screen {
         ga::DamageScreen::NotApplicable => Value::Null,
         ga::DamageScreen::Skipped => {
@@ -521,7 +523,7 @@ fn damage_screening_json(f: &ga::ArrangementFit, ids: &mut TextIds) -> Value {
                 "Not screened for damage: the arrangement may change when damage runs."
             );
             ids.text(&note);
-            json!({ "screened": false, "note": note, "stage_one": null, "changed_note": null, "limit_note": null, "planned_runs": f.damage_planned_runs })
+            json!({ "screened": false, "note": note, "stage_one": null, "changed_note": null, "limit_note": null, "planned_runs": f.damage_planned_runs, "tanks_along": tanks_along })
         }
         ga::DamageScreen::Screened {
             unscreened,
@@ -531,11 +533,13 @@ fn damage_screening_json(f: &ga::ArrangementFit, ids: &mut TextIds) -> Value {
                 Some(u) => {
                     let note = text!(
                         "note-damage-changed-arrangement",
-                        "Damage changed the arrangement. Without damage the search chose {before_wide} across, {before_od} m tanks, {before_volume} m3. With damage it chose {after_wide} across, {after_od} m tanks, {after_volume} m3.",
+                        "Damage changed the arrangement. Without damage the search chose {before_wide} across by {before_long} along, {before_od} m tanks, {before_volume} m3. With damage it chose {after_wide} across by {after_long} along, {after_od} m tanks, {after_volume} m3.",
                         before_wide = u.n_wide,
+                        before_long = u.n_long,
                         before_od = Arg::fixed(u.tank_od_m, 2),
                         before_volume = Arg::fixed(u.cargo_volume_m3, 0),
                         after_wide = f.n_tanks_wide,
+                        after_long = f.n_tanks_long,
                         after_od = Arg::fixed(f.tank_od_m, 2),
                         after_volume = Arg::fixed(f.cargo_volume_m3, 0),
                     );
@@ -561,7 +565,7 @@ fn damage_screening_json(f: &ga::ArrangementFit, ids: &mut TextIds) -> Value {
                 ids.text(&note);
                 note
             });
-            json!({ "screened": true, "note": Value::Null, "stage_one": stage_one, "changed_note": changed_note, "limit_note": cap_note, "planned_runs": f.damage_planned_runs })
+            json!({ "screened": true, "note": Value::Null, "stage_one": stage_one, "changed_note": changed_note, "limit_note": cap_note, "planned_runs": f.damage_planned_runs, "tanks_along": tanks_along })
         }
     }
 }
@@ -3494,6 +3498,8 @@ fn simulate_gas(
         sightline_limit_source: blind.light_rule.clone(),
         is_code: is_code_options,
         damage_run_cap: crate::damage::damage_run_cap(),
+        // Issue #935: a number of tanks along the designer typed pins the search; the profile's default does not.
+        choose_tanks_along: !p.get("__tanks_in_line_typed").is_some_and(truthy),
         ..FitOptions::default()
     };
     // Issue #992: with a standing height every candidate is capped by its own depth less the
