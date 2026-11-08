@@ -338,6 +338,7 @@ warn-fit-no-wing-tank = No wing ballast tank: the side space { $side } m is not 
 warn-damage-not-screened = Not screened for damage: the arrangement may change when damage runs.
 note-damage-changed-arrangement = Damage changed the arrangement. Without damage the search chose { $before_wide } across, { $before_od } m tanks, { $before_volume } m3. With damage it chose { $after_wide } across, { $after_od } m tanks, { $after_volume } m3.
 warn-damage-run-limit = The search stopped at the damage-run limit: the arrangement is the best that passed damage until then.
+msg-depth-not-settled = The depth that follows the tank did not settle in { $runs } runs ({ $from } m, then { $to } m); the results are for { $to } m.
 check-name-intact-gm-at-reported-cargo = intact gm at reported cargo
 check-intact-gm-reported-cargo = intact GM { $gm } m >= 0.15 m at the reported cargo { $cargo } t, draught { $draught } m (first-order; cargo KG of the full hold; KG_light @0.5D)
 warn-liquid-legacy-conditions = Stability is computed for liquid bulk cargo with the IS Code loading conditions only.

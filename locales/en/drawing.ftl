@@ -68,9 +68,10 @@ draw-note-tug-positions = PROPELLERS, RUDDERS AND PUSH KNEES ARE DRAWN TO SHOW T
 
 ## crates/ovd-format/src/ga.rs
 
+draw-weather-shield-open = WEATHER SHIELD, NOT WATERTIGHT
+draw-weather-shield = WEATHER SHIELD
 draw-double-bottom = DOUBLE BOTTOM
 draw-wbt-both-sides = WBT (BOTH SIDES)
-draw-weather-shield = WEATHER SHIELD
 draw-dome = DOME
 draw-cofferdam = COFFERDAM
 draw-end-clearance = END CLEARANCE
