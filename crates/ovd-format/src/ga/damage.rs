@@ -231,7 +231,11 @@ fn damage_canvas(h: &Hull, g: &Governing, n: u32) -> Canvas {
         let aim = if same.len() > 1 {
             p0 + (p1 - p0) * (rank as f64 + 0.5) / same.len() as f64
         } else if p0 < 0.0 && p1 > 0.0 && mid.abs() < 0.1 * (p1 - p0) {
-            let side = if labels.len() % 2 == 0 { 0.25 } else { -0.25 };
+            let side = if labels.len().is_multiple_of(2) {
+                0.25
+            } else {
+                -0.25
+            };
             mid + side * (p1 - p0)
         } else {
             mid
