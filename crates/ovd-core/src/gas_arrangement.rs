@@ -2117,7 +2117,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
     }
     // Issue #1038: the winner is worked out again at its own basis when its verdicts were kept from an earlier pass.
     if screening && s.runner.enabled() && !stop_at_first_pass {
-        finalize_winner(s, &mut pool)?;
+        finalize_winner(s, &mut pool, t_max)?;
     }
     Ok(pool)
 }
@@ -2127,8 +2127,9 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
 /// again at its own basis; if it fails there, it is out, and the next best candidate that passed (on kept verdicts or
 /// not) is worked out again in its turn, within the budget. When the budget is gone the winner stands on what it has,
 /// and the answer's own damage run, which decides feasibility, has the last word.
-fn finalize_winner(s: &mut Search<'_>, pool: &mut Pool) -> Result<(), PyError> {
+fn finalize_winner(s: &mut Search<'_>, pool: &mut Pool, t_max: f64) -> Result<(), PyError> {
     let o = s.o;
+    let mut refined_again = false;
     while let Some(b) = pool.best {
         if !pool.all[b].damage_stale || out_of_runs(s) {
             return Ok(());
@@ -2157,6 +2158,14 @@ fn finalize_winner(s: &mut Search<'_>, pool: &mut Pool) -> Result<(), PyError> {
             }
         }
         pool.best = next;
+        // Issue #1031: no other candidate passed. The winner's group has a failing size again, at its own basis, so
+        // its bisect is worked out afresh (once), from the sizes that passed at the bases of this pass.
+        if next.is_none() && !refined_again {
+            refined_again = true;
+            pool.refined.clear();
+            let all = s.along.clone();
+            refine_failed_groups(s, pool, t_max, &all, 0.0)?;
+        }
     }
     Ok(())
 }
@@ -2266,6 +2275,28 @@ fn refine_failed_groups(
         {
             continue;
         }
+        // Issue #1031: the failing size itself, if it failed on a kept verdict from a basis that has since moved, is
+        // worked out again. If it passes now it joins the pool and there is nothing to bisect.
+        let mut hi_cand = hi_cand;
+        if hi_cand.damage_stale {
+            if out_of_runs(s) {
+                s.cap_hit = true;
+                return Ok(());
+            }
+            if screen_damage(s, &mut hi_cand, true)? == Screened::CapReached {
+                return Ok(());
+            }
+            pool.all[hi_idx].damage = hi_cand.damage.clone();
+            pool.all[hi_idx].damage_stale = false;
+            if passes_all(&hi_cand, o) {
+                pool.assessed_failed.retain(|&i| i != hi_idx);
+                if pool.best.is_none_or(|b| better_pick(&pool.all, hi_idx, b)) {
+                    pool.best = Some(hi_idx);
+                }
+                pool.refined.push((depth, nw, along));
+                continue;
+            }
+        }
         let mut hi = opt_or_zero(hi_cand.result.tank_outer_diameter_m);
         // Issue #1031: the failing candidate's own diameter and side clearance are the reference every size of the
         // bisect is built from; `hi` moves down as sizes fail, the reference does not.
@@ -2366,7 +2397,16 @@ fn refine_failed_groups(
             if passes && screen_damage(s, &mut cand, false)? == Screened::CapReached {
                 return Ok(());
             }
-            passes = passes && passes_all(&cand, o);
+            let mut now = passes && passes_all(&cand, o);
+            // Issue #1031: a size that failed on a kept verdict from a basis that has since moved is worked out
+            // again: it can pass now (11.53 m on the reference design), and the bisect would search below it.
+            if passes && !now && cand.damage_stale {
+                if screen_damage(s, &mut cand, true)? == Screened::CapReached {
+                    return Ok(());
+                }
+                now = passes_all(&cand, o);
+            }
+            passes = now;
             pool.all.push(cand);
             if passes {
                 lo = mid;

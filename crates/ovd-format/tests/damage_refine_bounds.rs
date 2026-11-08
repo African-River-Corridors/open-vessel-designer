@@ -5,8 +5,8 @@
 //! the lower bound untested. On the 140 x 29 m coastal LNG reference design (tank top 2.0 m above the deck, two
 //! tanks along) the 2-across group stopped at 11.28 m and the search kept a 1-across 16.00 m tank that carries less.
 //!
-//! Label: snapshot - the values the code printed on this branch (the 2-across size that passes is 11.406 m, the
-//! bisect of 11.78 m failing and 11.28 m passing, 11.53 m failing the 50 % stage), plus a property over four hulls.
+//! Label: snapshot - the values the code printed on this branch (the 2-across size that passes is 11.531 m; a verdict
+//! kept from an earlier depth pass said 11.53 m fails, and it is worked out again), plus a property over four hulls.
 //! The property is slow (a damage search for each hull and number across), so it runs nightly
 //! (docs/agents/slow-tests.md); the repro stays in the PR gate.
 //! **Mutation proof:** building each size from the moving bound again (the old line) makes the repro fail: the pick
@@ -67,7 +67,7 @@ fn limit_hit(r: &Value) -> bool {
 
 #[test]
 fn the_reference_design_keeps_the_largest_two_across_size_that_passes_damage() {
-    // Two along, searched across: the pick is 2 across at 11.41 m, not the 1-across 16.00 m (7,969 t) tank.
+    // Two along, searched across: the pick is 2 across at 11.53 m, not the 1-across 16.00 m (7,969 t) tank.
     let searched = run(140.0, 29.0, json!({ "tanks_in_line": 2 }));
     let fixed = run(
         140.0,
@@ -77,7 +77,7 @@ fn the_reference_design_keeps_the_largest_two_across_size_that_passes_damage() {
     for r in [&searched, &fixed] {
         assert_eq!(r["arrangement"]["n_wide"], 2);
         assert_eq!(r["arrangement"]["n_long"], 2);
-        assert!((r["arrangement"]["tank_od_m"].as_f64().unwrap() - 11.4056).abs() < 0.001);
+        assert!((r["arrangement"]["tank_od_m"].as_f64().unwrap() - 11.5306).abs() < 0.001);
         assert_eq!(r["arrangement"]["feasible"], true);
         assert_eq!(igc_fails(r), 0);
         assert!(!limit_hit(r));

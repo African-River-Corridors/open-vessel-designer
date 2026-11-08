@@ -309,10 +309,11 @@ fn chosen_volume(r: &Value) -> f64 {
 
 /// Removing the size cap never gives less cargo: a cap of 12 m is a limit on what the search may pick, so the
 /// uncapped pick carries at least what the capped one does (the damage screen once gave 17,708 m3 with no cap
-/// against 18,224 m3 at 12 m). The refinement bisects the diameter to 0.1 m, so each search ends within one step
-/// of the largest size that passes and two searches with different grids can end a step apart (11.593 m uncapped,
-/// 11.625 m at a 12 m cap, issue #1031): the uncapped pick carries at least what the capped one does, less one
-/// step of diameter (2 x 0.1 / 11.6, under 2 % of the volume). Label: property.
+/// against 18,224 m3 at 12 m). The refinement bisects the diameter to 0.1 m, so each search ends within one step of
+/// the largest size that passes, and a capped and an uncapped search with different size grids can end a step
+/// apart (11.593 m uncapped, 11.625 m at a 12 m cap): the uncapped pick carries at least what the capped one does,
+/// less one step of diameter (2 x 0.1 / 11.6, under 2 % of the volume). Issue #1045 asks for the strict form.
+/// Label: property.
 #[test]
 fn removing_the_cap_never_gives_less_cargo() {
     let capped = chosen_volume(&reference(json!({ "max_tank_od_m": 12.0 })));
