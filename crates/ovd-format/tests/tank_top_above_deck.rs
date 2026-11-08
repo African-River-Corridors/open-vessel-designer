@@ -492,9 +492,13 @@ fn damage_floods_both_holds_across_the_bulkhead_and_nothing_above_the_deck_float
     // weight height taken out (KN = GZ + KG sin(heel)), and the volume of the flooded holds are the
     // same with the shield on or off. A shield that floated would stand the deck edge higher and
     // raise KN at 50 and 60 degrees, and would add to the holds.
-    let on = run(&example(json!({ "tank_top_above_deck_m": 2.0 })));
+    // Issue #935: the shield's mass can move the damage screen's pick, and the pick is not what is compared
+    // here, so the tank is capped at a size that survives with the shield on and off: both runs pick it.
+    let on = run(&example(
+        json!({ "tank_top_above_deck_m": 2.0, "max_tank_od_m": 10.0 }),
+    ));
     let off = run(&example(
-        json!({ "tank_top_above_deck_m": 2.0, "weather_shield_thickness_mm": 0.0 }),
+        json!({ "tank_top_above_deck_m": 2.0, "weather_shield_thickness_mm": 0.0, "max_tank_od_m": 10.0 }),
     ));
     assert_eq!(depth(&on), depth(&off));
     assert_eq!(above(&on)["weather_shield_fitted"], true);
