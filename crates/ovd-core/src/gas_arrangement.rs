@@ -666,6 +666,9 @@ pub struct ArrangementFit {
     pub damage_runs: usize,
     /// Issue #935: whether the pick was screened by damage, and what the search without damage would have picked.
     pub damage_screen: DamageScreen,
+    /// Issue #935: the most damage runs the search expects (0: nothing to screen by), for the estimate before a
+    /// damage run.
+    pub damage_planned_runs: usize,
 }
 
 /// Issue #935: how the arrangement search treated IGC 2.7 damage survival.
@@ -1729,6 +1732,10 @@ struct Pool {
     assessed_failed: Vec<usize>,
     /// Issue #935: the best candidate before the damage screen: the pick of a search without damage.
     unscreened_best: Option<usize>,
+    /// Issue #935: the most damage runs the search expects (0: the stack has no IGC damage to screen by). An upper
+    /// bound: the candidates that pass the cheap checks and three refinement steps for each depth and number of
+    /// tanks across, within the cap.
+    planned_runs: usize,
 }
 
 /// Build every candidate and judge it by the whole check list. Every candidate gets the cheap
@@ -1744,6 +1751,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
         best: None,
         assessed_failed: Vec::new(),
         unscreened_best: None,
+        planned_runs: 0,
     };
     for &d in &o.depths {
         for &nw in &o.tanks_wide {
@@ -1859,6 +1867,24 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
     if s.cheap_only {
         pool.best = order.first().copied();
         return Ok(pool);
+    }
+    // Issue #935: tell the runner how many damage runs to plan for, so its progress is a fixed total that shrinks at
+    // the end (the fraction done never falls), and keep it for the results (the estimate before a damage run).
+    if igc_damage_set(o).is_some() && o.is_code.is_some() {
+        let mut groups: Vec<(f64, i64)> = Vec::new();
+        for &i in &order {
+            let g = (
+                pool.all[i].search_depth,
+                pool.all[i].inputs.n_tanks_wide.unwrap_or(0),
+            );
+            if !groups.contains(&g) {
+                groups.push(g);
+            }
+        }
+        pool.planned_runs = (order.len() + 3 * groups.len()).clamp(1, o.damage_run_cap.max(1));
+        if s.runner.enabled() {
+            s.runner.plan(pool.planned_runs);
+        }
     }
     let mut top = 0.0;
     let mut unscreened_top = 0.0;
@@ -2296,6 +2322,7 @@ pub fn fit_with(
     let tried = tried_arrangements(&pool, pick, &s.refused, o);
     // Issue #935: damage runs ran out before any candidate passed: the closest is shown, and it is not an answer.
     let cap_blocked = s.cap_hit && pool.best.is_none();
+    let pool_planned_runs = pool.planned_runs;
     // Issue #935: the search's pick without damage, when the screen changed it.
     let damage_screen = if igc_damage_set(o).is_none() || o.is_code.is_none() {
         DamageScreen::NotApplicable
@@ -2463,6 +2490,7 @@ pub fn fit_with(
         engine_inputs: inp,
         damage_runs: s.damage_runs,
         damage_screen,
+        damage_planned_runs: pool_planned_runs,
         engine_result: r,
     })
 }

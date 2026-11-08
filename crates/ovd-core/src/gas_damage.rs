@@ -522,6 +522,11 @@ pub trait DamageRunner {
         true
     }
 
+    /// The most damage runs the search expects to make, told before the first (an upper bound from the candidates
+    /// that pass the cheap checks and the refinement, within the cap). A runner that reports progress plans its
+    /// total from it, so the fraction done never falls while runs start.
+    fn plan(&self, _runs: usize) {}
+
     /// The cases of `run` on every condition of `conditions`. `Err(Cancelled)` stops the search.
     fn run(
         &self,

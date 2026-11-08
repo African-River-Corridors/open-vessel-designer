@@ -71,7 +71,8 @@ def test_progress_counts_up_to_the_total(coastal, with_damage):
     # falls, and the last call has every case done. The answer's own cases are the last run's share of it.
     assert calls[0][0] == 0
     assert all(a <= b for (a, _), (b, _) in zip(calls, calls[1:])), "done fell"
-    assert all(a <= b for (_, a), (_, b) in zip(calls, calls[1:])), "total fell"
+    # The total is planned (the runs the search expects) and shrinks at the end: the fraction done never falls.
+    assert all(a / ta <= b / tb + 1e-12 for (a, ta), (b, tb) in zip(calls, calls[1:])), "the fraction fell"
     assert calls[-1][0] == calls[-1][1]
     assert calls[-1][1] >= total
 

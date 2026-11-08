@@ -111,15 +111,23 @@ pub(crate) fn run_gas_damage_typed(
 }
 
 /// The runner the arrangement search uses (issue #935): the cases on worker threads (issue #921), the progress
-/// hook and the cancel of the run's [`DamageControl`]. The progress is cumulative over the search's damage runs:
-/// `done` counts every case of every run so far and never falls, and `total` is the cases of the runs so far
-/// (the search does not know how many runs it will make, so the time left it implies is a lower bound until the
-/// last run). A cancel stops the run under way and the search. With `control.run` false the search does not
-/// screen by damage.
+/// hook and the cancel of the run's [`DamageControl`]. The progress is cumulative over the search's damage runs
+/// and the answer's: `done` counts every case worked out so far. The search does not know how many runs it will
+/// make, so `total` is planned: the search says how many runs it expects at most ([`DamageRunner::plan`]), and
+/// the total is that many runs of the first run's cases. It shrinks to the real total when the answer's run
+/// starts, and the fraction done never falls (a report that would lower it raises the total to keep it). A cancel
+/// stops the run under way and the search. With `control.run` false the search does not screen by damage.
 pub(crate) struct ThreadedRunner<'a> {
     pub control: &'a DamageControl,
     /// The cases worked out by the runs so far.
     pub done: core::cell::Cell<usize>,
+    /// The runs the search planned for (1 until it says).
+    planned_runs: core::cell::Cell<usize>,
+    /// The total reported to the hook while the search runs: the planned runs of the first run's cases (0 until
+    /// the first run).
+    planned_total: core::cell::Cell<usize>,
+    /// The highest fraction reported so far, shared with the control of the run that follows.
+    last: std::rc::Rc<core::cell::Cell<f64>>,
 }
 
 impl<'a> ThreadedRunner<'a> {
@@ -127,36 +135,59 @@ impl<'a> ThreadedRunner<'a> {
         Self {
             control,
             done: core::cell::Cell::new(0),
+            planned_runs: core::cell::Cell::new(1),
+            planned_total: core::cell::Cell::new(0),
+            last: std::rc::Rc::new(core::cell::Cell::new(0.0)),
         }
     }
 
     /// The control for the run that follows the search (the answer's damage stages): the same hook, with the
-    /// cases of the search's runs added to `done` and `total`, so the count carries on from where it stopped.
+    /// cases of the search's runs added to `done` and `total`, so the count carries on from where it stopped,
+    /// with the total now the real one.
     pub(crate) fn following_control(&self) -> DamageControl {
         DamageControl {
             run: self.control.run,
-            progress: offset_hook(self.control.progress.as_ref(), self.done.get()),
+            progress: progress_hook(
+                self.control.progress.as_ref(),
+                self.done.get(),
+                None,
+                self.last.clone(),
+            ),
         }
     }
 }
 
-/// `hook` with `base` cases added to `done` and `total` of every report; `None` for no hook.
-fn offset_hook(hook: Option<&ProgressHook>, base: usize) -> Option<ProgressHook> {
+/// `hook` with `base` cases added to `done` of every report, and a total that keeps the fraction done from falling:
+/// `planned` (a fixed total, while a search runs) or `base` plus the run's own total. `None` for no hook.
+fn progress_hook(
+    hook: Option<&ProgressHook>,
+    base: usize,
+    planned: Option<usize>,
+    last: std::rc::Rc<core::cell::Cell<f64>>,
+) -> Option<ProgressHook> {
     let hook = hook?.clone();
-    if base == 0 {
-        return Some(hook);
-    }
     Some(std::rc::Rc::new(move |p: DamageProgress| {
-        hook(DamageProgress {
-            done: base + p.done,
-            total: base + p.total,
-        })
+        let done = base + p.done;
+        let mut total = planned.map_or(base + p.total, |t| t.max(base + p.total));
+        let before = last.get();
+        // A report that would lower the fraction done raises the total instead.
+        if (done as f64) < before * total as f64 {
+            total = (done as f64 / before).ceil() as usize;
+        }
+        if total > 0 {
+            last.set(before.max(done as f64 / total as f64));
+        }
+        hook(DamageProgress { done, total })
     }))
 }
 
 impl ovd_core::gas_damage::DamageRunner for ThreadedRunner<'_> {
     fn enabled(&self) -> bool {
         self.control.run
+    }
+
+    fn plan(&self, runs: usize) {
+        self.planned_runs.set(runs.max(1));
     }
 
     fn run(
@@ -169,7 +200,19 @@ impl ovd_core::gas_damage::DamageRunner for ThreadedRunner<'_> {
     ) -> Result<GasDamageRun, ovd_core::gas_damage::Cancelled> {
         let total = run.case_count(hull, conditions, density);
         let base = self.done.get();
-        let gauge = Gauge::new(offset_hook(self.control.progress.as_ref(), base), total);
+        // The planned total is fixed by the first run: the planned runs of its cases.
+        if self.planned_total.get() == 0 {
+            self.planned_total.set(self.planned_runs.get() * total);
+        }
+        let gauge = Gauge::new(
+            progress_hook(
+                self.control.progress.as_ref(),
+                base,
+                Some(self.planned_total.get()),
+                self.last.clone(),
+            ),
+            total,
+        );
         gauge.report();
         let out = run_gas_damage_typed(run, spaces, hull, conditions, density, &gauge)
             .map_err(|Cancelled| ovd_core::gas_damage::Cancelled)?;

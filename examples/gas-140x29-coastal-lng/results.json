@@ -7,6 +7,7 @@
       "status": "results",
       "results_hash": "63830cce3605a1268ff8d481abd4191459f28318bdf4b09a8e1c067ea2a32412",
       "hash_status": "matches",
+      "screen_changes_pick": false,
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
         "cargo": "LNG",
@@ -11861,6 +11862,7 @@
       "status": "results",
       "results_hash": "23a2b26e238f97da639dacb621487640c2a6e08f67aff3a05235c1ff37298361",
       "hash_status": "matches",
+      "screen_changes_pick": false,
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
         "cargo": "LNG",
@@ -23715,6 +23717,7 @@
       "status": "results",
       "results_hash": "561e72336a1ec0eef7109e7a880ed9e03790bc530ba1ef8af53a2a64594a660c",
       "hash_status": "matches",
+      "screen_changes_pick": false,
       "results": {
         "vessel": "Gas barge, IMO Type C tanks",
         "cargo": "LNG",

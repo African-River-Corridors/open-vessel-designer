@@ -402,6 +402,7 @@ msg-option-unknown-key = unknown key `{ $key }` is ignored
 msg-choice = `{ $input }` = { $value } must be one of: { $choices }
 msg-results-hash-shape = `results_hash` must be 64 hex digits
 msg-results-hash-text = `results_hash` must be text
+msg-results-stage-value = `results_stage` must be `unscreened` or `screened`
 msg-ruleset-exact-renamed = IGC_2G_EXACT is now IGC_2G: the same per-tank rule of IGC 2.4.1.1
 msg-ruleset-per-tank = IGC_2G now uses the per-tank rule of IGC 2.4.1.1 (d(Vc) from the gross volume of each tank, dome included, measured plate to plate per 2.4.2), so results may change
 msg-input-note = `{ $input }`: { $note }

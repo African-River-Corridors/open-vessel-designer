@@ -1040,7 +1040,13 @@ mod tests {
         // runs as well as the answer's.
         assert_eq!(calls.first().map(|c| c.0), Some(0));
         assert!(calls.windows(2).all(|w| w[0].0 <= w[1].0), "done fell");
-        assert!(calls.windows(2).all(|w| w[0].1 <= w[1].1), "total fell");
+        // The total is planned and shrinks at the end: the fraction done never falls.
+        assert!(
+            calls
+                .windows(2)
+                .all(|w| w[0].0 as f64 / w[0].1 as f64 <= w[1].0 as f64 / w[1].1 as f64 + 1e-12),
+            "the fraction fell"
+        );
         let last = *calls.last().unwrap();
         assert_eq!(last.0, last.1);
         let after = results_of(&state);
@@ -1133,6 +1139,8 @@ mod tests {
             saved_with["options"][0]["results_hash"],
             saved_without["options"][0]["results_hash"]
         );
+        // The save says which stage its hash belongs to (issue #935).
+        assert_eq!(saved_with["options"][0]["results_stage"], "unscreened");
         let shown = &state.evaluate_json()["options"][0]["outcome"]["results_hash"];
         assert_eq!(
             *shown == saved_with["options"][0]["results_hash"],

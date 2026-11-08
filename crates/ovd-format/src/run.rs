@@ -13,7 +13,7 @@ use crate::damage::DamageControl;
 use crate::rule_set::Library;
 use crate::simulate::{Outcome, RunRules, simulate_params_measured};
 use crate::trace::{rule_inputs, stack_for, trace_json, trace_of};
-use crate::vdesign::{Design, DesignOption, Source};
+use crate::vdesign::{Design, DesignOption, ResultsStage, Source};
 use ovd_core::pyfmt::fixed;
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
@@ -88,6 +88,11 @@ pub struct RunOption {
     pub name: String,
     pub outcome: RunOutcome,
     pub hash_status: HashStatus,
+    /// Issue #935: the file's hash is an unscreened one (damage not run) and matches the unscreened run, but the run
+    /// with damage picks another arrangement: the damage screen changes the pick. The hash the file's stage gives
+    /// is `unscreened_hash`.
+    pub screen_changes_pick: bool,
+    pub unscreened_hash: Option<String>,
 }
 
 /// The `simulate` params of an Option. The glossary names map to the engine's names; the Formation
@@ -1369,11 +1374,43 @@ pub fn run_design_with_damage(
         .iter()
         .map(|o| {
             let outcome = run_option_with_damage(o, library, extra, damage);
+            // Issue #935: the file's hash belongs to a stage, and a run compares like with like. A file without a
+            // stage holds an unscreened hash (it was saved before the screen).
+            let stage = o.results_stage.unwrap_or(ResultsStage::Unscreened);
+            let mut screen_changes_pick = false;
+            let mut unscreened_hash = None;
             let hash_status = match (&outcome, &o.results_hash) {
                 (RunOutcome::Results { hash, .. }, Some(stored))
                     if hash.eq_ignore_ascii_case(stored) =>
                 {
                     HashStatus::Matches
+                }
+                // A run that screens, against an unscreened stamp: compare with the unscreened run.
+                (RunOutcome::Results { .. }, Some(stored))
+                    if stage == ResultsStage::Unscreened && damage.run =>
+                {
+                    let skip = DamageControl {
+                        run: false,
+                        progress: None,
+                    };
+                    match run_option_with_damage(o, library, extra, &skip) {
+                        RunOutcome::Results { hash, .. } if hash.eq_ignore_ascii_case(stored) => {
+                            screen_changes_pick = true;
+                            unscreened_hash = Some(hash);
+                            HashStatus::Matches
+                        }
+                        RunOutcome::Results { hash, .. } => HashStatus::Differs {
+                            stored: stored.clone(),
+                            computed: hash,
+                        },
+                        _ => HashStatus::NotChecked,
+                    }
+                }
+                // A screened stamp, against a run that skips damage: not the same stage, so not compared.
+                (RunOutcome::Results { .. }, Some(_))
+                    if stage == ResultsStage::Screened && !damage.run =>
+                {
+                    HashStatus::NotChecked
                 }
                 (RunOutcome::Results { hash, .. }, Some(stored)) => HashStatus::Differs {
                     stored: stored.clone(),
@@ -1386,6 +1423,8 @@ pub fn run_design_with_damage(
                 name: o.name.clone(),
                 outcome,
                 hash_status,
+                screen_changes_pick,
+                unscreened_hash,
             }
         })
         .collect()
@@ -1409,11 +1448,19 @@ pub fn stamp(design: &mut Design) {
         return;
     }
     let mut wrote = false;
+    // Issue #935: the hash written is the unscreened stage's (damage not run): it is cheap (no damage search runs
+    // for a stamp) and it is the one the app's save writes, so both tools stamp the same hash.
+    let skip = DamageControl {
+        run: false,
+        progress: None,
+    };
     for o in &mut design.options {
         if o.results_hash.is_none()
-            && let RunOutcome::Results { hash, .. } = run_option(o)
+            && let RunOutcome::Results { hash, .. } =
+                run_option_with_damage(o, &Library::built_in(), &[], &skip)
         {
             o.results_hash = Some(hash);
+            o.results_stage = Some(ResultsStage::Unscreened);
             wrote = true;
         }
     }

@@ -125,11 +125,11 @@ fn a_candidate_rejected_by_damage_names_the_rule_and_the_case() {
 }
 
 /// The search runs damage once per candidate that passes stability and has more cargo than the winner, and a
-/// run counts its damage runs. Label: snapshot: 7 runs in the search at a 12 m cap and 11 at 13 m (the refinement between sizes included), and one more
+/// run counts its damage runs. Label: snapshot: 3 runs in the search at a 12 m cap and 5 at 13 m (the refinement between sizes included), and one more
 /// for the answer (the answer's run is the same one until the reuse of PR 4).
 #[test]
 fn the_search_counts_its_damage_runs() {
-    for (cap, runs) in [(12.0, 8), (13.0, 12)] {
+    for (cap, runs) in [(12.0, 4), (13.0, 6)] {
         let before = ovd_format::damage::damage_runs_started();
         let _ = reference(json!({"max_tank_od_m": cap}));
         assert_eq!(
@@ -308,4 +308,84 @@ fn removing_the_cap_never_gives_less_cargo() {
     let capped = chosen_volume(&reference(json!({ "max_tank_od_m": 12.0 })));
     let uncapped = chosen_volume(&reference(json!({})));
     assert!(uncapped + 1e-6 >= capped, "{uncapped} against {capped}");
+}
+
+/// The progress fraction never falls while the search's runs start: `done` is cumulative and `total` is planned (the
+/// runs the search expects, of the first run's cases) and shrinks to the real total when the answer's run starts.
+/// Label: property, at a 12 m cap, a 13 m cap and no cap.
+#[test]
+fn the_progress_fraction_never_falls_over_the_runs_of_the_search() {
+    use ovd_format::damage::{ControlFlow, DamageControl, DamageProgress};
+    for extra in [
+        json!({ "max_tank_od_m": 12.0 }),
+        json!({ "max_tank_od_m": 13.0 }),
+        json!({}),
+    ] {
+        let log = std::rc::Rc::new(std::cell::RefCell::new(Vec::<DamageProgress>::new()));
+        let seen = log.clone();
+        let control = DamageControl {
+            run: true,
+            progress: Some(std::rc::Rc::new(move |p| {
+                seen.borrow_mut().push(p);
+                ControlFlow::Continue(())
+            })),
+        };
+        let mut inputs = json!({
+            "cargo": { "value": "LNG", "source": "typed" },
+            "hull_form": { "value": "raked_box", "source": "typed" },
+            "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+            "length_overall_m": { "value": 140.0, "source": "typed" },
+            "beam_m": { "value": 29.0, "source": "typed" },
+            "moulded_depth_m": { "value": 12.0, "source": "typed" },
+            "service_area": { "value": "coastal-and-river", "source": "typed" },
+            "loading_conditions": { "value": "is_code_2008", "source": "typed" }
+        });
+        for (k, v) in extra.as_object().unwrap() {
+            inputs[k] = json!({ "value": v, "source": "typed" });
+        }
+        let file = json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": inputs }]
+        });
+        let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+        let RunOutcome::Results { results, .. } = ovd_format::run_option_with_damage(
+            &filled.design.unwrap().options[0],
+            ovd_format::rule_set::built_in(),
+            &[],
+            &control,
+        ) else {
+            panic!("no results");
+        };
+        let calls = log.borrow();
+        assert!(calls.len() > 10);
+        let fractions: Vec<f64> = calls
+            .iter()
+            .map(|p| p.done as f64 / p.total as f64)
+            .collect();
+        for (i, w) in fractions.windows(2).enumerate() {
+            assert!(
+                w[1] >= w[0] - 1e-12,
+                "{extra}: call {i}: {} then {}",
+                w[0],
+                w[1]
+            );
+        }
+        assert!(calls.iter().all(|p| p.done <= p.total));
+        assert!(calls.windows(2).all(|w| w[0].done <= w[1].done));
+        let last = calls.last().unwrap();
+        assert_eq!(last.done, last.total, "{extra}");
+        assert!(last.total >= results["damage_cases"].as_u64().unwrap() as usize);
+        // The total is planned, so it is not the cases so far: it is at least the real total until the end.
+        assert!(
+            calls.iter().map(|p| p.total).max().unwrap() >= last.total,
+            "{extra}"
+        );
+        // The results say how many runs the search planned for, for the estimate before a damage run.
+        assert!(
+            results["damage_screening"]["planned_runs"]
+                .as_u64()
+                .unwrap()
+                >= 1
+        );
+    }
 }

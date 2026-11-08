@@ -521,7 +521,7 @@ fn damage_screening_json(f: &ga::ArrangementFit, ids: &mut TextIds) -> Value {
                 "Not screened for damage: the arrangement may change when damage runs."
             );
             ids.text(&note);
-            json!({ "screened": false, "note": note, "stage_one": null, "changed_note": null, "limit_note": null })
+            json!({ "screened": false, "note": note, "stage_one": null, "changed_note": null, "limit_note": null, "planned_runs": f.damage_planned_runs })
         }
         ga::DamageScreen::Screened {
             unscreened,
@@ -561,7 +561,7 @@ fn damage_screening_json(f: &ga::ArrangementFit, ids: &mut TextIds) -> Value {
                 ids.text(&note);
                 note
             });
-            json!({ "screened": true, "note": Value::Null, "stage_one": stage_one, "changed_note": changed_note, "limit_note": cap_note })
+            json!({ "screened": true, "note": Value::Null, "stage_one": stage_one, "changed_note": changed_note, "limit_note": cap_note, "planned_runs": f.damage_planned_runs })
         }
     }
 }

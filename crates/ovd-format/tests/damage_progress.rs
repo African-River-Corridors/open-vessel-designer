@@ -94,9 +94,13 @@ fn the_hook_runs_on_the_calling_thread_counts_up_and_can_cancel() {
             calls.windows(2).all(|w| w[0].0.done <= w[1].0.done),
             "{workers} workers: the count fell"
         );
+        // The total is planned (the runs the search expects) and shrinks at the end, so the fraction is what holds.
         assert!(
-            calls.windows(2).all(|w| w[0].0.total <= w[1].0.total),
-            "{workers} workers: the total fell"
+            calls
+                .windows(2)
+                .all(|w| w[0].0.done as f64 / w[0].0.total as f64
+                    <= w[1].0.done as f64 / w[1].0.total as f64 + 1e-12),
+            "{workers} workers: the fraction fell"
         );
         assert_eq!(calls.iter().filter(|(p, _)| p.done == 0).count(), 1);
         let last = calls.last().unwrap().0;
