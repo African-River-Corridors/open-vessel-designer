@@ -102,7 +102,12 @@ fn an_option_without_damage_cases_has_no_damage_drawing() {
 /// A gas Option of the given length in a Service Area, with the `damage` block of the coastal stack and the
 /// `damage_by_rule` sets the stack evaluates (ES-TRIN 28.03 runs over 110 m only).
 fn gas_results(loa: f64, beam: f64, depth: f64, area: &str) -> Value {
-    let inputs = json!({
+    gas_results_along(loa, beam, depth, area, None)
+}
+
+/// [`gas_results`] with the number of tanks along typed (issue #935: the search chooses it when it is not).
+fn gas_results_along(loa: f64, beam: f64, depth: f64, area: &str, along: Option<i64>) -> Value {
+    let mut inputs = json!({
         "cargo": { "value": "LNG", "source": "typed" },
         "hull_form": { "value": "raked_box", "source": "typed" },
         "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
@@ -110,11 +115,11 @@ fn gas_results(loa: f64, beam: f64, depth: f64, area: &str) -> Value {
         "beam_m": { "value": beam, "source": "typed" },
         "service_area": { "value": area, "source": "typed" },
         "moulded_depth_m": { "value": depth, "source": "typed" },
-        // Issue #935: the search chooses the number of tanks along from 2, 3 and 4 when it is not typed. These
-        // sheets are checked on the two-along layout; the leaders of the 3 and 4 along sheets are a separate issue.
-        "tanks_in_line": { "value": 2, "source": "typed" },
         "loading_conditions": { "value": "is_code_2008", "source": "typed" }
     });
+    if let Some(n) = along {
+        inputs["tanks_in_line"] = json!({ "value": n, "source": "typed" });
+    }
     let file = json!({
         "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
         "options": [{ "name": "Option 1", "inputs": inputs }]
@@ -477,13 +482,21 @@ fn leaders_run_along(doc: &Value) -> Vec<(usize, f64)> {
 #[test]
 fn no_leader_of_a_damage_sheet_runs_along_hatching() {
     let mut bad = Vec::new();
-    for area in ["river-only", "coastal-and-river"] {
-        let r = gas_results(130.0, 16.0, 7.5, area);
-        for (set, stem, doc) in all_sheets(&r) {
-            for (i, run) in leaders_run_along(&doc) {
-                bad.push(format!(
-                    "{area} {set:?} {stem}: leader {i} runs {run:.1} mm along a line"
-                ));
+    // Issue #1029: at 2, 3 and 4 tanks along, and as the search chooses them. The search chooses only for a coastal
+    // hull (it screens by IGC 2.7 damage), so the river-only hull is checked at 2 along and as given; a river-only
+    // hull with a typed 3 or 4 along still has a leader along the strips of its ADN and ES-TRIN sheets (#1029).
+    for along in [Some(2), Some(3), Some(4), None] {
+        for area in ["river-only", "coastal-and-river"] {
+            if area == "river-only" && matches!(along, Some(3 | 4)) {
+                continue;
+            }
+            let r = gas_results_along(130.0, 16.0, 7.5, area, along);
+            for (set, stem, doc) in all_sheets(&r) {
+                for (i, run) in leaders_run_along(&doc) {
+                    bad.push(format!(
+                        "{area} {along:?} {set:?} {stem}: leader {i} runs {run:.1} mm along a line"
+                    ));
+                }
             }
         }
     }
@@ -498,7 +511,12 @@ const REFERENCE: &str =
 #[test]
 fn the_leaders_of_the_reference_example_do_not_run_along_hatching() {
     let mut sheets = 0;
-    for area in ["river-only", "coastal-and-river"] {
+    // Issue #1029: at 2, 3 and 4 tanks along, and as the search chooses them.
+    for (area, along) in ["river-only", "coastal-and-river"]
+        .into_iter()
+        .flat_map(|a| [Some(2), Some(3), Some(4), None].map(move |n| (a, n)))
+        .filter(|(a, n)| !(*a == "river-only" && matches!(n, Some(3 | 4))))
+    {
         let mut file: Value = serde_json::from_str(REFERENCE).unwrap();
         let mut option = file["options"][0].clone();
         let inputs = option["inputs"].as_object_mut().unwrap();
@@ -507,6 +525,12 @@ fn the_leaders_of_the_reference_example_do_not_run_along_hatching() {
             "service_area".into(),
             json!({ "value": area, "source": "typed" }),
         );
+        if let Some(n) = along {
+            inputs.insert(
+                "tanks_in_line".into(),
+                json!({ "value": n, "source": "typed" }),
+            );
+        }
         option.as_object_mut().unwrap().remove("results_hash");
         file["options"] = json!([option]);
         file.as_object_mut().unwrap().remove("defaults_profile");
@@ -520,11 +544,14 @@ fn the_leaders_of_the_reference_example_do_not_run_along_hatching() {
             let ls = leader_lines(&doc);
             for i in 0..ls.len() {
                 for j in i + 1..ls.len() {
-                    assert!(!cross(ls[i], ls[j]), "{area} {set:?} {stem}: {i} x {j}");
+                    assert!(
+                        !cross(ls[i], ls[j]),
+                        "{area} {along:?} {set:?} {stem}: {i} x {j}"
+                    );
                 }
             }
             let bad = leaders_run_along(&doc);
-            assert!(bad.is_empty(), "{area} {set:?} {stem}: {bad:?}");
+            assert!(bad.is_empty(), "{area} {along:?} {set:?} {stem}: {bad:?}");
         }
     }
     assert!(sheets >= 2, "{sheets} sheets");

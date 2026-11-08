@@ -1335,6 +1335,12 @@ fn igc_damage_set(o: &FitOptions) -> Option<&RuleSet> {
     })
 }
 
+/// Issue #935: whether the search has used its damage runs: the cap counts this search's runs and the runs the
+/// runner has worked out for the rest of the run (the depth passes of a standing height share one budget).
+fn out_of_runs(s: &Search<'_>) -> bool {
+    s.damage_runs.max(s.runner.runs_used()) >= s.o.damage_run_cap
+}
+
 /// Issue #935: work out the IGC damage of a candidate that passed the cheap checks and stability, as the answer's
 /// run does (same conditions, same cargo, same spaces), and keep the verdicts on it. Does nothing when the stack
 /// does not evaluate IGC 2.7, the runner is told to skip, or the candidate has no loading conditions with weights.
@@ -1379,7 +1385,7 @@ fn screen_damage(s: &mut Search<'_>, c: &mut Candidate) -> Result<Screened, PyEr
     let Ok(plan) = gas_damage::gas_damage_plan(set, &spaces, &hull) else {
         return Ok(Screened::Done);
     };
-    if s.damage_runs >= o.damage_run_cap {
+    if out_of_runs(s) {
         s.cap_hit = true;
         return Ok(Screened::CapReached);
     }
@@ -1900,7 +1906,9 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                 groups.push(g);
             }
         }
-        pool.planned_runs = (order.len() + 3 * groups.len()).clamp(1, o.damage_run_cap.max(1));
+        // Within the runs the budget still holds: the runner's earlier passes of this run have used some.
+        let left = o.damage_run_cap.saturating_sub(s.runner.runs_used()).max(1);
+        pool.planned_runs = (order.len() + 3 * groups.len()).clamp(1, left);
         if s.runner.enabled() {
             s.runner.plan(pool.planned_runs);
         }
@@ -2080,7 +2088,7 @@ fn refine_failed_groups(
             continue;
         }
         while hi - lo > DAMAGE_REFINE_STEP_M + 1e-9 {
-            if s.damage_runs >= o.damage_run_cap {
+            if out_of_runs(s) {
                 s.cap_hit = true;
                 return Ok(());
             }

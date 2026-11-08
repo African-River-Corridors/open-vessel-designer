@@ -202,7 +202,41 @@ fn damage_canvas(h: &Hull, g: &Governing, n: u32) -> Canvas {
         let rect = [[f.x.0, p0], [f.x.1, p0], [f.x.1, p1], [f.x.0, p1]];
         c.polyline("OBJECT", &rect, true);
         c.hatch("HATCH", &rect, "lines");
-        labels.push((f.name.clone(), [0.5 * (f.x.0 + f.x.1), 0.5 * (p0 + p1)]));
+        // Spaces that fill one and the same rectangle in the plan (the cargo tank, the wing void, the double
+        // bottom and the wing tank of one hold stand on one another) are aimed at heights spread across it, in
+        // turn, so their leaders do not meet on one line. A Space that straddles the centre line is aimed a quarter
+        // of its width off it, alternately to each side: its leader would lie along the centre line. (Issue #1029:
+        // three and four tanks along put several holds, and several of these stacks, in line.)
+        let mid = 0.5 * (p0 + p1);
+        let same: Vec<usize> = g
+            .flooded
+            .iter()
+            .enumerate()
+            .filter(|(_, o)| {
+                (o.x.0 - f.x.0).abs() < 1e-6
+                    && (o.x.1 - f.x.1).abs() < 1e-6
+                    && o.section.iter().map(|p| p[0]).fold(f64::INFINITY, f64::min) == y0
+                    && o.section
+                        .iter()
+                        .map(|p| p[0])
+                        .fold(f64::NEG_INFINITY, f64::max)
+                        == y1
+            })
+            .map(|(k, _)| k)
+            .collect();
+        let rank = same
+            .iter()
+            .position(|&k| g.flooded[k].name == f.name)
+            .unwrap_or(0);
+        let aim = if same.len() > 1 {
+            p0 + (p1 - p0) * (rank as f64 + 0.5) / same.len() as f64
+        } else if p0 < 0.0 && p1 > 0.0 && mid.abs() < 0.1 * (p1 - p0) {
+            let side = if labels.len() % 2 == 0 { 0.25 } else { -0.25 };
+            mid + side * (p1 - p0)
+        } else {
+            mid
+        };
+        labels.push((f.name.clone(), [0.5 * (f.x.0 + f.x.1), aim]));
         extents.push(Some(f.x));
     }
     // Each leader lands at its own x along its Space, the highest Space's furthest from the label column

@@ -527,6 +527,12 @@ pub trait DamageRunner {
     /// total from it, so the fraction done never falls while runs start.
     fn plan(&self, _runs: usize) {}
 
+    /// The damage runs this runner has already worked out for the whole run (the searches of its depth passes
+    /// share one budget), so the cap of the search counts them.
+    fn runs_used(&self) -> usize {
+        0
+    }
+
     /// The cases of `run` on every condition of `conditions`. `Err(Cancelled)` stops the search.
     fn run(
         &self,

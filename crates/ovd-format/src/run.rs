@@ -379,13 +379,6 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         p.insert("beam_m".to_string(), json!(d.beam_m));
         p.insert("depth_m".to_string(), json!(d.depth_m));
     }
-    // Issue #935: a typed number of tanks along pins the search; the Defaults Profile's lets it choose from 2, 3 and 4.
-    if option
-        .input("tanks_in_line")
-        .is_some_and(|i| i.source == Source::Typed)
-    {
-        p.insert("__tanks_in_line_typed".to_string(), Value::Bool(true));
-    }
     Ok(p)
 }
 
@@ -508,6 +501,9 @@ pub fn option_vessel_run(option: &DesignOption) -> Result<VesselRun, String> {
             run: false,
             progress: None,
         },
+        budget: Default::default(),
+        pass: crate::simulate::PassRole::Normal,
+        choose_tanks_along: false,
     };
     let (outcome, measured) = simulate_params_measured(&params, &rules);
     match outcome {
@@ -707,6 +703,12 @@ pub(crate) fn run_option_detail(
         sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
         inputs: rule_inputs(option),
         damage: damage.clone(),
+        budget: Default::default(),
+        pass: crate::simulate::PassRole::Normal,
+        // Issue #935: a typed number of tanks along pins the search; the Defaults Profile's lets it choose.
+        choose_tanks_along: !option
+            .input("tanks_in_line")
+            .is_some_and(|i| i.source == Source::Typed),
     };
     let mut params = params;
     let (outcome, mut measured, _rooms_settled) =

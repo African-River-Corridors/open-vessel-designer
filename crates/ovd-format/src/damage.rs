@@ -110,34 +110,50 @@ pub(crate) fn run_gas_damage_typed(
     Ok(out)
 }
 
-/// The runner the arrangement search uses (issue #935): the cases on worker threads (issue #921), the progress
-/// hook and the cancel of the run's [`DamageControl`]. The progress is cumulative over the search's damage runs
-/// and the answer's: `done` counts every case worked out so far. The search does not know how many runs it will
-/// make, so `total` is planned: the search says how many runs it expects at most ([`DamageRunner::plan`]), and
-/// the total is that many runs of the first run's cases. It shrinks to the real total when the answer's run
-/// starts, and the fraction done never falls (a report that would lower it raises the total to keep it). A cancel
-/// stops the run under way and the search. With `control.run` false the search does not screen by damage.
-pub(crate) struct ThreadedRunner<'a> {
-    pub control: &'a DamageControl,
-    /// The cases worked out by the runs so far.
-    pub done: core::cell::Cell<usize>,
-    /// The runs the search planned for (1 until it says).
-    planned_runs: core::cell::Cell<usize>,
-    /// The total reported to the hook while the search runs: the planned runs of the first run's cases (0 until
-    /// the first run).
+/// What one run shares between the passes that work damage out (issue #935): the depth passes of a standing height
+/// each search again, and the whole run has one budget of damage runs, one planned total and one fraction done.
+#[derive(Debug, Default)]
+pub struct RunBudget {
+    /// The damage runs the searches of this run have worked out.
+    runs: core::cell::Cell<usize>,
+    /// The cases worked out by every run so far, the searches' and the answers'.
+    done: core::cell::Cell<usize>,
+    /// The total reported to the hook while a search runs: it only grows.
     planned_total: core::cell::Cell<usize>,
-    /// The highest fraction reported so far, shared with the control of the run that follows.
+    /// The highest fraction reported so far.
     last: std::rc::Rc<core::cell::Cell<f64>>,
 }
 
+impl RunBudget {
+    /// The cases an answer's damage stage worked out, added to the count so a later pass carries on from it.
+    pub(crate) fn finish_stage(&self, cases: usize) {
+        self.done.set(self.done.get() + cases);
+    }
+}
+
+/// The runner the arrangement search uses (issue #935): the cases on worker threads (issue #921), the progress
+/// hook and the cancel of the run's [`DamageControl`]. The progress is cumulative over the search's damage runs
+/// and the answer's, across every depth pass of the run: `done` counts every case worked out so far. The search
+/// does not know how many runs it will make, so `total` is planned: the search says how many runs it expects at
+/// most ([`DamageRunner::plan`]), and the total is that many runs of the first run's cases. It only grows while the
+/// searches run, shrinks to the real total when the answer's run starts, and the fraction done never falls (a
+/// report that would lower it raises the total to keep it). A cancel stops the run under way and the search. With
+/// `control.run` false the search does not screen by damage.
+pub(crate) struct ThreadedRunner<'a> {
+    pub control: &'a DamageControl,
+    budget: &'a RunBudget,
+    /// The runs this pass planned for (1 until it says), and whether its first run has set the total.
+    planned_runs: core::cell::Cell<usize>,
+    pass_started: core::cell::Cell<bool>,
+}
+
 impl<'a> ThreadedRunner<'a> {
-    pub(crate) fn new(control: &'a DamageControl) -> Self {
+    pub(crate) fn new(control: &'a DamageControl, budget: &'a RunBudget) -> Self {
         Self {
             control,
-            done: core::cell::Cell::new(0),
+            budget,
             planned_runs: core::cell::Cell::new(1),
-            planned_total: core::cell::Cell::new(0),
-            last: std::rc::Rc::new(core::cell::Cell::new(0.0)),
+            pass_started: core::cell::Cell::new(false),
         }
     }
 
@@ -149,11 +165,16 @@ impl<'a> ThreadedRunner<'a> {
             run: self.control.run,
             progress: progress_hook(
                 self.control.progress.as_ref(),
-                self.done.get(),
+                self.budget.done.get(),
                 None,
-                self.last.clone(),
+                self.budget.last.clone(),
             ),
         }
+    }
+
+    /// The answer's damage stage has worked out `cases` cases.
+    pub(crate) fn finish_stage(&self, cases: usize) {
+        self.budget.finish_stage(cases);
     }
 }
 
@@ -172,7 +193,8 @@ fn progress_hook(
         let before = last.get();
         // A report that would lower the fraction done raises the total instead.
         if (done as f64) < before * total as f64 {
-            total = (done as f64 / before).ceil() as usize;
+            // Rounded down, so the fraction is at least the one before (and the total at least `done`).
+            total = ((done as f64 / before).floor() as usize).max(done);
         }
         if total > 0 {
             last.set(before.max(done as f64 / total as f64));
@@ -188,6 +210,11 @@ impl ovd_core::gas_damage::DamageRunner for ThreadedRunner<'_> {
 
     fn plan(&self, runs: usize) {
         self.planned_runs.set(runs.max(1));
+        self.pass_started.set(false);
+    }
+
+    fn runs_used(&self) -> usize {
+        self.budget.runs.get()
     }
 
     fn run(
@@ -199,24 +226,30 @@ impl ovd_core::gas_damage::DamageRunner for ThreadedRunner<'_> {
         density: f64,
     ) -> Result<GasDamageRun, ovd_core::gas_damage::Cancelled> {
         let total = run.case_count(hull, conditions, density);
-        let base = self.done.get();
-        // The planned total is fixed by the first run: the planned runs of its cases.
-        if self.planned_total.get() == 0 {
-            self.planned_total.set(self.planned_runs.get() * total);
+        let base = self.budget.done.get();
+        // The first run of a pass plans the total: the runs the pass expects, of this run's cases, on top of what
+        // is done. It only grows, so the bar does not fall between the passes of a run.
+        if !self.pass_started.get() {
+            self.pass_started.set(true);
+            let want = base + self.planned_runs.get() * total;
+            self.budget
+                .planned_total
+                .set(self.budget.planned_total.get().max(want));
         }
         let gauge = Gauge::new(
             progress_hook(
                 self.control.progress.as_ref(),
                 base,
-                Some(self.planned_total.get()),
-                self.last.clone(),
+                Some(self.budget.planned_total.get()),
+                self.budget.last.clone(),
             ),
             total,
         );
         gauge.report();
         let out = run_gas_damage_typed(run, spaces, hull, conditions, density, &gauge)
             .map_err(|Cancelled| ovd_core::gas_damage::Cancelled)?;
-        self.done.set(base + total);
+        self.budget.done.set(base + total);
+        self.budget.runs.set(self.budget.runs.get() + 1);
         Ok(out)
     }
 }
