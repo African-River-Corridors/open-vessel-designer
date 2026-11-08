@@ -76,6 +76,28 @@ fn self_propelled_new(cargo: &str, dims: (f64, f64, f64)) -> String {
     filled.design.expect("a Design").to_text()
 }
 
+/// Issue #994: a self-propelled LNG Option with the wheelhouse forward, on a 120 x 22 x 10 m hull, which
+/// draws a house over the forepeak and a vent-mast distance to it.
+fn wheelhouse_forward_new() -> String {
+    let raw = serde_json::json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": {
+            "cargo": { "value": "LNG", "source": "typed" },
+            "service_area": { "value": "coastal-and-river", "source": "typed" },
+            "hull_form": { "value": "raked_box", "source": "typed" },
+            "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+            "length_overall_m": { "value": 120.0, "source": "typed" },
+            "beam_m": { "value": 22.0, "source": "typed" },
+            "moulded_depth_m": { "value": 10.0, "source": "typed" },
+            "max_tank_od_m": { "value": 10.0, "source": "typed" },
+            "arrangement_style": { "value": "wheelhouse_forward", "source": "typed" }
+        }}]
+    });
+    let filled = ovd_format::fill_as_new(&raw.to_string(), &Profile::built_in());
+    assert_eq!(filled.report.errors, Vec::<String>::new());
+    filled.design.expect("a Design").to_text()
+}
+
 /// The Designs checked: every fixture in both formations, the two cases of the issue (LNG 90 x 18 x 7 m
 /// pushed, LNG 76.5 x 11.4 x 3.5 m in both formations) and bauxite in a box hold in both formations.
 fn designs() -> Vec<(String, String)> {
@@ -111,6 +133,10 @@ fn designs() -> Vec<(String, String)> {
             self_propelled_new(cargo, dims),
         ));
     }
+    out.push((
+        "LNG 120 x 22 x 10 wheelhouse_forward".to_string(),
+        wheelhouse_forward_new(),
+    ));
     let crowded = Some((76.5, 11.4, 3.5));
     for formation in ["pushed_barge", "self_propelled"] {
         out.push((

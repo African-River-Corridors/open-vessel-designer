@@ -225,6 +225,8 @@ struct VentDraw {
     x: f64,
     exit_above_keel: f64,
     exit_above_deck: f64,
+    /// Issue #994: the distance along the hull to the nearest opening of the forward house.
+    to_forward_house: Option<f64>,
 }
 
 /// The river and sea air drafts as the side elevation labels them, from `air_drafts` of the results
@@ -253,6 +255,7 @@ fn read_vent_mast(results: &Value) -> Option<VentDraw> {
         x: n("vent_mast_x_m")?,
         exit_above_keel: n("vent_exit_above_keel_m")?,
         exit_above_deck: n("vent_exit_above_deck_m")?,
+        to_forward_house: n("vent_distance_to_forward_house_m"),
     })
 }
 
@@ -305,6 +308,17 @@ struct Aft {
     /// `wheelhouse_top_raised_m`), when it is lifted (issue #356).
     wheelhouse_raised: Option<(f64, f64)>,
     block_top: f64,
+    /// The forward house of `wheelhouse_forward` (issue #994), under the wheelhouse.
+    forward_house: Option<ForwardHouseDraw>,
+}
+
+/// The forward house as the views draw it, from `drawing.aft_arrangement.forward_house` (issue #994).
+struct ForwardHouseDraw {
+    x_aft: f64,
+    x_fwd: f64,
+    width: f64,
+    base: f64,
+    top: f64,
 }
 
 /// The tunnel stern, from `drawing.stern` (issue #356): the tunnel crown along the run, and the
@@ -441,6 +455,16 @@ fn read_aft(results: &Value) -> Option<Aft> {
                 ))
             }),
         block_top: n("block_top_lowered_m")?,
+        forward_house: a.get("forward_house").and_then(|f| {
+            let m = |key: &str| f.get(key).and_then(Value::as_f64);
+            Some(ForwardHouseDraw {
+                x_aft: m("x_aft_m")?,
+                x_fwd: m("x_fwd_m")?,
+                width: m("width_m")?,
+                base: m("base_m")?,
+                top: m("top_m")?,
+            })
+        }),
     })
 }
 
@@ -1586,6 +1610,10 @@ fn vent_mast(c: &mut Canvas, h: &Hull, view: View, labels: &mut Vec<(String, [f6
             ));
         }
         _ => {
+            // Issue #994: the distance to the nearest opening of the forward house, as the Rule judges it.
+            if let Some(d) = v.to_forward_house {
+                c.try_dim_horizontal([v.x, 0.0], [v.x + d, 0.0], 8.0);
+            }
             c.circle("OBJECT", [v.x, 0.0], r);
             labels.push((
                 label!(
@@ -1917,7 +1945,7 @@ fn liquid_section(
 /// vessel (OBJECT, like the tanks); the zone bulkheads are below the deck (HIDDEN in elevation).
 /// The wheelhouse is drawn lowered, as the air draft is measured; the raised position is not drawn,
 /// because the standard's only chain line type already stands for the light waterline.
-fn aft_block(c: &mut Canvas, h: &Hull, view: View) {
+fn aft_block(c: &mut Canvas, h: &Hull, view: View, labels: &mut Vec<(String, [f64; 2])>) {
     let Some(a) = &h.aft else {
         return;
     };
@@ -1952,6 +1980,24 @@ fn aft_block(c: &mut Canvas, h: &Hull, view: View) {
                         true,
                     );
                 }
+            }
+            // Issue #994: the forward house, under the wheelhouse.
+            if let Some(f) = &a.forward_house {
+                c.polyline(
+                    "OBJECT",
+                    &[
+                        [f.x_aft, f.base],
+                        [f.x_fwd, f.base],
+                        [f.x_fwd, f.top],
+                        [f.x_aft, f.top],
+                    ],
+                    true,
+                );
+                // In the column of labels, which keeps its leaders from crossing.
+                labels.push((
+                    label!("draw-forward-house", "FORWARD HOUSE"),
+                    [f.x_fwd, (f.base + f.top) / 2.0],
+                ));
             }
             // the wheelhouse, lowered
             c.polyline(
@@ -2029,11 +2075,17 @@ fn aft_block(c: &mut Canvas, h: &Hull, view: View) {
                 [unit_row_mid, a.container_top.max(h.depth)],
                 [unit_row_mid - 5.0 * k, top + 6.0 * k],
             );
-            c.leader(
-                &cab,
-                [wh_mid, a.wheelhouse_top],
-                [wh_mid - 5.0 * k, top + 12.0 * k],
-            );
+            if a.forward_house.is_some() {
+                // Issue #994: the wheelhouse is at the bow, where a leader running up and back would
+                // cross those of the labels in the column: it stands in the column too.
+                labels.push((cab, [wh_mid, a.wheelhouse_top]));
+            } else {
+                c.leader(
+                    &cab,
+                    [wh_mid, a.wheelhouse_top],
+                    [wh_mid - 5.0 * k, top + 12.0 * k],
+                );
+            }
         }
         View::Plan => {
             // the container units, from the arrangement: `per_row` abreast, `rows` along
@@ -2053,6 +2105,16 @@ fn aft_block(c: &mut Canvas, h: &Hull, view: View) {
                     ],
                     true,
                 );
+            }
+            // Issue #994: the forward house, under the wheelhouse.
+            if let Some(f) = &a.forward_house {
+                let fw = f.width / 2.0;
+                c.polyline(
+                    "OBJECT",
+                    &[[f.x_aft, -fw], [f.x_fwd, -fw], [f.x_fwd, fw], [f.x_aft, fw]],
+                    true,
+                );
+                labels.push((label!("draw-forward-house", "FORWARD HOUSE"), [f.x_fwd, fw]));
             }
             // the wheelhouse footprint
             let hw = a.wheelhouse_width / 2.0;
@@ -2090,11 +2152,15 @@ fn aft_block(c: &mut Canvas, h: &Hull, view: View) {
                 [unit_row_mid, y0],
                 [unit_row_mid - 5.0 * k, top + 6.0 * k],
             );
-            c.leader(
-                &label!("draw-wheelhouse", "WHEELHOUSE"),
-                [wh_mid, hw],
-                [wh_mid - 5.0 * k, top + 12.0 * k],
-            );
+            if a.forward_house.is_some() {
+                labels.push((label!("draw-wheelhouse", "WHEELHOUSE"), [wh_mid, hw]));
+            } else {
+                c.leader(
+                    &label!("draw-wheelhouse", "WHEELHOUSE"),
+                    [wh_mid, hw],
+                    [wh_mid - 5.0 * k, top + 12.0 * k],
+                );
+            }
         }
     }
 }
@@ -2239,7 +2305,7 @@ fn side_elevation(h: &Hull, n: u32) -> Canvas {
     }
     let mut labels: Vec<(String, [f64; 2])> = Vec::new();
     elevation_gas_detail(&mut c, h, &mut labels);
-    aft_block(&mut c, h, View::Elevation);
+    aft_block(&mut c, h, View::Elevation, &mut labels);
     zones(&mut c, h, View::Elevation, &mut labels);
     hold_bulkheads(&mut c, h, View::Elevation, &mut labels);
     hold_ballast(&mut c, h, View::Elevation, &mut labels);
@@ -2500,8 +2566,8 @@ fn plan(h: &Hull, n: u32) -> Canvas {
             }
         }
     }
-    aft_block(&mut c, h, View::Plan);
     let mut labels: Vec<(String, [f64; 2])> = Vec::new();
+    aft_block(&mut c, h, View::Plan, &mut labels);
     zones(&mut c, h, View::Plan, &mut labels);
     hold_bulkheads(&mut c, h, View::Plan, &mut labels);
     hold_ballast(&mut c, h, View::Plan, &mut labels);
