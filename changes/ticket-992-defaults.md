@@ -6,7 +6,7 @@
 <!-- design-impact -->
 ### ticket/992-defaults (2026-11-08)
 
-Between `main c2d51c9` and `this branch 75849341`.
+Between `main d5ffceb` and `this branch 77ab5680`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|
