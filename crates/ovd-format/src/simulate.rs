@@ -3817,6 +3817,7 @@ fn simulate_gas(
         })
         .filter(|_| l > 110.0);
     let mut stages = crate::damage::GasStages::default();
+    let mut control_ran = false;
     if !damaged_conditions.is_empty()
         && (igc_set.is_some() || adn_set.is_some() || es_trin_set.is_some())
     {
@@ -3853,6 +3854,7 @@ fn simulate_gas(
         if control.run {
             runner.finish_stage(stages.cases);
         }
+        control_ran = control.run;
     }
     // A damage Rule in the stack that its set does not evaluate is `not evaluated`, not `not applicable`.
     let unevaluated = |id: &str, set: &str, over_110: bool| {
@@ -3884,6 +3886,45 @@ fn simulate_gas(
         by_rule,
         cases: damage_cases,
     } = stages;
+    // Issue #1038: the answer's own damage run decides. The search chose on verdicts that an earlier depth pass may
+    // have worked out on a lightship that has since moved; when the answer's run of IGC 2.7 fails any case or stage,
+    // the arrangement is not feasible, whatever the search said. And when the search found no arrangement only
+    // because it ran out of damage runs (that is the one thing it reports), and the answer's own run passes, the
+    // arrangement is feasible: nothing else fails. Never feasible with failing damage rows.
+    let damage_ran = igc_set.is_some() && rules.damage.run && control_ran && !gas_damage.is_empty();
+    let answer_fails = damage_ran
+        && gas_damage
+            .iter()
+            .any(|v| !v.outcome.ok || v.stages.iter().any(|s| !s.ok));
+    let limit_only = !f.feasible
+        && !f.failed_checks.is_empty()
+        && f.failed_checks
+            .iter()
+            .all(|m| m.starts_with("damage: the search stopped at the damage-run limit"));
+    let feasible = if answer_fails {
+        false
+    } else if damage_ran && limit_only {
+        true
+    } else {
+        f.feasible
+    };
+    if answer_fails && f.feasible {
+        let message = text!(
+            "check-feasible-arrangement-damage",
+            "The arrangement the search chose fails IGC 2.7 damage on its own run."
+        );
+        ids.text(&message);
+        checks.push(json!({
+            "name": "Feasible arrangement",
+            "ok": false,
+            "message": message,
+            "severity": "error",
+        }));
+    }
+    if feasible && !f.feasible {
+        // The search's "no arrangement passes" check came from running out of damage runs: the answer's run passes.
+        checks.retain(|c| c["name"] != "Feasible arrangement");
+    }
     // Issue #742: the panel model and its plate model (the steel list).
     let steel = r
         .gas_basis
@@ -3900,7 +3941,7 @@ fn simulate_gas(
         "depth_m": num(f.depth_m),
         "depth_optimised": optimise,
         "candidates_tried": f.candidates_tried,
-        "feasible": f.feasible,
+        "feasible": feasible,
     });
     // Issue #992: only when asked for, so a result without the input is unchanged.
     // With a share, the height is the share the search chose times the tank diameter of the winner.

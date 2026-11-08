@@ -38,7 +38,18 @@ fn a_search_that_reaches_the_damage_run_limit_says_it_stopped() {
             .unwrap()
             .starts_with("The search stopped at the damage-run limit")
     );
-    // Nothing passed damage in that one run, so the closest is shown and it is not an answer.
-    assert_eq!(results["arrangement"]["feasible"], false);
+    // The search found nothing that passed in its one run, so it shows the closest. Whether that is an answer is the
+    // answer's own damage run's to say (issue #1038): feasible exactly when no row of the Rule Trace fails.
+    let failing = results["rule_trace"]["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|x| x["outcome"] == "fail")
+        .count();
+    assert_eq!(
+        results["arrangement"]["feasible"],
+        failing == 0,
+        "{failing} failing rows"
+    );
     ovd_format::damage::set_damage_run_cap(0);
 }

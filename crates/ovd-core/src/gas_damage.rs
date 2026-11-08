@@ -506,6 +506,45 @@ pub fn run_serial(
     out
 }
 
+/// What the damage verdicts of a candidate depend on besides its hull and spaces (issue #1038): the lightship and the
+/// cargo of its loading conditions. A later depth pass moves the installed power, so the lightship and the fuel, a
+/// little; verdicts kept from an earlier pass are reused only while this basis has moved by less than
+/// [`KEPT_VERDICT_TOLERANCE`].
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct KeptBasis {
+    pub lightship_t: f64,
+    pub cargo_t: f64,
+}
+
+/// The relative change of the lightship, and of the cargo, within which the verdicts of an earlier depth pass are
+/// reused (issue #1038).
+pub const KEPT_VERDICT_TOLERANCE: f64 = 0.0001;
+
+impl KeptBasis {
+    /// Whether verdicts worked out on `self` still stand for `now`.
+    pub fn stands_for(&self, now: &KeptBasis) -> bool {
+        let near = |a: f64, b: f64| (a - b).abs() <= KEPT_VERDICT_TOLERANCE * a.abs().max(b.abs());
+        near(self.lightship_t, now.lightship_t) && near(self.cargo_t, now.cargo_t)
+    }
+}
+
+/// Verdicts an earlier depth pass worked out for a candidate (issue #1038), and whether the lightship and the cargo
+/// they were worked out on still stand for the candidate now.
+#[derive(Debug, Clone)]
+pub struct Kept {
+    pub verdicts: Vec<DamageVerdict>,
+    pub stands: bool,
+}
+
+impl Kept {
+    /// Whether the candidate failed damage on the kept verdicts (a final or an intermediate stage).
+    pub fn failed(&self) -> bool {
+        self.verdicts
+            .iter()
+            .any(|v| !v.outcome.ok || v.stages.iter().any(|s| !s.ok))
+    }
+}
+
 /// The message of a run that the progress hook cancelled (the `Raised` kind is `Cancelled`).
 pub const DAMAGE_CANCELLED: &str = "damage stability was cancelled";
 
@@ -536,12 +575,12 @@ pub trait DamageRunner {
     /// The verdicts a search of this run already worked out for a candidate with this key (an earlier depth pass
     /// built the same candidate), if any: reusing them costs no damage run, and a later pass that runs out of
     /// budget keeps what an earlier one found.
-    fn recall(&self, _key: &str) -> Option<Vec<DamageVerdict>> {
+    fn recall(&self, _key: &str, _basis: &KeptBasis) -> Option<Kept> {
         None
     }
 
     /// Keep the verdicts of a candidate for [`DamageRunner::recall`].
-    fn remember(&self, _key: &str, _verdicts: &[DamageVerdict]) {}
+    fn remember(&self, _key: &str, _basis: &KeptBasis, _verdicts: &[DamageVerdict]) {}
 
     /// The cases of `run` on every condition of `conditions`. `Err(Cancelled)` stops the search.
     fn run(
