@@ -2064,7 +2064,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         if !inp.river_only {
             a.warnings.push(Text::fixed(
                 "warn-aft-forward-house-bow-motions",
-                "Wheelhouse forward on a Service Area that reaches sea: bow accelerations are about 1.2 times the stern's (IGC 4.28.2.1), and the ICLL 39 bow height is not binding for this arrangement. No bow-motion check exists yet, so the hazard study must cover the motions of the forward house and its crew.",
+                "Wheelhouse forward on a Service Area that reaches sea: an estimate from the guidance formula of IGC 4.28.2.1 puts the bow accelerations at about 1.2 times the stern's. No bow-motion check exists yet, so the hazard study must cover the motions of the forward house and its crew.",
             ));
         }
     }

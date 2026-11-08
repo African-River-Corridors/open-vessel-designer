@@ -369,10 +369,20 @@ fn a_file_pinned_to_a_stack_with_no_blind_distance_rule_has_no_forward_check_and
         r["sightline"]
     );
     assert!(
-        reason_ids(&r).contains(&"no_forward_blind_distance_check"),
+        reason_ids(&r).contains(&"no_blind_distance_check"),
         "{:?}",
         reason_ids(&r)
     );
+    let why = hazard(&r)["reasons"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|x| x["id"] == json!("no_blind_distance_check"))
+        .unwrap()["text"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    assert!(why.starts_with("No Blind Distance check was run"), "{why}");
     // With the default stack the check is there and the reason is not.
     let normal = results_of(&design(
         110.0,
@@ -380,5 +390,136 @@ fn a_file_pinned_to_a_stack_with_no_blind_distance_rule_has_no_forward_check_and
         6.0,
         json!({ "arrangement_style": "wheelhouse_forward", "bow_rake_length_m": 20.0 }),
     ));
-    assert!(!reason_ids(&normal).contains(&"no_forward_blind_distance_check"));
+    assert!(!reason_ids(&normal).contains(&"no_blind_distance_check"));
+}
+
+fn outcome_of(extra: Value) -> RunOutcome {
+    let text = design(110.0, 11.4, 6.0, extra);
+    let d = fill_as_new(&text, &Profile::built_in()).design.unwrap();
+    run_option(&d.options[0])
+}
+
+fn light_trim_by_bow(r: &Value) -> f64 {
+    let c = r["stability"]["conditions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["role"] == json!("ballast_departure"))
+        .expect("the ballast departure condition");
+    f(&c["draught_fwd_m"]) - f(&c["draught_aft_m"])
+}
+
+#[test]
+fn moving_the_house_forward_moves_the_mass_and_the_trim_with_it() {
+    let fwd = results_of(&design(
+        110.0,
+        11.4,
+        6.0,
+        json!({ "arrangement_style": "wheelhouse_forward", "bow_rake_length_m": 20.0 }),
+    ));
+    let aft_style = results_of(&design(
+        110.0,
+        11.4,
+        6.0,
+        json!({ "arrangement_style": "deckhouse", "bow_rake_length_m": 20.0 }),
+    ));
+    let items = fwd["stern_block_mass"]["items"].as_array().unwrap();
+    let item = |label: &str| items.iter().find(|i| i["label"] == json!(label)).unwrap();
+    let house = &fwd["drawing"]["aft_arrangement"]["forward_house"];
+    // The forward house steel and the wheelhouse steel stand over the forepeak, the machinery aft.
+    assert!(f(&item("forward house steel")["lcg_m"]) >= f(&house["x_aft_m"]));
+    assert!(f(&item("wheelhouse steel")["lcg_m"]) >= f(&house["x_aft_m"]));
+    assert!(f(&item("deckhouse steel")["lcg_m"]) < f(&house["x_aft_m"]));
+    // The block's centre of mass about the stern is the sum of its moments over its mass.
+    let total: f64 = items.iter().map(|i| f(&i["mass_t"])).sum();
+    assert!((total - f(&fwd["stern_block_mass"]["total_t"])).abs() < 1e-6);
+    let moment: f64 = items.iter().map(|i| f(&i["mass_t"]) * f(&i["lcg_m"])).sum();
+    let aft_moment: f64 = aft_style["stern_block_mass"]["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| f(&i["mass_t"]) * f(&i["lcg_m"]))
+        .sum();
+    let aft_total = f(&aft_style["stern_block_mass"]["total_t"]);
+    assert!(
+        moment / total > aft_moment / aft_total,
+        "the block's centre did not move forward"
+    );
+    // The trim follows: with the house forward the ship in ballast floats more by the bow.
+    assert!(
+        light_trim_by_bow(&fwd) > light_trim_by_bow(&aft_style),
+        "{} vs {}",
+        light_trim_by_bow(&fwd),
+        light_trim_by_bow(&aft_style)
+    );
+}
+
+#[test]
+fn the_views_draw_the_forward_house_and_the_vent_mast_distance_to_it() {
+    let fwd = ovd_format::ga_views_of(&outcome_of(json!({
+        "arrangement_style": "wheelhouse_forward",
+        "bow_rake_length_m": 20.0
+    })))
+    .unwrap();
+    let deck = ovd_format::ga_views_of(&outcome_of(json!({
+        "arrangement_style": "deckhouse",
+        "bow_rake_length_m": 20.0
+    })))
+    .unwrap();
+    for (name, view) in [("elevation", &fwd.side_elevation), ("plan", &fwd.plan)] {
+        let text = view.to_string();
+        assert!(text.contains("FORWARD HOUSE"), "{name}");
+        // The house is one more closed outline on the OBJECT layer than the other style draws.
+        let outlines = |v: &Value| v.to_string().matches("\"layer\":\"OBJECT\"").count();
+        let other = if name == "plan" {
+            &deck.plan
+        } else {
+            &deck.side_elevation
+        };
+        assert!(outlines(view) > outlines(other), "{name}");
+    }
+    // The plan carries a horizontal dimension from the mast to the house.
+    let dims = |v: &Value| v.to_string().matches("\"kind\":\"linear\"").count();
+    assert!(dims(&fwd.plan) > dims(&deck.plan));
+    assert!(!deck.plan.to_string().contains("FORWARD HOUSE"));
+}
+
+#[test]
+fn the_hazard_words_say_what_is_true() {
+    let sea = results_of(&design(
+        110.0,
+        11.4,
+        6.0,
+        json!({
+            "arrangement_style": "wheelhouse_forward",
+            "bow_rake_length_m": 20.0,
+            "service_area": "coastal-and-river"
+        }),
+    ));
+    let text_of = |r: &Value, id: &str| {
+        hazard(r)["reasons"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|x| x["id"] == json!(id))
+            .map(|x| x["text"].as_str().unwrap().to_string())
+    };
+    // The 1.2 is an estimate from the guidance formula, said so; no phrase reads as if ICLL 39 did not apply.
+    let bow = text_of(&sea, "bow_motions").unwrap();
+    assert!(
+        bow.contains("estimate") && bow.contains("guidance formula"),
+        "{bow}"
+    );
+    assert!(!bow.contains("ICLL"), "{bow}");
+    let warning = sea["warnings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(Value::as_str)
+        .find(|w| w.contains("bow accelerations"))
+        .unwrap();
+    assert!(
+        warning.contains("estimate") && !warning.contains("ICLL"),
+        "{warning}"
+    );
 }
