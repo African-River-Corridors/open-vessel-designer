@@ -124,7 +124,9 @@ pub struct RunBudget {
     last: std::rc::Rc<core::cell::Cell<f64>>,
     /// The verdicts of every candidate the searches of this run screened, by key: a later depth pass that builds
     /// the same candidate reuses them, so it costs no damage run and keeps the pass an earlier pass found.
-    memo: core::cell::RefCell<std::collections::HashMap<String, Vec<ovd_core::measured::DamageVerdict>>>,
+    memo: core::cell::RefCell<
+        std::collections::HashMap<String, Vec<ovd_core::measured::DamageVerdict>>,
+    >,
 }
 
 impl RunBudget {

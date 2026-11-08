@@ -71,6 +71,15 @@ pub const KEYED_DEFAULTS: &[(&str, &str, &[&str])] = &[
     // Issue #331 (spec 0006 section 3.2): the slop share by Service Area (MARPOL Annex I Reg. 29 is
     // for sea-going tankers).
     ("slop_share", "service_area", SERVICE_AREAS),
+    // Issue #992: how far the tank tops stand above the deck, and the weather shield over them, by
+    // Service Area (the maintainer's decision of 2026-11-07).
+    ("tank_top_above_deck_m", "service_area", SERVICE_AREAS),
+    (
+        "tank_top_above_deck_od_fraction",
+        "service_area",
+        SERVICE_AREAS,
+    ),
+    ("weather_shield_thickness_mm", "service_area", SERVICE_AREAS),
     // Issue #779 (spec 0011 D3): a new coastal Option takes the deckhouse, a river-only one the
     // container block.
     ("arrangement_style", "service_area", SERVICE_AREAS),
@@ -1115,6 +1124,11 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
     // Issue #992: a file saved before sets no standing height, so its depth is the one typed.
     LegacyFixedJson {
         name: "tank_top_above_deck_m",
+        applies_to: AppliesTo::Only("type_c_tanks"),
+        value: "null",
+    },
+    LegacyFixedJson {
+        name: "tank_top_above_deck_od_fraction",
         applies_to: AppliesTo::Only("type_c_tanks"),
         value: "null",
     },
@@ -2630,15 +2644,6 @@ pub const INPUTS: &[InputSpec] = &[
         "type_c_tanks",
         Group::GasTanks,
     ),
-    // Issue #992: how far the tank top stands above the main deck; 0 is tanks in hold. None: the
-    // depth is the one typed, or the ratio default, as before.
-    only(
-        "tank_top_above_deck_m",
-        "Tank top above deck",
-        NUM_OR_NONE,
-        "type_c_tanks",
-        Group::GasTanks,
-    ),
     only(
         "tanks_in_line",
         "Tanks in line",
@@ -2684,13 +2689,6 @@ pub const INPUTS: &[InputSpec] = &[
     only(
         "min_side_space_m",
         "Minimum side space",
-        NUM,
-        "type_c_tanks",
-        Group::GasTanks,
-    ),
-    only(
-        "weather_shield_thickness_mm",
-        "Weather shield plate thickness",
         NUM,
         "type_c_tanks",
         Group::GasTanks,
@@ -3792,6 +3790,32 @@ pub const INPUTS: &[InputSpec] = &[
         NUM,
         "integral_tanks",
         Group::LiquidTanks,
+    ),
+    // Issue #992: after the Service Area, which sets their defaults (the tank top above the deck, and
+    // the weather shield over it).
+    // Issue #992: how far the tank top stands above the main deck; 0 is tanks in hold. None: the
+    // depth is the one typed, or the ratio default, as before.
+    only(
+        "tank_top_above_deck_m",
+        "Tank top above deck",
+        NUM_OR_NONE,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    // Issue #992: the same as a share of the tank outer diameter, read when the height is none.
+    only(
+        "tank_top_above_deck_od_fraction",
+        "Tank top above deck, share of the tank diameter",
+        NUM_OR_NONE,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    only(
+        "weather_shield_thickness_mm",
+        "Weather shield plate thickness",
+        NUM,
+        "type_c_tanks",
+        Group::GasTanks,
     ),
     spec(
         "rule_sets",
@@ -5889,7 +5913,12 @@ fn cross_checks(
     if inputs
         .iter()
         .any(|(k, i)| k == DEPTH_INPUT && i.source == Source::Typed)
-        && get("tank_top_above_deck_m").is_some_and(|v| v.as_f64().is_some())
+        // Only a height the user typed warns: the default one does not override a typed depth.
+        && inputs.iter().any(|(k, i)| {
+            (k == "tank_top_above_deck_m" || k == "tank_top_above_deck_od_fraction")
+                && i.source == Source::Typed
+                && i.value.as_f64().is_some()
+        })
     {
         report.warning_text(
             at(text!(
@@ -6193,27 +6222,6 @@ pub(crate) fn check_profile_defaults(profile: &Profile) -> Result<(), String> {
         if let Some(bound) = profile.hard("depth_to_beam_ratio")?.breach(ratio) {
             return Err(format!(
                 "profile default is invalid: `depth_to_beam_ratio` for {group} = {ratio} is out of range: must be {bound} (hard limit)"
-            ));
-        }
-    }
-    // Issue #992: each Service Area's default standing height is a height in metres or a share of the
-    // tank outer diameter, one of the two, not negative; the share is above 0 and at most 1.
-    for area in SERVICE_AREAS {
-        let Some(r) = profile.default_by("tank_top_above_deck_default_rule", "service_area", area)
-        else {
-            continue; // a copy of an older profile has no rule: the default stays none
-        };
-        let metres = r.get("metres").and_then(Value::as_f64);
-        let share = r.get("od_fraction").and_then(Value::as_f64);
-        let ok = match (metres, share) {
-            (Some(m), None) => m.is_finite() && m >= 0.0,
-            (None, Some(f)) => f > 0.0 && f <= 1.0,
-            _ => false,
-        };
-        if !ok {
-            return Err(format!(
-                "profile `tank_top_above_deck_default_rule.default_by_service_area.{area}` must \
-                 hold `metres` (0 or more) or `od_fraction` (above 0, at most 1)"
             ));
         }
     }

@@ -236,10 +236,11 @@ pub struct BargeCapacityInputs {
     pub required_freeboard: f64,
     /// Bridge clearance limit (m), checked against the LIGHT condition.
     pub air_draft_limit_m: Option<f64>,
-    /// Issue #992: the tank top is to stand this far above the deck (m). `Some`: the weather shield,
-    /// when fitted, counts as a high point for the air draft and the sightline (it stands the clearance
-    /// above the tank top, and the dome may be lower). `None`: as before, the dome top.
-    pub tank_top_above_deck_m: Option<f64>,
+    /// Issue #992: the tank top stands above the deck (a standing height, or a share of the tank
+    /// diameter, is set). `true`: the weather shield, when fitted, counts as a high point for the air
+    /// draft and the sightline (it stands the clearance above the tank top, and the dome may be
+    /// lower). `false`: as before, the dome top.
+    pub standing_tank_top: bool,
     /// Issue #991: the clearance of the lowest bridge on the route (m). Unlike `air_draft_limit_m`, which
     /// is a design limit that blocks, an air draft over it only warns: the design stands, and the warning
     /// names the highest point.
@@ -418,7 +419,7 @@ impl BargeCapacityInputs {
             water_density: 1.0,
             required_freeboard: 0.3,
             air_draft_limit_m: None,
-            tank_top_above_deck_m: None,
+            standing_tank_top: false,
             bridge_clearance_m: None,
             bridge_clearance_source: None,
             ballast_capacity_t: 0.0,
@@ -808,7 +809,7 @@ struct Detail {
     /// weather shield (none: no shield). The dome top is the cargo top.
     tank_top_above_keel_m: Option<f64>,
     weather_shield_top_above_keel_m: Option<f64>,
-    /// Issue #992: the weather shield is the highest point of the cargo area (see `tank_top_above_deck_m`).
+    /// Issue #992: the weather shield is the highest point of the cargo area (see `standing_tank_top`).
     shield_is_highest: bool,
 }
 
@@ -1051,7 +1052,7 @@ fn gas_volumetric(
     let shield_top =
         db + inp.tank_support_height + tanks.outer_diameter + inp.weather_shield_clearance_m;
     let shield_is_highest =
-        inp.tank_top_above_deck_m.is_some() && weights.weather_shield > 0.0 && shield_top > h_top;
+        inp.standing_tank_top && weights.weather_shield > 0.0 && shield_top > h_top;
     if shield_is_highest {
         h_top = shield_top;
     }

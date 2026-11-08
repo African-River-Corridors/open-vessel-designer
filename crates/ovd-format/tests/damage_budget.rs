@@ -90,3 +90,94 @@ fn a_standing_height_run_has_one_damage_budget_and_one_monotone_progress() {
         eprintln!("h {h}: {runs} damage runs, {} progress calls", calls.len());
     }
 }
+
+/// A design of 100 x 20 m: the river-only LNG barge of the worked inland case (the Defaults Profile stands the tank
+/// tops to a share of the diameter), or a coastal one with the share limit typed and no standing height, which
+/// screens by IGC 2.7 damage and searches the share too.
+fn barge(area: &str, extra: serde_json::Value) -> ovd_format::vdesign::Design {
+    let mut inputs = json!({
+        "cargo": { "value": "LNG", "source": "typed" },
+        "hull_form": { "value": "raked_box", "source": "typed" },
+        "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+        "length_overall_m": { "value": 100.0, "source": "typed" },
+        "beam_m": { "value": 20.0, "source": "typed" },
+        "service_area": { "value": area, "source": "typed" }
+    });
+    for (k, v) in extra.as_object().unwrap() {
+        inputs[k] = json!({ "value": v, "source": "typed" });
+    }
+    let file = json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": inputs }]
+    });
+    fill_as_new(&file.to_string(), &Profile::built_in())
+        .design
+        .unwrap()
+}
+
+/// The whole run of a design that searches the share of the tank diameter (issue #992) with damage on: at most 24
+/// damage runs in the searches of every share and every depth pass together, plus the answer's own, one count from
+/// 0 that never falls, and one fraction that never falls. The river barge takes the share 0.375 and screens no
+/// IGC damage (one run, the answer's); the coastal one with the share typed at 0.5 and two along searches shares
+/// and passes under one budget.
+/// Label: snapshot (the counts are what the code printed); **mutation proof:** a runner that counts no runs
+/// (each share search and each pass with a budget of its own) takes the coastal run over the limit.
+#[test]
+fn the_share_search_and_the_depth_passes_of_a_run_share_one_budget_and_one_progress() {
+    let cases = [
+        ("river-only", json!({}), Some(0.375)),
+        (
+            "coastal-and-river",
+            json!({ "tank_top_above_deck_od_fraction": 0.5, "tank_top_above_deck_m": null, "tanks_in_line": 2 }),
+            Some(0.5),
+        ),
+    ];
+    for (area, extra, share) in cases {
+        let d = barge(area, extra);
+        let log = Rc::new(RefCell::new(Vec::<DamageProgress>::new()));
+        let seen = log.clone();
+        let control = DamageControl {
+            run: true,
+            progress: Some(Rc::new(move |p| {
+                seen.borrow_mut().push(p);
+                ControlFlow::Continue(())
+            })),
+        };
+        let before = ovd_format::damage::damage_runs_started();
+        let RunOutcome::Results { results, .. } = run_option_with_damage(
+            &d.options[0],
+            ovd_format::rule_set::built_in(),
+            &[],
+            &control,
+        ) else {
+            panic!("no results");
+        };
+        let runs = ovd_format::damage::damage_runs_started() - before;
+        assert_eq!(results["damage_status"], "run", "{area}");
+        if area == "river-only" {
+            let got = results["arrangement"]["tank_top_above_deck_od_fraction"].as_f64();
+            assert_eq!(got, share, "{area}");
+        }
+        assert!(runs <= 24 + 1, "{area}: {runs} damage runs");
+        let calls = log.borrow();
+        assert_eq!(
+            calls.iter().filter(|p| p.done == 0).count(),
+            1,
+            "{area}: the count went back to 0"
+        );
+        assert!(
+            calls.windows(2).all(|w| w[0].done <= w[1].done),
+            "{area}: done fell"
+        );
+        assert!(
+            calls
+                .windows(2)
+                .all(|w| w[0].done as f64 / w[0].total as f64
+                    <= w[1].done as f64 / w[1].total as f64 + 1e-12),
+            "{area}: the fraction fell"
+        );
+        let last = calls.last().unwrap();
+        assert_eq!(last.done, last.total, "{area}");
+        eprintln!("{area}: {runs} damage runs, {} progress calls", calls.len());
+    }
+}

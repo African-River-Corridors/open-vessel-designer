@@ -28,15 +28,6 @@
       "soft": { "min": 0.2, "max": 0.7 },
       "basis": "the default moulded depth is this ratio times the beam, at the midpoint of the range in the reference vessels with a published depth: dry bulk and container 0.22 to 0.44 (inland and pushed), liquid 0.22 to 0.38 (inland and pushed), gas 0.44 to 0.66 (nearly all sea-going). Dry bulk, gas and liquid (crude oil) Cargo exist; the liquid ratio is the one the reference vessels give, until crude oil designs are calibrated. catalogue/depth_rule.md lists every vessel against the rule"
     },
-    "tank_top_above_deck_default_rule": {
-      "default_by_service_area": {
-        "coastal-and-river": { "metres": 2.0 },
-        "river-only": { "od_fraction": 0.5 }
-      },
-      "unit": "m or fraction of the tank outer diameter",
-      "status": "estimate",
-      "basis": "The default `tank_top_above_deck_m` of a new gas Option by Service Area (issue #992), as the maintainer set it on 2026-11-07: coastal, up to 2.0 m above the deck under a weather shield; river only, up to the tank's widest point, so the main deck sits at the tank axis (OD/2). `metres` is a height; `od_fraction` is that share of the tank outer diameter. There is no calibration case for a coastal gas barge with its tanks above the deck. Not applied yet: the default stays none until the defaults are switched on (issue #992, last phase)"
-    },
     "length_to_depth_ratio": {
       "unit": "-",
       "hard": { "gt": 0 },
@@ -810,12 +801,20 @@
       "basis": "A whole number of tanks side by side across the beam, for every arrangement the search tries (issue #675). none: the search tries 1, 2 and 3 across and keeps the one that passes every check with the most cargo. The tank diameter follows from the beam, the side space and the gaps between tanks"
     },
     "tank_top_above_deck_m": {
-      "default": null,
+      "default_by_service_area": { "river-only": null, "coastal-and-river": 2.0 },
       "unit": "m",
       "hard": { "ge": 0, "le": 50 },
       "soft": { "min": 0.0, "max": 3.0 },
       "status": "estimate",
-      "basis": "How far the top of the tank shell stands above the main deck at the side (issue #992). 0: the tanks are in the hold, with the domes through a flat deck. Above 0: the tanks stand above the deck, and the moulded depth follows the tank: the double bottom, the support and the tank outer diameter, less this height (0.3 m more at 0, the gap between the tank top and the deck underside). none: the depth is the one typed, or the depth-to-beam ratio default, as before. A file saved before keeps none. The default of a new Option by Service Area is the rule `tank_top_above_deck_default_rule`; it is not applied yet"
+      "basis": "How far the top of the tank shell stands above the main deck at its highest point (issue #992). 0: the tanks are in the hold, with the domes through a flat deck. Above 0: the tanks stand above the deck, and the moulded depth follows the tank: the double bottom, the support and the tank outer diameter, less this height (0.3 m more at 0, the gap between the tank top and the deck underside), and never less than the draught limit plus the least freeboard. Coastal and river: 2.0 m, under a weather shield (the maintainer's decision of 2026-11-07; there is no built coastal gas barge with its tanks above the deck to calibrate it against). River only: none here; the share of the tank diameter `tank_top_above_deck_od_fraction` is used. none: the depth is the one typed, or the depth-to-beam ratio default, as before. A file saved before keeps none"
+    },
+    "tank_top_above_deck_od_fraction": {
+      "default_by_service_area": { "river-only": 0.5, "coastal-and-river": null },
+      "unit": "-",
+      "hard": { "gt": 0, "le": 1 },
+      "soft": { "min": 0.25, "max": 0.75 },
+      "status": "estimate",
+      "basis": "The tank top stands this share of the tank outer diameter above the main deck (issue #992); read only when `tank_top_above_deck_m` is none. River only: 0.5, so the main deck sits at the tank axis, the widest point of the tank (the maintainer's decision of 2026-11-07), with no weather shield. Coastal and river: none. A file saved before keeps none"
     },
     "tanks_in_line": {
       "default": 2,
@@ -887,11 +886,11 @@
       "basis": "carried over from the original engine: the wing tank height as a fraction of the cargo tank outer diameter. It sets the wing plate level; the wing plate and the side plating above the moulded depth are lightship items (issue #410)"
     },
     "weather_shield_thickness_mm": {
-      "default": 6.0,
+      "default_by_service_area": { "river-only": 0.0, "coastal-and-river": 6.0 },
       "unit": "mm",
       "hard": { "ge": 0, "le": 50 },
-      "soft": { "min": 4.0, "max": 12.0 },
-      "basis": "carried over from the original engine: the plate of the non-structural weather shield over the tanks (top, sides and ends), weighed at the hull steel density. Its part above the moulded depth is a lightship item at its own height (issue #410). 0: no shield"
+      "soft": { "min": 0.0, "max": 12.0 },
+      "basis": "carried over from the original engine: the plate of the non-structural weather shield over the tanks (top, sides and ends), weighed at the hull steel density. Its part above the moulded depth is a lightship item at its own height (issue #410). 0: no shield. River only: none, because a river barge's tanks stand to their axis above the deck with no shield (issue #992, the maintainer's decision of 2026-11-07); coastal and river: 6. A file saved before keeps 6"
     },
     "weather_shield_clearance_m": {
       "default": 1.5,

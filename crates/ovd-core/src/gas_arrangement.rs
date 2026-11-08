@@ -77,6 +77,10 @@ const DAMAGE_REFINE_STEP_M: f64 = 0.1;
 /// Issue #992: with the tanks in hold (a standing height of 0), the gap between the tank top and
 /// the underside of the main deck (m). Built practice as the research for #993 gave it; an estimate.
 pub const TANKS_IN_HOLD_DECK_ALLOWANCE_M: f64 = 0.3;
+/// Issue #992: the shares of the upper limit of the standing share that the search tries, from the top
+/// down: the limit itself, three quarters, a half, a quarter and none. Five searches at most, so the
+/// share search costs at most five times the search, not five simulations.
+pub const STANDING_SHARE_STEPS: [f64; 5] = [1.0, 0.75, 0.5, 0.25, 0.0];
 /// Issue #992: how many times the build is repeated to settle a depth that follows the tank.
 const DEPTH_SETTLE_ROUNDS: usize = 8;
 
@@ -192,6 +196,14 @@ pub struct FitOptions {
     /// (the tank depends on the depth only a little, through the bow rake). `Some(0.0)` is tanks in hold. `None`: depth is
     /// the one asked for, as before.
     pub tank_top_above_deck_m: Option<f64>,
+    /// Issue #992: the height above the deck as a share of each candidate's tank outer diameter
+    /// (0.5: the deck at the tank axis). Read only when `tank_top_above_deck_m` is `None`.
+    pub tank_top_above_deck_od_fraction: Option<f64>,
+    /// Issue #992: read `tank_top_above_deck_od_fraction` as the most the share may be, and try
+    /// [`STANDING_SHARE_STEPS`] of it, from the top down to none (the deck at the keel of the tank
+    /// top, the tanks in hold), keeping the share that carries the most cargo and passes. `false`:
+    /// the share is exactly the one given.
+    pub standing_share_search: bool,
     /// Issue #992: the draught the waterway or the user allows (m), without the hull's own limit.
     /// With a standing height the depth is never less than this plus the least freeboard plus
     /// `depth_margin_m`.
@@ -571,6 +583,8 @@ impl Default for FitOptions {
             sightline_limit_source: None,
             self_propelled: true,
             tank_top_above_deck_m: None,
+            tank_top_above_deck_od_fraction: None,
+            standing_share_search: false,
             draught_limit_m: None,
             depth_margin_m: 0.0,
             depths: DEFAULT_DEPTHS_M.to_vec(),
@@ -628,9 +642,26 @@ impl Default for FitOptions {
     }
 }
 
+impl FitOptions {
+    /// Issue #992: the tank top stands above the deck (a height, or a share of the tank diameter).
+    pub fn standing_mode(&self) -> bool {
+        self.tank_top_above_deck_m.is_some() || self.tank_top_above_deck_od_fraction.is_some()
+    }
+
+    /// The height of the tank top above the deck (m) for a tank of outer diameter `od`: the height
+    /// asked for, else the share of the diameter; `None` when the depth is not to follow the tank.
+    pub fn standing(&self, od: f64) -> Option<f64> {
+        self.tank_top_above_deck_m
+            .or_else(|| self.tank_top_above_deck_od_fraction.map(|f| f * od))
+    }
+}
+
 /// The winning arrangement and its payload.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ArrangementFit {
+    /// Issue #992: the share of the tank diameter the tank top stands above the deck, when it was a
+    /// share (the one the search chose, at most the limit given); `None` for a height or no height.
+    pub standing_share: Option<f64>,
     pub loa_m: f64,
     pub beam_m: f64,
     pub depth_m: f64,
@@ -1335,20 +1366,20 @@ fn igc_damage_set(o: &FitOptions) -> Option<&RuleSet> {
     })
 }
 
-/// What makes two candidates give the same damage verdicts (issue #935): the number of tanks along and across, the
-/// tank diameter, the side space, the depth, the cargo and the lightship, to the millimetre and the kilogram. A
-/// candidate of a later depth pass with the same key has the same spaces, hull and loading conditions.
+/// What identifies a candidate across the depth passes of one run (issue #935): the number of tanks along and
+/// across, the tank diameter, the side space and the depth, to the millimetre. A later pass builds the same
+/// candidate with the same hull and spaces, and a lightship that moves a little with the installed power of the
+/// pass's depth, so its damage verdicts are close to the earlier pass's: the search reuses them to choose, and the
+/// answer's own damage run, which is the one the results and the Rule Trace read, works them out afresh.
 fn candidate_key(c: &Candidate) -> String {
     let r = &c.result;
     format!(
-        "{}|{}|{:.3}|{:.3}|{:.3}|{:.3}|{:.3}",
+        "{}|{}|{:.3}|{:.3}|{:.3}",
         c.inputs.n_tanks_long,
         c.inputs.n_tanks_wide.unwrap_or(0),
         opt_or_zero(r.tank_outer_diameter_m),
         opt_or_zero(r.side_clearance_m),
         c.depth,
-        c.tonnage,
-        r.lightship_t,
     )
 }
 
@@ -1586,7 +1617,7 @@ impl Search<'_> {
         inp.tank_design = self.o.tank_design.clone();
         inp.water_density = self.o.water_density_t_per_m3;
         inp.air_draft_limit_m = self.o.air_draft_limit_m;
-        inp.tank_top_above_deck_m = self.o.tank_top_above_deck_m;
+        inp.standing_tank_top = self.o.standing_mode();
         inp.bridge_clearance_m = self.o.bridge_clearance_m;
         inp.bridge_clearance_source = self.o.bridge_clearance_source.clone();
         inp.aft_design = self.o.aft_design.clone();
@@ -1626,8 +1657,9 @@ impl Search<'_> {
         // Issue #992: the depth follows the tank. The tank depends a little on the depth (the bow
         // rake is a share of it, so the cargo zone and the tank length move), so the depth is
         // settled by repeating the build at the depth the last tank gave, to the millimetre.
-        if let (Ok((_, r)), Some(h)) = (&built, self.o.tank_top_above_deck_m) {
+        if let (Ok((_, r)), true) = (&built, self.o.standing_mode()) {
             let od = opt_or_zero(r.tank_outer_diameter_m);
+            let h = self.o.standing(od).unwrap_or(0.0);
             if h > od + 1e-9 {
                 built = Err(text!(
                     "fit-refused-standing-height",
@@ -1641,7 +1673,12 @@ impl Search<'_> {
                 for _ in 0..DEPTH_SETTLE_ROUNDS {
                     let b = self.build_or_refuse(dd, nw, nl)?;
                     let next = match &b {
-                        Ok((_, r2)) => self.target_depth(tank_top_above_keel_m(r2), h),
+                        Ok((_, r2)) => self.target_depth(
+                            tank_top_above_keel_m(r2),
+                            self.o
+                                .standing(opt_or_zero(r2.tank_outer_diameter_m))
+                                .unwrap_or(0.0),
+                        ),
                         Err(_) => dd,
                     };
                     built = b;
@@ -1818,9 +1855,12 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                         let mut r2 = capacity(&i2)?;
                         // Issue #992: a wider side space gives a smaller tank, so the depth that
                         // follows the tank is settled again for this variant.
-                        if let Some(h) = o.tank_top_above_deck_m {
+                        if o.standing_mode() {
                             let mut settled = false;
                             for _ in 0..DEPTH_SETTLE_ROUNDS {
+                                let h = o
+                                    .standing(opt_or_zero(r2.tank_outer_diameter_m))
+                                    .unwrap_or(0.0);
                                 let want = s.target_depth(tank_top_above_keel_m(&r2), h);
                                 if (want - i2.depth).abs() < 0.0015 {
                                     settled = true;
@@ -1830,6 +1870,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                                 r2 = capacity(&i2)?;
                             }
                             let od2 = opt_or_zero(r2.tank_outer_diameter_m);
+                            let h = o.standing(od2).unwrap_or(0.0);
                             let why = if !settled {
                                 Some(text!(
                                     "fit-refused-depth-not-settled",
@@ -1874,7 +1915,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                     // With a standing height (issue #992) the depth is the candidate's own, and the
                     // draught cap is the less of the limit and its own depth less the freeboard.
                     let dep = inp.depth;
-                    let t_cap = match o.tank_top_above_deck_m {
+                    let t_cap = match o.standing_mode().then_some(()) {
                         Some(_) => t_max.min(dep - o.required_freeboard_m),
                         None => t_max,
                     };
@@ -2124,9 +2165,12 @@ fn refine_failed_groups(
             let mut r = capacity(&inp)?;
             // Issue #992: with a standing height the depth follows the tank, settled again for this diameter.
             let mut refused = false;
-            if let Some(h) = o.tank_top_above_deck_m {
+            if o.standing_mode() {
                 let mut settled = false;
                 for _ in 0..DEPTH_SETTLE_ROUNDS {
+                    let h = o
+                        .standing(opt_or_zero(r.tank_outer_diameter_m))
+                        .unwrap_or(0.0);
                     let want = s.target_depth(tank_top_above_keel_m(&r), h);
                     if (want - inp.depth).abs() < 0.0015 {
                         settled = true;
@@ -2135,6 +2179,9 @@ fn refine_failed_groups(
                     inp.depth = want;
                     r = capacity(&inp)?;
                 }
+                let h = o
+                    .standing(opt_or_zero(r.tank_outer_diameter_m))
+                    .unwrap_or(0.0);
                 refused = !settled || h > opt_or_zero(r.tank_outer_diameter_m) + 1e-9;
             }
             let got = opt_or_zero(r.tank_outer_diameter_m);
@@ -2145,9 +2192,12 @@ fn refine_failed_groups(
             }
             // The depth and the draught cap are the candidate's own, as the search builds them.
             let dep = inp.depth;
-            let t_cap = match o.tank_top_above_deck_m {
-                Some(_) => t_max.min(dep - o.required_freeboard_m),
-                None => t_max,
+            // With a standing height or a share the draught cap is also the candidate's own depth less the
+            // freeboard (issue #992), as the search builds it.
+            let t_cap = if o.standing_mode() {
+                t_max.min(dep - o.required_freeboard_m)
+            } else {
+                t_max
             };
             let j = derate_candidate(&r, s.loa, s.beam, dep, t_cap, o.water_density_t_per_m3)?;
             let cheap = cheap_checks(&r, &j, dep, o);
@@ -2432,7 +2482,139 @@ fn tanks_along_to_try(o: &FitOptions, runner: &dyn DamageRunner) -> Vec<i64> {
 
 /// [`fit`], with the damage of a candidate worked out by `runner` (issue #935): the caller's threads, progress
 /// and cancel. A cancelled run is `Err` with kind `Cancelled` and the message [`gas_damage::DAMAGE_CANCELLED`].
+///
+/// Issue #992: with `standing_share_search` the share of the tank diameter is at most the limit given;
+/// each step of [`STANDING_SHARE_STEPS`] is searched and the best kept: a feasible one over an
+/// infeasible one, then the most cargo, the higher share first.
 pub fn fit_with(
+    loa: f64,
+    beam: f64,
+    cargo: &str,
+    t_max: f64,
+    o: &FitOptions,
+    runner: &dyn DamageRunner,
+) -> Result<ArrangementFit, PyError> {
+    let Some(levels) = share_levels(o) else {
+        return fit_once(loa, beam, cargo, t_max, o, runner);
+    };
+    // Issue #992: the share is at most the limit (D1: the search may pick less if depth, freeboard or
+    // sightline need it). Stage 1 searches the shares from the limit down on the intact checks, with
+    // no damage, and stops at the first that passes them. Stage 2 screens that share by damage, and
+    // the next share down too if it fails. So the damage screen runs on at most two shares: at most
+    // twice `damage_run_cap` damage runs, not five times.
+    let (idx, intact) = share_stage_one(loa, beam, cargo, t_max, o, &levels)?;
+    if !runner.enabled() {
+        return Ok(intact);
+    }
+    let first = fit_once(loa, beam, cargo, t_max, &at_share(o, levels[idx]), runner)?;
+    // One damage budget for the whole run: the runner counts the runs of every search and every depth pass (a
+    // runner that does not count, the serial one, gets what the first search left).
+    let counted = runner.runs_used() > 0;
+    let used = runner.runs_used().max(first.damage_runs);
+    let left = o.damage_run_cap.saturating_sub(used);
+    if first.feasible || idx + 1 >= levels.len() || left == 0 {
+        return Ok(first);
+    }
+    // The chosen share fails damage: the next share down, on what the budget has left. The runner's budget plans
+    // its total on top of what is done, so the progress total never falls.
+    let mut o_next = at_share(o, levels[idx + 1]);
+    if !counted {
+        o_next.damage_run_cap = left;
+    }
+    let next = fit_once(loa, beam, cargo, t_max, &o_next, runner)?;
+    let runs = first.damage_runs + next.damage_runs;
+    let planned = (first.damage_planned_runs + next.damage_planned_runs).min(o.damage_run_cap);
+    let mut out = if share_better(&next, &first) {
+        next
+    } else {
+        first
+    };
+    out.damage_runs = runs;
+    out.damage_planned_runs = planned;
+    Ok(out)
+}
+
+/// The first stage of the share search (issue #992): the shares from the limit down, each searched on the
+/// intact checks with no damage, stopping at the first that passes them. Returns the index of the share
+/// kept and its answer; with none passing, the best of the shares by [`share_better`].
+fn share_stage_one(
+    loa: f64,
+    beam: f64,
+    cargo: &str,
+    t_max: f64,
+    o: &FitOptions,
+    levels: &[f64],
+) -> Result<(usize, ArrangementFit), PyError> {
+    let mut chosen: Option<(usize, ArrangementFit)> = None;
+    for (i, share) in levels.iter().enumerate() {
+        let f = fit_once(loa, beam, cargo, t_max, &at_share(o, *share), &NoDamage)?;
+        let done = f.feasible;
+        if chosen.as_ref().is_none_or(|(_, b)| share_better(&f, b)) {
+            chosen = Some((i, f));
+        }
+        if done {
+            break;
+        }
+    }
+    chosen.ok_or_else(|| PyError {
+        kind: "IndexError",
+        message: "list index out of range".to_string(),
+    })
+}
+
+/// The options at one share of the tank diameter, searched no further.
+fn at_share(o: &FitOptions, share: f64) -> FitOptions {
+    let mut o2 = o.clone();
+    o2.tank_top_above_deck_od_fraction = Some(share);
+    o2.standing_share_search = false;
+    o2
+}
+
+/// Whether `f` is a better answer than `b` (issue #992): a feasible one over an infeasible one, then the
+/// most cargo; with neither feasible, the fewer failed checks, then the most cargo.
+fn share_better(f: &ArrangementFit, b: &ArrangementFit) -> bool {
+    match (f.feasible, b.feasible) {
+        (true, false) => true,
+        (false, true) => false,
+        (true, true) => f.payload_t > b.payload_t + 1e-6,
+        (false, false) => {
+            f.failed_checks.len() < b.failed_checks.len()
+                || (f.failed_checks.len() == b.failed_checks.len()
+                    && f.payload_t > b.payload_t + 1e-6)
+        }
+    }
+}
+
+/// A runner that screens nothing: the first stage of the share search works on the intact checks.
+struct NoDamage;
+
+impl DamageRunner for NoDamage {
+    fn enabled(&self) -> bool {
+        false
+    }
+
+    fn run(
+        &self,
+        _: &gas_damage::GasRun,
+        _: &[crate::compartments::Space],
+        _: &crate::hydrostatics::Hull,
+        _: &[lc::LoadedCondition],
+        _: f64,
+    ) -> Result<gas_damage::GasDamageRun, gas_damage::Cancelled> {
+        Err(gas_damage::Cancelled)
+    }
+}
+
+/// The shares to try (issue #992): the steps of the limit, when the share is to be searched.
+fn share_levels(o: &FitOptions) -> Option<Vec<f64>> {
+    if !o.standing_share_search || o.tank_top_above_deck_m.is_some() {
+        return None;
+    }
+    o.tank_top_above_deck_od_fraction
+        .map(|limit| STANDING_SHARE_STEPS.iter().map(|k| limit * k).collect())
+}
+
+fn fit_once(
     loa: f64,
     beam: f64,
     cargo: &str,
@@ -2500,7 +2682,7 @@ pub fn fit_with(
             let nw = o.tanks_wide.first().copied().unwrap_or(1);
             let inp = s.base_inputs(d, nw, o.tanks_in_line);
             let r = capacity(&inp)?;
-            let t_cap = match o.tank_top_above_deck_m {
+            let t_cap = match o.standing_mode().then_some(()) {
                 Some(_) => t_max.min(d - o.required_freeboard_m),
                 None => t_max,
             };
@@ -2526,7 +2708,7 @@ pub fn fit_with(
         .collect();
     // Issue #992: nothing was built because every tank stood higher than its diameter allows (or
     // none floated): the plain attempt below is not an answer.
-    let nothing_built = pick.is_none() && o.tank_top_above_deck_m.is_some();
+    let nothing_built = pick.is_none() && o.standing_mode();
     if nothing_built {
         failed.push("Arrangement: no tank was built at the standing height asked for; see the arrangements tried".to_string());
     }
@@ -2580,6 +2762,9 @@ pub fn fit_with(
     let containment = opt_or_zero(r.containment_inner_volume_m3);
     let tanks_for_division = n_total.max(1) as f64;
     Ok(ArrangementFit {
+        standing_share: o
+            .tank_top_above_deck_od_fraction
+            .filter(|_| o.tank_top_above_deck_m.is_none()),
         loa_m: loa,
         beam_m: beam,
         depth_m: d,
@@ -2684,6 +2869,12 @@ pub fn probe_depth(
         return Err(value_error(
             "ruleset must be one of ('IGC_2G',)".to_string(),
         ));
+    }
+    // With a share to search, the depth of the share the first stage of `fit_with` keeps: the same
+    // intact searches, so the run that follows settles in one pass.
+    if let Some(levels) = share_levels(o) {
+        let (_, f) = share_stage_one(loa, beam, cargo, t_max, o, &levels)?;
+        return Ok(Some(f.depth_m));
     }
     let mut s = Search {
         loa,
@@ -2818,5 +3009,36 @@ mod pick_tests {
             &key(100.0, 6, 3, 11.0, 3),
             &key(100.0, 6, 3, 10.0, 2)
         ));
+    }
+}
+
+#[cfg(test)]
+mod share_search_tests {
+    use super::*;
+
+    #[test]
+    fn the_share_steps_run_from_the_limit_down_to_none_in_five_searches() {
+        let o = FitOptions {
+            tank_top_above_deck_od_fraction: Some(0.5),
+            standing_share_search: true,
+            ..FitOptions::default()
+        };
+        let levels = share_levels(&o).unwrap();
+        assert_eq!(levels, [0.5, 0.375, 0.25, 0.125, 0.0]);
+        // No search with a typed height or without the switch.
+        assert!(
+            share_levels(&FitOptions {
+                tank_top_above_deck_m: Some(2.0),
+                ..o.clone()
+            })
+            .is_none()
+        );
+        assert!(
+            share_levels(&FitOptions {
+                standing_share_search: false,
+                ..o
+            })
+            .is_none()
+        );
     }
 }

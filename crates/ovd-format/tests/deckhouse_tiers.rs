@@ -139,9 +139,13 @@ fn a_container_block_option_is_unchanged() {
     // The container block has no deckhouse, so this change moves no result. Re-pinned by running the
     // code (issue #919: the insulation of the LNG tanks defaults to 96 kg/m3, was 60, so the lightship
     // rises): the hash `main` gave was 67dbe209694b8b3aa216ba957cb48f23dd7d73fde6c3fc571b2c5ba80c763833.
+    // Re-pinned again by running the code (issue #992: a new river-only gas Option has no weather shield,
+    // `weather_shield_thickness_mm` 0, so the shield mass leaves the lightship; this Option types its
+    // depth, 12.0 m, so the depth and the standing height play no part): was
+    // ae3f2ee729ea7cf252e54724b29b0aaccfc0e81ab173164140a8d7c390db2e16.
     assert_eq!(
         hash,
-        "ae3f2ee729ea7cf252e54724b29b0aaccfc0e81ab173164140a8d7c390db2e16"
+        "a450181cb58452607279476905fb0ce6aa0ef78177c66204828777379e36b8d8"
     );
 }
 
@@ -163,9 +167,11 @@ fn the_river_only_house_has_the_tiers_this_change_gives_it() {
     assert!((num(&d["x_aft_m"]) - 14.232).abs() < 1e-9);
     // Lightship falls from 5588.72 t before this change; cargo is volume-bound and does not move.
     // Re-pinned (issue #919: the insulation density of the LNG tanks defaults to 96 kg/m3, was 60, so the
-    // insulation weighs 60 % more); printed 5417.183668599429, was 5313.94495.
+    // insulation weighs 60 % more); printed 5417.183668599429, was 5313.94495. Re-pinned again (issue #992: a new
+    // river-only gas Option has no weather shield, so the shield mass leaves the lightship; the depth is
+    // typed, 12.0 m, so the standing height plays no part); printed 5213.6643348078815, was 5417.183668599429.
     assert!(
-        (num(&r["results"]["lightship_t"]) - 5_417.183_669).abs() < 1e-4,
+        (num(&r["results"]["lightship_t"]) - 5_213.664_335).abs() < 1e-4,
         "{}",
         r["results"]["lightship_t"]
     );

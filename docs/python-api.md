@@ -170,7 +170,6 @@ The inputs are those of `ovd schema`. Run `ovd schema` for the units, the choice
 | `holding_fill_ratio` | Holding-time fill (override) | number |  |
 | `tank_structure_factor` | Tank structure factor | number |  |
 | `tanks_across` | Tanks across (override) | number |  |
-| `tank_top_above_deck_m` | Tank top above deck | number |  |
 | `tanks_in_line` | Tanks in line | number |  |
 | `tank_support_height_m` | Tank support height | number |  |
 | `tank_dome_height_m` | Tank dome height (override) | number |  |
@@ -178,7 +177,6 @@ The inputs are those of `ovd schema`. Run `ovd schema` for the units, the choice
 | `wing_tank_gap_m` | Wing tank gap | number |  |
 | `wing_tank_height_ratio` | Wing tank height over tank diameter | number |  |
 | `min_side_space_m` | Minimum side space | number |  |
-| `weather_shield_thickness_mm` | Weather shield plate thickness | number |  |
 | `weather_shield_clearance_m` | Weather shield clearance over the tanks | number |  |
 | `tank_forming_allowance_pct` | Tank plate forming allowance | number |  |
 | `tank_dome_wall_thickness_mm` | Tank dome wall thickness | number |  |
@@ -342,5 +340,8 @@ The inputs are those of `ovd schema`. Run `ovd schema` for the units, the choice
 | `navigation_hours_per_day` | Navigation hours per day | number |  |
 | `unmanned_machinery_space` | Unmanned machinery space | bool |  |
 | `slop_share` | Slop tank share | number |  |
+| `tank_top_above_deck_m` | Tank top above deck | number |  |
+| `tank_top_above_deck_od_fraction` | Tank top above deck, share of the tank diameter | number |  |
+| `weather_shield_thickness_mm` | Weather shield plate thickness | number |  |
 | `rule_sets` | Rule Sets | rule_sets |  |
 

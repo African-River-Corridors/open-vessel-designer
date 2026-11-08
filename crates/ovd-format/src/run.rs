@@ -164,6 +164,10 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         .is_some_and(|i| i.source == crate::vdesign::Source::Typed);
     if !depth_typed {
         put("tank_top_above_deck_m", "tank_top_above_deck_m");
+        put(
+            "tank_top_above_deck_od_fraction",
+            "tank_top_above_deck_od_fraction",
+        );
     }
     for name in [
         "water_density_t_per_m3",
@@ -1540,6 +1544,24 @@ pub fn summary_lines(name: &str, results: &Value) -> Vec<String> {
         f(r, &["cargo_t"], 1),
         r["governs"].as_str().unwrap_or("?")
     ));
+    // Issue #992: how far the tank tops stand above the deck, and the share of the tank diameter the
+    // search chose when it was a share.
+    let a = &results["arrangement"];
+    if a["tank_top_above_deck_m"].is_number() {
+        let share = if a["tank_top_above_deck_od_fraction"].is_number() {
+            format!(
+                " (share {} of the tank diameter, at most {})",
+                f(a, &["tank_top_above_deck_od_fraction"], 3),
+                f(a, &["tank_top_above_deck_od_fraction_limit"], 3)
+            )
+        } else {
+            String::new()
+        };
+        lines.push(format!(
+            "  Tank tops stand {} m above the deck{share}; the depth follows the tank",
+            f(a, &["tank_top_above_deck_m"], 2)
+        ));
+    }
     lines.push(format!(
         "  Lightship {} t, displacement {} t",
         f(r, &["lightship_t"], 1),

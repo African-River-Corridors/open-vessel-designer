@@ -210,10 +210,6 @@
           "value": null,
           "source": "default"
         },
-        "tank_top_above_deck_m": {
-          "value": null,
-          "source": "default"
-        },
         "tanks_in_line": {
           "value": 2.0,
           "source": "default"
@@ -240,10 +236,6 @@
         },
         "min_side_space_m": {
           "value": 0.0,
-          "source": "default"
-        },
-        "weather_shield_thickness_mm": {
-          "value": 6.0,
           "source": "default"
         },
         "weather_shield_clearance_m": {
@@ -580,6 +572,18 @@
         },
         "service_area": {
           "value": "river-only",
+          "source": "default"
+        },
+        "tank_top_above_deck_m": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_top_above_deck_od_fraction": {
+          "value": null,
+          "source": "default"
+        },
+        "weather_shield_thickness_mm": {
+          "value": 6.0,
           "source": "default"
         },
         "rule_sets": {

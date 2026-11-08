@@ -1491,8 +1491,9 @@ fn simulate_once(p: &Map<String, Value>, measured: &mut Measured, rules: &RunRul
     // stage, and run the whole simulation once with it. The depth the run then gives is checked
     // against the probe; if the stability stage turned the probe's pick down, run again with the
     // depth it gave (at most twice more).
-    if p.get("tank_top_above_deck_m")
-        .is_some_and(|v| v.is_number())
+    if ["tank_top_above_deck_m", "tank_top_above_deck_od_fraction"]
+        .iter()
+        .any(|k| p.get(*k).is_some_and(|v| v.is_number()))
     {
         let mut probe = p.clone();
         probe.insert("__probe_depth".to_string(), json!(true));
@@ -3424,6 +3425,9 @@ fn simulate_gas(
         self_propelled,
         // Issue #992: the tank top above the deck; the depth of each candidate then follows its tank.
         tank_top_above_deck_m: opt_float(p, "tank_top_above_deck_m")?,
+        tank_top_above_deck_od_fraction: opt_float(p, "tank_top_above_deck_od_fraction")?,
+        // The share is at most the one given: the search tries lower ones (issue #992).
+        standing_share_search: true,
         draught_limit_m: external_limit,
         depths: depths.clone(),
         // Issue #675: tanks across fixed by the user, or 1, 2 and 3 tried; and a least side space.
@@ -3547,7 +3551,7 @@ fn simulate_gas(
     // Issue #992: with a standing height every candidate is capped by its own depth less the
     // freeboard (in the search), so the limit given is the external one only; the seed depth `d0`
     // must not cap a deeper candidate and flip the pick.
-    let standing = options.tank_top_above_deck_m.is_some();
+    let standing = options.standing_mode();
     let t_arg = if standing {
         external_limit.unwrap_or(f64::INFINITY)
     } else {
@@ -3899,8 +3903,19 @@ fn simulate_gas(
         "feasible": f.feasible,
     });
     // Issue #992: only when asked for, so a result without the input is unchanged.
-    if let Some(h) = options.tank_top_above_deck_m {
+    // With a share, the height is the share the search chose times the tank diameter of the winner.
+    let standing_m = f
+        .standing_share
+        .map(|share| share * r.tank_outer_diameter_m.unwrap_or(0.0))
+        .or(options.tank_top_above_deck_m);
+    if let Some(h) = standing_m {
         arrangement["tank_top_above_deck_m"] = num(h);
+        if let Some(share) = f.standing_share {
+            arrangement["tank_top_above_deck_od_fraction"] = num(share);
+            // The most the share may be: what the Defaults Profile or the file gave.
+            arrangement["tank_top_above_deck_od_fraction_limit"] =
+                num(options.tank_top_above_deck_od_fraction.unwrap_or(share));
+        }
         arrangement["tank_top_above_keel_m"] = num(ga::tank_top_above_keel_m(r));
         arrangement["depth_follows_tank"] = json!(true);
         // Whether the tank or the draught limit plus the freeboard set the depth (issue #992).

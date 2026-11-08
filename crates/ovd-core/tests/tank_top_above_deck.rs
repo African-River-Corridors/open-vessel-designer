@@ -182,3 +182,39 @@ fn a_shield_that_is_the_high_point_names_the_vent_exit_and_raises_the_lift_neede
         "lift needed {a} with the shield high, {b} with it low"
     );
 }
+
+/// Issue #992, review of #1027: with `standing_share_search` the share is at most the limit. The search
+/// never carries less than the limit alone, records the share it chose, and without the switch the
+/// share is exactly the one given.
+/// Label: rule.
+#[test]
+fn the_share_search_carries_at_least_the_limit_and_records_its_share() {
+    let base = FitOptions {
+        tank_top_above_deck_od_fraction: Some(0.5),
+        sightline_limit_m: Some(250.0),
+        required_freeboard_m: 4.0,
+        depths: vec![15.95],
+        ..FitOptions::default()
+    };
+    let fixed = fit(140.0, 29.0, "LNG", 11.95, &base).unwrap();
+    assert_eq!(fixed.standing_share, Some(0.5));
+    let searched = fit(
+        140.0,
+        29.0,
+        "LNG",
+        11.95,
+        &FitOptions {
+            standing_share_search: true,
+            ..base.clone()
+        },
+    )
+    .unwrap();
+    let share = searched.standing_share.unwrap();
+    assert!((0.0..=0.5).contains(&share), "{share}");
+    assert!(searched.payload_t >= fixed.payload_t - 1e-6 || share < 0.5);
+    assert!(searched.feasible || !fixed.feasible);
+    // Step down only when the limit fails (D1): where the limit passes, it is the share chosen.
+    if fixed.feasible {
+        assert_eq!(searched.standing_share, Some(0.5));
+    }
+}

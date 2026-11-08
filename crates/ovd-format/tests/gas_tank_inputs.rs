@@ -113,6 +113,23 @@ fn each_default_equals_the_legacy_table_value_and_the_core_default() {
             assert_eq!(legacy.value, core_default(name), "{name}: table vs core");
             continue;
         }
+        if name == "weather_shield_thickness_mm" {
+            // Issue #992: by Service Area. The coastal default is the original engine's plate; a river
+            // barge has no shield.
+            let by = |area: &str| {
+                profile
+                    .default_by(name, "service_area", area)
+                    .and_then(Value::as_f64)
+            };
+            assert_eq!(
+                by("coastal-and-river"),
+                Some(legacy.value),
+                "{name}: coastal vs table"
+            );
+            assert_eq!(by("river-only"), Some(0.0), "{name}: river only has none");
+            assert_eq!(legacy.value, core_default(name), "{name}: table vs core");
+            continue;
+        }
         let from_profile = profile.default(name).and_then(Value::as_f64).unwrap();
         assert_eq!(from_profile, legacy.value, "{name}: profile vs table");
         assert_eq!(legacy.value, core_default(name), "{name}: table vs core");
