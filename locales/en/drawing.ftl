@@ -87,6 +87,7 @@ draw-cargo-tank-pair = CARGO TANKS (P AND S)
 draw-cargo-tank = CARGO TANK
 draw-centreline-bulkhead = CENTRELINE BULKHEAD
 draw-cargo-heating = CARGO HEATING FITTED
+draw-forward-house = FORWARD HOUSE
 draw-thrusters = THRUSTERS ({ $count })
 draw-wheelhouse-block-top = WHEELHOUSE, BLOCK TOP { $height }
 draw-containers-block-top = CONTAINERS ({ $abreast } x { $rows }), BLOCK TOP { $height }

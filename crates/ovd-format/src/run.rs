@@ -1203,8 +1203,8 @@ fn stern_arrangement_of(
 /// Issue #994 (D5): whether the arrangement needs a hazard study, and why. The `wheelhouse_forward`
 /// style always does: no gas-cargo vessel in service has the wheelhouse forward, the crew is split
 /// across the cargo deck, the view aft is not settled (the wings, and cameras as an open item), and on a
-/// Service Area that reaches sea the bow motions are not checked. A stack with no Blind Distance Rule
-/// gives no forward Blind Distance check at all, which is a reason too. Every other style holds `false`
+/// Service Area that reaches sea the bow motions are not checked. A run with no Blind Distance check (a stack with no Blind Distance Rule)
+/// is a reason too. Every other style holds `false`
 /// and no reasons. In the stern block, outside the results hash.
 fn hazard_study_json(
     aft: &ovd_core::aft_arrangement::AftArrangementResult,
@@ -1240,13 +1240,13 @@ fn hazard_study_json(
         if !vessel.capacity.river_only {
             why(
                 "bow_motions",
-                "The Service Area reaches sea: bow accelerations are about 1.2 times the stern's (IGC 4.28.2.1), and no bow-motion check exists.".to_string(),
+                "The Service Area reaches sea. An estimate from the guidance formula of IGC 4.28.2.1 puts the bow accelerations at about 1.2 times the stern's; no bow-motion check exists.".to_string(),
             );
         }
         if vessel.result.sightline.is_none() {
             why(
-                "no_forward_blind_distance_check",
-                "The Rule Sets this Option stores hold no Blind Distance Rule, so the forward eye has no Blind Distance check at all.".to_string(),
+                "no_blind_distance_check",
+                "No Blind Distance check was run: the Rule Sets this Option stores give no Blind Distance limit, so nothing shows what the forward eye sees ahead of the bow.".to_string(),
             );
         }
     }
