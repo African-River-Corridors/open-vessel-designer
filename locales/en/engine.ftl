@@ -335,6 +335,7 @@ msg-shipd-constraint = `{ $input }` fails ShipD constraint { $index } ({ $name }
 
 warn-channel-no-bottom-width = The channel has a depth but no bottom width, so squat, the Schijf limiting speed and the blockage are not checked and the speed curves are for deep water only. The draught limit still uses the depth. Give the channel bottom width to check them.
 warn-fit-no-wing-tank = No wing ballast tank: the side space { $side } m is not more than the wing tank gap { $gap } m. For a wing tank, set `{ $input }` above { $gap } m.
+msg-depth-not-settled = The depth that follows the tank did not settle in { $runs } runs ({ $from } m, then { $to } m); the results are for { $to } m.
 check-name-intact-gm-at-reported-cargo = intact gm at reported cargo
 check-intact-gm-reported-cargo = intact GM { $gm } m >= 0.15 m at the reported cargo { $cargo } t, draught { $draught } m (first-order; cargo KG of the full hold; KG_light @0.5D)
 warn-liquid-legacy-conditions = Stability is computed for liquid bulk cargo with the IS Code loading conditions only.

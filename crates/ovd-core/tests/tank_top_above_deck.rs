@@ -145,3 +145,40 @@ fn a_shield_above_the_dome_is_the_highest_point_only_with_a_standing_height() {
     let (without, _) = high(None);
     assert_ne!(without.key, "weather_shield");
 }
+
+/// Review of #1023: with the shield the highest point (clearance above the dome), the river-only
+/// vent exit is governed by the shield top, not named the dome top; and the sightline sees it: the
+/// lift the Blind Distance limit needs is more than with the shield below the dome.
+/// Label: rule (design note D4). Clearances 4.0 and 1.5 m are test values; the dome rule gives about 2.3 m.
+#[test]
+fn a_shield_that_is_the_high_point_names_the_vent_exit_and_raises_the_lift_needed() {
+    use ovd_core::vent_mast::Governs;
+    let run = |clearance: f64, river_only: bool| {
+        let o = FitOptions {
+            tank_top_above_deck_m: Some(2.0),
+            weather_shield_clearance_m: clearance,
+            sightline_limit_m: Some(250.0),
+            river_only,
+            // A mast that lowers does not set the air draft, so the shield stays the high point.
+            vent_mast_lowerable: true,
+            depths: vec![15.95],
+            ..FitOptions::default()
+        };
+        fit(140.0, 29.0, "LNG", 11.95, &o).unwrap().engine_result
+    };
+    // The vent mast: river only, shield above the dome.
+    let high = run(4.0, true);
+    assert_eq!(high.highest_point.map(|p| p.key), Some("weather_shield"));
+    assert_eq!(high.vent_mast.as_ref().unwrap().governs, Governs::ShieldTop);
+    let low = run(1.5, true);
+    assert_ne!(low.vent_mast.as_ref().unwrap().governs, Governs::ShieldTop);
+    // The sightline: the higher obstruction needs a higher eye.
+    let (a, b) = (
+        run(4.0, false).sightline.unwrap().lift_needed_m,
+        run(1.5, false).sightline.unwrap().lift_needed_m,
+    );
+    assert!(
+        a > b + 0.5,
+        "lift needed {a} with the shield high, {b} with it low"
+    );
+}
