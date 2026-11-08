@@ -1669,16 +1669,30 @@ impl Search<'_> {
                 ));
             } else {
                 let mut dd = self.target_depth(tank_top_above_keel_m(r), h);
+                let mut h_now = h;
                 let mut settled = false;
                 for _ in 0..DEPTH_SETTLE_ROUNDS {
+                    // Issue #1033: the depth is the tank top less the height, and a depth of zero or less cannot be
+                    // built (a narrow hull's tank, at this depth, can be smaller than the height it is to stand).
+                    if dd <= 0.0 {
+                        built = Err(text!(
+                            "fit-refused-depth-not-positive",
+                            "The depth that follows the tank would be {depth} m: the tank top is to stand {h} m above the deck, and the tank and its bottom clearance reach only {top} m above the keel.",
+                            depth = Arg::fixed(dd, 2),
+                            h = Arg::fixed(h_now, 2),
+                            top = Arg::fixed(dd + h_now, 2),
+                        ));
+                        break;
+                    }
                     let b = self.build_or_refuse(dd, nw, nl)?;
                     let next = match &b {
-                        Ok((_, r2)) => self.target_depth(
-                            tank_top_above_keel_m(r2),
-                            self.o
+                        Ok((_, r2)) => {
+                            h_now = self
+                                .o
                                 .standing(opt_or_zero(r2.tank_outer_diameter_m))
-                                .unwrap_or(0.0),
-                        ),
+                                .unwrap_or(0.0);
+                            self.target_depth(tank_top_above_keel_m(r2), h_now)
+                        }
                         Err(_) => dd,
                     };
                     built = b;
@@ -1857,6 +1871,8 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                         // follows the tank is settled again for this variant.
                         if o.standing_mode() {
                             let mut settled = false;
+                            // Issue #1033: a depth of zero or less cannot be built.
+                            let mut not_positive: Option<(f64, f64)> = None;
                             for _ in 0..DEPTH_SETTLE_ROUNDS {
                                 let h = o
                                     .standing(opt_or_zero(r2.tank_outer_diameter_m))
@@ -1866,12 +1882,24 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                                     settled = true;
                                     break;
                                 }
+                                if want <= 0.0 {
+                                    not_positive = Some((want, h));
+                                    break;
+                                }
                                 i2.depth = want;
                                 r2 = capacity(&i2)?;
                             }
                             let od2 = opt_or_zero(r2.tank_outer_diameter_m);
                             let h = o.standing(od2).unwrap_or(0.0);
-                            let why = if !settled {
+                            let why = if let Some((want, h)) = not_positive {
+                                Some(text!(
+                                    "fit-refused-depth-not-positive",
+                                    "The depth that follows the tank would be {depth} m: the tank top is to stand {h} m above the deck, and the tank and its bottom clearance reach only {top} m above the keel.",
+                                    depth = Arg::fixed(want, 2),
+                                    h = Arg::fixed(h, 2),
+                                    top = Arg::fixed(want + h, 2),
+                                ))
+                            } else if !settled {
                                 Some(text!(
                                     "fit-refused-depth-not-settled",
                                     "The depth that follows the tank does not settle, near {depth} m.",
@@ -2174,6 +2202,10 @@ fn refine_failed_groups(
                     let want = s.target_depth(tank_top_above_keel_m(&r), h);
                     if (want - inp.depth).abs() < 0.0015 {
                         settled = true;
+                        break;
+                    }
+                    // Issue #1033: a depth of zero or less cannot be built; this size is not offered.
+                    if want <= 0.0 {
                         break;
                     }
                     inp.depth = want;

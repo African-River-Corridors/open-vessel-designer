@@ -113,6 +113,7 @@ check-condition-air-draft = { $condition }: air draft { $air } m is above the li
 check-name-stability-not-assessed = Stability — not assessed
 check-stability-not-assessed = stability could not be assessed: { $reason }
 fit-refused-standing-height = The tank top is to stand { $h } m above the deck, more than the tank diameter { $od } m.
+fit-refused-depth-not-positive = The depth that follows the tank would be { $depth } m: the tank top is to stand { $h } m above the deck, and the tank and its bottom clearance reach only { $top } m above the keel.
 fit-refused-depth-not-settled = The depth that follows the tank does not settle, near { $depth } m.
 fit-refused-cap-too-wide = { $n } across at the diameter cap { $cap } m do not fit in the beam.
 fit-refused-min-side-space = No tank fits across the beam with the minimum side space { $min } m.
