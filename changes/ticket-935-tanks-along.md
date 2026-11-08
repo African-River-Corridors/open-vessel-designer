@@ -1,10 +1,10 @@
 <!-- unreleased -->
-- Arrangement search (issue #935): when the stack screens by IGC 2.7 damage survival and the run works damage out, the search chooses the number of tanks along from 2, 3 and 4 (the profile's number first), by the most cargo among the candidates that pass damage; equal cargo goes to the fewest tanks, then the fewest along. A typed `tanks_in_line` pins it. The first evaluation (damage not run) keeps the profile's number, and the run that works damage out says what it changed, number along included (`damage_screening.tanks_along`). The search works out at most 24 damage runs over all numbers along, plus one for the answer. On the 140 x 29 x 12 m coastal LNG reference design the pick is two across by three along (13.38 m tanks, 23,101 m3) in place of two along (11.53 m, 18,324 m3). The size limits are provisional until #1009 (the free surface of the cargo in a breached tank) lands.
+- Arrangement search (issue #935): when the stack screens by IGC 2.7 damage survival and the run works damage out, the search chooses the number of tanks along from 2, 3 and 4 (the profile's number first), by the most cargo among the candidates that pass damage; equal cargo goes to the fewest tanks, then the fewest along. A typed `tanks_in_line` pins it. The first evaluation (damage not run) keeps the profile's number, and the run that works damage out says what it changed, number along included (`damage_screening.tanks_along`). The whole run works out at most 24 damage runs over all numbers along, every share of the tank diameter and every depth pass, plus one for the answer; a later depth pass reuses the verdicts of the candidates an earlier one screened, so it keeps the pick the earlier pass found when the budget is gone. On the 140 x 29 x 12 m coastal LNG reference design the pick is two across by three along (13.38 m tanks, 23,101 m3) in place of two along (11.53 m, 18,324 m3). The size limits are provisional until #1009 (the free surface of the cargo in a breached tank) lands.
 
 <!-- design-impact -->
 ### ticket/935-tanks-along (2026-11-08)
 
-Between `main a0d17bb` and `this branch 98072168`.
+Between `main bc28adf` and `this branch 106ceaa8`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|
