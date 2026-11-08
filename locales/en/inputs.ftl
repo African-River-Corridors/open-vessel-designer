@@ -210,6 +210,10 @@ input-tank-structure-factor-default-by = Cargo, LPG carriage condition
 input-tanks-across = Tanks across (override)
 
 input-tank-top-above-deck-m = Tank top above deck
+input-tank-top-above-deck-m-default-by = service_area
+
+input-tank-top-above-deck-od-fraction = Tank top above deck, share of the tank diameter
+input-tank-top-above-deck-od-fraction-default-by = service_area
 
 input-tanks-in-line = Tanks in line
 
@@ -228,6 +232,7 @@ input-wing-tank-height-ratio = Wing tank height over tank diameter
 input-min-side-space-m = Minimum side space
 
 input-weather-shield-thickness-mm = Weather shield plate thickness
+input-weather-shield-thickness-mm-default-by = service_area
 
 input-weather-shield-clearance-m = Weather shield clearance over the tanks
 

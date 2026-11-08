@@ -159,6 +159,10 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         .is_some_and(|i| i.source == crate::vdesign::Source::Typed);
     if !depth_typed {
         put("tank_top_above_deck_m", "tank_top_above_deck_m");
+        put(
+            "tank_top_above_deck_od_fraction",
+            "tank_top_above_deck_od_fraction",
+        );
     }
     for name in [
         "water_density_t_per_m3",
