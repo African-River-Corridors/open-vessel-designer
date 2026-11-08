@@ -69,21 +69,17 @@ fn depth(r: &Value) -> f64 {
 }
 
 #[test]
-fn a_file_saved_before_has_no_standing_height_and_a_result_without_one_has_no_new_key() {
-    let l = LEGACY_FIXED_OTHER
-        .iter()
-        .find(|l| l.name == "tank_top_above_deck_m")
-        .unwrap();
-    assert_eq!(l.value, "null");
-    assert_eq!(
-        Profile::built_in().default("tank_top_above_deck_m"),
-        Some(&Value::Null)
-    );
-    let r = run(&design(json!({})));
+fn a_file_saved_before_has_no_standing_height_and_an_explicit_none_keeps_the_old_depth() {
+    // A file saved before holds none for both, so its depth is the one it had.
+    for name in ["tank_top_above_deck_m", "tank_top_above_deck_od_fraction"] {
+        let l = LEGACY_FIXED_OTHER.iter().find(|l| l.name == name).unwrap();
+        assert_eq!(l.value, "null", "{name}");
+    }
+    // A new Option that types none gets no block, and today's ratio depth: 0.55 x 29 m.
+    let r = run(&design(json!({ "tank_top_above_deck_m": null })));
     let a = r["arrangement"].as_object().unwrap();
     assert!(!a.contains_key("tank_top_above_deck_m"));
     assert!(!a.contains_key("depth_follows_tank"));
-    // The depth is today's ratio default: 0.55 x 29 m.
     assert!((depth(&r) - 15.95).abs() < 1e-9, "{}", depth(&r));
 }
 
@@ -162,20 +158,114 @@ fn a_typed_depth_wins_and_a_warning_says_so() {
     );
 }
 
+/// Issue #992, the maintainer's decision of 2026-11-07: a new coastal gas Option stands its tanks 2.0 m
+/// above the deck under a weather shield; a new river-only one stands them to half their diameter, with
+/// no shield. Label: rule (a decision), no calibration case for coastal.
 #[test]
-fn the_profile_holds_the_maintainers_defaults_by_service_area_and_does_not_apply_them_yet() {
-    let p: Value = serde_json::from_str(include_str!("../src/builtin_profile.json")).unwrap();
-    let rule = &p["inputs"]["tank_top_above_deck_default_rule"]["default_by_service_area"];
-    assert_eq!(rule["coastal-and-river"]["metres"], 2.0);
-    assert_eq!(rule["river-only"]["od_fraction"], 0.5);
-    // Not applied: a new Option still has no standing height.
-    let r = run(&design(json!({})));
-    assert!(
-        !r["arrangement"]
-            .as_object()
-            .unwrap()
-            .contains_key("tank_top_above_deck_m")
+fn a_new_option_takes_the_maintainers_default_by_service_area() {
+    let p = Profile::built_in();
+    assert_eq!(
+        p.default_by("tank_top_above_deck_m", "service_area", "coastal-and-river"),
+        Some(&json!(2.0))
     );
+    assert_eq!(
+        p.default_by("tank_top_above_deck_m", "service_area", "river-only"),
+        Some(&Value::Null)
+    );
+    assert_eq!(
+        p.default_by(
+            "tank_top_above_deck_od_fraction",
+            "service_area",
+            "river-only"
+        ),
+        Some(&json!(0.5))
+    );
+    assert_eq!(
+        p.default_by(
+            "tank_top_above_deck_od_fraction",
+            "service_area",
+            "coastal-and-river"
+        ),
+        Some(&Value::Null)
+    );
+    assert_eq!(
+        p.default_by("weather_shield_thickness_mm", "service_area", "river-only"),
+        Some(&json!(0.0))
+    );
+    // Coastal: 2.0 m, under a shield; the depth follows the tank.
+    let c = run(&design(json!({})));
+    assert_eq!(c["arrangement"]["tank_top_above_deck_m"], 2.0);
+    assert_eq!(above(&c)["weather_shield_fitted"], true);
+    assert!(depth(&c) < 15.95);
+    // River only: up to half the tank diameter (the search may pick less), no shield.
+    let r = run(&river_design(json!({})));
+    let od = r["arrangement"]["tank_od_m"].as_f64().unwrap();
+    let h = r["arrangement"]["tank_top_above_deck_m"].as_f64().unwrap();
+    let share = r["arrangement"]["tank_top_above_deck_od_fraction"]
+        .as_f64()
+        .unwrap();
+    assert_eq!(
+        r["arrangement"]["tank_top_above_deck_od_fraction_limit"],
+        0.5
+    );
+    assert!((0.0..=0.5).contains(&share), "share {share}");
+    assert!((h - share * od).abs() < 1e-9, "{h} vs {share} of {od}");
+    assert_eq!(above(&r)["weather_shield_fitted"], false);
+    // The deck sits the chosen share of the diameter below the tank top.
+    let top = r["arrangement"]["tank_top_above_keel_m"].as_f64().unwrap();
+    assert!(
+        (top - depth(&r) - h).abs() < 0.0016 || share == 0.0,
+        "{top} {} {h}",
+        depth(&r)
+    );
+}
+
+/// Review of #1027: the maintainer's "up to the widest point" is a limit, not a fixed share. The 100 x 20 m
+/// river-only LNG barge, on a fresh fill, is feasible: at half the diameter the one tank across fails
+/// the sightline (the tank top 8 m above the deck needs 13.9 m of wheelhouse lift), so the search
+/// takes a lower share and more tanks across. Pinning the share at 0.5 (every step of the search at
+/// the limit) makes this test fail.
+/// Label: rule (design note D1: "the search may pick less if depth, freeboard or sightline need it").
+#[test]
+fn the_river_barge_is_feasible_because_the_search_takes_a_lower_share_than_half() {
+    let r = run(&river_design(json!({})));
+    assert_eq!(r["arrangement"]["feasible"], true, "{}", r["arrangement"]);
+    let share = r["arrangement"]["tank_top_above_deck_od_fraction"]
+        .as_f64()
+        .unwrap();
+    assert!(
+        share < 0.5,
+        "the share {share} is the limit, not a lower one"
+    );
+    // The share chosen is recorded and shown: in the summary lines of `ovd run`.
+    let lines = ovd_format::summary_lines("Option 1", &r);
+    assert!(
+        lines
+            .iter()
+            .any(|l| l.contains("Tank tops stand") && l.contains("share")),
+        "{lines:?}"
+    );
+}
+
+/// A river-only gas barge of the size of the worked inland case, on the default stack.
+fn river_design(extra: Value) -> Value {
+    let mut base = json!({
+        "cargo": "LNG", "hull_form": "raked_box", "formation": { "kind": "self_propelled" },
+        "length_overall_m": 100.0, "beam_m": 20.0, "service_area": "river-only"
+    });
+    for (k, v) in extra.as_object().unwrap() {
+        base[k] = v.clone();
+    }
+    let inputs: serde_json::Map<String, Value> = base
+        .as_object()
+        .unwrap()
+        .iter()
+        .map(|(k, v)| (k.clone(), json!({ "value": v, "source": "typed" })))
+        .collect();
+    json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": inputs }]
+    })
 }
 
 /// Issue #992, review item 1. The depth is never less than the draught limit plus the least freeboard:
@@ -242,7 +332,7 @@ fn in_hold_nothing_stands_above_the_deck_and_without_the_input_there_is_no_block
     assert_eq!(a["top_above_deck_m"], a["dome_top_above_deck_m"]);
     assert!(a["dome_top_above_deck_m"].as_f64().unwrap() > 0.0);
     assert_eq!(a["windage_side_area_m2"].as_f64().unwrap(), 0.0);
-    let plain = run(&design(json!({})));
+    let plain = run(&design(json!({ "tank_top_above_deck_m": null })));
     assert!(
         !plain["arrangement"]
             .as_object()
@@ -539,4 +629,30 @@ fn the_general_arrangement_says_the_shield_is_not_watertight_only_with_the_input
         .map(|(_, v)| v.to_string())
         .collect::<String>();
     assert!(text.contains("WEATHER SHIELD") && !text.contains("NOT WATERTIGHT"));
+}
+
+/// The whole run of a river-only design with a share below 0.5 and damage on stays within the damage-run
+/// limit: the search's runs (one budget for the share search, at most the limit) and the answer's own
+/// damage run (one), counted across the run. `depth_passes` is 1, so the depth was settled in one pass.
+/// Label: rule (the limit is `DEFAULT_DAMAGE_RUN_CAP`, 24; issue #935). The bound across several depth
+/// passes depends on one runner and budget per run (issue #935, part 2b).
+#[test]
+fn a_river_design_with_a_lower_share_stays_within_the_damage_run_limit() {
+    let before = ovd_format::damage::damage_runs_started();
+    let r = run(&river_design(json!({})));
+    let runs = ovd_format::damage::damage_runs_started() - before;
+    assert_eq!(r["damage_status"], "run");
+    let share = r["arrangement"]["tank_top_above_deck_od_fraction"]
+        .as_f64()
+        .unwrap();
+    assert!(
+        share < 0.5,
+        "share {share}: the test needs a share below the limit"
+    );
+    assert_eq!(r["arrangement"]["depth_passes"], 1);
+    let limit = ovd_core::gas_arrangement::DEFAULT_DAMAGE_RUN_CAP + 1;
+    assert!(
+        runs <= limit,
+        "{runs} damage runs across the whole run, limit {limit}"
+    );
 }

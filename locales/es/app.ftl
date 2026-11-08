@@ -338,6 +338,10 @@ app-metric-tank-od = Diámetro exterior del tanque
 # status: draft
 app-metric-side-clearance = Holgura lateral
 # status: draft
+app-metric-tank-top-above-deck = Parte superior del tanque sobre cubierta
+# status: draft
+app-metric-tank-top-share = Fracción del diámetro sobre cubierta
+# status: draft
 app-metric-ruleset = Conjunto de reglas
 # status: draft
 app-metric-fill-ratio = Grado de llenado

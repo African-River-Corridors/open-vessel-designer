@@ -338,6 +338,10 @@ app-metric-tank-od = 液货舱外径
 # status: draft
 app-metric-side-clearance = 侧向间距
 # status: draft
+app-metric-tank-top-above-deck = 液货舱顶部高出甲板
+# status: draft
+app-metric-tank-top-share = 液货舱直径高出甲板的比例
+# status: draft
 app-metric-ruleset = 规范集
 # status: draft
 app-metric-fill-ratio = 充装率

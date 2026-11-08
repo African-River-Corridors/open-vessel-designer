@@ -67,6 +67,9 @@ export const TANKS: Metric[] = [
   { label: "app-metric-tanks-along", quantity: "count", path: ["arrangement", "n_long"] },
   { label: "app-metric-tank-od", unit: "m", quantity: "length", path: ["arrangement", "tank_od_m"] },
   { label: "app-metric-side-clearance", unit: "m", quantity: "length", path: ["arrangement", "side_clearance_m"] },
+  // Issue #992: how far the tank tops stand above the deck, and the share of the diameter chosen.
+  { label: "app-metric-tank-top-above-deck", unit: "m", quantity: "length", path: ["arrangement", "tank_top_above_deck_m"] },
+  { label: "app-metric-tank-top-share", quantity: "fraction", path: ["arrangement", "tank_top_above_deck_od_fraction"] },
   { label: "app-metric-ruleset", quantity: "text", path: ["arrangement", "ruleset"] },
   { label: "app-metric-fill-ratio", quantity: "fraction", path: ["arrangement", "fill_ratio"] },
   { label: "app-metric-depth-optimised", quantity: "flag", path: ["arrangement", "depth_optimised"] },
