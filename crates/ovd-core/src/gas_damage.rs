@@ -533,6 +533,16 @@ pub trait DamageRunner {
         0
     }
 
+    /// The verdicts a search of this run already worked out for a candidate with this key (an earlier depth pass
+    /// built the same candidate), if any: reusing them costs no damage run, and a later pass that runs out of
+    /// budget keeps what an earlier one found.
+    fn recall(&self, _key: &str) -> Option<Vec<DamageVerdict>> {
+        None
+    }
+
+    /// Keep the verdicts of a candidate for [`DamageRunner::recall`].
+    fn remember(&self, _key: &str, _verdicts: &[DamageVerdict]) {}
+
     /// The cases of `run` on every condition of `conditions`. `Err(Cancelled)` stops the search.
     fn run(
         &self,

@@ -1335,6 +1335,23 @@ fn igc_damage_set(o: &FitOptions) -> Option<&RuleSet> {
     })
 }
 
+/// What makes two candidates give the same damage verdicts (issue #935): the number of tanks along and across, the
+/// tank diameter, the side space, the depth, the cargo and the lightship, to the millimetre and the kilogram. A
+/// candidate of a later depth pass with the same key has the same spaces, hull and loading conditions.
+fn candidate_key(c: &Candidate) -> String {
+    let r = &c.result;
+    format!(
+        "{}|{}|{:.3}|{:.3}|{:.3}|{:.3}|{:.3}",
+        c.inputs.n_tanks_long,
+        c.inputs.n_tanks_wide.unwrap_or(0),
+        opt_or_zero(r.tank_outer_diameter_m),
+        opt_or_zero(r.side_clearance_m),
+        c.depth,
+        c.tonnage,
+        r.lightship_t,
+    )
+}
+
 /// Issue #935: whether the search has used its damage runs: the cap counts this search's runs and the runs the
 /// runner has worked out for the rest of the run (the depth passes of a standing height share one budget).
 fn out_of_runs(s: &Search<'_>) -> bool {
@@ -1358,6 +1375,13 @@ fn screen_damage(s: &mut Search<'_>, c: &mut Candidate) -> Result<Screened, PyEr
         return Ok(Screened::Done);
     };
     if !s.runner.enabled() || c.result.gas_basis.is_none() {
+        return Ok(Screened::Done);
+    }
+    // Issue #935: a candidate an earlier depth pass of this run screened keeps its verdicts, passing or not: the
+    // same candidate costs no damage run, and a pass that runs out of budget keeps what the earlier ones found.
+    let key = candidate_key(c);
+    if let Some(verdicts) = s.runner.recall(&key) {
+        c.damage = Some(verdicts);
         return Ok(Screened::Done);
     }
     let Some(spec) = c.result.hull_spec.as_ref() else {
@@ -1397,6 +1421,7 @@ fn screen_damage(s: &mut Search<'_>, c: &mut Candidate) -> Result<Screened, PyEr
             message: gas_damage::DAMAGE_CANCELLED.to_string(),
         })?;
     s.damage_runs += 1;
+    s.runner.remember(&key, &run.verdicts);
     c.damage = Some(run.verdicts);
     Ok(Screened::Done)
 }

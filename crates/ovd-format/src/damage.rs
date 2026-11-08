@@ -122,6 +122,9 @@ pub struct RunBudget {
     planned_total: core::cell::Cell<usize>,
     /// The highest fraction reported so far.
     last: std::rc::Rc<core::cell::Cell<f64>>,
+    /// The verdicts of every candidate the searches of this run screened, by key: a later depth pass that builds
+    /// the same candidate reuses them, so it costs no damage run and keeps the pass an earlier pass found.
+    memo: core::cell::RefCell<std::collections::HashMap<String, Vec<ovd_core::measured::DamageVerdict>>>,
 }
 
 impl RunBudget {
@@ -215,6 +218,17 @@ impl ovd_core::gas_damage::DamageRunner for ThreadedRunner<'_> {
 
     fn runs_used(&self) -> usize {
         self.budget.runs.get()
+    }
+
+    fn recall(&self, key: &str) -> Option<Vec<ovd_core::measured::DamageVerdict>> {
+        self.budget.memo.borrow().get(key).cloned()
+    }
+
+    fn remember(&self, key: &str, verdicts: &[ovd_core::measured::DamageVerdict]) {
+        self.budget
+            .memo
+            .borrow_mut()
+            .insert(key.to_string(), verdicts.to_vec());
     }
 
     fn run(
