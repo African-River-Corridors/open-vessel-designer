@@ -50,6 +50,44 @@ fn at_a_small_damage_run_limit_feasible_still_implies_no_failing_igc_2_7_row() {
             );
         }
     }
+    // The other way (nit 3 of #1028): at a limit of 2 or 4 the reference design's search runs out of damage runs, which
+    // is all it reports, and its answer's own damage run passes: it is feasible, with no failing row at all.
+    // **Mutation proof:** not raising feasibility when only the limit stopped the search leaves it infeasible with a
+    // failing "Feasible arrangement" row, and this fails.
+    for cap in [2, 4] {
+        ovd_format::damage::set_damage_run_cap(cap);
+        let file = json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": {
+                "cargo": { "value": "LNG", "source": "typed" },
+                "hull_form": { "value": "raked_box", "source": "typed" },
+                "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+                "length_overall_m": { "value": 140.0, "source": "typed" },
+                "beam_m": { "value": 29.0, "source": "typed" },
+                "service_area": { "value": "coastal-and-river", "source": "typed" }
+            } }]
+        });
+        let d = fill_as_new(&file.to_string(), &Profile::built_in())
+            .design
+            .unwrap();
+        let RunOutcome::Results { results: r, .. } = run_option(&d.options[0]) else {
+            panic!("no results");
+        };
+        let failing = r["rule_trace"]["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|x| x["outcome"] == "fail")
+            .count();
+        assert_eq!(
+            failing, 0,
+            "reference at a limit of {cap}: {failing} failing rows"
+        );
+        assert_eq!(
+            r["arrangement"]["feasible"], true,
+            "reference at a limit of {cap}"
+        );
+    }
     ovd_format::damage::set_damage_run_cap(0);
     assert_eq!(
         contradicted, 0,

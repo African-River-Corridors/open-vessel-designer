@@ -3888,18 +3888,30 @@ fn simulate_gas(
     } = stages;
     // Issue #1038: the answer's own damage run decides. The search chose on verdicts that an earlier depth pass may
     // have worked out on a lightship that has since moved; when the answer's run of IGC 2.7 fails any case or stage,
-    // the arrangement is not feasible, whatever the search said. Never feasible with failing damage rows.
-    let damage_ran = igc_set.is_some() && rules.damage.run && control_ran;
+    // the arrangement is not feasible, whatever the search said. And when the search found no arrangement only
+    // because it ran out of damage runs (that is the one thing it reports), and the answer's own run passes, the
+    // arrangement is feasible: nothing else fails. Never feasible with failing damage rows.
+    let damage_ran = igc_set.is_some() && rules.damage.run && control_ran && !gas_damage.is_empty();
     let answer_fails = damage_ran
         && gas_damage
             .iter()
             .any(|v| !v.outcome.ok || v.stages.iter().any(|s| !s.ok));
-    let feasible = f.feasible && !answer_fails;
+    let limit_only = !f.feasible
+        && !f.failed_checks.is_empty()
+        && f.failed_checks
+            .iter()
+            .all(|m| m.starts_with("damage: the search stopped at the damage-run limit"));
+    let feasible = if answer_fails {
+        false
+    } else if damage_ran && limit_only {
+        true
+    } else {
+        f.feasible
+    };
     if answer_fails && f.feasible {
         let message = text!(
-            "check-feasible-arrangement",
-            "No arrangement passes every check on this hull. The closest one is shown. It fails: {fails}.",
-            fails = "igc/2.7/damage-survival",
+            "check-feasible-arrangement-damage",
+            "The arrangement the search chose fails IGC 2.7 damage on its own run."
         );
         ids.text(&message);
         checks.push(json!({
@@ -3908,6 +3920,10 @@ fn simulate_gas(
             "message": message,
             "severity": "error",
         }));
+    }
+    if feasible && !f.feasible {
+        // The search's "no arrangement passes" check came from running out of damage runs: the answer's run passes.
+        checks.retain(|c| c["name"] != "Feasible arrangement");
     }
     // Issue #742: the panel model and its plate model (the steel list).
     let steel = r

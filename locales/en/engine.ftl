@@ -345,6 +345,7 @@ check-intact-gm-reported-cargo = intact GM { $gm } m >= 0.15 m at the reported c
 warn-liquid-legacy-conditions = Stability is computed for liquid bulk cargo with the IS Code loading conditions only.
 name-governs-draught = draught — { $limit }
 check-feasible-arrangement = No arrangement passes every check on this hull. The closest one is shown. It fails: { $fails }.
+check-feasible-arrangement-damage = The arrangement the search chose fails IGC 2.7 damage on its own run.
 stab-limit-moulded-tanks = Ballast and consumables tanks are moulded volumes with no structure deduction; one tank per side and kind, and the consumables tank height is an estimate.
 
 ## crates/ovd-format/src/text_ids.rs

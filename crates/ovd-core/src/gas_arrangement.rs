@@ -1400,7 +1400,7 @@ enum Screened {
     CapReached,
 }
 
-fn screen_damage(s: &mut Search<'_>, c: &mut Candidate) -> Result<Screened, PyError> {
+fn screen_damage(s: &mut Search<'_>, c: &mut Candidate, fresh: bool) -> Result<Screened, PyError> {
     let o = s.o;
     let (Some(set), Some(ic)) = (igc_damage_set(o), o.is_code.as_ref()) else {
         return Ok(Screened::Done);
@@ -1416,14 +1416,14 @@ fn screen_damage(s: &mut Search<'_>, c: &mut Candidate) -> Result<Screened, PyEr
         cargo_t: c.tonnage,
     };
     // Issue #1038: a later pass moves the installed power, so the lightship and the fuel, a little, and a verdict
-    // can turn on that. A kept verdict is reused as it is only while the lightship and the cargo stand where they
-    // were. One that failed is reused anyway (the worst it does is leave out a size that would now pass). One that
-    // passed is screened again, unless the budget is gone: then it is the best there is, and the answer's own damage
-    // run, which decides feasibility, has the last word.
-    if let Some(kept) = s.runner.recall(&key, &basis)
-        && (kept.stands || kept.failed() || out_of_runs(s))
-    {
+    // can turn on that. A kept verdict is reused (it costs no run, and the walk can pass what an earlier pass found
+    // fail), and marked stale when the lightship or the cargo moved. A stale verdict that passed is not trusted: the
+    // walk works the winner out again at its own basis (`fresh`), and takes the next best if it fails. `fresh` skips
+    // the kept verdicts.
+    c.damage_stale = false;
+    if !fresh && let Some(kept) = s.runner.recall(&key, &basis) {
         c.damage = Some(kept.verdicts);
+        c.damage_stale = !kept.stands;
         return Ok(Screened::Done);
     }
     let Some(spec) = c.result.hull_spec.as_ref() else {
@@ -1521,6 +1521,8 @@ struct Candidate {
     /// Issue #935: the damage verdicts of the candidate, when the search ran its damage (only candidates that
     /// passed the cheap checks and stability get it).
     damage: Option<Vec<crate::measured::DamageVerdict>>,
+    /// Issue #1038: the verdicts were kept from an earlier depth pass, on a lightship or cargo that has since moved.
+    damage_stale: bool,
 }
 
 fn derate_candidate(
@@ -1980,6 +1982,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                         journey: j,
                         inputs: inp,
                         damage: None,
+                        damage_stale: false,
                     });
                 }
             }
@@ -2049,7 +2052,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                 }
             }
             if ok && screening {
-                if screen_damage(s, &mut pool.all[i])? == Screened::CapReached {
+                if screen_damage(s, &mut pool.all[i], false)? == Screened::CapReached {
                     break 'counts;
                 }
                 ok = passes_all(&pool.all[i], o);
@@ -2081,7 +2084,50 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
             }
         }
     }
+    // Issue #1038: the winner is worked out again at its own basis when its verdicts were kept from an earlier pass.
+    if screening && s.runner.enabled() && !stop_at_first_pass {
+        finalize_winner(s, &mut pool)?;
+    }
     Ok(pool)
+}
+
+/// Issue #1038: the winner of the search stands on verdicts that an earlier depth pass of this run may have worked
+/// out on a lightship that has since moved (they are reused, which saves the runs of the walk). Work the winner out
+/// again at its own basis; if it fails there, it is out, and the next best candidate that passed (on kept verdicts or
+/// not) is worked out again in its turn, within the budget. When the budget is gone the winner stands on what it has,
+/// and the answer's own damage run, which decides feasibility, has the last word.
+fn finalize_winner(s: &mut Search<'_>, pool: &mut Pool) -> Result<(), PyError> {
+    let o = s.o;
+    while let Some(b) = pool.best {
+        if !pool.all[b].damage_stale || out_of_runs(s) {
+            return Ok(());
+        }
+        if screen_damage(s, &mut pool.all[b], true)? == Screened::CapReached {
+            return Ok(());
+        }
+        if passes_all(&pool.all[b], o) {
+            return Ok(());
+        }
+        // Out: the next best that passed damage on the verdicts it has.
+        pool.assessed_failed.push(b);
+        let mut next: Option<usize> = None;
+        for i in 0..pool.all.len() {
+            if i == b || pool.all[i].cheap_failed != 0 || pool.all[i].damage.is_none() {
+                continue;
+            }
+            if !pool.all[i].damage_stale && pool.assessed_failed.contains(&i) {
+                continue;
+            }
+            if !passes_all(&pool.all[i], o) || pool.assessed_failed.contains(&i) {
+                continue;
+            }
+            if next.is_none_or(|n| better_pick(&pool.all, i, n)) {
+                next = Some(i);
+            }
+        }
+        pool.best = next;
+    }
+    Ok(())
 }
 
 /// What the pick compares of a candidate (issue #935, addendum D3).
@@ -2258,10 +2304,11 @@ fn refine_failed_groups(
                 journey: j,
                 inputs: inp,
                 damage: None,
+                damage_stale: false,
             };
             let idx = pool.all.len();
             let mut passes = cand.cheap_failed == 0 && passes_all(&cand, o);
-            if passes && screen_damage(s, &mut cand)? == Screened::CapReached {
+            if passes && screen_damage(s, &mut cand, false)? == Screened::CapReached {
                 return Ok(());
             }
             passes = passes && passes_all(&cand, o);
@@ -2739,6 +2786,7 @@ fn fit_once(
                 journey: j,
                 inputs: inp,
                 damage: None,
+                damage_stale: false,
             }
         }
     };

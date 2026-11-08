@@ -30,6 +30,15 @@ fn coastal(loa: f64, beam: f64) -> Value {
     results
 }
 
+fn cargo_volume(r: &Value) -> f64 {
+    r["fit_tried"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["outcome"] == "chosen")
+        .map_or(0.0, |t| t["cargo_volume_m3"].as_f64().unwrap())
+}
+
 fn igc_fails(r: &Value) -> usize {
     r["rule_trace"]["rows"]
         .as_array()
@@ -58,5 +67,32 @@ fn feasible_implies_no_failing_igc_2_7_row_on_the_narrow_coastal_designs() {
         }
         assert_eq!(r["arrangement"]["feasible"], true, "{loa} x {beam}");
         assert_eq!(fails, 0, "{loa} x {beam}");
+    }
+}
+
+/// The 80 x 12 and 110 x 12 m coastal designs keep the picks they had before #1038 (one tank across by four along,
+/// 9.94 m and 9.53 m), which were real: their own fresh damage runs have no failing row. Re-screening every kept
+/// pass drained the budget and shrank them to one by two (6.99 m and 6.87 m, -31 % and -40 % cargo). Kept verdicts
+/// are reused, and only the winner is worked out again at its own basis. **Mutation proof:** screening every kept
+/// pass again (and not reusing it) brings the smaller picks back, and this test fails.
+/// Label: snapshot, printed by the code.
+#[test]
+fn the_picks_a_kept_verdict_helped_find_are_not_lost() {
+    for (loa, beam, od, volume) in [(80.0, 12.0, 9.94, 2030.0), (110.0, 12.0, 9.53, 3703.0)] {
+        let r = coastal(loa, beam);
+        assert_eq!(r["arrangement"]["feasible"], true, "{loa} x {beam}");
+        assert_eq!(igc_fails(&r), 0, "{loa} x {beam}");
+        assert_eq!(r["arrangement"]["n_wide"], 1, "{loa} x {beam}");
+        assert_eq!(r["arrangement"]["n_long"], 4, "{loa} x {beam}");
+        let got = r["arrangement"]["tank_od_m"].as_f64().unwrap();
+        assert!(
+            (got - od).abs() < 0.01,
+            "{loa} x {beam}: tank {got} m, expected {od} m"
+        );
+        assert!(
+            (cargo_volume(&r) - volume).abs() < 1.0,
+            "{loa} x {beam}: {} m3",
+            cargo_volume(&r)
+        );
     }
 }
