@@ -889,7 +889,7 @@
       "default_by_service_area": { "river-only": 0.0, "coastal-and-river": 6.0 },
       "unit": "mm",
       "hard": { "ge": 0, "le": 50 },
-      "soft": { "min": 4.0, "max": 12.0 },
+      "soft": { "min": 0.0, "max": 12.0 },
       "basis": "carried over from the original engine: the plate of the non-structural weather shield over the tanks (top, sides and ends), weighed at the hull steel density. Its part above the moulded depth is a lightship item at its own height (issue #410). 0: no shield. River only: none, because a river barge's tanks stand to their axis above the deck with no shield (issue #992, the maintainer's decision of 2026-11-07); coastal and river: 6. A file saved before keeps 6"
     },
     "weather_shield_clearance_m": {

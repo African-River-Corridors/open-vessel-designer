@@ -1,0 +1,53 @@
+<!-- unreleased -->
+- Tank top above the deck by default (issue #992, phase 5): a new gas Option now stands its tanks above the main deck, and the moulded depth follows the tank (the maintainer's decision of 2026-11-07). Coastal and river: `tank_top_above_deck_m` 2.0 m, with the weather shield (`weather_shield_thickness_mm` 6 mm). River only: the new input `tank_top_above_deck_od_fraction` 0.5, so the main deck sits at the tank axis, with no shield (`weather_shield_thickness_mm` 0, whose soft range now starts at 0). The three defaults are by Service Area in the Defaults Profile. A file saved before keeps none for the height and the share, and 6 mm for the shield, so its depth and its results are as they were; a typed `moulded_depth_m` wins over a default height with no warning (a typed height still warns). There is no calibration case for a coastal gas barge with its tanks standing above the deck; the 2.0 m is the maintainer's figure. The depth is the double bottom, the support and the tank diameter less the height, and never less than the draught limit plus the least freeboard. The stored `moulded_depth_m` of a new Option is the ratio default it started from; the engine's depth is `dims.depth_m`.
+- Every new coastal gas Option moves: the depth falls and the tank diameter may grow (the depth no longer limits it), so the tank count, the cargo, the lightship, the draught, the air draft and the stability and damage results move, each from the standing height and the shield. A new river-only gas Option moves the same way, and loses its shield mass. The table below lists the moved designs of the design-impact case set.
+- Files (issue #992): the current fixtures, the website gas example and the sensitivities example store `tank_top_above_deck_od_fraction` as none (default); their results do not move.
+
+<!-- design-impact -->
+### ticket/992-defaults (2026-11-08)
+
+Between `main c2d51c9` and `this branch 75849341`.
+
+| Case | Quantity | Before | After | Change |
+|---|---|---|---|---|
+| sweep CN-derived liquid 1 (88x16.3) | `checks[13].message` | blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 2.84 m of 6.00 m | blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 2.85 m of 6.00 m | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[22].message` | freeboard 3.28 m at the carried draught 2.42 m >= required 0.3 m | freeboard 3.33 m at the carried draught 2.37 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[23].message` | GM 7.01 m (fluid), max GZ 2.91 m at 30° | GM 7.28 m (fluid), max GZ 3.01 m at 30° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[24].message` | GM 7.03 m (fluid), max GZ 2.91 m at 30° | GM 7.31 m (fluid), max GZ 3.01 m at 30° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[25].message` | GM 14.03 m (fluid), max GZ 3.61 m at 27° | GM 14.92 m (fluid), max GZ 3.74 m at 27° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[26].message` | GM 14.16 m (fluid), max GZ 3.61 m at 27° | GM 15.07 m (fluid), max GZ 3.73 m at 27° | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[27].message` | barge form factor at the service speed: Fn 0.192, Cp 0.955, L/B 4.93, B/T 6.69; outside its range: Fn 0.19 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88), L/B 4.93 (range 7.59 to 16.29) | barge form factor at the service speed: Fn 0.193, Cp 0.956, L/B 4.92, B/T 6.83; outside its range: Fn 0.19 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88), L/B 4.92 (range 7.59 to 16.29) | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `checks[3].message` | freeboard 3.28 m >= required 0.3 m | freeboard 3.33 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 1 (88x16.3) | `results.vent_working_area` | weather_shield | tank_top | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[14].message` | blind distance ahead of the bow over 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen): lift needed 8.93 m of 6.00 m | blind distance ahead of the bow over 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen): lift needed 10.52 m of 6.00 m | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[22].message` | tank length 49.29 m / inner diameter 9.43 m = 5.23 <= 7.0 | tank length 49.29 m / inner diameter 10.42 m = 4.73 <= 7.0 | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[23].message` | freeboard 2.50 m at the carried draught 3.20 m >= required 0.3 m | freeboard 2.12 m at the carried draught 3.58 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[24].message` | GM 4.12 m (fluid), max GZ 1.68 m at 26° | GM 3.35 m (fluid), max GZ 1.18 m at 25° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[25].message` | GM 4.12 m (fluid), max GZ 1.69 m at 26° | GM 3.35 m (fluid), max GZ 1.18 m at 25° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[26].message` | GM 9.23 m (fluid), max GZ 3.00 m at 29° | GM 8.73 m (fluid), max GZ 2.93 m at 29° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[27].message` | GM 9.28 m (fluid), max GZ 2.99 m at 29° | GM 8.77 m (fluid), max GZ 2.93 m at 29° | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[28].message` | barge form factor at the service speed: Fn 0.154, Cp 0.962, L/B 7.65, B/T 5.07; outside its range: Fn 0.15 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88) | barge form factor at the service speed: Fn 0.154, Cp 0.958, L/B 7.72, B/T 4.54; outside its range: Fn 0.15 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88) | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[4].message` | freeboard 2.50 m >= required 0.3 m | freeboard 2.12 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[6].message` | 2 x 2.03 m thrusters need 5.85 m across a 16.30 m beam | 2 x 2.09 m thrusters need 5.99 m across a 16.30 m beam | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `checks[7].message` | 2 of 2 requested thrusters fit; 2 would need 5.85 m of 16.30 m beam | 2 of 2 requested thrusters fit; 2 would need 5.99 m of 16.30 m beam | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `results.vent_working_area` | weather_shield | tank_top | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `sightline.blind_distance_laden_m` | 790.926389712 | float:inf | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `sightline.blind_distance_light_m` | 918.760740978 | float:inf | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `stability.lowest_gm_condition` | Full load, departure | Full load, arrival | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `structure.purchase.sections[6].section` | T 400x9.0+140x14 | T 400x9.0+110x11 | changed |
+| sweep CN-derived liquid 2 (130x16.3) | `warnings[1]` | The blind distance needs 8.93 m of lift; the column gives 6.00 m. Raise the column or lower the cargo top. | The blind distance needs 10.52 m of lift; the column gives 6.00 m. Raise the column or lower the cargo top. | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[14].message` | blind distance ahead of the bow 250.0 m <= 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen); lift used 4.56 m of 6.00 m | blind distance ahead of the bow over 250 m, light (limit from the Rule Sets of the stack: es-trin/7.02(2)/blind-zone-unladen): lift needed 10.45 m of 6.00 m | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[14].ok` | True | False | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[1].message` | No arrangement passes every check on this hull. The closest one is shown. It fails: tank_length_over_diameter. | No arrangement passes every check on this hull. The closest one is shown. It fails: wheelhouse_sees_over_cargo. | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[22].message` | tank length 49.29 m / inner diameter 6.65 m = 7.41 <= 7.0 | tank length 49.29 m / inner diameter 10.32 m = 4.78 <= 7.0 | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[22].ok` | False | True | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[23].message` | freeboard 2.65 m at the carried draught 3.05 m >= required 0.3 m | freeboard 2.29 m at the carried draught 3.41 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[24].message` | GM 6.09 m (fluid), max GZ 2.46 m at 28° | GM 4.36 m (fluid), max GZ 1.58 m at 25° | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[25].message` | GM 6.10 m (fluid), max GZ 2.47 m at 28° | GM 4.36 m (fluid), max GZ 1.59 m at 25° | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[26].message` | GM 12.05 m (fluid), max GZ 3.72 m at 30° | GM 10.54 m (fluid), max GZ 3.32 m at 29° | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[27].message` | GM 12.12 m (fluid), max GZ 3.71 m at 30° | GM 10.59 m (fluid), max GZ 3.32 m at 29° | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[28].message` | barge form factor at the service speed: Fn 0.155, Cp 0.964, L/B 7.22, B/T 5.62; outside its range: Fn 0.15 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88), L/B 7.22 (range 7.59 to 16.29) | barge form factor at the service speed: Fn 0.154, Cp 0.960, L/B 7.28, B/T 5.03; outside its range: Fn 0.15 (range 0.00 to 0.14), Cp 0.96 (range 0.77 to 0.88), L/B 7.28 (range 7.59 to 16.29) | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[4].message` | freeboard 2.65 m >= required 0.3 m | freeboard 2.29 m >= required 0.3 m | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[6].message` | 2 x 1.89 m thrusters need 5.58 m across a 17.20 m beam | 2 x 2.03 m thrusters need 5.85 m across a 17.20 m beam | changed |
+| sweep CN-derived liquid 3 (130x17.2) | `checks[7].message` | 2 of 2 requested thrusters fit; 2 would need 5.58 m of 17.20 m beam | 2 of 2 requested thrusters fit; 2 would need 5.85 m of 17.20 m beam | changed |
+| ... | 103595 more changed quantities | | | |

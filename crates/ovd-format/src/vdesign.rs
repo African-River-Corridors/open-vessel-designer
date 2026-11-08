@@ -2644,23 +2644,6 @@ pub const INPUTS: &[InputSpec] = &[
         "type_c_tanks",
         Group::GasTanks,
     ),
-    // Issue #992: how far the tank top stands above the main deck; 0 is tanks in hold. None: the
-    // depth is the one typed, or the ratio default, as before.
-    only(
-        "tank_top_above_deck_m",
-        "Tank top above deck",
-        NUM_OR_NONE,
-        "type_c_tanks",
-        Group::GasTanks,
-    ),
-    // Issue #992: the same as a share of the tank outer diameter, read when the height is none.
-    only(
-        "tank_top_above_deck_od_fraction",
-        "Tank top above deck, share of the tank diameter",
-        NUM_OR_NONE,
-        "type_c_tanks",
-        Group::GasTanks,
-    ),
     only(
         "tanks_in_line",
         "Tanks in line",
@@ -2706,13 +2689,6 @@ pub const INPUTS: &[InputSpec] = &[
     only(
         "min_side_space_m",
         "Minimum side space",
-        NUM,
-        "type_c_tanks",
-        Group::GasTanks,
-    ),
-    only(
-        "weather_shield_thickness_mm",
-        "Weather shield plate thickness",
         NUM,
         "type_c_tanks",
         Group::GasTanks,
@@ -3814,6 +3790,32 @@ pub const INPUTS: &[InputSpec] = &[
         NUM,
         "integral_tanks",
         Group::LiquidTanks,
+    ),
+    // Issue #992: after the Service Area, which sets their defaults (the tank top above the deck, and
+    // the weather shield over it).
+    // Issue #992: how far the tank top stands above the main deck; 0 is tanks in hold. None: the
+    // depth is the one typed, or the ratio default, as before.
+    only(
+        "tank_top_above_deck_m",
+        "Tank top above deck",
+        NUM_OR_NONE,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    // Issue #992: the same as a share of the tank outer diameter, read when the height is none.
+    only(
+        "tank_top_above_deck_od_fraction",
+        "Tank top above deck, share of the tank diameter",
+        NUM_OR_NONE,
+        "type_c_tanks",
+        Group::GasTanks,
+    ),
+    only(
+        "weather_shield_thickness_mm",
+        "Weather shield plate thickness",
+        NUM,
+        "type_c_tanks",
+        Group::GasTanks,
     ),
     spec(
         "rule_sets",

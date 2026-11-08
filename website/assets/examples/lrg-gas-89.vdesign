@@ -218,14 +218,6 @@
           "value": null,
           "source": "default"
         },
-        "tank_top_above_deck_m": {
-          "value": null,
-          "source": "default"
-        },
-        "tank_top_above_deck_od_fraction": {
-          "value": null,
-          "source": "default"
-        },
         "tanks_in_line": {
           "value": 4.0,
           "source": "typed"
@@ -252,10 +244,6 @@
         },
         "min_side_space_m": {
           "value": 0.0,
-          "source": "default"
-        },
-        "weather_shield_thickness_mm": {
-          "value": 6.0,
           "source": "default"
         },
         "weather_shield_clearance_m": {
@@ -578,6 +566,10 @@
           "value": false,
           "source": "default"
         },
+        "deckhouse_openings": {
+          "value": null,
+          "source": "default"
+        },
         "deckhouse_side_opening_distance_m": {
           "value": 5.0,
           "source": "default"
@@ -624,6 +616,18 @@
         },
         "unmanned_machinery_space": {
           "value": true,
+          "source": "default"
+        },
+        "tank_top_above_deck_m": {
+          "value": null,
+          "source": "default"
+        },
+        "tank_top_above_deck_od_fraction": {
+          "value": null,
+          "source": "default"
+        },
+        "weather_shield_thickness_mm": {
+          "value": 6.0,
           "source": "default"
         },
         "rule_sets": {
