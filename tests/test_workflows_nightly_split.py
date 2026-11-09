@@ -7,6 +7,9 @@ Label: property
 """
 import json
 import re
+import subprocess
+import sys
+import textwrap
 from pathlib import Path
 
 import yaml
@@ -75,3 +78,35 @@ def test_every_test_waits_for_every_part_and_does_not_skip_on_failure():
     text = "\n".join(s.get("run", "") for s in job["steps"])
     for name in _parts():
         assert f'"{name}"' in text, name
+
+
+def _roll_up_script():
+    """The Python the `every-test` step runs, taken out of its shell heredoc."""
+    run = "\n".join(s.get("run", "") for s in JOBS["every-test"]["steps"])
+    return re.search(r"<<'PY'\n(.*?)\n\s*PY\s*$", run, re.S).group(1)
+
+
+def _roll_up_exit(results):
+    needs = {n: {"result": r} for n, r in results.items()}
+    script = textwrap.dedent(_roll_up_script())
+    done = subprocess.run([sys.executable, "-I", "-c", script], env={"RESULTS": json.dumps(needs)},
+                          capture_output=True, text=True)
+    return done.returncode
+
+
+def _all(result="success"):
+    return {n: result for n in _parts()}
+
+
+def test_the_roll_up_passes_only_when_every_part_succeeded():
+    assert _roll_up_exit(_all()) == 0
+    for bad in ("failure", "cancelled", "skipped"):
+        for name in _parts():
+            assert _roll_up_exit({**_all(), name: bad}) == 1, (name, bad)
+
+
+def test_the_roll_up_fails_on_a_missing_or_an_extra_part():
+    for name in _parts():
+        missing = {n: r for n, r in _all().items() if n != name}
+        assert _roll_up_exit(missing) == 1, name
+    assert _roll_up_exit({**_all(), "nightly-extra": "success"}) == 1
