@@ -5,6 +5,12 @@ name: Nightly
 # by hand, and on a PR that changes the slow list, the nextest profiles, the gate script or this
 # workflow. It is not a required check. Its job is not named `test`, so it never stands in for the
 # required `test` check of ci.yml.
+#
+# It is split across parallel jobs, as ci.yml is (issue #1046): one job that ran every step of the gate
+# with every test reached its 30 minute limit, and a cancelled run hides a real failure. The jobs run the
+# step groups of tools/gates.sh (GATES_STEPS), the Rust tests in twelve partitions (GATES_PARTITION) and
+# pytest in four shards, all with the `nightly` profile, so every test still runs every day. `every-test`
+# waits for all of them and passes only if each passed.
 
 on:
   schedule:
@@ -25,32 +31,129 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  every-test:
+  nightly-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/gate-env
+        with:
+          cache-key: gate-lint
+      - name: Lint, Rule Set gate, fixture hashes and WebAssembly build
+        env:
+          GATES_STEPS: lint,rules
+        run: bash tools/gates.sh
+
+  # The same twelve partitions as gate-rust in ci.yml, with the same placed slow tests
+  # (.config/rust-partitions.txt), but the `nightly` profile: the tests the `pr` profile leaves out run
+  # in their partitions too.
+  nightly-rust:
+    name: nightly-rust (${{ matrix.part }}/${{ strategy.job-total }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CARGO_PROFILE_DEV_DEBUG: line-tables-only
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/gate-env
+        with:
+          cache-key: gate-rust
+          python-package: "false"
+      - name: Rust tests, every test, partition ${{ matrix.part }} of ${{ strategy.job-total }}
+        env:
+          GATES_STEPS: rust
+          GATES_NEXTEST_PROFILE: nightly
+          GATES_PARTITION: ${{ matrix.part }}/${{ strategy.job-total }}
+        run: bash tools/gates.sh
+      - name: Upload the nextest times (JUnit)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextest-junit-${{ matrix.part }}
+          path: target/nextest/*/junit.xml
+          if-no-files-found: ignore
+
+  nightly-impact:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # the design-impact check diffs against the merge base
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/gate-env
         with:
-          python-version: "3.12"
-      - name: Install the pinned Rust toolchain (rust-toolchain.toml)
-        run: rustup toolchain install
-      - uses: Swatinem/rust-cache@v2
-      - name: Install cargo-nextest (pinned)
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-nextest@0.9.100
-      - name: Install the Python package (maturin builds the extension, so Rust comes first)
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e '.[dev]'
-      - name: Fast gate, every test
+          cache-key: gate-impact-release
+          python-package: "false"
+      - name: Install PyYAML
+        run: python -m pip install 'pyyaml>=6'
+      - name: Design impact
         env:
-          GATES_NEXTEST_PROFILE: nightly
+          GATES_STEPS: impact
+          DESIGN_IMPACT_PROFILE: release
         run: bash tools/gates.sh
+
+  # pytest in four shards, as gate-python in ci.yml (tools/pytest_shard.py), with no `slow` test left
+  # out. The checks that run once run in shard 1.
+  nightly-python:
+    name: nightly-python (${{ matrix.shard }}/4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the design-impact check diffs against the merge base
+      - uses: ./.github/actions/gate-env
+        with:
+          cache-key: gate-python
+      - name: pytest, every test, shard ${{ matrix.shard }} of 4
+        env:
+          GATES_STEPS: pytest
+          GATES_NEXTEST_PROFILE: nightly
+          PYTHONPATH: tools
+          PYTEST_ADDOPTS: -p pytest_shard --junitxml=target/pytest/junit.xml
+          PYTEST_SHARD: ${{ matrix.shard }}/4
+        run: bash tools/gates.sh
+      - name: Upload the pytest times (JUnit)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-junit-${{ matrix.shard }}
+          path: target/pytest/junit.xml
+          if-no-files-found: ignore
       - name: Evaluation harness (a false pass fails the build)
+        if: matrix.shard == 1
         run: python evaluation/run.py --check
       - name: The mutants file is what the generator writes
+        if: matrix.shard == 1
         run: python evaluation/oracle/mutants.py --check
+
+  # Passes only when every part passed; a skipped, cancelled or missing part fails it.
+  every-test:
+    if: always()
+    needs: [nightly-lint, nightly-rust, nightly-impact, nightly-python]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every part of the nightly run passed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS"
+          python3 - <<'PY'
+          import json, os, sys
+          needs = json.loads(os.environ["RESULTS"])
+          expected = {"nightly-lint", "nightly-rust", "nightly-impact", "nightly-python"}
+          if set(needs) != expected:
+              sys.exit(f"the parts of the nightly run are {sorted(needs)}, not {sorted(expected)}")
+          bad = {n: v["result"] for n, v in needs.items() if v["result"] != "success"}
+          if bad:
+              sys.exit(f"the nightly run failed: {bad}")
+          PY

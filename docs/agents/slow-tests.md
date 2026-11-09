@@ -2,7 +2,7 @@
 
 The `test` job of every PR runs the fast gate (`tools/gates.sh`) with the `pr` profile. The tests
 below are left out of it and run in the `nightly` workflow (`.github/workflows/nightly.yml`), every
-day and on any PR that changes this list, the nextest profiles or the gate script. No test is
+day and on any PR that changes this list, the nextest profiles or the gate script. It is split as `ci.yml` is (issue #1046): Rust in twelve partitions, pytest in four shards, so no job nears its 30 minute limit. No test is
 deleted. Run every test locally with `GATES_NEXTEST_PROFILE=nightly bash tools/gates.sh`.
 
 The `test` check is split (issue #561). `ci.yml` runs the gate in four parallel jobs: `gate-lint`, `gate-rust` (twelve
