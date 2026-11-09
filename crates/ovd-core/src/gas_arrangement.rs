@@ -1543,6 +1543,16 @@ struct Candidate {
     refined: bool,
 }
 
+/// Issue #1039: the reason a candidate is refused when its depth leaves no draught under the freeboard.
+fn freeboard_over_depth(depth: f64, o: &FitOptions) -> Text {
+    text!(
+        "fit-refused-freeboard-over-depth",
+        "The depth {depth} m is less than the minimum freeboard {fb} m, so the vessel could float at no draught.",
+        depth = Arg::fixed(depth, 2),
+        fb = Arg::fixed(o.required_freeboard_m, 2),
+    )
+}
+
 fn derate_candidate(
     r: &BargeCapacityResult,
     loa: f64,
@@ -1983,6 +1993,15 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                         Some(_) => t_max.min(dep - o.required_freeboard_m),
                         None => t_max,
                     };
+                    // Issue #1039: a depth below the freeboard leaves a negative draught cap; such a candidate is refused.
+                    if t_cap < 0.0 {
+                        s.refused.push((
+                            dep,
+                            inp.n_tanks_wide.unwrap_or(1),
+                            freeboard_over_depth(dep, o),
+                        ));
+                        continue;
+                    }
                     let j = derate_candidate(&r, loa, beam, dep, t_cap, o.water_density_t_per_m3)?;
                     let cheap = cheap_checks(&r, &j, dep, o);
                     // With Rule Sets: the trace before stability (its stability Rules are not yet
@@ -2407,6 +2426,11 @@ fn refine_groups(
             } else {
                 t_max
             };
+            // Issue #1039: a depth below the freeboard leaves a negative draught cap; this size is not offered.
+            if t_cap < 0.0 {
+                hi = mid;
+                continue;
+            }
             let j = derate_candidate(&r, s.loa, s.beam, dep, t_cap, o.water_density_t_per_m3)?;
             let cheap = cheap_checks(&r, &j, dep, o);
             let cheap_failed = failing_groups(&candidate_failures(
@@ -2911,7 +2935,8 @@ fn fit_once(
             let inp = s.base_inputs(d, nw, o.tanks_in_line);
             let r = capacity(&inp)?;
             let t_cap = match o.standing_mode().then_some(()) {
-                Some(_) => t_max.min(d - o.required_freeboard_m),
+                // Issue #1039: the placeholder carries no payload, so a depth below the freeboard stands at no draught.
+                Some(_) => t_max.min(d - o.required_freeboard_m).max(0.0),
                 None => t_max,
             };
             let j = derate_candidate(&r, loa, beam, d, t_cap, o.water_density_t_per_m3)?;

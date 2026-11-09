@@ -12,6 +12,15 @@ use ovd_format::{Profile, RunOutcome, fill_as_new, run_option, run_option_with_d
 use serde_json::{Value, json};
 
 fn coastal(loa: f64, beam: f64, extra: Value) -> ovd_format::vdesign::Design {
+    try_coastal(loa, beam, extra).unwrap()
+}
+
+/// The design, or the input errors the fill reports (a typed value the inputs themselves refuse).
+fn try_coastal(
+    loa: f64,
+    beam: f64,
+    extra: Value,
+) -> Result<ovd_format::vdesign::Design, Vec<String>> {
     let mut inputs = json!({
         "cargo": { "value": "LNG", "source": "typed" },
         "hull_form": { "value": "raked_box", "source": "typed" },
@@ -28,8 +37,10 @@ fn coastal(loa: f64, beam: f64, extra: Value) -> ovd_format::vdesign::Design {
         "options": [{ "name": "Option 1", "inputs": inputs }]
     });
     let filled = fill_as_new(&file.to_string(), &Profile::built_in());
-    assert_eq!(filled.report.errors, Vec::<String>::new());
-    filled.design.unwrap()
+    if !filled.report.errors.is_empty() {
+        return Err(filled.report.errors);
+    }
+    Ok(filled.design.unwrap())
 }
 
 fn results(d: &ovd_format::vdesign::Design) -> Value {
@@ -104,6 +115,61 @@ fn narrow_coastal_hulls_at_the_defaults_never_crash() {
     }
     eprintln!(
         "| LOA m | beam m | depth m | across x along | tank m | feasible |\n|---|---|---|---|---|---|\n{}",
+        table.join("\n")
+    );
+}
+
+/// Issue #1039: the 110 x 11.4 m coastal design with a typed minimum freeboard of 5.0 m failed with "design_depth_m and
+/// ukc_m must be non-negative". A candidate's draught cap is its depth less the freeboard, and a depth below the freeboard
+/// took the cap below zero. Such a candidate is now refused with the cause named; the design runs.
+#[test]
+fn a_typed_freeboard_deeper_than_the_depth_runs_not_a_crash() {
+    let r = results(&coastal(110.0, 11.4, json!({ "min_freeboard_m": 5.0 })));
+    assert!(r["dims"]["depth_m"].as_f64().unwrap() > 0.0);
+}
+
+/// Issue #1039: typed minimum freeboards from 0.5 to 6 m on two narrow hulls never crash (damage run skipped, as above).
+/// **Mutation proof:** removing the `t_cap < 0.0` guards in `gas_arrangement.rs` brings back "design_depth_m and ukc_m
+/// must be non-negative", and this sweep and the 5.0 m test above fail.
+#[test]
+fn typed_freeboards_on_narrow_hulls_never_crash() {
+    let skip = DamageControl {
+        run: false,
+        progress: None,
+    };
+    let mut table = Vec::new();
+    for (loa, beam) in [(110.0, 11.4), (80.0, 10.0)] {
+        for fb in [0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0] {
+            let d = match try_coastal(loa, beam, json!({ "min_freeboard_m": fb })) {
+                Ok(d) => d,
+                Err(e) => {
+                    // The inputs refuse it before the search, with their own message.
+                    table.push(format!(
+                        "| {loa:.0} x {beam} | {fb} | - | - | refused at the inputs: {} |",
+                        e[0]
+                    ));
+                    continue;
+                }
+            };
+            match run_option_with_damage(
+                &d.options[0],
+                ovd_format::rule_set::built_in(),
+                &[],
+                &skip,
+            ) {
+                RunOutcome::Results { results: r, .. } => table.push(format!(
+                    "| {loa:.0} x {beam} | {fb} | {:.2} | {} x {} | {} |",
+                    r["dims"]["depth_m"].as_f64().unwrap(),
+                    r["arrangement"]["n_wide"],
+                    r["arrangement"]["n_long"],
+                    r["arrangement"]["feasible"]
+                )),
+                other => panic!("{loa} x {beam}, freeboard {fb}: {other:?}"),
+            }
+        }
+    }
+    eprintln!(
+        "| Hull m | min freeboard m | depth m | across x along | feasible |\n|---|---|---|---|---|\n{}",
         table.join("\n")
     );
 }
