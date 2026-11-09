@@ -153,7 +153,7 @@
 <line data-origin="viewport.main.dimension" data-layer="DIMENSIONS" x1="263.687" y1="100.848" x2="263.687" y2="113.748" fill="none" stroke="#000" stroke-width="0.18"/>
 <text data-origin="viewport.main.dimension" data-layer="DIMENSIONS" x="110.786" y="98.983" font-size="5" textLength="10.07" lengthAdjust="spacing" fill="#000" transform="rotate(-90 110.786 98.983)">12.00</text>
 <text data-origin="viewport.main.dimension" data-layer="DIMENSIONS" x="187.357" y="111.048" font-size="5" textLength="12.66" lengthAdjust="spacing" fill="#000">140.00</text>
-<path data-origin="viewport.main.leader" data-layer="ANNO" d="M125.436 99.748 L126.113 103.312 L126.97 103.036 Z" fill="#000" fill-rule="evenodd" stroke="none"/>
+<path data-origin="viewport.main.leader" data-layer="ANNO" d="M125.436 99.748 L123.903 103.036 L124.76 103.312 Z" fill="#000" fill-rule="evenodd" stroke="none"/>
 <path data-origin="viewport.main.leader" data-layer="ANNO" d="M137.482 84.752 L135.574 81.666 L134.873 82.231 Z" fill="#000" fill-rule="evenodd" stroke="none"/>
 <path data-origin="viewport.main.leader" data-layer="ANNO" d="M141.779 84.548 L140.809 81.051 L139.978 81.398 Z" fill="#000" fill-rule="evenodd" stroke="none"/>
 <path data-origin="viewport.main.leader" data-layer="ANNO" d="M143.578 79.087 L145.95 76.341 L145.201 75.842 Z" fill="#000" fill-rule="evenodd" stroke="none"/>
@@ -170,7 +170,7 @@
 <path data-origin="viewport.main.leader" data-layer="ANNO" d="M250.212 96.369 L253.625 97.598 L253.823 96.72 Z" fill="#000" fill-rule="evenodd" stroke="none"/>
 <path data-origin="viewport.main.leader" data-layer="ANNO" d="M253.837 87.948 L257.397 87.253 L257.117 86.398 Z" fill="#000" fill-rule="evenodd" stroke="none"/>
 <path data-origin="viewport.main.leader" data-layer="ANNO" d="M256.949 92.158 L260.543 91.663 L260.31 90.793 Z" fill="#000" fill-rule="evenodd" stroke="none"/>
-<line data-origin="viewport.main.leader" data-layer="ANNO" x1="127.436" y1="105.948" x2="125.436" y2="99.748" fill="none" stroke="#000" stroke-width="0.18"/>
+<line data-origin="viewport.main.leader" data-layer="ANNO" x1="123.436" y1="105.948" x2="125.436" y2="99.748" fill="none" stroke="#000" stroke-width="0.18"/>
 <line data-origin="viewport.main.leader" data-layer="ANNO" x1="132.482" y1="78.548" x2="137.482" y2="84.752" fill="none" stroke="#000" stroke-width="0.18"/>
 <line data-origin="viewport.main.leader" data-layer="ANNO" x1="136.779" y1="72.548" x2="141.779" y2="84.548" fill="none" stroke="#000" stroke-width="0.18"/>
 <line data-origin="viewport.main.leader" data-layer="ANNO" x1="145.879" y1="105.948" x2="143.879" y2="99.948" fill="none" stroke="#000" stroke-width="0.18"/>
@@ -187,7 +187,7 @@
 <line data-origin="viewport.main.leader" data-layer="ANNO" x1="269.687" y1="112.75" x2="247.053" y2="98.344" fill="none" stroke="#000" stroke-width="0.18"/>
 <line data-origin="viewport.main.leader" data-layer="ANNO" x1="269.687" y1="118.75" x2="247.053" y2="98.344" fill="none" stroke="#000" stroke-width="0.18"/>
 <line data-origin="viewport.main.leader" data-layer="ANNO" x1="269.687" y1="124.75" x2="246.252" y2="98.844" fill="none" stroke="#000" stroke-width="0.18"/>
-<text data-origin="viewport.main.leader" data-layer="ANNO" x="128.337" y="107.698" font-size="5" textLength="29.205" lengthAdjust="spacing" fill="#000">THRUSTERS (2)</text>
+<text data-origin="viewport.main.leader" data-layer="ANNO" x="93.331" y="107.698" font-size="5" textLength="29.205" lengthAdjust="spacing" fill="#000">THRUSTERS (2)</text>
 <text data-origin="viewport.main.leader" data-layer="ANNO" x="95.077" y="80.298" font-size="5" textLength="36.505" lengthAdjust="spacing" fill="#000">CONTAINERS (2 x 1)</text>
 <text data-origin="viewport.main.leader" data-layer="ANNO" x="68.769" y="74.298" font-size="5" textLength="67.11" lengthAdjust="spacing" fill="#000">WHEELHOUSE, BLOCK TOP 15.40 m</text>
 <text data-origin="viewport.main.leader" data-layer="ANNO" x="146.779" y="107.698" font-size="5" textLength="32.705" lengthAdjust="spacing" fill="#000">END CLEARANCE</text>
