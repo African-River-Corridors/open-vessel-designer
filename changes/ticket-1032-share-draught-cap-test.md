@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Test (issue #1032): the damage refinement's draught cap for a candidate that stands its tank top by a share of the tank diameter (its own depth less the freeboard) now has a test: a coastal 140 x 29 m LNG design with a 0.2 share, a 7.24 m freeboard and no draught limit picks the refined 2-across size (8,614 t); without the share branch of the cap it picks the 1-across 16.00 m tank (7,969 t). No change in behaviour.
