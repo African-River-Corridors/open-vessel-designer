@@ -115,3 +115,54 @@ fn the_search_carries_at_least_the_best_fixed_across_pick_that_passes_damage() {
         }
     }
 }
+
+/// The damage-run limit is where the refinement used to run out and take designs backwards (review of #1031): the
+/// refinement leaves runs for the check of the winner at its own lightship, and a stale failing size is worked out
+/// again only while it can be. These designs are feasible on `main` before this change (cargo printed by the code
+/// there); each stays feasible, with no failing igc/2.7 row, and carries at least what it did. Label: snapshot.
+#[test]
+fn designs_the_budget_could_take_backwards_are_no_worse_than_before() {
+    let forward = json!({ "arrangement_style": "wheelhouse_forward" });
+    for (loa, beam, extra, main_t) in [
+        (89.0, 16.0, json!({}), 1625.0),
+        (80.0, 11.4, json!({}), 839.0),
+        (80.0, 10.0, json!({}), 629.0),
+        (80.0, 9.0, forward.clone(), 475.0),
+        (110.0, 11.4, forward, 1529.0),
+    ] {
+        let r = run_default(loa, beam, extra);
+        assert_eq!(r["arrangement"]["feasible"], true, "{loa} x {beam} m");
+        assert_eq!(igc_fails(&r), 0, "{loa} x {beam} m");
+        assert!(
+            cargo_t(&r) >= main_t - 1.0,
+            "{loa} x {beam} m: {} t, {main_t} t before",
+            cargo_t(&r)
+        );
+    }
+}
+
+/// `run` without the typed tank top of the other tests: the Defaults Profile's own, by Service Area.
+fn run_default(loa: f64, beam: f64, extra: Value) -> Value {
+    let mut inputs = json!({
+        "cargo": { "value": "LNG", "source": "typed" },
+        "hull_form": { "value": "raked_box", "source": "typed" },
+        "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+        "length_overall_m": { "value": loa, "source": "typed" },
+        "beam_m": { "value": beam, "source": "typed" },
+        "service_area": { "value": "coastal-and-river", "source": "typed" }
+    });
+    for (k, v) in extra.as_object().unwrap() {
+        inputs[k] = json!({ "value": v, "source": "typed" });
+    }
+    let file = json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": inputs }]
+    });
+    let d = fill_as_new(&file.to_string(), &Profile::built_in())
+        .design
+        .unwrap();
+    let RunOutcome::Results { results, .. } = run_option(&d.options[0]) else {
+        panic!("no results");
+    };
+    results
+}
