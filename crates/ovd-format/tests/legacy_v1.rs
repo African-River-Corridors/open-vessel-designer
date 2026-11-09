@@ -18,7 +18,16 @@ fn legacy_raw(name: &str) -> String {
 /// #925: the legacy files have none, and a Design with none is an error). The migration tests below are about
 /// what else an old file gets.
 fn legacy(name: &str) -> String {
-    ovd_format::with_service_area(&legacy_raw(name), "river-only").unwrap()
+    let text = ovd_format::with_service_area(&legacy_raw(name), "river-only").unwrap();
+    // Issue #1034: a file saved before the rule has no river limit; one with a `null` marked `default` is the
+    // only kind that keeps its results. Written in as a file saved after Phase 1 holds them.
+    let mut file: Value = serde_json::from_str(&text).unwrap();
+    for option in file["options"].as_array_mut().unwrap() {
+        for limit in ["draught_limit_m", "air_draft_limit_m"] {
+            option["inputs"][limit] = json!({ "value": null, "source": "default" });
+        }
+    }
+    file.to_string()
 }
 
 #[test]
@@ -167,7 +176,7 @@ fn a_bare_value_form_is_changed_too() {
     let file = json!({
         "format": "vdesign", "format_version": 1, "engine_version": "0.1.0",
         "options": [{ "name": "A", "inputs": {
-            "cargo": "LNG", "hull_form": "raked_box", "service_area": "river-only", "length_overall_m": 80.0, "beam_m": 12.0,
+            "cargo": "LNG", "hull_form": "raked_box", "service_area": "river-only", "draught_limit_m": 12.0, "air_draft_limit_m": 40.0, "length_overall_m": 80.0, "beam_m": 12.0,
             "moulded_depth_m": 5.0, "formation": { "kind": "self_propelled" },
             "ruleset": "ADN_G", "adn_tank_cap_m3": 380.0
         } }]

@@ -438,7 +438,7 @@ fn bad_class_and_scheme_values_are_hard_errors() {
 fn a_version_1_file_has_no_class_inputs_and_opens_unchanged() {
     let v1 = json!({ "format": "vdesign", "format_version": 1, "engine_version": "0.1.0",
         "options": [{ "name": "A", "inputs": {
-            "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only", "moulded_depth_m": 3.5,
+            "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only", "draught_limit_m": 12.0, "air_draft_limit_m": 40.0, "moulded_depth_m": 3.5,
             "length_overall_m": 76.5, "beam_m": 11.4, "formation": { "kind": "pushed_barge" } } }] });
     let r = fill(&v1.to_string(), &Profile::built_in());
     assert!(r.report.is_ok(), "{:?}", r.report);

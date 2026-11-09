@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 
 fn file(cargo: &str, beam: f64, depth: Option<f64>) -> String {
     let mut inputs = json!({
-        "cargo": cargo, "hull_form": "raked_box", "service_area": "river-only", "length_overall_m": 80.0, "beam_m": beam,
+        "cargo": cargo, "hull_form": "raked_box", "service_area": "river-only", "draught_limit_m": 12.0, "air_draft_limit_m": 40.0, "length_overall_m": 80.0, "beam_m": beam,
         "formation": { "kind": "self_propelled" }
     });
     if let Some(d) = depth {

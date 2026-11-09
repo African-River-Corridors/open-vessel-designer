@@ -20,6 +20,7 @@ fn required(cargo: &str) -> Value {
         "hull_form": "raked_box",
         "length_overall_m": 76.5,
         "service_area": "river-only",
+        "draught_limit_m": 12.0, "air_draft_limit_m": 40.0,
         "beam_m": 11.4,
         "moulded_depth_m": 3.5,
         "formation": { "kind": "self_propelled" }
@@ -152,7 +153,11 @@ fn fill_writes_a_left_out_input_in_with_a_warning() {
 
 #[test]
 fn check_refuses_a_file_that_leaves_out_optional_inputs_and_names_them() {
-    let e = check(&design_with(required("bauxite")), &Profile::built_in())
+    let mut inputs = required("bauxite");
+    for limit in ["draught_limit_m", "air_draft_limit_m"] {
+        inputs.as_object_mut().unwrap().remove(limit);
+    }
+    let e = check(&design_with(inputs), &Profile::built_in())
         .report
         .errors;
     // Issue #1034: the file is river-only and stores neither river limit, so the one message about them comes too.

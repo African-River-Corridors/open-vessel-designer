@@ -121,7 +121,7 @@ fn open_writes_in_left_out_inputs_marked_default() {
     let file = json!({
         "format": "vdesign", "format_version": 2, "engine_version": "0.2.0",
         "options": [{ "name": "A", "inputs": {
-            "cargo": "LNG", "hull_form": "raked_box", "service_area": "river-only", "formation": { "kind": "self_propelled" },
+            "cargo": "LNG", "hull_form": "raked_box", "service_area": "river-only", "draught_limit_m": 12.0, "air_draft_limit_m": 40.0, "formation": { "kind": "self_propelled" },
             "length_overall_m": 100.0, "beam_m": 12.0, "moulded_depth_m": 5.0,
         }}]
     });

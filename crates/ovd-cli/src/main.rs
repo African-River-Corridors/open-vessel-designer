@@ -837,8 +837,17 @@ fn run(args: &[&str]) -> Result<bool, String> {
             for e in &checked.report.errors {
                 eprintln!("error: {e}");
             }
+            // Issue #1034: for a river limit, `ovd fill` alone is no way round: the hint says what answers it.
+            let river = |e: &String| e.contains("river-only Option needs a number");
+            let hint = if !checked.report.errors.iter().any(river) {
+                "Fix the file, or run `ovd fill` if inputs are left out."
+            } else if checked.report.errors.iter().all(river) {
+                "Type a number for each river limit, or pick a Vessel Class."
+            } else {
+                "Type a number for each river limit, or pick a Vessel Class. `ovd fill` writes in the other left-out inputs."
+            };
             eprintln!(
-                "{} error(s); nothing run. Fix the file, or run `ovd fill` if inputs are left out.",
+                "{} error(s); nothing run. {hint}",
                 checked.report.errors.len().max(1)
             );
             return Ok(false);

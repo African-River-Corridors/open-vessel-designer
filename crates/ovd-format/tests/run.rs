@@ -152,7 +152,7 @@ fn fill_does_not_stamp_a_file_that_has_a_hard_error() {
     let text = json!({
         "format": "vdesign", "format_version": 2, "engine_version": "0.1.0",
         "options": [{ "name": "A", "inputs": {
-            "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only", "formation": {"kind": "pushed_barge"},
+            "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only", "draught_limit_m": 12.0, "air_draft_limit_m": 40.0, "formation": {"kind": "pushed_barge"},
             "length_overall_m": 76.5, "beam_m": -1.0, "moulded_depth_m": 3.5 } }]
     })
     .to_string();
@@ -188,7 +188,7 @@ fn raw_file(engine_version: &str, options: Value) -> String {
 
 fn raw_option(name: &str, hash: Option<&str>) -> Value {
     let mut o = json!({ "name": name, "inputs": {
-        "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only", "formation": {"kind": "pushed_barge"},
+        "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only", "draught_limit_m": 12.0, "air_draft_limit_m": 40.0, "formation": {"kind": "pushed_barge"},
         "length_overall_m": 76.5, "beam_m": 11.4, "moulded_depth_m": 3.5 } });
     if let Some(h) = hash {
         o["results_hash"] = json!(h);

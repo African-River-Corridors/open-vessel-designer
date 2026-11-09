@@ -127,14 +127,17 @@ fn open_of_a_hand_written_file_equals_ovd_fill() {
             { "name": "A", "inputs": {
                 "cargo": "LPG_propane", "hull_form": "raked_box", "service_area": "river-only",
                 "formation": { "kind": "self_propelled" },
-                "length_overall_m": 100, "beam_m": 12, "moulded_depth_m": 5 } },
+                "length_overall_m": 100, "beam_m": 12, "moulded_depth_m": 5,
+                "draught_limit_m": 12, "air_draft_limit_m": 40 } },
             { "name": "B", "inputs": {
                 "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only",
                 "formation": { "kind": "pushed_convoy", "abreast": 2, "in_line": 2 },
                 "length_overall_m": 76.5, "beam_m": 11.4, "moulded_depth_m": 3.5,
-                "cargo_containment": "sloped_hopper_hold", "block_coefficient": 0.9 } }
+                "cargo_containment": "sloped_hopper_hold", "block_coefficient": 0.9,
+                "draught_limit_m": 12, "air_draft_limit_m": 40 } }
         ]
     });
+    // Issue #1034: a river-only Option needs a number for both river limits, so a hand-written file gives them.
     std::fs::write(&file, hand.to_string()).unwrap();
     let filled = ovd(&[
         "fill",

@@ -158,8 +158,77 @@ fn a_saved_river_only_file_with_default_nulls_keeps_its_hash_and_warns_in_valida
         .iter()
         .any(|w| w.as_str().unwrap().contains("saved before the rule"));
     assert!(!in_results, "a validation warning, not a results warning");
-    // The stored results and hash of such files on `main` are held by `tools/check_fixture_hashes.py`.
     assert!(!hash.is_empty());
+}
+
+#[test]
+fn a_saved_river_only_fixture_with_default_nulls_reproduces_its_stored_hash() {
+    // The stored hash was written before the rule: an independent source, not a hash this run made.
+    let path = format!(
+        "{}/tests/fixtures/shipd_dry_bulk.vdesign",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    let text = std::fs::read_to_string(path).unwrap();
+    let stored: Value = serde_json::from_str(&text).unwrap();
+    let option = &stored["options"][0];
+    assert_eq!(option["inputs"]["service_area"]["value"], "river-only");
+    assert!(option["inputs"]["draught_limit_m"]["value"].is_null());
+    let want = option["results_hash"].as_str().unwrap();
+    let filled = fill(&text, &Profile::built_in());
+    assert_eq!(filled.report.errors, Vec::<String>::new());
+    let RunOutcome::Results { hash, .. } = run_option(&filled.design.unwrap().options[0]) else {
+        panic!("a saved file still runs");
+    };
+    assert_eq!(hash, want);
+}
+
+#[test]
+fn a_hand_written_river_only_file_with_no_answer_is_refused_by_fill_and_check() {
+    // Issue #1034, the way round: only a `null` marked `default` is a saved file. Left out, a typed null and a
+    // bare null are each "incomplete", for plain `fill` too (it must not fill a null and run with no limit).
+    let answers = [
+        ("left out", json!({})),
+        (
+            "typed null",
+            json!({ "draught_limit_m": { "value": null, "source": "typed" },
+                    "air_draft_limit_m": { "value": null, "source": "typed" } }),
+        ),
+        (
+            "bare null",
+            json!({ "draught_limit_m": null, "air_draft_limit_m": null }),
+        ),
+    ];
+    for (what, extra) in answers {
+        let text = file("river-only", extra);
+        for (how, checked) in [
+            ("fill", fill(&text, &Profile::built_in())),
+            ("check", ovd_format::check(&text, &Profile::built_in())),
+        ] {
+            let one = needs_number(&checked.report.errors);
+            assert_eq!(one.len(), 1, "{how} {what}: {:?}", checked.report.errors);
+            assert!(
+                !checked
+                    .report
+                    .warnings
+                    .iter()
+                    .any(|w| w.contains("saved before the rule")),
+                "{how} {what}: not a saved file"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_session_option_with_a_typed_null_limit_fails_a_run_with_the_one_message() {
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    s.set_input("Option 1", "draught_limit_m", json!(3.5))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", Value::Null)
+        .unwrap();
+    match run_option(&s.design().options[0]) {
+        RunOutcome::Failed(m) => assert!(m.contains("air_draft_limit_m"), "{m}"),
+        other => panic!("{other:?}"),
+    }
 }
 
 #[test]

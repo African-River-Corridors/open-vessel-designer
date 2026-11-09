@@ -911,3 +911,41 @@ fn run_compares_the_unscreened_stamp_with_the_unscreened_stage_and_says_when_the
         );
     }
 }
+
+#[test]
+fn a_river_only_file_with_no_limit_is_refused_by_fill_and_the_run_hint_does_not_send_it_to_fill() {
+    // Issue #1034: plain `ovd fill` must not fill a null and run with no limit.
+    let dir = temp_dir("river-limit-way-round");
+    let raw = dir.join("raw.vdesign");
+    write_json(
+        &raw,
+        &json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": {
+                "cargo": { "value": "LNG", "source": "typed" },
+                "hull_form": { "value": "raked_box", "source": "typed" },
+                "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+                "length_overall_m": { "value": 110.0, "source": "typed" },
+                "beam_m": { "value": 11.4, "source": "typed" },
+                "service_area": { "value": "river-only", "source": "typed" },
+                "draught_limit_m": null
+            } }]
+        }),
+    );
+    let out = dir.join("out.vdesign");
+    let fill = ovd(&["fill", p(&raw), p(&out)]);
+    assert_eq!(fill.status.code(), Some(1), "{}", stderr(&fill));
+    assert!(stderr(&fill).contains("river-only Option needs a number"));
+    assert!(!out.exists());
+    let run = ovd(&["run", p(&raw)]);
+    assert!(!run.status.success());
+    let e = stderr(&run);
+    assert!(e.contains("river-only Option needs a number"), "{e}");
+    assert!(
+        e.contains("Type a number") && e.contains("Vessel Class"),
+        "{e}"
+    );
+    // The hint line (the last): the other left-out inputs' own error may name `ovd fill`, the hint must not.
+    let hint = e.lines().rfind(|l| l.contains("nothing run")).unwrap();
+    assert!(!hint.contains("run `ovd fill`"), "{hint}");
+}

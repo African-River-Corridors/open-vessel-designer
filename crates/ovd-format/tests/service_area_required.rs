@@ -108,6 +108,8 @@ fn fill_with_a_service_area_then_run_succeeds() {
     for (cargo, containment) in VESSELS {
         let text = file(cargo, containment);
         let set = with_service_area(&text, "river-only").unwrap();
+        // Issue #1034: a river-only Option needs a number for both river limits.
+        let set = ovd_format::with_river_limits(&set, Some(12.0), Some(40.0)).unwrap();
         let filled = fill(&set, &Profile::built_in());
         assert!(
             filled.report.errors.is_empty(),

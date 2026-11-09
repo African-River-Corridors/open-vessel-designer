@@ -4994,7 +4994,7 @@ fn read_option(
         }
         // Issue #1034: a river limit a river-only Option leaves out is not filled from the profile (a null would
         // be a "no limit"): it stays unanswered, and the check after the class is read says so.
-        if river_only && RIVER_LIMITS.contains(&spec.name) && !matches!(missing, Missing::Fill) {
+        if river_only && RIVER_LIMITS.contains(&spec.name) {
             continue;
         }
         if spec.required {
@@ -5231,14 +5231,14 @@ fn read_option(
         let mut stored_null: Vec<&str> = Vec::new();
         for n in RIVER_LIMITS {
             match inputs.iter().find(|(k, _)| k == n) {
-                None if matches!(missing, Missing::Fill) => {}
                 None => unanswered.push(n),
                 Some((_, i)) if i.value.is_null() => {
-                    // A new Option (`fill --as-new`, `simulate`) asks for a number; a saved file keeps its results.
-                    if matches!(missing, Missing::FillProfile) {
-                        unanswered.push(n);
-                    } else {
+                    // Only a `null` marked `default` is a file saved before the rule: it keeps its results.
+                    // A typed or bare `null` is no answer, in a new file as in a hand-written one.
+                    if i.source == Source::Default && !matches!(missing, Missing::FillProfile) {
                         stored_null.push(n);
+                    } else {
+                        unanswered.push(n);
                     }
                 }
                 Some(_) => {}
