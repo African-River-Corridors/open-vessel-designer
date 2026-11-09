@@ -1993,7 +1993,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                         Some(_) => t_max.min(dep - o.required_freeboard_m),
                         None => t_max,
                     };
-                    // Issue #1039: a depth at or below the freeboard leaves no draught; such a candidate is refused.
+                    // Issue #1039: a depth below the freeboard leaves a negative draught cap; such a candidate is refused.
                     if t_cap < 0.0 {
                         s.refused.push((
                             dep,
@@ -2426,7 +2426,7 @@ fn refine_groups(
             } else {
                 t_max
             };
-            // Issue #1039: a depth at or below the freeboard leaves no draught; this size is not offered.
+            // Issue #1039: a depth below the freeboard leaves a negative draught cap; this size is not offered.
             if t_cap < 0.0 {
                 hi = mid;
                 continue;
