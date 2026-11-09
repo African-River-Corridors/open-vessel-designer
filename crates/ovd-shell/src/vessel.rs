@@ -8,24 +8,32 @@
 //! JSON calls carry the group table and the values only.
 
 use ovd_core::mesh::Mesh;
-use ovd_format::{DesignOption, VesselRun, mesh_hash, option_vessel_run};
+use ovd_format::damage::DamageControl;
+use ovd_format::{DesignOption, VesselRun, mesh_hash, option_vessel_run_with_damage};
 use serde_json::{Value, json};
 
 /// One Option's run, its meshes and their hash.
 pub(crate) struct Kept {
     option: DesignOption,
+    /// Issue #1041: whether the run worked damage out, so the model is the screened pick.
+    screened: bool,
     run: VesselRun,
     mesh: Mesh,
     hash: String,
 }
 
 impl Kept {
-    fn new(option: &DesignOption) -> Result<Kept, String> {
-        let run = option_vessel_run(option)?;
+    fn new(option: &DesignOption, screened: bool) -> Result<Kept, String> {
+        let damage = DamageControl {
+            run: screened,
+            progress: None,
+        };
+        let run = option_vessel_run_with_damage(option, &damage)?;
         let mesh = run.meshes();
         let hash = mesh_hash(&mesh);
         Ok(Kept {
             option: option.clone(),
+            screened,
             run,
             mesh,
             hash,
@@ -33,18 +41,23 @@ impl Kept {
     }
 }
 
-/// The kept run of `option` in `design`: the one held when the Option is unchanged, else a new run.
+/// The kept run of `option` in `design`: the one held when the Option and the stage are unchanged, else a new
+/// run. `screened` (issue #1041): the results shown are those of a damage run, so the model is its pick.
 pub(crate) fn kept<'a>(
     cache: &'a mut Option<Kept>,
     options: &[DesignOption],
     name: &str,
+    screened: bool,
 ) -> Result<&'a Kept, String> {
     let option = options
         .iter()
         .find(|o| o.name == name)
         .ok_or_else(|| format!("no Option named '{name}'"))?;
-    if cache.as_ref().is_none_or(|k| k.option != *option) {
-        *cache = Some(Kept::new(option)?);
+    if cache
+        .as_ref()
+        .is_none_or(|k| k.option != *option || k.screened != screened)
+    {
+        *cache = Some(Kept::new(option, screened)?);
     }
     cache.as_ref().ok_or_else(|| "no Vessel Model".to_string())
 }

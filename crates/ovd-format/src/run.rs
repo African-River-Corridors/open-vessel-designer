@@ -492,38 +492,32 @@ pub struct VesselRun {
     pub waterlines: Vec<Waterline>,
 }
 
-/// Run an Option for its Vessel Model and waterlines.
+/// Run an Option for its Vessel Model and waterlines: the stage that skips damage, as the app's first evaluation
+/// (issue #924). See [`option_vessel_run_with_damage`].
 pub fn option_vessel_run(option: &DesignOption) -> Result<VesselRun, String> {
-    let params = simulate_params_of(option)?;
-    let library = Library::built_in();
-    let selection = stack_for(&library, option, &[])?;
-    let rules = RunRules {
-        sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
-        inputs: rule_inputs(option),
-        // The Vessel Model and the waterlines do not read damage: skip it (issue #924).
-        damage: DamageControl {
+    option_vessel_run_with_damage(
+        option,
+        &DamageControl {
             run: false,
             progress: None,
         },
-        budget: Default::default(),
-        pass: crate::simulate::PassRole::Normal,
-        choose_tanks_along: false,
-    };
-    let (outcome, measured) = simulate_params_measured(&params, &rules);
-    match outcome {
-        Outcome::Result(v) => match v.get("error").and_then(Value::as_str) {
-            Some(message) => Err(message.to_string()),
-            None => measured
-                .vessel
-                .as_ref()
-                .map(|inputs| VesselRun {
-                    model: ovd_core::vessel_model::assemble(inputs),
-                    waterlines: waterlines(&v),
-                })
-                .ok_or_else(|| "the run gave no Vessel Model".to_string()),
-        },
-        Outcome::Raised(kind, message) => Err(format!("{kind}: {message}")),
-        Outcome::Refused(message) => Err(message),
+    )
+}
+
+/// Run an Option for its Vessel Model and waterlines, at the stage `damage` gives (issue #1041). The model is
+/// the pick of the run whose results it goes with: with damage run, the arrangement the damage screen chose
+/// (issue #935), as `run_option` reports and `ovd draw` draws; without, the unscreened one.
+pub fn option_vessel_run_with_damage(
+    option: &DesignOption,
+    damage: &DamageControl,
+) -> Result<VesselRun, String> {
+    match run_option_full(option, &Library::built_in(), &[], damage) {
+        (RunOutcome::Results { results, .. }, _, Some(inputs)) => Ok(VesselRun {
+            model: ovd_core::vessel_model::assemble(&inputs),
+            waterlines: waterlines(&results),
+        }),
+        (RunOutcome::Results { .. }, _, None) => Err("the run gave no Vessel Model".to_string()),
+        (RunOutcome::Failed(message) | RunOutcome::NotAvailable(message), _, _) => Err(message),
     }
 }
 
@@ -589,9 +583,12 @@ impl VesselRun {
 pub type ModelWaterlines = (ovd_core::vessel_model::VesselModel, Vec<(String, f64, f64)>);
 
 /// The Vessel Model of an Option and its floating positions `(name, aft draught, forward draught)`
-/// (issue #461): what the panel mesh export clips the hull at.
-pub fn option_model_waterlines(option: &DesignOption) -> Result<ModelWaterlines, String> {
-    let run = option_vessel_run(option)?;
+/// (issue #461): what the panel mesh export clips the hull at. `damage` gives the stage (issue #1041).
+pub fn option_model_waterlines(
+    option: &DesignOption,
+    damage: &DamageControl,
+) -> Result<ModelWaterlines, String> {
+    let run = option_vessel_run_with_damage(option, damage)?;
     let lines = run.waterline_draughts();
     Ok((run.model, lines))
 }
@@ -694,14 +691,30 @@ pub(crate) fn run_option_detail(
     extra: &[(String, String)],
     damage: &DamageControl,
 ) -> (RunOutcome, Option<(String, String)>) {
+    let (outcome, raised, _) = run_option_full(option, library, extra, damage);
+    (outcome, raised)
+}
+
+/// [`run_option_detail`], and the Vessel Model inputs of the run's own pick (issue #1041), so the model is the
+/// arrangement the results report.
+fn run_option_full(
+    option: &DesignOption,
+    library: &Library,
+    extra: &[(String, String)],
+    damage: &DamageControl,
+) -> (
+    RunOutcome,
+    Option<(String, String)>,
+    Option<ovd_core::vessel_model::VesselModelInputs>,
+) {
     let params = match simulate_params_of(option) {
         Ok(p) => p,
-        Err(m) => return (RunOutcome::Failed(m), None),
+        Err(m) => return (RunOutcome::Failed(m), None, None),
     };
     // The Rule Sets of the run: the gas arrangement search keeps only candidates that meet them.
     let selection = match stack_for(library, option, extra) {
         Ok(s) => s,
-        Err(m) => return (RunOutcome::Failed(m), None),
+        Err(m) => return (RunOutcome::Failed(m), None, None),
     };
     let rules = RunRules {
         sets: selection.sets.iter().map(|s| (*s).clone()).collect(),
@@ -719,7 +732,7 @@ pub(crate) fn run_option_detail(
         settle_rooms(option, library, &mut params, &rules);
     match outcome {
         Outcome::Result(v) => match v.get("error").and_then(Value::as_str) {
-            Some(message) => (RunOutcome::Failed(message.to_string()), None),
+            Some(message) => (RunOutcome::Failed(message.to_string()), None, None),
             None => {
                 // The capital budget: an output, not hashed, never fed back into the run.
                 let mut v = v;
@@ -894,14 +907,19 @@ pub(crate) fn run_option_detail(
                     }
                 }
                 let hash = results_hash(&v);
-                (RunOutcome::Results { results: v, hash }, None)
+                (
+                    RunOutcome::Results { results: v, hash },
+                    None,
+                    measured.vessel,
+                )
             }
         },
         Outcome::Raised(kind, message) => (
             RunOutcome::Failed(format!("{kind}: {message}")),
             Some((kind, message)),
+            None,
         ),
-        Outcome::Refused(message) => (RunOutcome::Failed(message), None),
+        Outcome::Refused(message) => (RunOutcome::Failed(message), None, None),
     }
 }
 

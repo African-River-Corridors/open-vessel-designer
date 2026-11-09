@@ -172,9 +172,27 @@ impl AppState {
         &self.session
     }
 
-    /// The kept run of the Option named `option` for the 3D view, run again when the Option changed.
+    /// The kept run of the Option named `option` for the 3D view, run again when the Option changed. Issue #1041:
+    /// the model is of the stage the results show, the damage run's pick when the Option has one for its inputs.
     fn vessel(&mut self, option: &str) -> Result<&vessel::Kept, String> {
-        vessel::kept(&mut self.vessel, &self.session.design().options, option)
+        let screened = self.damage_shown(option);
+        vessel::kept(
+            &mut self.vessel,
+            &self.session.design().options,
+            option,
+            screened,
+        )
+    }
+
+    /// Whether the results shown for an Option are its kept damage run: the run's fingerprint is the Option's now.
+    fn damage_shown(&self, option: &str) -> bool {
+        match (
+            self.damage.get(option),
+            self.session.option_fingerprint(option),
+        ) {
+            (Some(kept), Ok(now)) => kept.fingerprint == now,
+            _ => false,
+        }
     }
 
     /// The mesh vertex data of an Option (issue #457): positions (f32, x y z per vertex) and
@@ -988,6 +1006,53 @@ mod tests {
         let kept = state.finish_damage(&job, end);
         let calls = calls.borrow().clone();
         (calls, kept)
+    }
+
+    /// Issue #1041: the 3D model is of the stage the results show. On the 140 x 29 x 12 m coastal LNG reference
+    /// design the first evaluation picks 2 x 2 tanks; the damage run picks 2 x 3, and the model follows it.
+    /// Label: snapshot (`ovd-format/tests/vessel_stage.rs`).
+    #[test]
+    fn the_3d_model_follows_the_damage_run() {
+        let file = json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": {
+                "cargo": { "value": "LNG", "source": "typed" },
+                "hull_form": { "value": "raked_box", "source": "typed" },
+                "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+                "length_overall_m": { "value": 140.0, "source": "typed" },
+                "beam_m": { "value": 29.0, "source": "typed" },
+                "moulded_depth_m": { "value": 12.0, "source": "typed" },
+                "service_area": { "value": "coastal-and-river", "source": "typed" },
+                "loading_conditions": { "value": "is_code_2008", "source": "typed" }
+            } }]
+        });
+        let text = ovd_format::fill_as_new(&file.to_string(), &Profile::built_in())
+            .design
+            .unwrap()
+            .to_text();
+        let mut state = AppState::open(Path::new("/x/gas.vdesign"), &text).unwrap();
+        let tanks = |state: &mut AppState| {
+            let groups = state.mesh_groups("Option 1").unwrap();
+            let mut names: Vec<String> = groups["groups"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|g| g["layer"] == "space")
+                .filter_map(|g| g["id"].as_str())
+                .filter(|id| id.starts_with("CT"))
+                .map(String::from)
+                .collect();
+            names.sort();
+            (names, groups["hash"].as_str().unwrap().to_string())
+        };
+        let (first, first_hash) = tanks(&mut state);
+        assert_eq!(first, ["CT1P", "CT1S", "CT2P", "CT2S"]);
+        let (_, kept) = run_damage(&mut state);
+        assert!(kept);
+        assert_eq!(results_of(&state)["arrangement"]["n_long"], 3);
+        let (screened, screened_hash) = tanks(&mut state);
+        assert_eq!(screened, ["CT1P", "CT1S", "CT2P", "CT2S", "CT3P", "CT3S"]);
+        assert_ne!(screened_hash, first_hash);
     }
 
     /// Issue #924: only a run the user asks for works damage out. Every path of the app that reaches the

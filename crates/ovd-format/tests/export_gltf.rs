@@ -16,6 +16,14 @@ use ovd_format::{Profile, check, option_meshes};
 use serde_json::Value;
 
 /// The JSON and BIN chunks of a `.glb`, after the container checks.
+/// The stage that skips damage (issue #1041), the stage of `option_meshes`.
+fn off() -> ovd_format::damage::DamageControl {
+    ovd_format::damage::DamageControl {
+        run: false,
+        progress: None,
+    }
+}
+
 fn chunks(glb: &[u8]) -> (Value, Vec<u8>) {
     assert_eq!(&glb[0..4], b"glTF");
     assert_eq!(u32::from_le_bytes(glb[4..8].try_into().unwrap()), 2);
@@ -133,7 +141,7 @@ fn every_fixture_option_writes_a_well_formed_glb_with_named_nodes() {
                 continue;
             };
             let at = format!("{} / {}", path.display(), option.name);
-            let glb = option_glb(option).unwrap();
+            let glb = option_glb(option, &off()).unwrap();
             let nodes = check_glb(&mesh, &glb);
             // Node names: the layer of the hull, and each part and layer of the others.
             assert!(nodes.contains(&"hull".to_string()), "{at}: {nodes:?}");
@@ -153,7 +161,7 @@ fn every_fixture_option_writes_a_well_formed_glb_with_named_nodes() {
             // The same bytes twice.
             assert_eq!(
                 bytes_hash(&glb),
-                bytes_hash(&option_glb(option).unwrap()),
+                bytes_hash(&option_glb(option, &off()).unwrap()),
                 "{at}"
             );
             written += 1;
@@ -232,7 +240,7 @@ fn the_root_node_maps_model_axes_to_right_handed_y_up() {
     let design = check(&text, &Profile::built_in()).design.unwrap();
     let option = &design.options[0];
     let mesh = option_meshes(option).unwrap();
-    let (doc, _) = chunks(&option_glb(option).unwrap());
+    let (doc, _) = chunks(&option_glb(option, &off()).unwrap());
     let scene = doc["scenes"][0]["nodes"].as_array().unwrap();
     assert_eq!(scene.len(), 1, "one root node: {scene:?}");
     let mut worlds = Vec::new();
@@ -296,7 +304,7 @@ fn every_tank_and_deck_item_is_a_named_node_with_its_material() {
             let Ok(mesh) = option_meshes(option) else {
                 continue;
             };
-            let (doc, _) = chunks(&option_glb(option).unwrap());
+            let (doc, _) = chunks(&option_glb(option, &off()).unwrap());
             let nodes = doc["nodes"].as_array().unwrap();
             let material_of = |name: &str| -> Option<String> {
                 let node = nodes.iter().find(|n| n["name"] == name)?;

@@ -112,6 +112,8 @@ Usage:
       the import format; `steel-csv` is the steel list of a gas hull's plate model (issue #742),
       one row per plate, stiffener and primary member. `-o` names the file; `--option` picks the Option (the only one, when there
       is one). `--hash` prints the SHA-256 of each Option's bytes instead, for the web parity check.
+      Damage stability runs, as in `ovd run`, so the model is the arrangement the results report
+      (the damage screen's pick, issue #1041).
   ovd mesh [--profile <profile.json>] --hash <file.vdesign>
       Print the mesh hash of each Option (spec 0008, issue #456): the SHA-256 of the meshes of its
       Vessel Model (hull, decks, bulkheads, Spaces, waterlines). The web parity check compares it
