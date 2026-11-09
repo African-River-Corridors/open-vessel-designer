@@ -45,7 +45,7 @@ fn run(extra: Value) -> Value {
 ///
 /// The share of 0.2 is below the share's soft minimum of 0.25, so the fill warns; the warning does not stop the run, and
 /// a low share is how the cap is made to bind here. A river-only design reaches this branch by default (it takes the
-/// share 0.375), but it screens no IGC damage, so it has no refinement to cap; the coastal design is the one that runs it.
+/// share 0.5), but it screens no IGC damage, so it has no refinement to cap; the coastal design is the one that runs it.
 /// Label: snapshot of the pick and the cargo, and a rule for the limit.
 #[test]
 fn a_refined_share_candidate_is_capped_at_its_own_depth_less_the_freeboard() {
