@@ -1467,3 +1467,56 @@ fn a_failing_design_with_many_names_names_some_and_counts_the_rest() {
         accepted(doc);
     }
 }
+
+// ---- #1042: the plan's THRUSTERS and END CLEARANCE labels keep apart ------------------------------
+
+/// The text box of a leader label on the sheet, in metres: (x0, y0, x1, y1). The text starts a gap
+/// from the label point, to the right when the label point is right of the target, else to the left,
+/// and is `LABEL_TEXT_MM` high; `scale` is the 1:`scale` of the viewport.
+fn label_box(view: &Value, text: &str) -> (f64, f64, f64, f64) {
+    const TEXT_MM: f64 = 3.5;
+    const GAP_MM: f64 = 0.9;
+    let k = f(&view["viewports"][0]["scale"]) / 1000.0;
+    let l = leader(view, text);
+    let (tx, lx, ly) = (
+        f(&l["from"]["point_m"][0]),
+        f(&l["label_at_m"][0]),
+        f(&l["label_at_m"][1]),
+    );
+    let width = ovd_draw::rules::text_width_exact(text, TEXT_MM).expect("text width") * k;
+    let (a, b) = if lx >= tx {
+        (lx + GAP_MM * k, lx + GAP_MM * k + width)
+    } else {
+        (lx - GAP_MM * k - width, lx - GAP_MM * k)
+    };
+    (a, ly - TEXT_MM * k / 2.0, b, ly + TEXT_MM * k / 2.0)
+}
+
+#[test]
+fn the_plan_of_the_coastal_lng_reference_keeps_the_thrusters_and_end_clearance_labels_apart() {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../examples/gas-140x29-coastal-lng/gas-140x29-coastal-lng.vdesign");
+    let text = std::fs::read_to_string(path).expect("the example");
+    let design = check(&text, &Profile::built_in())
+        .design
+        .expect("a valid Design");
+    let outcome = run_design(&design).remove(0).outcome;
+    let v = ga_views_of(&outcome).expect("views");
+    for (name, view) in [("plan", &v.plan), ("side elevation", &v.side_elevation)] {
+        let thrusters = plan_label_starting(view, "THRUSTERS");
+        let a = label_box(view, &thrusters);
+        let b = label_box(view, "END CLEARANCE");
+        let apart = a.2 <= b.0 || b.2 <= a.0 || a.3 <= b.1 || b.3 <= a.1;
+        assert!(
+            apart,
+            "{name}: THRUSTERS {a:?} and END CLEARANCE {b:?} overlap"
+        );
+    }
+}
+
+fn plan_label_starting(view: &Value, prefix: &str) -> String {
+    texts(view)
+        .into_iter()
+        .find(|t| t.starts_with(prefix))
+        .unwrap_or_else(|| panic!("no {prefix} label"))
+}
