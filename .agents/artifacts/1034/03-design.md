@@ -137,3 +137,19 @@ A river-only run does not search 3 or 4 along: the choice is tied to the IGC dam
 5. **Q5. The damage-run cap?** (a) Keep 24. **Recommended:** no design uses more than 16; 12 breaks the 89 x 16 m design. (b) 48. (c) 12.
 6. **Q6. The bridge clearance?** (a) Keep it a warning; require only the air-draft limit; warn when the limit is above a typed clearance. **Recommended.** (b) Fill the limit from the clearance when the limit is missing.
 7. **Q7. Follow-up issues?** (a) Open three: the CLI double run (D4b), slow infeasible runs (D4c), and tanks along for river runs (D5). **Recommended.** (b) Fold any of them into this work.
+
+## Gate outcome (2026-11-09)
+
+The maintainer approved the design with these answers:
+
+1. **Q1.** Every river-only Option, any cargo, must answer both limits.
+2. **Q2.** Coastal-and-river Options keep the limits optional, as today.
+3. **Q3. No "no limit".** A river-only Option must carry a number for each limit, typed or filled by a Vessel Class. This changes D1:
+   - A new river-only Option with a limit missing is incomplete. A run refuses with one message that names the missing inputs and the two fixes: type a value, or pick a Vessel Class.
+   - Python `simulate(p)` raises `TypeError` for a missing key **or** a key given as `None`.
+   - Saved files that store a null limit keep their stored results and hash, with a validation warning that the file predates the rule (not hashed). A re-fill as new asks for numbers.
+   - Tests, examples and `calibration.py` that build river-only Options type numbers. They use the CEMT VIa figures of `02-research.md` (4.5 m draught, 9.1 m air draft) unless a test needs other values.
+4. **Q4.** The share rule is the climb (D2, option C).
+5. **Q5.** The damage-run cap stays at 24.
+6. **Q6.** `bridge_clearance_m` stays a warning. A new warning shows when the air-draft limit is above a typed bridge clearance.
+7. **Q7.** The follow-ups are separate issues: #1049 (D4b), #1050 (D4c) and #1051 (D5).
