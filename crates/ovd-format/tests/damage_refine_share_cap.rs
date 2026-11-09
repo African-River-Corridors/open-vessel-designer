@@ -39,12 +39,14 @@ fn run(extra: Value) -> Value {
     results
 }
 
-/// The 140 x 29 m coastal LNG design, two tanks along, minimum freeboard 4 m, no draught limit typed. The answer is the
-/// 11.718 m two-across size the refinement builds between the 16.00 m size that failed damage and the next size down.
-/// Its draught limit is its own depth less the freeboard, for a typed height and for a share of the tank diameter below
-/// 0.5 alike (the printed values: depth 11.321 m with the 2.0 m height, 10.978 m with the 0.2 share; limits 7.321 m and
-/// 6.978 m).
-/// Label: snapshot of the depths and a rule for the limit.
+/// The 140 x 29 m coastal LNG design, two tanks along, a share of 0.2 of the tank diameter, a typed minimum freeboard of
+/// 7.24 m and no draught limit typed. The answer is the 2-across, 11.843 m size at depth 11.078 m, carrying 8,614.2 t,
+/// with a draught limit of 3.838 m (the depth less the freeboard): the values the code printed on this branch.
+///
+/// The share of 0.2 is below the share's soft minimum of 0.25, so the fill warns; the warning does not stop the run, and
+/// a low share is how the cap is made to bind here. A river-only design reaches this branch by default (it takes the
+/// share 0.375), but it screens no IGC damage, so it has no refinement to cap; the coastal design is the one that runs it.
+/// Label: snapshot of the pick and the cargo, and a rule for the limit.
 #[test]
 fn a_refined_share_candidate_is_capped_at_its_own_depth_less_the_freeboard() {
     // 140 x 29 m coastal LNG, two tanks along, freeboard 7.24 m, a share of 0.2 of the diameter, no draught limit.
