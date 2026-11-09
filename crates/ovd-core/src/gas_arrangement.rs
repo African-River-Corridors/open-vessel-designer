@@ -1389,6 +1389,16 @@ fn out_of_runs(s: &Search<'_>) -> bool {
     s.damage_runs.max(s.runner.runs_used()) >= s.o.damage_run_cap
 }
 
+/// Issue #1031: damage runs the refinement leaves for [`finalize_winner`]: one to work the winner out again at its own
+/// basis, one for the next best if it fails, and one for that one's own re-check.
+const FINALIZE_RESERVE: usize = 4;
+
+/// Issue #1031: whether a screening may still run (the limit less the reserve): a re-screen of a stale failing size
+/// is tried only then, and is skipped, not counted as a limit hit, when it may not.
+fn may_run(s: &Search<'_>) -> bool {
+    s.damage_runs.max(s.runner.runs_used()) + s.reserve < s.o.damage_run_cap
+}
+
 /// Issue #935: work out the IGC damage of a candidate that passed the cheap checks and stability, as the answer's
 /// run does (same conditions, same cargo, same spaces), and keep the verdicts on it. Does nothing when the stack
 /// does not evaluate IGC 2.7, the runner is told to skip, or the candidate has no loading conditions with weights.
@@ -1421,9 +1431,11 @@ fn screen_damage(s: &mut Search<'_>, c: &mut Candidate, fresh: bool) -> Result<S
     // walk works the winner out again at its own basis (`fresh`), and takes the next best if it fails. `fresh` skips
     // the kept verdicts.
     c.damage_stale = false;
+    c.kept = false;
     if !fresh && let Some(kept) = s.runner.recall(&key, &basis) {
         c.damage = Some(kept.verdicts);
         c.damage_stale = !kept.stands;
+        c.kept = true;
         return Ok(Screened::Done);
     }
     let Some(spec) = c.result.hull_spec.as_ref() else {
@@ -1451,7 +1463,7 @@ fn screen_damage(s: &mut Search<'_>, c: &mut Candidate, fresh: bool) -> Result<S
     let Ok(plan) = gas_damage::gas_damage_plan(set, &spaces, &hull) else {
         return Ok(Screened::Done);
     };
-    if out_of_runs(s) {
+    if s.damage_runs.max(s.runner.runs_used()) + s.reserve >= s.o.damage_run_cap {
         s.cap_hit = true;
         return Ok(Screened::CapReached);
     }
@@ -1523,6 +1535,12 @@ struct Candidate {
     damage: Option<Vec<crate::measured::DamageVerdict>>,
     /// Issue #1038: the verdicts were kept from an earlier depth pass, on a lightship or cargo that has since moved.
     damage_stale: bool,
+    /// Issue #1031: the verdicts were not worked out for this candidate in this search but recalled from an earlier
+    /// pass (a pass that stands within the tolerance included).
+    kept: bool,
+    /// Issue #1031: built by the damage refinement, so it lies within a step of a size that fails: a pass there can turn
+    /// on a lightship that moved less than the tolerance, and the answer's own run can fail it.
+    refined: bool,
 }
 
 fn derate_candidate(
@@ -1555,6 +1573,8 @@ struct Search<'a> {
     damage_runs: usize,
     /// Issue #935: the search reached `damage_run_cap` and stopped screening.
     cap_hit: bool,
+    /// Issue #1031: the damage runs a screening leaves unused (the refinement leaves [`FINALIZE_RESERVE`]).
+    reserve: usize,
     /// Issue #935: the numbers of tanks along the search tries, the profile's first (just `tanks_in_line` when it
     /// is pinned, or when damage is not screened).
     along: Vec<i64>,
@@ -1843,6 +1863,8 @@ struct Pool {
     /// bound: the candidates that pass the cheap checks and three refinement steps for each depth and number of
     /// tanks across, within the cap.
     planned_runs: usize,
+    /// Issue #1031: the groups (search depth, tanks across, tanks along) the damage refinement has bisected, each once.
+    refined: Vec<(f64, i64, i64)>,
 }
 
 /// Build every candidate and judge it by the whole check list. Every candidate gets the cheap
@@ -1859,6 +1881,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
         assessed_failed: Vec::new(),
         unscreened_best: None,
         planned_runs: 0,
+        refined: Vec::new(),
     };
     for along in s.along.clone() {
         for &d in &o.depths {
@@ -1983,6 +2006,8 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                         inputs: inp,
                         damage: None,
                         damage_stale: false,
+                        kept: false,
+                        refined: false,
                     });
                 }
             }
@@ -2076,17 +2101,45 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                 }
             }
         }
-        // Issue #935: a size that fails damage is refined between it and the next size down.
+        // Issue #935: a size that fails damage is refined between it and the next size down. Issue #1031: a group
+        // is refined when no number of tanks along still to be screened has a candidate that carries more than the
+        // failing size (the largest first, so the budget goes where the cargo is, and never starves the first
+        // screening of a number along that carries more). The groups left are refined after the last number along.
         if screening && s.runner.enabled() && !s.cap_hit {
-            refine_failed_groups(s, &mut pool, t_max, along)?;
+            let ahead = s.along[s
+                .along
+                .iter()
+                .position(|&a| a == along)
+                .map_or(0, |k| k + 1)..]
+                .iter()
+                .filter_map(|&a| {
+                    order
+                        .iter()
+                        .find(|&&i| pool.all[i].inputs.n_tanks_long == a)
+                        .map(|&i| pool.all[i].tonnage)
+                })
+                .fold(0.0, f64::max);
+            // The numbers along screened so far, this one included (the groups an earlier one left waiting too).
+            let seen: Vec<i64> = s
+                .along
+                .iter()
+                .copied()
+                .take_while(|&a| a != along)
+                .chain([along])
+                .collect();
+            refine_failed_groups(s, &mut pool, t_max, &seen, ahead)?;
             if let Some(b) = pool.best {
                 top = top.max(pool.all[b].tonnage);
             }
         }
     }
+    if screening && s.runner.enabled() && !stop_at_first_pass && !s.cap_hit {
+        let all = s.along.clone();
+        refine_failed_groups(s, &mut pool, t_max, &all, 0.0)?;
+    }
     // Issue #1038: the winner is worked out again at its own basis when its verdicts were kept from an earlier pass.
     if screening && s.runner.enabled() && !stop_at_first_pass {
-        finalize_winner(s, &mut pool)?;
+        finalize_winner(s, &mut pool, t_max)?;
     }
     Ok(pool)
 }
@@ -2096,10 +2149,14 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
 /// again at its own basis; if it fails there, it is out, and the next best candidate that passed (on kept verdicts or
 /// not) is worked out again in its turn, within the budget. When the budget is gone the winner stands on what it has,
 /// and the answer's own damage run, which decides feasibility, has the last word.
-fn finalize_winner(s: &mut Search<'_>, pool: &mut Pool) -> Result<(), PyError> {
+fn finalize_winner(s: &mut Search<'_>, pool: &mut Pool, t_max: f64) -> Result<(), PyError> {
     let o = s.o;
+    let mut refined_again = false;
     while let Some(b) = pool.best {
-        if !pool.all[b].damage_stale || out_of_runs(s) {
+        // Issue #1031: a size the refinement built from kept verdicts is checked too, stale or not.
+        if !(pool.all[b].damage_stale || (pool.all[b].refined && pool.all[b].kept))
+            || out_of_runs(s)
+        {
             return Ok(());
         }
         if screen_damage(s, &mut pool.all[b], true)? == Screened::CapReached {
@@ -2126,6 +2183,17 @@ fn finalize_winner(s: &mut Search<'_>, pool: &mut Pool) -> Result<(), PyError> {
             }
         }
         pool.best = next;
+        // Issue #1031: no other candidate passed. The winner's group has a failing size again, at its own basis, so
+        // its bisect is worked out afresh (once), from the sizes that passed at the bases of this pass.
+        if next.is_none()
+            && !refined_again
+            && s.damage_runs.max(s.runner.runs_used()) + 4 <= s.o.damage_run_cap
+        {
+            refined_again = true;
+            pool.refined.clear();
+            let all = s.along.clone();
+            refine_failed_groups(s, pool, t_max, &all, 0.0)?;
+        }
     }
     Ok(())
 }
@@ -2183,42 +2251,93 @@ fn refine_failed_groups(
     s: &mut Search<'_>,
     pool: &mut Pool,
     t_max: f64,
-    along: i64,
+    alongs: &[i64],
+    ahead: f64,
+) -> Result<(), PyError> {
+    s.reserve = FINALIZE_RESERVE;
+    let out = refine_groups(s, pool, t_max, alongs, ahead);
+    s.reserve = 0;
+    out
+}
+
+fn refine_groups(
+    s: &mut Search<'_>,
+    pool: &mut Pool,
+    t_max: f64,
+    alongs: &[i64],
+    ahead: f64,
 ) -> Result<(), PyError> {
     let o = s.o;
-    // (depth, tanks across): the smallest failing diameter of the group and the candidate that has it.
-    let mut groups: Vec<(f64, i64, usize)> = Vec::new();
+    // (depth, tanks across, tanks along): the smallest failing diameter of the group and the candidate that has it.
+    let mut groups: Vec<(f64, i64, i64, usize)> = Vec::new();
     for &i in &pool.assessed_failed {
         let c = &pool.all[i];
-        // Only this number of tanks along; a candidate that failed before damage (stability) has no damage and
+        // Only these numbers of tanks along; a candidate that failed before damage (stability) has no damage and
         // bounds nothing.
-        if c.inputs.n_tanks_long != along || c.damage.is_none() {
+        if !alongs.contains(&c.inputs.n_tanks_long) || c.damage.is_none() {
             continue;
         }
         // The search step it was built at (the depth follows the tank with a standing height, issue #992).
-        let (d, nw) = (c.search_depth, c.inputs.n_tanks_wide.unwrap_or(0));
+        let (d, nw, al) = (
+            c.search_depth,
+            c.inputs.n_tanks_wide.unwrap_or(0),
+            c.inputs.n_tanks_long,
+        );
         let od = opt_or_zero(c.result.tank_outer_diameter_m);
-        match groups.iter_mut().find(|g| g.0 == d && g.1 == nw) {
+        match groups
+            .iter_mut()
+            .find(|g| g.0 == d && g.1 == nw && g.2 == al)
+        {
             Some(g) => {
-                if od < opt_or_zero(pool.all[g.2].result.tank_outer_diameter_m) {
-                    g.2 = i;
+                if od < opt_or_zero(pool.all[g.3].result.tank_outer_diameter_m) {
+                    g.3 = i;
                 }
             }
-            None => groups.push((d, nw, i)),
+            None => groups.push((d, nw, al, i)),
         }
     }
-    for (depth, nw, hi_idx) in groups {
+    // Issue #1031: the groups that carry the most first, so a small budget goes where the cargo is.
+    groups.sort_by(|a, b| pool.all[b.3].tonnage.total_cmp(&pool.all[a.3].tonnage));
+    for (depth, nw, along, hi_idx) in groups {
         if nw < 1 {
             continue;
         }
+        if pool.refined.contains(&(depth, nw, along)) {
+            continue;
+        }
         let hi_cand = pool.all[hi_idx].clone();
+        // Issue #1031: not yet, while a number of tanks along still to be screened has a candidate that carries more.
+        if hi_cand.tonnage + 1e-6 < ahead {
+            continue;
+        }
         // It cannot help if the failing size carries no more than the best pass.
         if let Some(b) = pool.best
             && hi_cand.tonnage <= pool.all[b].tonnage + 1e-6
         {
             continue;
         }
+        // Issue #1031: the failing size itself, if it failed on a kept verdict from a basis that has since moved, is
+        // worked out again. If it passes now it joins the pool and there is nothing to bisect.
+        let mut hi_cand = hi_cand;
+        if hi_cand.damage_stale && may_run(s) {
+            if screen_damage(s, &mut hi_cand, true)? == Screened::CapReached {
+                return Ok(());
+            }
+            pool.all[hi_idx].damage = hi_cand.damage.clone();
+            pool.all[hi_idx].damage_stale = false;
+            if passes_all(&hi_cand, o) {
+                pool.assessed_failed.retain(|&i| i != hi_idx);
+                if pool.best.is_none_or(|b| better_pick(&pool.all, hi_idx, b)) {
+                    pool.best = Some(hi_idx);
+                }
+                pool.refined.push((depth, nw, along));
+                continue;
+            }
+        }
         let mut hi = opt_or_zero(hi_cand.result.tank_outer_diameter_m);
+        // Issue #1031: the failing candidate's own diameter and side clearance are the reference every size of the
+        // bisect is built from; `hi` moves down as sizes fail, the reference does not.
+        let hi_ref = hi;
         let Some(cs_hi) = hi_cand.result.side_clearance_m else {
             continue;
         };
@@ -2238,15 +2357,15 @@ fn refine_failed_groups(
         if lo <= 0.0 {
             continue;
         }
+        // Each group is bisected once: its bounds are not worked out again from the sizes the first bisect added.
+        pool.refined.push((depth, nw, along));
         while hi - lo > DAMAGE_REFINE_STEP_M + 1e-9 {
-            if out_of_runs(s) {
-                s.cap_hit = true;
-                return Ok(());
-            }
             let mid = 0.5 * (hi + lo);
             let mut inp = hi_cand.inputs.clone();
-            // The side clearance that gives diameter `mid` across `nw` tanks, from `hi`'s.
-            inp.side_clearance_override_m = Some(cs_hi + 0.5 * nw as f64 * (hi - mid));
+            // The side clearance that gives diameter `mid` across `nw` tanks, from the failing candidate's (not from
+            // the moving bound `hi`: with it, every size after a failing one was built at the wrong clearance, came
+            // out another diameter, was not offered and pulled `hi` down to `lo` untested, issue #1031).
+            inp.side_clearance_override_m = Some(cs_hi + 0.5 * nw as f64 * (hi_ref - mid));
             let mut r = capacity(&inp)?;
             // Issue #992: with a standing height the depth follows the tank, settled again for this diameter.
             let mut refused = false;
@@ -2305,13 +2424,31 @@ fn refine_failed_groups(
                 inputs: inp,
                 damage: None,
                 damage_stale: false,
+                kept: false,
+                refined: true,
             };
             let idx = pool.all.len();
             let mut passes = cand.cheap_failed == 0 && passes_all(&cand, o);
             if passes && screen_damage(s, &mut cand, false)? == Screened::CapReached {
                 return Ok(());
             }
-            passes = passes && passes_all(&cand, o);
+            let mut now = passes && passes_all(&cand, o);
+            // Issue #1031: a size that failed on a kept verdict from a basis that has since moved is worked out
+            // again: it can pass now (11.53 m on the reference design), and the bisect would search below it.
+            if passes
+                && !now
+                && cand.damage_stale
+                && may_run(s)
+                && pool
+                    .best
+                    .is_none_or(|b| cand.tonnage > pool.all[b].tonnage + 1e-6)
+            {
+                if screen_damage(s, &mut cand, true)? == Screened::CapReached {
+                    return Ok(());
+                }
+                now = passes_all(&cand, o);
+            }
+            passes = now;
             pool.all.push(cand);
             if passes {
                 lo = mid;
@@ -2727,6 +2864,7 @@ fn fit_once(
         runner,
         damage_runs: 0,
         cap_hit: false,
+        reserve: 0,
         along: tanks_along_to_try(o, runner),
         cheap_only: false,
     };
@@ -2787,6 +2925,8 @@ fn fit_once(
                 inputs: inp,
                 damage: None,
                 damage_stale: false,
+                kept: false,
+                refined: false,
             }
         }
     };
@@ -2938,6 +3078,7 @@ fn has_passing_arrangement(
         runner,
         damage_runs: 0,
         cap_hit: false,
+        reserve: 0,
         along: vec![o.tanks_in_line],
         cheap_only: false,
     };
@@ -2977,6 +3118,7 @@ pub fn probe_depth(
         runner: &SerialRunner,
         damage_runs: 0,
         cap_hit: false,
+        reserve: 0,
         along: vec![o.tanks_in_line],
         cheap_only: true,
     };

@@ -65,8 +65,8 @@ fn volume(r: &Value) -> f64 {
         .unwrap()
 }
 
-/// Unpinned, the search picks three tanks along (2 x 3 at 13.38 m, 23,101 m3) in place of two along (11.53 m,
-/// 18,324 m3), with no failing damage row, and the results say the number was chosen from 2, 3 and 4. At most the
+/// Unpinned, the search picks three tanks along (2 x 3 at 13.38 m, 23,101 m3) in place of two along (11.59 m,
+/// 18,528 m3), with no failing damage row, and the results say the number was chosen from 2, 3 and 4. At most the
 /// cap of 24 damage runs are worked out in the search, and one more for the answer.
 #[test]
 fn unpinned_the_search_chooses_three_along_and_no_igc_2_7_row_fails() {
@@ -83,18 +83,18 @@ fn unpinned_the_search_chooses_three_along_and_no_igc_2_7_row_fails() {
     assert_eq!(r["damage_screening"]["tanks_along"]["n"], 3);
     // The worst case is the cap and the answer's run; this design needs fewer.
     assert!(runs <= 24 + 1, "{runs} damage runs");
-    assert_eq!(runs, 9, "damage runs, the answer's included");
-    // More cargo than two along, the profile's number (a pinned 2 gives 18,324 m3).
+    assert_eq!(runs, 7, "damage runs, the answer's included");
+    // More cargo than two along, the profile's number (a pinned 2 gives 18,528 m3).
     let (two, _) = run(json!({ "tanks_in_line": 2 }));
     assert!(volume(&r) > volume(&two));
 }
 
-/// A typed number along pins the search: today's pick for 2 (11.53 m, 18,324 m3), and the sizes that pass for 3 and
+/// A typed number along pins the search: the pick for 2 (11.59 m, 18,528 m3; issue #1031 moved it from 11.53 m), and the sizes that pass for 3 and
 /// 4, with the results saying it was not chosen.
 #[test]
 fn a_typed_number_along_pins_the_search() {
     for (n, od, vol) in [
-        (2, 11.5306, 18_324.0),
+        (2, 11.5931, 18_528.0),
         (3, 13.3832, 23_101.0),
         (4, 13.4420, 21_576.0),
     ] {

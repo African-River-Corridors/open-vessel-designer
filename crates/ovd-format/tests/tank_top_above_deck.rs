@@ -124,11 +124,12 @@ fn in_hold_the_depth_is_the_tank_top_plus_the_gap_and_a_standing_height_takes_it
         depth(&two)
     );
     // Standing 2 m high saves at least 2.3 m of depth: the same tank would, and a smaller one more. Issue #935:
-    // both picks are two across (11.72 m in hold, 11.53 m standing 2 m: the sizes the damage refinement finds),
+    // both picks are two across (11.72 m in hold, 11.72 m standing 2 m: the sizes the damage refinement finds; 11.53 m before issue #1031),
     // so the depths compare. Label: snapshot, printed by the code.
+    assert_eq!(two["arrangement"]["feasible"], true);
     assert_eq!(two["arrangement"]["n_wide"], 2);
-    assert!((two["arrangement"]["tank_od_m"].as_f64().unwrap() - 11.531).abs() < 0.001);
-    assert!((depth(&two) - 11.134).abs() < 0.0006, "{}", depth(&two));
+    assert!((two["arrangement"]["tank_od_m"].as_f64().unwrap() - 11.718).abs() < 0.001);
+    assert!((depth(&two) - 11.321).abs() < 0.0006, "{}", depth(&two));
     assert!(
         depth(&hold) - depth(&two) > 2.29,
         "{} {}",

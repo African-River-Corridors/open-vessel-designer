@@ -40,7 +40,7 @@ fn results(d: &ovd_format::vdesign::Design) -> Value {
 }
 
 /// The 110 x 11.4 m coastal LNG design with nothing typed but its size ran: it failed with "beam and depth must be
-/// positive". Now it runs, with a tank that fits (one across, 8.95 m, four along) and a positive depth.
+/// positive". Now it runs, with a tank that fits (one across, 9.07 m, four along; 8.95 m before issue #1031 let the damage refinement reach the larger size) and a positive depth.
 /// Label: snapshot, printed by the code.
 #[test]
 fn a_default_110_by_11_4_m_coastal_design_runs() {
@@ -48,7 +48,7 @@ fn a_default_110_by_11_4_m_coastal_design_runs() {
     assert_eq!(r["arrangement"]["feasible"], true, "{}", r["arrangement"]);
     assert!(r["dims"]["depth_m"].as_f64().unwrap() > 0.0);
     assert_eq!(r["arrangement"]["n_wide"], 1);
-    assert!((r["arrangement"]["tank_od_m"].as_f64().unwrap() - 8.947).abs() < 0.001);
+    assert!((r["arrangement"]["tank_od_m"].as_f64().unwrap() - 9.072).abs() < 0.001);
 }
 
 /// The 140 x 29 m hull at a typed depth of 6 m with tanks capped at 8 m runs.
