@@ -87,7 +87,7 @@ Only `test` and `release-guard` are required. Keep the others from making a pull
 | `design-impact-publish.yml`: `publish` | never | after a `ci.yml` run completes (`workflow_run`); it posts the design-impact report to the pull request |
 | `codeql.yml` | never | push to main; every Monday; by hand |
 | `website.yml` | only when `website/**`, `docs/**`, `*.md` or the workflow file change | push to main when those, or `app/**`, `crates/**`, `Cargo.toml`, `Cargo.lock` or `tools/build_web.sh` change; by hand |
-| `nightly.yml` | only when the workflow file, `.config/nextest.toml`, `docs/agents/slow-tests.md` or `tools/gates.sh` change | every day (02:41 UTC); by hand |
+| `nightly.yml`: `nightly-lint`, `nightly-rust` (12 partitions), `nightly-impact`, `nightly-python` (4 shards), `every-test` (waits for the others; issue #1046) | only when the workflow file, `.config/nextest.toml`, `docs/agents/slow-tests.md` or `tools/gates.sh` change | every day (02:41 UTC); by hand |
 
 **A runner trial for the Rust tests** (issue #847). Two repository variables (Settings, Secrets and variables,
 Actions, Variables) change `gate-rust` only. `CI_RUST_RUNNER` is its runner label, for example `arc-linux-16`.
