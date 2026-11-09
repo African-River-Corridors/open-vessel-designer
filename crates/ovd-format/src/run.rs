@@ -694,6 +694,20 @@ pub(crate) fn run_option_detail(
     extra: &[(String, String)],
     damage: &DamageControl,
 ) -> (RunOutcome, Option<(String, String)>) {
+    // Issue #1034: a river-only Option answers both river limits. One stored as null (a file saved before)
+    // runs as it did; one left out, which only an Option being edited can be, is the one message.
+    if option.input("service_area").and_then(|i| i.value.as_str()) == Some("river-only") {
+        let missing: Vec<&str> = crate::vdesign::RIVER_LIMITS
+            .into_iter()
+            .filter(|n| option.input(n).is_none())
+            .collect();
+        if !missing.is_empty() {
+            return (
+                RunOutcome::Failed(crate::vdesign::river_limits_required(&missing).to_string()),
+                None,
+            );
+        }
+    }
     let params = match simulate_params_of(option) {
         Ok(p) => p,
         Err(m) => return (RunOutcome::Failed(m), None),

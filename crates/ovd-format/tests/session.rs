@@ -32,7 +32,13 @@ fn open(name: &str) -> DesignSession {
 }
 
 fn starter() -> DesignSession {
-    DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap()
+    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    // Issue #1034: a river-only Option needs a number for both river limits before it runs.
+    s.set_input("Option 1", "draught_limit_m", json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", json!(40.0))
+        .unwrap();
+    s
 }
 
 fn input<'a>(s: &'a DesignSession, option: &str, name: &str) -> &'a ovd_format::StoredInput {
@@ -81,11 +87,14 @@ fn every_fixture_opens_without_error_and_with_matching_hashes() {
             "{name}: {:?}",
             opened.report
         );
-        assert!(
-            opened.report.warnings.is_empty(),
-            "{name}: {:?}",
-            opened.report
-        );
+        // Issue #1034: a river-only fixture that stores no river limits gets the one note about them.
+        let rest: Vec<_> = opened
+            .report
+            .warnings
+            .iter()
+            .filter(|w| !w.contains("saved before the rule that needs a number"))
+            .collect();
+        assert!(rest.is_empty(), "{name}: {:?}", opened.report);
         for (option, status) in &opened.hash_status {
             assert_eq!(status, &HashStatus::Matches, "{name} / {option}");
         }
@@ -159,7 +168,15 @@ fn a_saved_design_passes_validate_and_round_trips_through_open() {
         let saved = s.save().unwrap();
         let checked = check(&saved, &Profile::built_in());
         assert!(checked.report.is_ok(), "{name}: {:?}", checked.report);
-        assert!(checked.report.warnings.is_empty(), "{name}");
+        // Issue #1034: a river-only fixture that stores no river limits gets the one note about them.
+        assert!(
+            checked
+                .report
+                .warnings
+                .iter()
+                .all(|w| w.contains("saved before the rule that needs a number")),
+            "{name}"
+        );
         let (reopened, opened) = DesignSession::open(&saved, Profile::built_in()).unwrap();
         assert_eq!(reopened.design().to_text(), saved, "{name}");
         assert_eq!(reopened.save().unwrap(), saved, "{name}");
@@ -391,7 +408,14 @@ fn every_fixture_evaluates_to_results() {
     for name in FIXTURES {
         let evaluation = open(name).evaluate();
         for o in &evaluation.options {
-            assert!(o.messages.is_empty(), "{name}: {:?}", o.messages);
+            // Issue #1034: a river-only fixture that stores no river limits gets the one note about them.
+            assert!(
+                o.messages
+                    .iter()
+                    .all(|m| m.text.contains("saved before the rule that needs a number")),
+                "{name}: {:?}",
+                o.messages
+            );
             match (&o.outcome, *name) {
                 (Some(RunOutcome::Results { results, hash }), _) => {
                     assert_eq!(&ovd_format::results_hash(results), hash)

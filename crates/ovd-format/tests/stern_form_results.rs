@@ -22,7 +22,7 @@ fn results(s: &DesignSession) -> Value {
 }
 
 fn new_option(cargo: &str, depth: f64) -> DesignSession {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     for (n, v) in [
         ("cargo", json!(cargo)),
         ("length_overall_m", json!(110.0)),
@@ -83,7 +83,7 @@ fn a_new_dry_option_has_a_tunnel_stern_with_no_rake_for_the_drawings() {
 
 #[test]
 fn a_barge_has_no_stern_form_and_the_cb_of_its_raked_box() {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     s.set_input("Option 1", "cargo", json!("bauxite")).unwrap();
     let r = results(&s);
     assert!(r["geometry"].get("stern_form").is_none());
@@ -114,4 +114,17 @@ fn a_file_saved_before_has_no_stern_fields_and_keeps_its_hash() {
         // Issue #448: the stored Cb is dropped; the hull's sections give it.
         assert!(cb(&r) > 0.9 && cb(&r) < 1.0, "{name}: {}", cb(&r));
     }
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

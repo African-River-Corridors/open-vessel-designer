@@ -310,7 +310,14 @@ fn fill_writes_the_new_inputs_into_a_file_that_lacks_them() {
         assert_eq!(inputs[name]["source"], "default", "{name}");
     }
     let again = check(&saved.to_string(), &Profile::built_in());
-    assert_eq!(again.report.warnings, Vec::<String>::new());
+    // Issue #1034: the one note about the river limits the file stores none of.
+    let rest: Vec<_> = again
+        .report
+        .warnings
+        .iter()
+        .filter(|w| !w.contains("saved before the rule that needs a number"))
+        .collect();
+    assert!(rest.is_empty(), "{rest:?}");
 }
 
 /// The cargo volume and lightship of the hopper fixture with one input set.

@@ -35,7 +35,7 @@ fn option(area: &str, extra: Value) -> DesignOption {
         "options": [{ "name": "Option 1", "inputs": inputs }]
     })
     .to_string();
-    fill_as_new(&text, &Profile::built_in())
+    fill_as_new(&river_limits(&text), &Profile::built_in())
         .design
         .unwrap()
         .options
@@ -660,4 +660,10 @@ fn a_gap_over_one_officer_between_the_uk_and_liberia_is_flagged() {
     assert_eq!(b["cross_check"]["difference"], 3);
     assert_eq!(b["cross_check"]["flagged"], true);
     assert!(b["notes"].to_string().contains("over one person"));
+}
+
+/// Issue #1034: a river-only Option needs a number for both river limits. These are high enough not to bind, so
+/// no value of these tests moves.
+fn river_limits(text: &str) -> String {
+    ovd_format::with_river_limits(text, Some(12.0), Some(40.0)).unwrap()
 }

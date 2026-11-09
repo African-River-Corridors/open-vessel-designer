@@ -5,11 +5,11 @@
 //! Label: property. Each test states a rule: the block is unhashed, it round-trips through JSON, the
 //! profile moves only it, and a longer profile or more gas use never changes another result.
 
-use ovd_format::{DesignSession, Profile, RunOutcome, UNHASHED_KEYS, results_hash};
+use ovd_format::{DesignSession, RunOutcome, UNHASHED_KEYS, results_hash};
 use serde_json::{Value, json};
 
 fn session() -> DesignSession {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     s.set_input("Option 1", "length_overall_m", json!(110.0))
         .unwrap();
@@ -88,4 +88,17 @@ fn a_changed_profile_moves_only_the_holding_time_block() {
     if a["holding_time"]["evaluated"] == json!(true) {
         assert_ne!(a["holding_time"], b["holding_time"]);
     }
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

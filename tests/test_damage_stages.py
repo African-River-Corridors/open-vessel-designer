@@ -19,7 +19,7 @@ GAS = ROOT / "examples" / "gas-140x29-coastal-lng" / "gas-140x29-coastal-lng.vde
 # A dry bulk box barge: no damage Rule Set applies to it.
 DRY_BULK = {"cargo": "bauxite", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
             "length_overall_m": 76.5, "beam_m": 11.4, "moulded_depth_m": 3.5,
-            "service_area": "river-only"}
+            "service_area": "river-only", "draught_limit_m": 12.0, "air_draft_limit_m": 40.0}
 
 
 def typed(path: Path) -> dict:
@@ -27,6 +27,9 @@ def typed(path: Path) -> dict:
     inputs = json.loads(path.read_text(encoding="utf-8"))["options"][0]["inputs"]
     p = {k: v["value"] for k, v in inputs.items() if v["source"] == "typed"}
     p.setdefault("service_area", "river-only")
+    if p["service_area"] == "river-only":   # issue #1034: a river-only Option needs a number for both limits
+        p.setdefault("draught_limit_m", 12.0)
+        p.setdefault("air_draft_limit_m", 40.0)
     return p
 
 

@@ -115,7 +115,21 @@ fn fill_writes_a_version_2_file_that_validates_without_those_warnings() {
     );
     let again = check(&text, &p);
     assert_eq!(again.report.errors, Vec::<String>::new());
-    assert_eq!(again.report.warnings, Vec::<String>::new());
+    // Issue #1034: the file stores no river limits, so the one note about them stays.
+    let rest = again
+        .report
+        .warnings
+        .iter()
+        .filter(|w| !w.contains("saved before the rule that needs a number"))
+        .cloned()
+        .collect::<Vec<_>>();
+    assert_eq!(rest, Vec::<String>::new());
+    assert_eq!(
+        again.report.warnings.len(),
+        1,
+        "{:?}",
+        again.report.warnings
+    );
 }
 
 #[test]
@@ -132,11 +146,13 @@ fn the_design_session_opens_it_with_the_warnings_and_runs_it_as_igc_2g() {
         opened.hash_status
     );
     let e = session.evaluate();
-    assert!(
-        e.options[0].messages.is_empty(),
-        "{:?}",
-        e.options[0].messages
-    );
+    // Issue #1034: the one note about the river limits the file stores none of.
+    let others: Vec<_> = e.options[0]
+        .messages
+        .iter()
+        .filter(|m| !m.text.contains("saved before the rule that needs a number"))
+        .collect();
+    assert!(others.is_empty(), "{others:?}");
     let outcome = e.options[0].outcome.as_ref().expect("it ran");
     let text = format!("{outcome:?}");
     assert!(text.contains("IGC_2G"), "{text}");
@@ -173,8 +189,10 @@ fn a_version_1_dry_bulk_file_gets_only_the_note_about_the_new_hold_inputs() {
     assert_eq!(checked.report.errors, Vec::<String>::new());
     let w = &checked.report.warnings;
     // Issue #448: and the stored block coefficient, now a result of the hull, is dropped. Issue
-    // #739: and the structure block of the Hull, which the file lacks.
-    assert_eq!(w.len(), 3, "{w:?}");
+    // #739: and the structure block of the Hull, which the file lacks. Issue #1034: and the river limits the
+    // file stores none of.
+    assert_eq!(w.len(), 4, "{w:?}");
+    assert!(has(w, "saved before the rule that needs a number"), "{w:?}");
     assert!(has(w, "before the structure block of the Hull"), "{w:?}");
     assert!(
         has(w, "fixed value the engine used before it was an input"),

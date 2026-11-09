@@ -47,7 +47,12 @@ fn a_new_design_has_typed_dimensions_and_no_class() {
     let s = session();
     assert!(!has(&s, "vessel_scheme") && !has(&s, "vessel_class"));
     assert!(s.evaluate().options[0].vessel_class.is_none());
-    assert!(messages(&s).is_empty());
+    // Issue #1034: a river-only Option has no limits yet: the one message, and nothing else.
+    let m = messages(&s);
+    assert!(
+        m.len() == 1 && m[0].2.contains("a river-only Option needs a number"),
+        "{m:?}"
+    );
 }
 
 #[test]
@@ -86,10 +91,15 @@ fn a_class_that_gives_no_value_fills_nothing() {
     s.set_input("Option 1", "vessel_class", json!("CN-II-MOTOR"))
         .unwrap();
     assert_eq!(input(&s, "draught_limit_m"), (json!(2.6), Source::Class)); // a scalar as it is
-    assert_eq!(
-        input(&s, "air_draft_limit_m"),
-        (Value::Null, Source::Default)
-    ); // null fills nothing
+    // null fills nothing: on a river-only Option (issue #1034) the limit stays unanswered, with no "no limit".
+    assert!(!has(&s, "air_draft_limit_m"));
+    assert!(
+        messages(&s)
+            .iter()
+            .any(|(_, _, t)| t.contains("needs a number for air_draft_limit_m")),
+        "{:?}",
+        messages(&s)
+    );
 }
 
 #[test]

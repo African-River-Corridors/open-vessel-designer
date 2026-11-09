@@ -29,7 +29,7 @@ fn results_of(service_area: &str) -> Value {
         "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
         "options": [{ "name": "Option 1", "inputs": inputs }]
     });
-    let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+    let filled = fill_as_new(&river_limits(&file.to_string()), &Profile::built_in());
     assert_eq!(filled.report.errors, Vec::<String>::new());
     match run_option(&filled.design.unwrap().options[0]) {
         RunOutcome::Results { results, .. } => results,
@@ -75,4 +75,10 @@ fn the_vent_rows_are_not_in_the_trace_of_a_river_only_option() {
     for id in ROWS {
         assert!(outcomes(&results, id).is_empty(), "{id} has a row");
     }
+}
+
+/// Issue #1034: a river-only Option needs a number for both river limits. These are high enough not to bind, so
+/// no value of these tests moves.
+fn river_limits(text: &str) -> String {
+    ovd_format::with_river_limits(text, Some(12.0), Some(40.0)).unwrap()
 }

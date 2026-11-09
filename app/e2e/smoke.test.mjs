@@ -431,6 +431,8 @@ describe("OVD app smoke tests", () => {
       loading_conditions: { value: "is_code_2008", source: "typed" },
       service_area: { value: area, source: "typed" },
     };
+    // Issue #1034: a river-only Option needs a number for both river limits.
+    if (area === "river-only") Object.assign(inputs, { draught_limit_m: { value: 12.0, source: "typed" }, air_draft_limit_m: { value: 40.0, source: "typed" } });
     const bare = path.join(WORK, `gas-damage-${area}-bare.vdesign`);
     const filled = path.join(WORK, `gas-damage-${area}.vdesign`);
     fs.writeFileSync(bare, JSON.stringify({ format: "vdesign", format_version: 3, engine_version: "0.2.4", units: "SI", options: [{ name: "Option 1", inputs }] }));

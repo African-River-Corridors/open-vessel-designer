@@ -27,7 +27,7 @@ fn results(service_area: &str, style: &str) -> Value {
         "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
         "options": [{ "name": "Option 1", "inputs": inputs }]
     });
-    let d = fill_as_new(&file.to_string(), &Profile::built_in())
+    let d = fill_as_new(&river_limits(&file.to_string()), &Profile::built_in())
         .design
         .unwrap();
     match run_option_with(&d.options[0], &Library::built_in(), &[]) {
@@ -351,7 +351,7 @@ fn the_a60_front_row_is_for_gas_and_liquid_bulk_and_not_for_dry_bulk() {
             "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
             "options": [{ "name": "Option 1", "inputs": inputs }]
         });
-        let d = fill_as_new(&file.to_string(), &Profile::built_in())
+        let d = fill_as_new(&river_limits(&file.to_string()), &Profile::built_in())
             .design
             .unwrap();
         match run_option_with(&d.options[0], &Library::built_in(), &[]) {
@@ -369,4 +369,10 @@ fn the_a60_front_row_is_for_gas_and_liquid_bulk_and_not_for_dry_bulk() {
     let dry = run("bauxite", Some("box_hold"));
     assert!(rows(&dry, a60).is_empty(), "no A-60 row on dry bulk");
     assert_eq!(rows(&dry, escape).len(), 1);
+}
+
+/// Issue #1034: a river-only Option needs a number for both river limits. These are high enough not to bind, so
+/// no value of these tests moves.
+fn river_limits(text: &str) -> String {
+    ovd_format::with_river_limits(text, Some(12.0), Some(40.0)).unwrap()
 }

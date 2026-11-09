@@ -120,7 +120,7 @@ def test_box_barge_unchanged():
     """
     o = simulate(dict(vessel="box_barge", cargo="bauxite", loa_m=76.5, beam_m=11.4, depth_m=3.5,
                       lightship_k_t_per_m3=0.1093, freeboard_min_m=0.3,
-                      service_area="river-only"))
+                      service_area="river-only", draught_limit_m=12.0, air_draft_limit_m=40.0))
     # Re-pinned (#448); was 2200 to 2300 t: the hull's sections give the volume, so the cb input
     # no longer reduces it (2346 t).
     assert 2300 < o["results"]["cargo_t"] < 2400
@@ -167,3 +167,30 @@ def test_simulate_without_a_service_area_is_an_error_for_every_vessel_type(vesse
     assert "ovd fill --service-area" in text
     with pytest.raises(TypeError):
         simulate(dict(p, service_area="ocean-only"))
+
+
+RIVER_BOX = dict(vessel="box_barge", cargo="bauxite", loa_m=76.5, beam_m=11.4, depth_m=3.5,
+                 lightship_k_t_per_m3=0.1093, freeboard_min_m=0.3, service_area="river-only")
+
+
+@pytest.mark.parametrize("given", [{}, {"draught_limit_m": None, "air_draft_limit_m": None},
+                                   {"draught_limit_m": 3.0}, {"air_draft_limit_m": 7.0}])
+def test_a_river_only_option_without_a_number_for_both_limits_raises_type_error(given):
+    """Label: property
+
+    Issue #1034: there is no "no limit" for a river-only Option. A limit left out, or given as `None`, is one
+    `TypeError` that names the limit that is not set.
+    """
+    with pytest.raises(TypeError) as e:
+        simulate(dict(RIVER_BOX, **given))
+    text = str(e.value)
+    missing = [n for n in ("draught_limit_m", "air_draft_limit_m") if given.get(n) is None]
+    assert all(n in text for n in missing), text
+    assert "river-only Option needs a number" in text
+
+
+def test_a_river_only_option_with_both_limits_runs_and_a_coastal_one_needs_neither():
+    """Label: property"""
+    assert simulate(dict(RIVER_BOX, draught_limit_m=3.0, air_draft_limit_m=7.0))["results"]["cargo_t"] > 0
+    coastal = dict(RIVER_BOX, service_area="coastal-and-river")
+    assert simulate(coastal)["results"]["cargo_t"] > 0

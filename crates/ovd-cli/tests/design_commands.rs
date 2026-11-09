@@ -45,7 +45,16 @@ fn read_json(path: &Path) -> Value {
 /// `ovd new` into a file, then return the parsed Design.
 fn new_design(dir: &Path) -> (PathBuf, Value) {
     let file = dir.join("starter.vdesign");
-    let out = ovd(&["new", "--service-area", "river-only", path_str(&file)]);
+    let out = ovd(&[
+        "new",
+        "--service-area",
+        "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
+        path_str(&file),
+    ]);
     assert!(out.status.success(), "ovd new: {}", stderr(&out));
     let design = read_json(&file);
     (file, design)
@@ -86,6 +95,10 @@ fn validate_inputs(test: &str, inputs: Value) -> Output {
         "fill",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         path_str(&file),
         path_str(&filled),
     ])
@@ -141,7 +154,16 @@ fn new_does_not_overwrite_an_existing_file() {
     let dir = temp_dir("new-no-overwrite");
     let file = dir.join("keep.vdesign");
     std::fs::write(&file, "mine").unwrap();
-    let out = ovd(&["new", "--service-area", "river-only", path_str(&file)]);
+    let out = ovd(&[
+        "new",
+        "--service-area",
+        "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
+        path_str(&file),
+    ]);
     assert!(!out.status.success());
     assert!(stderr(&out).contains("already exists"), "{}", stderr(&out));
     assert_eq!(std::fs::read_to_string(&file).unwrap(), "mine");
@@ -213,6 +235,10 @@ fn a_left_out_depth_is_the_cargo_ratio_times_the_beam_marked_default() {
         "fill",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         path_str(&file),
         path_str(&filled),
     ]);
@@ -347,6 +373,10 @@ fn editing_the_defaults_profile_does_not_change_a_saved_files_inputs() {
         "new",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         "--profile",
         path_str(&edited),
         path_str(&fresh),
@@ -409,6 +439,10 @@ fn a_profile_with_a_gap_in_a_keyed_default_is_refused_by_validate_and_new() {
         "new",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         "--profile",
         path_str(&gap),
     ]);
@@ -460,6 +494,10 @@ fn validate_inputs_shows_a_convoy_and_a_self_propelled_formation() {
         "fill",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         path_str(&file),
         path_str(&filled),
     ]);
@@ -733,6 +771,10 @@ fn fill_writes_left_out_inputs_in_and_a_profile_edit_then_changes_nothing() {
         "fill",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         path_str(&hand),
         path_str(&filled),
     ]);
@@ -777,7 +819,16 @@ fn fill_prints_to_stdout_without_an_output_file_and_never_overwrites() {
     let dir = temp_dir("fill-stdout");
     let hand = dir.join("hand.vdesign");
     write_json(&hand, &design_with(required_inputs()));
-    let out = ovd(&["fill", "--service-area", "river-only", path_str(&hand)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
+        path_str(&hand),
+    ]);
     assert!(out.status.success(), "{}", stderr(&out));
     let design: Value = serde_json::from_slice(&out.stdout).unwrap();
     assert_eq!(
@@ -788,6 +839,10 @@ fn fill_prints_to_stdout_without_an_output_file_and_never_overwrites() {
         "fill",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         path_str(&hand),
         path_str(&hand),
     ]);
@@ -808,6 +863,10 @@ fn fill_refuses_a_file_with_a_hard_error_and_writes_nothing() {
         "fill",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         path_str(&hand),
         path_str(&filled),
     ]);
@@ -834,6 +893,10 @@ fn new_with_a_profile_whose_defaults_break_a_cross_check_fails_without_a_panic()
         "new",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         "--profile",
         path_str(&bad),
         path_str(&file),
@@ -897,7 +960,16 @@ fn a_duplicate_key_fails_validate_run_and_fill_naming_the_key() {
         "{}",
         stderr(&out)
     );
-    let out = ovd(&["fill", "--service-area", "river-only", path_str(&dup)]);
+    let out = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
+        path_str(&dup),
+    ]);
     assert!(!out.status.success());
     assert!(stdout(&out).is_empty());
 }
@@ -941,8 +1013,9 @@ fn validate_opens_a_version_1_adn_g_file_as_igc_2g_and_warns() {
         // condition the file lacks (issue #292: read as fully pressurised), one for the block
         // coefficient the file stores, now a result of the hull (issue #448), one for the structure
         // block of the Hull the file lacks (issue #739), one for the cargo vent mast inputs the file
-        // lacks (issue #822), one for the ADN stack a river-only gas file is read with (issue #850).
-        stdout(&out).contains("0 error(s), 10 warning(s)"),
+        // lacks (issue #822), one for the ADN stack a river-only gas file is read with (issue #850), one for the
+        // river limits the file stores none of (issue #1034).
+        stdout(&out).contains("0 error(s), 11 warning(s)"),
         "{}",
         stdout(&out)
     );
@@ -956,6 +1029,10 @@ fn fill_writes_a_version_1_adn_g_file_as_a_version_2_igc_2g_file_and_warns() {
         "fill",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         &legacy_adn_file(),
         path_str(&out_file),
     ]);
@@ -1085,6 +1162,10 @@ fn new_class_accepts_an_old_id_and_refuses_a_class_that_cannot_define_a_vessel()
             "new",
             "--service-area",
             "river-only",
+            "--draught-limit",
+            "12",
+            "--air-draft-limit",
+            "40",
             "--class",
             id,
             path_str(&dir.join("b.vdesign")),
@@ -1111,6 +1192,10 @@ fn fill_writes_the_dimensions_of_a_class_a_hand_written_design_names() {
         "fill",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         path_str(&file),
         path_str(&filled),
     ]);
@@ -1168,6 +1253,10 @@ fn fill_keeps_the_old_tank_values_and_fill_as_new_takes_the_defaults_of_the_carg
         "fill",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         path_str(&raw),
         path_str(&old),
     ]);
@@ -1186,6 +1275,10 @@ fn fill_keeps_the_old_tank_values_and_fill_as_new_takes_the_defaults_of_the_carg
         "fill",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         "--as-new",
         path_str(&raw),
         path_str(&new),
@@ -1305,4 +1398,107 @@ fn fill_with_a_service_area_then_run_succeeds() {
     let bad = ovd(&["fill", "--service-area", "ocean-only", path_str(&file)]);
     assert!(!bad.status.success());
     assert!(stderr(&bad).contains("`river-only`"), "{}", stderr(&bad));
+}
+
+#[test]
+fn a_river_only_option_runs_only_with_a_number_for_both_river_limits() {
+    // Issue #1034: no "no limit". `fill --as-new` of a river-only file with neither limit gives the one message that
+    // names both; the same file with both numbers typed runs.
+    let dir = temp_dir("river-limits");
+    let file = dir.join("hand.vdesign");
+    write_json(
+        &file,
+        &json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": {
+                "cargo": { "value": "LNG", "source": "typed" },
+                "hull_form": { "value": "raked_box", "source": "typed" },
+                "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+                "length_overall_m": { "value": 110.0, "source": "typed" },
+                "beam_m": { "value": 11.4, "source": "typed" },
+                "moulded_depth_m": { "value": 6.0, "source": "typed" },
+                "service_area": { "value": "river-only", "source": "typed" }
+            }}]
+        }),
+    );
+    let bare = dir.join("bare.vdesign");
+    let out = ovd(&["fill", "--as-new", path_str(&file), path_str(&bare)]);
+    assert!(!out.status.success(), "{}", stdout(&out));
+    let text = stderr(&out);
+    assert!(
+        text.contains("draught_limit_m and air_draft_limit_m"),
+        "{text}"
+    );
+    assert!(!bare.exists(), "nothing is written on an error");
+    // `none` is not a number: there is no "no limit".
+    let none = ovd(&[
+        "fill",
+        "--as-new",
+        "--draught-limit",
+        "none",
+        path_str(&file),
+    ]);
+    assert!(!none.status.success());
+    assert!(
+        stderr(&none).contains("--draught-limit needs a number"),
+        "{}",
+        stderr(&none)
+    );
+    // Both numbers, typed on the command line, are written as typed and the Option runs.
+    let filled = dir.join("filled.vdesign");
+    let out = ovd(&[
+        "fill",
+        "--as-new",
+        "--draught-limit",
+        "3.5",
+        "--air-draft-limit",
+        "9.1",
+        path_str(&file),
+        path_str(&filled),
+    ]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    let saved = read_json(&filled);
+    let inputs = &saved["options"][0]["inputs"];
+    assert_eq!(inputs["draught_limit_m"]["value"], 3.5);
+    assert_eq!(inputs["draught_limit_m"]["source"], "typed");
+    assert_eq!(inputs["air_draft_limit_m"]["value"], 9.1);
+    let run = ovd(&["run", path_str(&filled)]);
+    assert!(run.status.success(), "{}{}", stdout(&run), stderr(&run));
+}
+
+#[test]
+fn new_takes_the_two_river_limits_as_typed_numbers() {
+    let dir = temp_dir("new-river-limits");
+    let file = dir.join("starter.vdesign");
+    let out = ovd(&[
+        "new",
+        "--service-area",
+        "river-only",
+        "--draught-limit",
+        "3.5",
+        "--air-draft-limit",
+        "9.1",
+        path_str(&file),
+    ]);
+    assert!(out.status.success(), "{}", stderr(&out));
+    let inputs = read_json(&file)["options"][0]["inputs"].clone();
+    assert_eq!(inputs["draught_limit_m"]["value"], 3.5);
+    assert_eq!(inputs["air_draft_limit_m"]["source"], "typed");
+    // A limit of 0 or less is refused.
+    let bad = ovd(&[
+        "new",
+        "--service-area",
+        "river-only",
+        "--air-draft-limit",
+        "0",
+    ]);
+    assert!(!bad.status.success());
+    // A limit with no Service Area to go with is refused, not dropped.
+    let alone = ovd(&["new", "--draught-limit", "3.5"]);
+    assert!(!alone.status.success());
+    assert!(
+        stderr(&alone).contains("go with --service-area"),
+        "{}",
+        stderr(&alone)
+    );
 }

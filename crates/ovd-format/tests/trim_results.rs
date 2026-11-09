@@ -22,7 +22,7 @@ fn results(s: &DesignSession) -> Value {
 
 #[test]
 fn a_new_option_has_a_trim_per_condition_and_without_the_block_none() {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     for (n, v) in [
         ("cargo", json!("LNG")),
         ("length_overall_m", json!(110.0)),
@@ -68,4 +68,17 @@ fn a_file_saved_before_has_no_trim_fields() {
     for c in r["stability"]["conditions"].as_array().unwrap() {
         assert!(c.get("trim_m").is_none());
     }
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

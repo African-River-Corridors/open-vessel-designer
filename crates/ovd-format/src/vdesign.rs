@@ -1611,6 +1611,40 @@ pub fn service_area_required() -> Text {
     )
 }
 
+/// The two limits a river-only Option must answer with a number (issue #1034): typed, or filled by a Vessel
+/// Class. There is no typed "no limit" for them.
+pub const RIVER_LIMITS: [&str; 2] = ["draught_limit_m", "air_draft_limit_m"];
+
+/// The one message for a river-only Option with a river limit not answered (issue #1034). `run`, `validate`,
+/// `fill`, the app and `simulate` (so the Python API) all give this text. `missing` names the inputs: one, or both.
+/// The text holds the input names as plain words: the app and the report both show it as it is.
+pub fn river_limits_required(missing: &[&str]) -> Text {
+    match missing {
+        ["draught_limit_m"] => Text::fixed(
+            "msg-river-limit-required-draught",
+            "a river-only Option needs a number for draught_limit_m: not set. Type a value (ovd fill --draught-limit <m> --air-draft-limit <m>; in a simulate call, pass it as a number), or pick a Vessel Class that gives it",
+        ),
+        ["air_draft_limit_m"] => Text::fixed(
+            "msg-river-limit-required-air-draft",
+            "a river-only Option needs a number for air_draft_limit_m: not set. Type a value (ovd fill --draught-limit <m> --air-draft-limit <m>; in a simulate call, pass it as a number), or pick a Vessel Class that gives it",
+        ),
+        _ => Text::fixed(
+            "msg-river-limits-required",
+            "a river-only Option needs a number for draught_limit_m and air_draft_limit_m: not set. Type a value (ovd fill --draught-limit <m> --air-draft-limit <m>; in a simulate call, pass each as a number), or pick a Vessel Class that gives them",
+        ),
+    }
+}
+
+/// The warning for a saved river-only file that stores no value for a river limit (issue #1034). The file keeps
+/// its stored results and hash; this is a validation warning only. It names no input (the warning's scope does):
+/// one text serves a file that stores none of them and one that stores one.
+pub fn river_limits_legacy() -> Text {
+    Text::fixed(
+        "msg-river-limits-legacy",
+        "this river-only file was saved before the rule that needs a number for the draught limit and the air-draft limit; it stores none for at least one of them, so its hull is not bounded by it. It keeps its results. Set them with ovd fill --draught-limit <m> --air-draft-limit <m>",
+    )
+}
+
 /// How the cargo is pumped out of a liquid cargo tank (spec 0006 decision D4): one deepwell pump per
 /// tank, or a pump room below deck.
 pub const PUMP_ARRANGEMENTS: &[&str] = &["deepwell", "pump_room"];
@@ -4066,6 +4100,58 @@ pub fn with_service_area(text: &str, area: &str) -> Result<String, String> {
     Ok(serde_json::to_string_pretty(&file).unwrap_or_else(|_| text.to_string()))
 }
 
+/// Issue #1034: write the river limits the designer gave on the command line (`--draught-limit`,
+/// `--air-draft-limit`, in metres) into every river-only Option of the file that has no value for them,
+/// marked `typed`. An Option that has an answer keeps it. A file that is not a design is left as it is.
+pub fn with_river_limits(
+    text: &str,
+    draught_m: Option<f64>,
+    air_draft_m: Option<f64>,
+) -> Result<String, String> {
+    for (name, v) in [
+        ("--draught-limit", draught_m),
+        ("--air-draft-limit", air_draft_m),
+    ] {
+        if v.is_some_and(|v| !(v.is_finite() && v > 0.0)) {
+            return Err(format!("{name} needs a number above 0 (metres)"));
+        }
+    }
+    let Ok(mut file) = serde_json::from_str::<Value>(text) else {
+        return Ok(text.to_string());
+    };
+    if !duplicate_keys(text).is_empty() {
+        return Ok(text.to_string());
+    }
+    let Some(options) = file.get_mut("options").and_then(Value::as_array_mut) else {
+        return Ok(text.to_string());
+    };
+    for option in options {
+        let Some(inputs) = option.get_mut("inputs").and_then(Value::as_object_mut) else {
+            continue;
+        };
+        // An input is marked (`value` and `source`) or a bare value, as a hand-written file may give it.
+        let river = inputs
+            .get("service_area")
+            .and_then(|v| unmark(v).ok())
+            .is_some_and(|i| i.value.as_str() == Some("river-only"));
+        if !river {
+            continue;
+        }
+        for (name, v) in [
+            ("draught_limit_m", draught_m),
+            ("air_draft_limit_m", air_draft_m),
+        ] {
+            let unanswered = inputs
+                .get(name)
+                .is_none_or(|i| unmark(i).is_ok_and(|i| i.value.is_null()));
+            if let (true, Some(v)) = (unanswered, v) {
+                inputs.insert(name.to_string(), json!({ "value": v, "source": "typed" }));
+            }
+        }
+    }
+    Ok(serde_json::to_string_pretty(&file).unwrap_or_else(|_| text.to_string()))
+}
+
 /// A starter Design: one Option with example required inputs (typed, for the designer to edit)
 /// and every other input from the profile, marked as defaults. Fails when the profile's defaults
 /// do not make a valid Design with the example inputs (for example a minimum freeboard deeper
@@ -4811,6 +4897,12 @@ fn read_option(
             .find(|(k, _)| k == n)
             .map(|(_, i)| i.value.clone())
     };
+    // Issue #1034: a river-only Option answers both river limits with a number. Read from the file's own Service Area,
+    // as the limits come before it in `INPUTS`.
+    let river_only = raw
+        .get("service_area")
+        .and_then(|v| unmark(v).ok())
+        .is_some_and(|i| i.value.as_str() == Some("river-only"));
     for spec in INPUTS {
         let containment = value_of(&inputs, "cargo_containment");
         let formation = value_of(&inputs, "formation");
@@ -4898,6 +4990,11 @@ fn read_option(
                 }
                 Err(e) => report.error_text(at(e), &[spec.name]),
             }
+            continue;
+        }
+        // Issue #1034: a river limit a river-only Option leaves out is not filled from the profile (a null would
+        // be a "no limit"): it stays unanswered, and the check after the class is read says so.
+        if river_only && RIVER_LIMITS.contains(&spec.name) && !matches!(missing, Missing::Fill) {
             continue;
         }
         if spec.required {
@@ -5129,6 +5226,32 @@ fn read_option(
         );
     }
     crate::class_input::resolve(&mut inputs, profile, report, &at);
+    if river_only {
+        let mut unanswered: Vec<&str> = Vec::new();
+        let mut stored_null: Vec<&str> = Vec::new();
+        for n in RIVER_LIMITS {
+            match inputs.iter().find(|(k, _)| k == n) {
+                None if matches!(missing, Missing::Fill) => {}
+                None => unanswered.push(n),
+                Some((_, i)) if i.value.is_null() => {
+                    // A new Option (`fill --as-new`, `simulate`) asks for a number; a saved file keeps its results.
+                    if matches!(missing, Missing::FillProfile) {
+                        unanswered.push(n);
+                    } else {
+                        stored_null.push(n);
+                    }
+                }
+                Some(_) => {}
+            }
+        }
+        // An Option being edited in a session may be unanswered for now: `run` says so with the one message.
+        if !unanswered.is_empty() && !matches!(missing, Missing::Edit) {
+            report.error_text(at(river_limits_required(&unanswered)), &unanswered);
+        }
+        if !stored_null.is_empty() {
+            report.warning_text(at(river_limits_legacy()), &stored_null);
+        }
+    }
     cross_checks(&inputs, profile, report, &at);
     impossible_results(&inputs, report, &at);
     DesignOption {
@@ -5841,6 +5964,24 @@ fn cross_checks(
     at: &dyn Fn(Text) -> Text,
 ) {
     let get = |n: &str| inputs.iter().find(|(k, _)| k == n).map(|(_, i)| &i.value);
+    // Issue #1034: an air-draft limit above the lowest bridge given lets the vessel stand higher than the bridge.
+    if let (Some(limit), Some(bridge)) = (
+        get("air_draft_limit_m").and_then(Value::as_f64),
+        get("bridge_clearance_m").and_then(Value::as_f64),
+    ) && limit > bridge
+    {
+        report.warning_text(
+            at(text!(
+                "msg-air-draft-limit-above-bridge",
+                "`{input}` = {limit} is above `{bridge_input}` = {bridge}: the limit lets the vessel stand higher than the lowest bridge given",
+                input = Arg::input("air_draft_limit_m"),
+                limit = shown(&json!(limit)),
+                bridge_input = Arg::input("bridge_clearance_m"),
+                bridge = shown(&json!(bridge))
+            )),
+            &["air_draft_limit_m", "bridge_clearance_m"],
+        );
+    }
     // A hull very long for its depth: a soft limit of the Defaults Profile (about 25).
     if let (Some(loa), Some(depth), Ok(Some(soft))) = (
         get("length_overall_m").and_then(Value::as_f64),

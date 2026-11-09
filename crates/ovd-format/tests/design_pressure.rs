@@ -116,6 +116,10 @@ fn changing_the_service_area_moves_a_defaulted_pressure_with_it() {
     s.set_input(OPTION, "service_area", json!("river-only"))
         .unwrap();
     assert_eq!(stored(&s), Some((json!(0.4), Source::Default)));
+    // Issue #1034: a river-only Option needs a number for both river limits before it runs.
+    s.set_input(OPTION, "draught_limit_m", json!(12.0)).unwrap();
+    s.set_input(OPTION, "air_draft_limit_m", json!(40.0))
+        .unwrap();
     let r = results(&s);
     assert_eq!(r["drawing"]["tank"]["design_pressure_mpa"], json!(0.4));
     assert_eq!(

@@ -80,9 +80,32 @@ fn schema_takes_a_profile() {
 #[test]
 fn new_design_equals_ovd_new() {
     // Issue #925: the starter has no Service Area until one is given; `ovd new --service-area` gives it.
-    let out = ovd(&["new", "--service-area", "river-only"]);
-    let session = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    // Issue #1034: a river-only starter needs a number for both river limits to be saved.
+    let out = ovd(&[
+        "new",
+        "--service-area",
+        "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
+    ]);
+    let mut session = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    session
+        .set_input("Option 1", "draught_limit_m", json!(12.0))
+        .unwrap();
+    session
+        .set_input("Option 1", "air_draft_limit_m", json!(40.0))
+        .unwrap();
     assert_eq!(session.save().unwrap(), stdout(&out));
+    // Without the two limits the starter is not saved, and `ovd new` says why.
+    let bare_river = ovd(&["new", "--service-area", "river-only"]);
+    assert!(!bare_river.status.success());
+    assert!(
+        stderr(&bare_river).contains("draught_limit_m and air_draft_limit_m"),
+        "{}",
+        stderr(&bare_river)
+    );
     // Without the flag the starter has none, and `ovd new` says so.
     let bare = ovd(&["new"]);
     let session = DesignSession::new_design(Profile::built_in()).unwrap();
@@ -172,6 +195,13 @@ fn a_saved_design_passes_ovd_validate() {
     // Issue #925: a new Option has no Service Area until one is chosen.
     session
         .set_input("Option 2", "service_area", json!("river-only"))
+        .unwrap();
+    // Issue #1034: a river-only Option needs a number for both river limits to be saved.
+    session
+        .set_input("Option 2", "draught_limit_m", json!(12.0))
+        .unwrap();
+    session
+        .set_input("Option 2", "air_draft_limit_m", json!(40.0))
         .unwrap();
     let file = dir.join("saved.vdesign");
     std::fs::write(&file, session.save().unwrap()).unwrap();

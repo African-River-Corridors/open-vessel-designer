@@ -23,7 +23,7 @@ fn read_with_area(path: impl AsRef<std::path::Path>) -> std::io::Result<String> 
 }
 
 fn new_design(cargo: &str, carriage: &str) -> DesignSession {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     for (name, value) in [
         ("cargo", json!(cargo)),
         ("length_overall_m", json!(110.0)),
@@ -156,7 +156,7 @@ fn the_old_basis_keeps_the_cargo_data_density_and_the_fill() {
 
 #[test]
 fn an_lng_design_has_no_loading_inputs_and_does_not_move() {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     s.set_input("Option 1", "length_overall_m", json!(110.0))
         .unwrap();
@@ -222,4 +222,17 @@ fn loading_warmer_than_the_marvs_allows_warns_and_stays_at_the_filling_limit() {
     let r = results(&s);
     let c = &r["drawing"]["cargo_loading"];
     assert_eq!(c["loading_limit"], c["filling_limit"]);
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

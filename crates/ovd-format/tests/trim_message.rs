@@ -12,6 +12,8 @@ fn results(loa: f64, beam: f64, depth: f64) -> Value {
         "options": [{ "name": "Option 1", "inputs": {
             "cargo": { "value": "bauxite", "source": "typed" },
             "service_area": { "value": "river-only", "source": "typed" },
+            "draught_limit_m": { "value": 12.0, "source": "typed" },
+            "air_draft_limit_m": { "value": 40.0, "source": "typed" },
             "hull_form": { "value": "raked_box", "source": "typed" },
             "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
             "length_overall_m": { "value": loa, "source": "typed" },

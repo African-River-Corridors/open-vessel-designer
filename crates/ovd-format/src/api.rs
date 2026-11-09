@@ -350,6 +350,17 @@ pub(crate) fn option_of(
         if !named && let Err(m) = crate::trace::service_area_of(option) {
             errors.push(m);
         }
+        // Issue #1034: a river-only Option needs a number for both river limits. A key left out, or given as
+        // `None`, is the one message (a `TypeError` in Python); there is no "no limit".
+        if option.input("service_area").and_then(|i| i.value.as_str()) == Some("river-only") {
+            let unanswered: Vec<&str> = crate::vdesign::RIVER_LIMITS
+                .into_iter()
+                .filter(|n| option.input(n).is_none_or(|i| i.value.is_null()))
+                .collect();
+            if !unanswered.is_empty() {
+                errors.push(crate::vdesign::river_limits_required(&unanswered).to_string());
+            }
+        }
     }
     match option {
         Some(o) if errors.is_empty() => Ok(o),
@@ -766,6 +777,36 @@ mod tests {
         p.remove("service_area");
         let e = refused(option_of(&p, &Profile::built_in()));
         assert_eq!(e, vec![crate::vdesign::service_area_required().en]);
+    }
+
+    #[test]
+    fn a_river_only_dict_needs_a_number_for_both_limits_and_none_is_not_one() {
+        // Issue #1034: a key left out, or given as null, is the one message; a number is an answer.
+        let river = |extra: Value| {
+            let mut p = obj(gas());
+            p.insert("service_area".into(), json!("river-only"));
+            for (k, v) in extra.as_object().unwrap() {
+                p.insert(k.clone(), v.clone());
+            }
+            option_of(&p, &Profile::built_in())
+        };
+        let one = |r| {
+            let e = refused(r);
+            assert_eq!(e.len(), 1, "{e:?}");
+            e.into_iter().next().unwrap()
+        };
+        let both = one(river(json!({})));
+        assert!(
+            both.contains("draught_limit_m and air_draft_limit_m"),
+            "{both}"
+        );
+        let nulls = one(river(
+            json!({ "draught_limit_m": null, "air_draft_limit_m": null }),
+        ));
+        assert_eq!(nulls, both);
+        let air = one(river(json!({ "draught_limit_m": 3.0 })));
+        assert!(air.contains("air_draft_limit_m") && !air.contains("draught_limit_m"));
+        assert!(river(json!({ "draught_limit_m": 3.0, "air_draft_limit_m": 9.1 })).is_ok());
     }
 
     #[test]

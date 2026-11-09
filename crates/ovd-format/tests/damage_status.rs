@@ -33,6 +33,14 @@ fn gas(service_area: &str, control: &DamageControl) -> (Value, String) {
         "service_area".into(),
         json!({ "value": service_area, "source": "typed" }),
     );
+    // Issue #1034: a river-only Option needs a number for both river limits (the example's own stay).
+    if service_area == "river-only" {
+        for (name, v) in [("draught_limit_m", 12.0), ("air_draft_limit_m", 40.0)] {
+            inputs
+                .entry(name)
+                .or_insert(json!({ "value": v, "source": "typed" }));
+        }
+    }
     option.as_object_mut().unwrap().remove("results_hash");
     file["options"] = json!([option]);
     file.as_object_mut().unwrap().remove("defaults_profile");

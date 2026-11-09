@@ -90,6 +90,8 @@ def stern_case_trace(i: dict, *, rule_sets: tuple[str, ...] = (), select: tuple[
         "propulsor_type": "shaft_nozzle" if ducted else "shaft_open", "stern_form": "transom",
         # Issue #925: the Service Area is required. The stern cases are river-only cases, as they ran before.
         "service_area": "river-only",
+        # Issue #1034: a river-only Option needs a number for both river limits. These are high enough not to bind.
+        "draught_limit_m": 12.0, "air_draft_limit_m": 40.0,
     }
     measured = {
         "blind_distance_light_m": i["blind_distance_light_m"], "blind_distance_laden_m": i["blind_distance_laden_m"],
@@ -110,6 +112,8 @@ def vent_case_trace(i: dict, *, rule_sets: tuple[str, ...] = (), select: tuple[s
         "length_overall_m": float(i["length_overall_m"]), "beam_m": float(i["beam_m"]),
         "moulded_depth_m": float(i["depth_m"]), "service_area": i["service_area"],
     }
+    if i["service_area"] == "river-only":            # issue #1034: a river-only Option needs both river limits
+        inputs.update(draught_limit_m=12.0, air_draft_limit_m=40.0)
     measured = {k: float(i[k]) for k in ("vent_exit_above_deck_m", "vent_exit_above_working_area_m",
                                          "vent_distance_to_openings_m")}
     if "vent_distance_to_accommodation_m" in i:      # issue #850: a river-only case reads ADN 9.3.1.22.3

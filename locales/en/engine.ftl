@@ -386,6 +386,10 @@ name-cargo-nothing-fits = Nothing fits: lengthen or widen the hull.
 ## crates/ovd-format/src/vdesign.rs
 
 msg-service-area-required = the Service Area is not set; it must be `river-only` or `coastal-and-river`. Set it with `ovd fill --service-area <river-only|coastal-and-river>` (in a `simulate` call, pass `service_area`), or choose it in the app
+msg-river-limit-required-draught = a river-only Option needs a number for draught_limit_m: not set. Type a value (ovd fill --draught-limit <m> --air-draft-limit <m>; in a simulate call, pass it as a number), or pick a Vessel Class that gives it
+msg-river-limit-required-air-draft = a river-only Option needs a number for air_draft_limit_m: not set. Type a value (ovd fill --draught-limit <m> --air-draft-limit <m>; in a simulate call, pass it as a number), or pick a Vessel Class that gives it
+msg-river-limits-required = a river-only Option needs a number for draught_limit_m and air_draft_limit_m: not set. Type a value (ovd fill --draught-limit <m> --air-draft-limit <m>; in a simulate call, pass each as a number), or pick a Vessel Class that gives them
+msg-river-limits-legacy = this river-only file was saved before the rule that needs a number for the draught limit and the air-draft limit; it stores none for at least one of them, so its hull is not bounded by it. It keeps its results. Set them with ovd fill --draught-limit <m> --air-draft-limit <m>
 msg-file-not-json = the file is not JSON: { $error }
 msg-file-the-file = the file
 msg-file-duplicate-key = `{ $key }` appears twice in { $place }; a key may appear once
@@ -461,6 +465,7 @@ msg-formation-convoy-only = `{ $input }`: a pushed_convoy holds only `kind`, `ab
 msg-hard-range = `{ $input }` = { $value } is out of range: must be { $bound } (hard limit)
 msg-soft-range = `{ $input }` = { $value } is outside the usual range { $min } to { $max } (soft limit); accepted
 msg-offsets-dimension = `{ $input }` = { $typed } differs from the offsets table's { $table }: an offsets hull takes its length, beam and depth from its table
+msg-air-draft-limit-above-bridge = `{ $input }` = { $limit } is above `{ $bridge_input }` = { $bridge }: the limit lets the vessel stand higher than the lowest bridge given
 msg-slender-hull = `{ $input }` = { $length } is { $ratio } times `{ $depth_input }` = { $depth }, over about { $limit }: a very slender hull for its depth (soft limit); accepted
 msg-containment-cargo = `{ $input }` = { $containment } cannot carry { $cargo } ({ $phase }); use { $fits }
 msg-freeboard-depth = `{ $input }` = { $freeboard } must be less than `{ $depth_input }` = { $depth } (hard limit)

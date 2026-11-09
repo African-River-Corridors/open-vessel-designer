@@ -372,7 +372,14 @@ fn a_pushed_file_holds_none_of_them_and_a_self_propelled_file_holds_all() {
             );
         }
         let checked = check(&raw_fixture(file), &Profile::built_in());
-        assert_eq!(checked.report.warnings, Vec::<String>::new(), "{file}");
+        // Issue #1034: a river-only file that stores no river limits gets the one note about them.
+        let rest: Vec<_> = checked
+            .report
+            .warnings
+            .iter()
+            .filter(|w| !w.contains("saved before the rule that needs a number"))
+            .collect();
+        assert!(rest.is_empty(), "{file}: {rest:?}");
     }
     let raw: Value = serde_json::from_str(&raw_fixture(GAS)).unwrap();
     for name in NEW {

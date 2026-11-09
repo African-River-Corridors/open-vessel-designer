@@ -47,6 +47,7 @@ fn starter() -> ovd_format::Design {
     let text =
         ovd_format::with_service_area(&new_design(&profile).unwrap().to_text(), "river-only")
             .unwrap();
+    let text = ovd_format::with_river_limits(&text, Some(12.0), Some(40.0)).unwrap();
     ovd_format::fill(&text, &profile).design.unwrap()
 }
 

@@ -5,7 +5,7 @@
   // One input, drawn from its schema entry. It shows what Rust sent and sends back what the user
   // typed or chose. The number the user types stays in the box while it is typed: the box is filled
   // once and not rewritten, so "76." is not turned into "76".
-  let { spec, stored, messages, onEdit, onReset, onFormation, onImportOffsets, designSpeed }: {
+  let { spec, stored, messages, onEdit, onReset, onFormation, onImportOffsets, designSpeed, riverOnly = false }: {
     spec: InputSpec;
     stored: StoredInput;
     messages: Message[];
@@ -15,6 +15,8 @@
     onImportOffsets: () => void;
     /** The Option's design service speed (kn): the default passage speed of the holding-time profile. */
     designSpeed?: number;
+    /** Issue #1034: the Option is river-only, so its two river limits need a number: no "none" choice. */
+    riverOnly?: boolean;
   } = $props();
 
   // The box is filled once. When Rust changes the value later (the Vessel Class moved, say) it is
@@ -89,6 +91,9 @@
   let label = $derived(schemaText.input(spec.name, spec.label));
 
   let value = $derived(stored.value);
+  const RIVER_LIMITS = ["draught_limit_m", "air_draft_limit_m"];
+  /** Issue #1034: a river limit of a river-only Option has no "none"; the field shows no value until answered. */
+  let needsNumber = $derived(riverOnly && RIVER_LIMITS.includes(spec.name));
 
   /** The text of a list entry. */
   function choiceText(v: string): string {
@@ -105,7 +110,7 @@
   let notTyped = $derived(stored.source !== "typed" && (spec.choices ?? []).some((c) => c.value === String(value)));
   // Local display state, taken once: the field is drawn afresh (new key) when Rust changes a value.
   /* svelte-ignore state_referenced_locally */
-  let showNumber = $state(stored.value !== null);
+  let showNumber = $state(stored.value !== null || (riverOnly && RIVER_LIMITS.includes(spec.name)));
 
   let formation = $derived(
     (spec.kind === "formation" ? value : {}) as { kind: string; abreast?: number; in_line?: number },
@@ -140,7 +145,7 @@
         />
         <span class="unit">{spec.unit && spec.unit !== "-" ? spec.unit : ""}</span>
       {/if}
-      {#if spec.nullable}
+      {#if spec.nullable && !needsNumber}
         <label class="none">
           <input
             type="checkbox"

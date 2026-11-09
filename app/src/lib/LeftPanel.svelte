@@ -23,6 +23,9 @@
   } = $props();
 
   let option = $derived(snap?.design.options.find((o) => o.name === snap!.active_option));
+  // Issue #1034: a river-only Option needs a number for its two river limits. A field is drawn afresh when this
+  // changes, so the limit boxes show the moment the Service Area becomes river-only.
+  let riverOnly = $derived(option?.inputs["service_area"]?.value === "river-only");
   let groups = $derived(
     (schema?.groups ?? []).map((g) => ({
       name: g,
@@ -109,7 +112,7 @@
             onEdit={(name, v) => onEdit(name, v)}
           />
         {/if}
-        {#each g.inputs as spec (`${spec.name}|${snap.active_option}|${generation}`)}
+        {#each g.inputs as spec (`${spec.name}|${snap.active_option}|${generation}|${riverOnly}`)}
           <InputField
             {spec}
             stored={option!.inputs[spec.name] ?? { value: null, source: "typed" }}
@@ -117,6 +120,7 @@
             onEdit={(v) => onEdit(spec.name, v)}
             onReset={() => onReset(spec.name)}
             designSpeed={option!.inputs["design_speed_kn"]?.value as number | undefined}
+            {riverOnly}
             {onFormation}
             {onImportOffsets}
           />

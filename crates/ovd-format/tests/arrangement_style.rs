@@ -30,6 +30,11 @@ fn hand(service_area: Option<&str>, extra: Value) -> String {
     if let Some(a) = service_area {
         inputs["service_area"] = json!({ "value": a, "source": "typed" });
     }
+    // Issue #1034: a river-only Option needs a number for both river limits (`extra` may give its own).
+    if inputs["service_area"]["value"] == "river-only" {
+        inputs["draught_limit_m"] = json!({ "value": 12.0, "source": "typed" });
+        inputs["air_draft_limit_m"] = json!({ "value": 40.0, "source": "typed" });
+    }
     for (k, v) in extra.as_object().unwrap() {
         inputs[k] = json!({ "value": v, "source": "typed" });
     }
@@ -125,7 +130,7 @@ fn a_pushed_barge_holds_no_arrangement_style() {
 
 #[test]
 fn a_session_gives_the_deckhouse_when_the_service_area_is_coastal() {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     s.set_formation("Option 1", "self_propelled", None, None)
         .unwrap();
@@ -368,4 +373,17 @@ fn the_apps_deckhouse_run_file_is_the_run_the_engine_gives() {
             "`{k}` is stale: run python3 app/scripts/fixtures/refresh_deckhouse_run.py <ovd>"
         );
     }
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

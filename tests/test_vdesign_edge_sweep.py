@@ -85,7 +85,9 @@ CONTAINMENT_PHASE = {"box_hold": "dry_bulk", "sloped_hopper_hold": "dry_bulk",
 ONLY_FOR = {"lightship_factor_t_per_m3": "box_hold", "ruleset": "type_c_tanks",
             "fill_ratio": "type_c_tanks", "max_tank_od_m": "type_c_tanks",
             "optimise_depth": "type_c_tanks"}
-NULLABLE = {"air_draft_limit_m", "draught_limit_m", "channel_depth_m", "channel_bottom_width_m"}
+# Issue #1034: the two river limits are not nullable here: every Option of the sweep is river-only, and a
+# river-only Option needs a number for both.
+NULLABLE = {"channel_depth_m", "channel_bottom_width_m"}
 # Results that can never be negative on a real barge. Each is checked when present.
 NON_NEGATIVE_RESULTS = ("cargo_t", "cargo_volume_m3", "draught_m", "displacement_t", "lightship_t")
 NON_NEGATIVE_GEOMETRY = ("hold_top_width_m", "hold_bottom_width_m", "hold_height_m")
@@ -197,7 +199,7 @@ def sweep_options(profile: dict) -> list:
 TYPICAL = {"min_freeboard_m": 0.3, "lightship_factor_t_per_m3": 0.1093,
            "ruleset": "IGC_2G", "fill_ratio": 0.98, "max_tank_od_m": 16.0,
            "optimise_depth": False, "propulsive_efficiency": 0.45, "max_speed_kn": 10.0,
-           "air_draft_limit_m": None, "draught_limit_m": None, "channel_depth_m": None,
+           "air_draft_limit_m": 40.0, "draught_limit_m": 12.0, "channel_depth_m": None,
            "channel_under_keel_clearance_m": 0.5, "channel_bank_slope": 3.0,
            "channel_current_kn": 0.0}
 
@@ -273,6 +275,7 @@ def test_the_impossible_result_check_catches_an_error_value_and_a_negative():
         simulate(to_simulate({
             "cargo": "bauxite", "hull_form": "raked_box", "formation": {"kind": "pushed_barge"},
             "cargo_containment": "box_hold", "service_area": "river-only",
+            "draught_limit_m": 12.0, "air_draft_limit_m": 40.0,
             "length_overall_m": 76.5, "beam_m": 1.0, "moulded_depth_m": 3.5}))
     found = impossible(one_metre)
     assert any(f.startswith("cargo_t = -") for f in found), found

@@ -28,7 +28,9 @@ fn results_with(service_area: &str, extra: Value) -> (Value, String) {
         "options": [{ "name": "Option 1", "inputs": inputs }]
     })
     .to_string();
-    let d = fill_as_new(&text, &Profile::built_in()).design.unwrap();
+    let d = fill_as_new(&river_limits(&text), &Profile::built_in())
+        .design
+        .unwrap();
     match run_option(&d.options[0]) {
         RunOutcome::Results { results, hash } => (results, hash),
         other => panic!("{other:?}"),
@@ -133,7 +135,7 @@ fn a_bad_typed_row_is_refused_with_a_message() {
         } }]
     })
     .to_string();
-    let filled = fill_as_new(&text, &Profile::built_in());
+    let filled = fill_as_new(&river_limits(&text), &Profile::built_in());
     assert!(
         filled.design.is_none() || !filled.report.errors.is_empty(),
         "a row with an unknown kind is an error"
@@ -147,4 +149,10 @@ fn a_bad_typed_row_is_refused_with_a_message() {
         "{:?}",
         filled.report.errors
     );
+}
+
+/// Issue #1034: a river-only Option needs a number for both river limits. These are high enough not to bind, so
+/// no value of these tests moves.
+fn river_limits(text: &str) -> String {
+    ovd_format::with_river_limits(text, Some(12.0), Some(40.0)).unwrap()
 }

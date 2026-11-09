@@ -25,7 +25,7 @@ result["damage_status"]       # "not run": damage is off unless you ask for it
 
 - **A key you give** is a typed input of the Option.
 - **A key you leave out** takes the Defaults Profile value, by Cargo, by Formation and by Service Area. It is marked `default` in the Option, as in a file. Nothing else is invented: there is no starter length, beam or Cargo.
-- **A required input you leave out** is an error. The required inputs are `cargo`, `hull_form`, `formation`, `length_overall_m`, `beam_m` and `service_area`. The Service Area has no default: give `river-only` or `coastal-and-river`. A dict in glossary names must give `formation` and `hull_form`, as a file must; a dict that uses an old name need not (see Names).
+- **A required input you leave out** is an error. The required inputs are `cargo`, `hull_form`, `formation`, `length_overall_m`, `beam_m` and `service_area`. The Service Area has no default: give `river-only` or `coastal-and-river`. For a `river-only` Option, `draught_limit_m` and `air_draft_limit_m` are required too (issue #1034): give each as a number, or a `vessel_class` that fills them. A key left out, or given as `None`, raises `TypeError`; there is no "no limit". A dict in glossary names must give `formation` and `hull_form`, as a file must; a dict that uses an old name need not (see Names).
 - **The Option is built once.** The Rule Sets, the Rules of the stack and the Spaces come from the Option, as `ovd run` takes them.
 
 ## Names

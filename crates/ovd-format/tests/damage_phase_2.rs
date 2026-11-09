@@ -34,6 +34,8 @@ fn gas_results(loa: f64, beam: f64, depth: f64, sets: &[(&str, &str)]) -> Value 
         "moulded_depth_m": { "value": depth, "source": "typed" },
         "loading_conditions": { "value": "is_code_2008", "source": "typed" },
         "service_area": { "value": "river-only", "source": "typed" },
+        "draught_limit_m": { "value": 12.0, "source": "typed" },
+        "air_draft_limit_m": { "value": 40.0, "source": "typed" },
         "rule_sets": { "value": stack(sets), "source": "typed" }
     });
     let file = json!({

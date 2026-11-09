@@ -63,6 +63,12 @@ async function ready(b) {
   const select = await area();
   if ((await select.isExisting()) && (await b.execute((el) => el.value === "__unset__", select))) {
     await select.selectByAttribute("value", "river-only");
+    // Issue #1034: a river-only Option needs a number for both river limits, so the results wait for them.
+    for (const [name, text] of [["draught_limit_m", "12"], ["air_draft_limit_m", "40"]]) {
+      const box = b.$(`.field[data-input="${name}"] input[type=text]`);
+      await box.waitForExist({ timeout: 15000, timeoutMsg: `the ${name} box` });
+      await box.setValue(text);
+    }
     // Choosing it is an edit, so the Design is unsaved; the tests that open a file next accept the discard prompt.
     await b.execute(() => {
       window.confirm = () => true;

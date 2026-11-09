@@ -82,6 +82,12 @@ def _inputs(cargo, containment, formation, loa, beam, depth, **more):
     if depth is None:               # left out: the Defaults Profile's rule gives it
         del d["moulded_depth_m"]
     d.update(more)
+    # Issue #1034: a river-only Option needs a number for both river limits. The sweep gives each case the numbers
+    # that keep it where it was: the air-draft limit is high enough not to bind, and the draught limit is the
+    # depth (never more than the hull floats at) or, with the depth left out, one that keeps the rule's depth.
+    if d["service_area"] == "river-only":
+        d.setdefault("air_draft_limit_m", 40.0)
+        d.setdefault("draught_limit_m", depth if depth is not None else 3.0)
     return d
 
 

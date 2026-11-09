@@ -25,11 +25,16 @@ fn results_of(
         "options": [{ "name": "Option 1", "inputs": {
             "cargo": cargo, "hull_form": "raked_box", "formation": { "kind": "self_propelled" },
             "length_overall_m": loa, "beam_m": beam, "moulded_depth_m": depth,
-            "cargo_containment": containment, "service_area": area, "arrangement_style": style
+            "cargo_containment": containment, "service_area": area, "arrangement_style": style,
+            // Issue #1034: a river-only Option has an air-draft limit now, and a typed limit lets the wheelhouse lift.
+            // These tests are about the fixed wheelhouse the Option had with no limit, so the lift is zero.
+            "wheelhouse_max_lift_m": 0.0
         } }]
     })
     .to_string();
-    let d = fill_as_new(&text, &Profile::built_in()).design.unwrap();
+    let d = fill_as_new(&river_limits(&text), &Profile::built_in())
+        .design
+        .unwrap();
     match ovd_format::run_option(&d.options[0]) {
         RunOutcome::Results { results, hash, .. } => (results, hash),
         other => panic!("{other:?}"),
@@ -143,9 +148,13 @@ fn a_container_block_option_is_unchanged() {
     // `weather_shield_thickness_mm` 0, so the shield mass leaves the lightship; this Option types its
     // depth, 12.0 m, so the depth and the standing height play no part): was
     // ae3f2ee729ea7cf252e54724b29b0aaccfc0e81ab173164140a8d7c390db2e16.
+    // Re-pinned (issue #1034: a river-only Option now carries a number for both river limits, here 12.0 m and 40.0 m,
+    // the results now show the air-draft limit check (`limit_m`, one check and one rule row), so the hash moves; no number of the
+    // hull moves, checked by a run with the limits stored as null): was
+    // a450181cb58452607279476905fb0ce6aa0ef78177c66204828777379e36b8d8.
     assert_eq!(
         hash,
-        "a450181cb58452607279476905fb0ce6aa0ef78177c66204828777379e36b8d8"
+        "5f480ac8787f6ca206694ff7b96263c1b3a87aad67139476281c0fd1fcab3b64"
     );
 }
 
@@ -176,4 +185,10 @@ fn the_river_only_house_has_the_tiers_this_change_gives_it() {
         r["results"]["lightship_t"]
     );
     assert!((num(&r["results"]["cargo_t"]) - 9_882.019_135).abs() < 1e-4);
+}
+
+/// Issue #1034: a river-only Option needs a number for both river limits. These are high enough not to bind, so
+/// no value of these tests moves.
+fn river_limits(text: &str) -> String {
+    ovd_format::with_river_limits(text, Some(12.0), Some(40.0)).unwrap()
 }

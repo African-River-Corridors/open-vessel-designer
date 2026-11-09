@@ -20,6 +20,8 @@ fn design(extra: Value) -> ovd_format::Design {
         "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
         "length_overall_m": { "value": 110.0, "source": "typed" },
         "service_area": { "value": "river-only", "source": "typed" },
+        "draught_limit_m": { "value": 12.0, "source": "typed" },
+        "air_draft_limit_m": { "value": 40.0, "source": "typed" },
         "beam_m": { "value": 11.4, "source": "typed" },
         "moulded_depth_m": { "value": 6.0, "source": "typed" }
     });

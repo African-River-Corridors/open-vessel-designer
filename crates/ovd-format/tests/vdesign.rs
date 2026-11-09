@@ -64,6 +64,7 @@ fn used(inputs: Value, name: &str) -> (Value, Source) {
 fn started(profile: &Profile) -> ovd_format::Design {
     let text = ovd_format::with_service_area(&new_design(profile).unwrap().to_text(), "river-only")
         .unwrap();
+    let text = ovd_format::with_river_limits(&text, Some(12.0), Some(40.0)).unwrap();
     fill(&text, profile).design.unwrap()
 }
 
@@ -154,7 +155,9 @@ fn check_refuses_a_file_that_leaves_out_optional_inputs_and_names_them() {
     let e = check(&design_with(required("bauxite")), &Profile::built_in())
         .report
         .errors;
-    assert_eq!(e.len(), 1, "{e:?}");
+    // Issue #1034: the file is river-only and stores neither river limit, so the one message about them comes too.
+    assert_eq!(e.len(), 2, "{e:?}");
+    assert!(has(&e, "river-only Option needs a number"), "{e:?}");
     assert!(
         has(
             &e,

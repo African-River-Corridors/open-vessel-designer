@@ -27,7 +27,7 @@ fn results(loading: Option<&str>) -> Value {
         "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
         "options": [{ "name": "Option 1", "inputs": inputs }]
     });
-    let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+    let filled = fill_as_new(&river_limits(&file.to_string()), &Profile::built_in());
     match run_option(&filled.design.unwrap().options[0]) {
         RunOutcome::Results { results, .. } => results,
         other => panic!("{other:?}"),
@@ -124,7 +124,7 @@ fn gas_results_along(loa: f64, beam: f64, depth: f64, area: &str, along: Option<
         "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
         "options": [{ "name": "Option 1", "inputs": inputs }]
     });
-    let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+    let filled = fill_as_new(&river_limits(&file.to_string()), &Profile::built_in());
     match run_option(&filled.design.unwrap().options[0]) {
         RunOutcome::Results { results, .. } => results,
         other => panic!("{other:?}"),
@@ -553,7 +553,7 @@ fn the_leaders_of_the_reference_example_do_not_run_along_hatching() {
         option.as_object_mut().unwrap().remove("results_hash");
         file["options"] = json!([option]);
         file.as_object_mut().unwrap().remove("defaults_profile");
-        let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+        let filled = fill_as_new(&river_limits(&file.to_string()), &Profile::built_in());
         let r = match run_option(&filled.design.unwrap().options[0]) {
             RunOutcome::Results { results, .. } => results,
             other => panic!("{other:?}"),
@@ -574,4 +574,10 @@ fn the_leaders_of_the_reference_example_do_not_run_along_hatching() {
         }
     }
     assert!(sheets >= 2, "{sheets} sheets");
+}
+
+/// Issue #1034: a river-only Option needs a number for both river limits. These are high enough not to bind, so
+/// no value of these tests moves.
+fn river_limits(text: &str) -> String {
+    ovd_format::with_river_limits(text, Some(12.0), Some(40.0)).unwrap()
 }

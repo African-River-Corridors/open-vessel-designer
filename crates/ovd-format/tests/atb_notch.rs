@@ -4,11 +4,11 @@
 //!
 //! Label: property. The closed forms of the Notch are in `crates/ovd-core/tests/atb.rs`.
 
-use ovd_format::{DesignSession, Profile, RunOutcome, run_design};
+use ovd_format::{RunOutcome, run_design};
 use serde_json::{Value, json};
 
 fn volume_at_depth(kind: &str, typed: &[(&str, f64)]) -> f64 {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     s.set_input("Option 1", "cargo", json!("bauxite")).unwrap();
     s.set_formation("Option 1", kind, None, None).unwrap();
     s.set_input("Option 1", "loading_conditions", json!("legacy"))
@@ -52,4 +52,17 @@ fn a_larger_tug_cuts_a_larger_notch() {
     let default = volume_at_depth("atb", &[]);
     let long_tug = volume_at_depth("atb", &[("tug_length_m", 40.0)]);
     assert!(long_tug < default, "{long_tug} vs {default}");
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

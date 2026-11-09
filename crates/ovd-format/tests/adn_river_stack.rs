@@ -25,6 +25,11 @@ fn file_of(service_area: Option<&str>) -> Value {
     });
     if let Some(a) = service_area {
         inputs["service_area"] = json!({ "value": a, "source": "typed" });
+        // Issue #1034: a river-only Option needs a number for both river limits (high enough not to bind).
+        if a == "river-only" {
+            inputs["draught_limit_m"] = json!({ "value": 12.0, "source": "typed" });
+            inputs["air_draft_limit_m"] = json!({ "value": 40.0, "source": "typed" });
+        }
     }
     json!({
         "format": "vdesign", "format_version": 3, "engine_version": "0.2.4", "units": "SI",
@@ -295,7 +300,8 @@ fn a_harness_case_with_no_distance_to_the_accommodation_does_not_fail_the_adn_ro
     // the ADN distance row has no value: it is not applicable, never a failure (it was a 0 m distance).
     let inputs = json!({
         "cargo": "LNG", "hull_form": "raked_box", "service_area": "river-only", "formation": { "kind": "pushed_barge" },
-        "length_overall_m": 100.0, "beam_m": 14.0, "moulded_depth_m": 4.5, "service_area": "river-only"
+        "length_overall_m": 100.0, "beam_m": 14.0, "moulded_depth_m": 4.5, "service_area": "river-only",
+        "draught_limit_m": 12.0, "air_draft_limit_m": 40.0
     });
     let run = |measured: Value| {
         let t = ovd_format::trace::stern_trace(

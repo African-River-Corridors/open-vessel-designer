@@ -803,6 +803,9 @@ def _installed_power(c: dict, kappa: float) -> float:
         "design_speed_kn": float(c["design_speed_kn"]), "installed_power_margin": 1.2,
         "propulsor_efficiency_factor": float(kappa), "speed_max_kn": 14.0,
         "service_area": "river-only",   # issue #925: required; these are inland ships
+        # Issue #1034: a river-only Option needs a number for the air-draft limit. The cases give none, so this
+        # is high enough that no candidate is dropped: the installed power does not move.
+        "air_draft_limit_m": 40.0,
     }})
     return float(out["powering"]["installed_power_kw"])
 
