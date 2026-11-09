@@ -25,10 +25,7 @@ fn results_of(
         "options": [{ "name": "Option 1", "inputs": {
             "cargo": cargo, "hull_form": "raked_box", "formation": { "kind": "self_propelled" },
             "length_overall_m": loa, "beam_m": beam, "moulded_depth_m": depth,
-            "cargo_containment": containment, "service_area": area, "arrangement_style": style,
-            // Issue #1034: a river-only Option has an air-draft limit now, and a typed limit lets the wheelhouse lift.
-            // These tests are about the fixed wheelhouse the Option had with no limit, so the lift is zero.
-            "wheelhouse_max_lift_m": 0.0
+            "cargo_containment": containment, "service_area": area, "arrangement_style": style
         } }]
     })
     .to_string();
@@ -151,10 +148,12 @@ fn a_container_block_option_is_unchanged() {
     // Re-pinned (issue #1034: a river-only Option now carries a number for both river limits, here 12.0 m and 40.0 m,
     // the results now show the air-draft limit check (`limit_m`, one check and one rule row), so the hash moves; no number of the
     // hull moves, checked by a run with the limits stored as null): was
-    // a450181cb58452607279476905fb0ce6aa0ef78177c66204828777379e36b8d8.
+    // a450181cb58452607279476905fb0ce6aa0ef78177c66204828777379e36b8d8. The first pin of that change
+    // typed a lift of zero to hide the lifting wheelhouse; the container block keeps its default lift, so
+    // it is pinned here on the real rule (it was 5f480ac8787f6ca206694ff7b96263c1b3a87aad67139476281c0fd1fcab3b64).
     assert_eq!(
         hash,
-        "5f480ac8787f6ca206694ff7b96263c1b3a87aad67139476281c0fd1fcab3b64"
+        "0641026d88121e9c05cce2417951b347c8a19828686da35d04ab8d48335ee5e2"
     );
 }
 

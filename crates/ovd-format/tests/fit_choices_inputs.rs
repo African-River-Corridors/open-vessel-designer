@@ -292,7 +292,7 @@ fn the_wheelhouse_lift_is_an_estimate_in_the_published_range_and_names_its_datum
 }
 
 #[test]
-fn a_deckhouse_wheelhouse_lifts_only_with_an_air_draft_limit_however_much_lift_is_typed() {
+fn a_deckhouse_wheelhouse_lifts_only_when_the_air_draft_limit_binds_however_much_lift_is_typed() {
     // Issue #779, spec 0011 D4: the twin of the lift test above for the deckhouse. The typed lift
     // (an estimate in the published range) is read only when an air-draft limit makes the wheelhouse
     // elevating; otherwise the wheelhouse is fixed and the house gets the tiers.
@@ -300,8 +300,16 @@ fn a_deckhouse_wheelhouse_lifts_only_with_an_air_draft_limit_however_much_lift_i
     let aft = &fixed["drawing"]["aft_arrangement"];
     assert_eq!(aft["deckhouse"]["wheelhouse"], json!("fixed"));
     assert_eq!(aft["wheelhouse_lift_m"].as_f64(), Some(0.0));
-    let elevating = run(&design(
+    // Issue #1034: a limit the fixed wheelhouse meets leaves it fixed; a tighter one lifts it.
+    let loose = run(&design(
         json!({ "wheelhouse_max_lift_m": 6.0, "air_draft_limit_m": 40.0 }),
+    ));
+    assert_eq!(
+        loose["drawing"]["aft_arrangement"]["deckhouse"]["wheelhouse"],
+        json!("fixed")
+    );
+    let elevating = run(&design(
+        json!({ "wheelhouse_max_lift_m": 6.0, "air_draft_limit_m": 15.0 }),
     ));
     let aft = &elevating["drawing"]["aft_arrangement"];
     assert_eq!(aft["deckhouse"]["wheelhouse"], json!("elevating"));

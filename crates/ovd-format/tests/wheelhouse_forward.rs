@@ -16,8 +16,6 @@ fn design(loa: f64, beam: f64, depth: f64, extra: Value) -> String {
         "service_area": { "value": "river-only", "source": "typed" },
         "draught_limit_m": { "value": 12.0, "source": "typed" },
         "air_draft_limit_m": { "value": 40.0, "source": "typed" },
-        // Issue #1034: a typed air-draft limit lets the wheelhouse lift; these tests are about a fixed one.
-        "wheelhouse_max_lift_m": { "value": 0.0, "source": "typed" },
         "beam_m": { "value": beam, "source": "typed" },
         "moulded_depth_m": { "value": depth, "source": "typed" }
     });

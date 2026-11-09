@@ -132,6 +132,7 @@ The maintainer approved this design at the gate on 2026-11-09. The answers below
 5. **Q5.** The damage-run cap stays 24.
 6. **Q6.** Bridge clearance stays a warning. A new warning fires when the air-draft limit is above a typed bridge clearance.
 7. **Q7.** The follow-ups are separate issues: #1049, #1050, #1051 and #1052.
+8. **The wheelhouse lift (answer of 2026-11-09, after Phase 2 made the air-draft limit required).** An existing rule makes a deckhouse wheelhouse elevating whenever a limit is set, so every river-only deckhouse design would have lifted its wheelhouse, even under a loose 40 m limit (the 140 x 29 m LNG air draft fell from 25.8 m to 18.0 m). **The wheelhouse lifts only when a fixed wheelhouse would break the air-draft limit.** Where the fixed wheelhouse meets the limit, it stays fixed and the design does not move. The engine runs the fixed design first and runs the lifting one only when the fixed one fails `air_draft_within_limit`. A limit equal to the fixed air draft keeps it fixed. The run's `wheelhouse_basis` is `limit_not_binding` for a fixed wheelhouse under a limit, `air_draft_limit` for one lifted by the limit. The tests no longer type `wheelhouse_max_lift_m = 0` to hide the lift.
 
 ## Risks
 

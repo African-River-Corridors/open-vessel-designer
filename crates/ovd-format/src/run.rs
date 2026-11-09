@@ -1185,7 +1185,7 @@ fn stern_arrangement_of(
     let limit_set = vessel.capacity.air_draft_limit_m.is_some();
     let hazard = hazard_study_json(aft, vessel);
     Some(match &aft.deckhouse {
-        // D4: fixed on the deckhouse, unless an air-draft limit is set and the wheelhouse can lift.
+        // D4: fixed on the deckhouse, unless a fixed one would break the air-draft limit and the wheelhouse can lift.
         Some(d) => {
             let mut block = json!({
                 "style": if aft.forward_house.is_some() { "wheelhouse_forward" } else { "deckhouse" },
@@ -1198,6 +1198,8 @@ fn stern_arrangement_of(
                     "air_draft_limit"
                 } else if limit_set && lift <= 0.0 {
                     "no_lift"
+                } else if limit_set {
+                    "limit_not_binding"
                 } else {
                     "no_air_draft_limit"
                 },

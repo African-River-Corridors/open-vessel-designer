@@ -201,10 +201,10 @@ fn a_deckhouse_option_has_a_deckhouse_a_fixed_wheelhouse_and_steel_items() {
 }
 
 #[test]
-fn an_air_draft_limit_makes_the_deckhouse_wheelhouse_elevating() {
+fn an_air_draft_limit_the_fixed_wheelhouse_breaks_makes_the_deckhouse_wheelhouse_elevating() {
     let r = results_of(&hand(
         Some("coastal-and-river"),
-        json!({ "length_overall_m": 140.0, "beam_m": 29.0, "moulded_depth_m": 9.0, "air_draft_limit_m": 40.0 }),
+        json!({ "length_overall_m": 140.0, "beam_m": 29.0, "moulded_depth_m": 9.0, "air_draft_limit_m": 15.0 }),
     ));
     let d = &r["drawing"]["aft_arrangement"]["deckhouse"];
     assert_eq!(d["wheelhouse"], json!("elevating"));
@@ -302,8 +302,15 @@ fn a_deckhouse_wheelhouse_is_elevating_only_with_an_air_draft_limit_and_a_lift()
         (s["wheelhouse"].clone(), s["wheelhouse_basis"].clone()),
         (json!("fixed"), json!("no_air_draft_limit"))
     );
-    // A limit and the default lift: elevating, by the limit.
+    // Issue #1034: a limit the fixed wheelhouse meets leaves it fixed, whatever lift is typed.
     let r = results_of(&hand(area, with(json!({ "air_draft_limit_m": 40.0 }))));
+    let s = &r["stern_arrangement"];
+    assert_eq!(
+        (s["wheelhouse"].clone(), s["wheelhouse_basis"].clone()),
+        (json!("fixed"), json!("limit_not_binding"))
+    );
+    // A limit the fixed wheelhouse breaks, and the default lift: elevating, by the limit.
+    let r = results_of(&hand(area, with(json!({ "air_draft_limit_m": 15.0 }))));
     let s = &r["stern_arrangement"];
     assert_eq!(
         (s["wheelhouse"].clone(), s["wheelhouse_basis"].clone()),

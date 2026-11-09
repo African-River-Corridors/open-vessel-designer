@@ -345,6 +345,7 @@ app-stern-wheelhouse-why-lift_input = the wheelhouse can lift
 app-stern-wheelhouse-why-no_lift = the maximum lift is zero, so it cannot lift
 app-stern-wheelhouse-why-air_draft_limit = an air-draft limit is set
 app-stern-wheelhouse-why-no_air_draft_limit = no air-draft limit is set
+app-stern-wheelhouse-why-limit_not_binding = a fixed wheelhouse meets the air-draft limit
 app-stern-crew = Crew
 app-stern-crew-none = The run has no crew for this Option: it needs an installed power.
 app-stern-rule-set = Manning Rule Set
