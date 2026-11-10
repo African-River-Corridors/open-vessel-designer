@@ -1064,6 +1064,8 @@ pub const CHECK_RULES: &[(&str, &str)] = &[
         "ovd/capacity/air-draft-within-limit",
     ),
     ("intact gm at reported cargo", "ovd/capacity/intact-gm"),
+    ("within lock length", "ovd/waterway/within-lock-length"),
+    ("within lock width", "ovd/waterway/within-lock-width"),
     // The per-condition checks of the IS Code loading conditions (issue #426, part 2; #628). Each
     // is in the results only when a condition fails it.
     ("Air draft", "ovd/loading/air-draft"),

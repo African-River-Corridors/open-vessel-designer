@@ -233,6 +233,8 @@ OPTIONAL_INPUT_CASES = (
     # The lock (issue #358): the check of the overall size.
     ("lock_length_m", "bauxite", "box_hold", "self_propelled", 90.0, 14.0, 4.5, {"lock_length_m": 85.0}),
     ("lock_width_m", "bauxite", "box_hold", "pushed_barge", 90.0, 14.0, 4.5, {"lock_width_m": 13.0}),
+    # Issue #1043: the same check on a gas hull. The lock rows are in the unhashed Rule Trace, so no hash moves.
+    ("lock_length_m gas", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0, {"lock_length_m": 100.0}),
     # Issue #777: a typed gross tonnage. No result reads GT yet (its block is outside the hash), so
     # this case shows that typing one moves nothing; a base from before refuses the input.
     ("gross_tonnage", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,

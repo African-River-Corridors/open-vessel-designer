@@ -267,7 +267,7 @@ difference between the Rule and its text, or a known limit of its Measure.
 | `lr-inland/3.2.1/tank-capacity` | Capacity of each cargo tank within Table 4.3.1 | class | blocks | not evaluated | – |
 | `lr-inland/3.5.2/hull-design` | Hull in the cargo area: one of the three designs the clause allows (Type G) | class | blocks | not evaluated | – |
 
-#### OVD Checks (`ovd` 3.0.0)
+#### OVD Checks (`ovd` 3.4.0)
 
 | Rule id | What it tests | Origin | If it fails | Status | Finding |
 |---|---|---|---|---|---|
@@ -275,6 +275,8 @@ difference between the Rule and its text, or a known limit of its Measure.
 | `ovd/capacity/feasible-geometry` | The cargo space has a positive volume | physical | blocks | unverified | – |
 | `ovd/capacity/cargo-zone-positive` | The cargo zone is longer than zero | physical | blocks | unverified | – |
 | `ovd/capacity/air-draft-within-limit` | Light air draft (with ballast where carried) within the typed limit | physical | blocks | unverified | – |
+| `ovd/waterway/within-lock-length` | The overall length of the Formation is within the typed lock length (a Waterway Limit of the route) | physical | blocks | unverified | – |
+| `ovd/waterway/within-lock-width` | The overall beam of the Formation is within the typed lock width (a Waterway Limit of the route) | physical | blocks | unverified | – |
 | `ovd/capacity/intact-gm` | First-order hold GM at the reported cargo at least 0.15 m (an estimate, not a stability check) | tool-limit | warns | unverified | – |
 | `ovd/loading/air-draft` | The air draft of each IS Code loading condition is within the typed limit (a failed condition only) | physical | blocks | unverified | – |
 | `ovd/loading/ballast-plan` | A ballast plan meets every stability criterion in each ballast condition (a failed condition only) | physical | blocks | unverified | – |
