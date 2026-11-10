@@ -8,9 +8,9 @@
   - "sweep optional deckhouse_openings" loses its lift column (lift allowed 0.00 m, was 6.00 m, used 0.00 m both times) and its figures move in the third digit.
 
 <!-- design-impact -->
-### ticket/1034-p2-required-limits (2026-11-09)
+### ticket/1034-p2-required-limits (2026-11-10)
 
-Between `main 6b39849` and `this branch 498154d3`.
+Between `main 6b39849` and `this branch 1ae9234c`.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|
