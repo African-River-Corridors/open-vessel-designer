@@ -67,6 +67,9 @@ async function ready(b) {
     for (const [name, text] of [["draught_limit_m", "12"], ["air_draft_limit_m", "40"]]) {
       const box = b.$(`.field[data-input="${name}"] input[type=text]`);
       await box.waitForExist({ timeout: 15000, timeoutMsg: `the ${name} box` });
+      // The box is drawn empty and marked required until a number is typed (issue #1034).
+      assert.equal(await box.getValue(), "", `the ${name} box starts empty`);
+      assert.match(await b.$(`.field[data-input="${name}"] .badge.required`).getText(), /required/i, `the ${name} box is marked required`);
       await box.setValue(text);
     }
     // Choosing it is an edit, so the Design is unsaved; the tests that open a file next accept the discard prompt.
@@ -1090,11 +1093,8 @@ describe("OVD web smoke tests", () => {
     assert.deepEqual(lowered.sea, before.sea);
     assert.deepEqual(lowered.river, fixed(lowered.air.conditions, "river_m"));
     // A typed limit adds the outcome column, one cell for each condition.
-    // The limit is shown as "none" until a number is typed: clear that box with a real click (`openDesign`
-    // turns the script's own `click()` on inputs off), then type the number.
-    const none = await b.$('.field[data-input="air_draft_limit_m"] label.none input[type=checkbox]');
-    await none.scrollIntoView();
-    if (await none.isSelected()) await none.click();
+    // The Design is river-only (issue #1034), so the limit box is drawn empty and has no "none" choice: type the number.
+    await b.$('.field[data-input="air_draft_limit_m"]').scrollIntoView();
     await until(b, "the limit box", async () => (await b.$('.field[data-input="air_draft_limit_m"] input[type=text]')).isExisting());
     await (await b.$('.field[data-input="air_draft_limit_m"] input[type=text]')).setValue("60");
     await until(b, "the limit column", async () => (await read()).limit.length > 0);
@@ -1197,15 +1197,22 @@ describe("OVD web smoke tests", () => {
     await (await b.$("button=I understand")).click();
     await ready(b);
     await openDesign(b, coastalGasDesign());
-    const result = await b.execute(async () => {
+    // The run takes longer than the browser driver waits for one script (30 s), and the driver runs a timed-out script
+    // again: the rename then fails on a name that is gone. So the script only starts the run and renames; the page keeps
+    // the result and the test polls for it.
+    await b.execute(() => {
       const p = window.__ovdPlatform;
+      window.__renameRun = null;
       const run = p.runDamage("Option 1", () => {});
-      await new Promise((r) => setTimeout(r, 300));
-      await p.renameOption("Option 1", "Renamed");
-      const end = await run;
-      const ev = await p.evaluate();
-      return { end, option: ev.options[0].name, status: ev.options[0].outcome.results.damage_status };
+      setTimeout(async () => {
+        await p.renameOption("Option 1", "Renamed");
+        const end = await run;
+        const ev = await p.evaluate();
+        window.__renameRun = { end, option: ev.options[0].name, status: ev.options[0].outcome.results.damage_status };
+      }, 300);
     });
+    await until(b, "the renamed run to end", async () => (await b.execute(() => window.__renameRun)) !== null, 240000);
+    const result = await b.execute(() => window.__renameRun);
     assert.equal(result.end.outcome, "done", JSON.stringify(result));
     assert.equal(result.end.option, "Renamed");
     assert.deepEqual([result.option, result.status], ["Renamed", "run"]);

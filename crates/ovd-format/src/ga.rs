@@ -1314,8 +1314,9 @@ impl Canvas {
         }
         let mut target: Vec<[f64; 2]> = rows.iter().map(|r| r.1).collect();
         let clear = TIP_CLEAR_MM * self.k;
-        // How leader i stands: its crossings, and the least distance of an arrowhead from another leader.
-        let stand = |target: &[[f64; 2]], i: usize| -> (usize, f64) {
+        // How leader i stands: its crossings, how steep it is up to `LEADER_MIN_SLOPE` (a flat leader runs along the
+        // lines it crosses, issue #1029), and the least distance of an arrowhead from another leader.
+        let stand = |target: &[[f64; 2]], i: usize| -> (usize, f64, f64) {
             let mut crossings = 0;
             let mut least = clear;
             for j in 0..target.len() {
@@ -1327,7 +1328,9 @@ impl Canvas {
                     .min(point_to_segment(target[i], target[j], end[j]))
                     .min(point_to_segment(target[j], target[i], end[i]));
             }
-            (crossings, least)
+            let dx = (end[i][0] - target[i][0]).abs().max(1e-9);
+            let slope = ((end[i][1] - target[i][1]).abs() / dx).min(LEADER_MIN_SLOPE);
+            (crossings, slope, least)
         };
         for _ in 0..SLIDE_PASSES {
             let mut moved = false;
@@ -1342,8 +1345,10 @@ impl Canvas {
                     let better = now.0 < best.0.0
                         || (now.0 == best.0.0
                             && (now.1 > best.0.1 + 1e-9
-                                // the column is to the right: the larger x is the shorter leader
-                                || (now.1 >= best.0.1 - 1e-9 && cand > best.1 + 1e-9)));
+                                || (now.1 >= best.0.1 - 1e-9
+                                    && (now.2 > best.0.2 + 1e-9
+                                        // the column is to the right: the larger x is the shorter leader
+                                        || (now.2 >= best.0.2 - 1e-9 && cand > best.1 + 1e-9)))));
                     if better {
                         best = (now, cand);
                     }
@@ -2056,7 +2061,8 @@ fn aft_block(c: &mut Canvas, h: &Hull, view: View, labels: &mut Vec<(String, [f6
                         count = a.thruster_offsets.len()
                     ),
                     [room_mid, THRUSTER_LIFT_M],
-                    [room_mid + 2.0 * k, -6.0 * k],
+                    // text to the left, off the stern end: END CLEARANCE stands to the right
+                    [room_mid - 2.0 * k, -6.0 * k],
                 );
             }
             // Labels above the block; the lower one is the one further from the stern end. The
@@ -2156,7 +2162,8 @@ fn aft_block(c: &mut Canvas, h: &Hull, view: View, labels: &mut Vec<(String, [f6
                             count = a.thruster_offsets.len()
                         ),
                         [room_mid, low - r],
-                        [room_mid + 2.0 * k, -h.beam / 2.0 - 6.0 * k],
+                        // text to the left, off the stern end: END CLEARANCE stands to the right
+                        [room_mid - 2.0 * k, -h.beam / 2.0 - 6.0 * k],
                     );
                 }
             }

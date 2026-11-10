@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { InputSpec, Message, Ranges, StoredInput } from "./api";
   import { inputText, parseInput, say, schemaText, t } from "./i18n.svelte";
+  import { RIVER_LIMITS } from "./inputsShown";
 
   // One input, drawn from its schema entry. It shows what Rust sent and sends back what the user
   // typed or chose. The number the user types stays in the box while it is typed: the box is filled
@@ -91,7 +92,6 @@
   let label = $derived(schemaText.input(spec.name, spec.label));
 
   let value = $derived(stored.value);
-  const RIVER_LIMITS = ["draught_limit_m", "air_draft_limit_m"];
   /** Issue #1034: a river limit of a river-only Option has no "none"; the field shows no value until answered. */
   let needsNumber = $derived(riverOnly && RIVER_LIMITS.includes(spec.name));
 
@@ -124,7 +124,9 @@
 <div class="field" data-input={spec.name} title={help}>
   <div class="head">
     <span class="label">{label}</span>
-    {#if !(spec.required && value === null)}
+    {#if needsNumber && value === null}
+      <span class="badge required">{t("app-required")}</span>
+    {:else if !(spec.required && value === null)}
       <span class="badge {stored.source}"><span class="shape" aria-hidden="true">{SHAPES[stored.source] ?? ""} </span>{SOURCE_IDS[stored.source] ? t(SOURCE_IDS[stored.source]) : stored.source}</span>
     {/if}
     {#if !spec.required && stored.source === "typed"}
@@ -266,6 +268,7 @@
   .badge { font-size: var(--fs-11); padding: 0 5px; border-radius: var(--radius); text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
   .badge.typed { color: var(--src-typed); }
   .badge.default { color: var(--src-default); }
+  .badge.required { color: var(--src-typed); }
   .badge.class { color: var(--src-class); }
   .link { background: none; border: none; color: var(--accent); text-decoration: underline; padding: 0; cursor: pointer; font-size: var(--fs-11); }
   .link:hover:not(:disabled) { background: none; }

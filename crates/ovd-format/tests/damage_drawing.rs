@@ -481,17 +481,10 @@ fn leaders_run_along(doc: &Value) -> Vec<(usize, f64)> {
 /// `ALONG_RUN_MM`. Measured on the rendered SVG of every sheet of the 130 m river-only and coastal hulls.
 #[test]
 fn no_leader_of_a_damage_sheet_runs_along_hatching() {
-    // Issue #1029: at 2, 3 and 4 tanks along, and as the search chooses them. The search chooses only for a coastal
-    // hull (it screens by IGC 2.7 damage), so a river-only hull is checked here at 2, 4 and as given; its 3 along is
-    // the ignored test below.
+    // Issue #1029: at 2, 3 and 4 tanks along, and as the search chooses them.
     let mut bad = Vec::new();
     for along in [Some(2), Some(3), Some(4), None] {
-        let areas: &[&str] = if along == Some(3) {
-            &["coastal-and-river"]
-        } else {
-            &["river-only", "coastal-and-river"]
-        };
-        bad.extend(leader_faults(along, areas));
+        bad.extend(leader_faults(along, &["river-only", "coastal-and-river"]));
     }
     assert!(bad.is_empty(), "{} faults:\n{}", bad.len(), bad.join("\n"));
 }
@@ -512,11 +505,10 @@ fn leader_faults(along: Option<i64>, areas: &[&str]) -> Vec<String> {
     bad
 }
 
-/// Issue #1029, still open: a river-only hull with a typed 3 along has one leader on each of its ADN and
-/// ES-TRIN sheets that runs 18 mm along the edges of two thin strips. The search chooses 3 or 4 along only for a
-/// coastal hull, so this is not the default pick. Run with `--ignored` to see it; remove the `ignore` with the fix.
+/// Issue #1029: a river-only hull with a typed 3 along had one leader on each of its ADN and ES-TRIN sheets that
+/// ran 18 mm along the edges of two thin strips. The search chooses 3 or 4 along only for a coastal hull, so the
+/// test above does not reach this one by the default pick; it is kept as its own, quick, test.
 #[test]
-#[ignore = "#1029: river-only ADN and ES-TRIN sheets at 3 tanks along have a leader along two thin strips"]
 fn no_leader_of_a_river_only_damage_sheet_runs_along_hatching_at_3_along() {
     let bad = leader_faults(Some(3), &["river-only"]);
     assert!(bad.is_empty(), "{} faults:\n{}", bad.len(), bad.join("\n"));
@@ -534,7 +526,6 @@ fn the_leaders_of_the_reference_example_do_not_run_along_hatching() {
     for (area, along) in ["river-only", "coastal-and-river"]
         .into_iter()
         .flat_map(|a| [Some(2), Some(3), Some(4), None].map(move |n| (a, n)))
-        .filter(|(a, n)| !(*a == "river-only" && *n == Some(3)))
     {
         let mut file: Value = serde_json::from_str(REFERENCE).unwrap();
         let mut option = file["options"][0].clone();
