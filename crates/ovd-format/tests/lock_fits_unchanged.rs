@@ -18,7 +18,12 @@ const LOCK_RULES: [&str; 2] = [
     "ovd/waterway/within-lock-width",
 ];
 const LOCK_CHECKS: [&str; 2] = ["within lock length", "within lock width"];
-const LOCK_TEXT_IDS: [&str; 2] = ["check-lock-length", "check-lock-width"];
+const LOCK_TEXT_IDS: [&str; 4] = [
+    "check-lock-length",
+    "check-lock-width",
+    "name-check-lock-length",
+    "name-check-lock-width",
+];
 
 fn hulls() -> Vec<(&'static str, String)> {
     let root = env!("CARGO_MANIFEST_DIR");
