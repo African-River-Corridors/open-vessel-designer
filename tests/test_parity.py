@@ -98,6 +98,7 @@ def _typed(stored):
 
 
 def test_the_dict_step_builds_the_files_option_input_by_input():
+    """Label: property"""
     failed = []
     for label, text, index, stored in CASES:
         dict_ = {k: v for k, (v, _) in stored.items()}
@@ -111,6 +112,7 @@ def test_the_dict_step_builds_the_files_option_input_by_input():
 
 
 def test_every_profile_defaulted_input_left_out_at_once_is_built_as_the_file_path_builds_it():
+    """Label: property"""
     # Only the typed inputs are given, so the Profile fills the rest on both paths. Four Designs: a
     # build with every default left out runs the arrangement search of a gas Design.
     failed = []
@@ -127,6 +129,7 @@ def test_every_profile_defaulted_input_left_out_at_once_is_built_as_the_file_pat
 
 @pytest.mark.slow
 def test_each_profile_defaulted_input_left_out_one_at_a_time_is_built_as_the_file_path_builds_it():
+    """Label: property"""
     failed, tried = [], 0
     for name in PER_CONTAINMENT:
         label, _, _, stored = FIRST[name]
@@ -145,6 +148,7 @@ def test_each_profile_defaulted_input_left_out_one_at_a_time_is_built_as_the_fil
 
 
 def test_every_input_of_the_schema_is_accepted_by_the_dict_step():
+    """Label: property"""
     # An input is settable if the dict step never calls its name unknown. It may refuse the
     # placeholder value, or the input as unused by this Option.
     names = _inputs({"schema": True})
@@ -161,6 +165,7 @@ def test_every_input_of_the_schema_is_accepted_by_the_dict_step():
 
 @pytest.mark.parametrize("name", PER_CONTAINMENT)
 def test_simulate_with_damage_equals_the_damage_stage_on_the_whole_value(name):
+    """Label: property"""
     # The `ovd run` side of this equality is in crates/ovd-format/tests/api_parity.rs.
     _, _, _, stored = FIRST[name]
     dict_ = _typed(stored)
