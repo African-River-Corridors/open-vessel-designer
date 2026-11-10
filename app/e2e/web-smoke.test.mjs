@@ -1231,4 +1231,72 @@ describe("OVD web smoke tests", () => {
     await ready(b);
     assert.equal(await (await b.$("[data-testid=notice]")).isExisting(), false);
   });
+
+  // DONE-TEST #945 — do not edit in the build
+  it("keeps the Settings button where it is while the header text draws in, in each language (issue #945)", async () => {
+    const b = await start();
+    await b.url(`${origin}/ovd/app`);
+    await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
+    await (await b.$("button=I understand")).click();
+    await ready(b);
+    const box = () =>
+      b.execute(() => {
+        const s = document.querySelector("[data-testid=settings]").getBoundingClientRect();
+        // One header row: every visible child is centred on the same line as the Settings button.
+        const mid = (r) => (r.top + r.bottom) / 2;
+        const oneRow = [...document.querySelector("header").children]
+          .map((c) => c.getBoundingClientRect())
+          .filter((r) => r.width > 0 && r.height > 0)
+          .every((r) => Math.abs(mid(r) - mid(s)) < s.height / 2);
+        return { x: s.x, y: s.y, oneRow };
+      });
+    // The three header texts (file, Defaults Profile, engine version) draw in once the Design is loaded, and their
+    // length depends on the language and the file. None of that may move the Settings button or add a header row.
+    const setMeta = (texts) =>
+      b.execute((texts) => {
+        const metas = [...document.querySelectorAll("header .meta")];
+        metas.forEach((m, i) => (m.textContent = texts[i]));
+        return metas.length;
+      }, texts);
+    const name25 = "dry_bulk_box_hold.vdesign";
+    const long = "a_very_long_design_file_name_that_would_push_the_header_wide.vdesign";
+    for (const [tag, open] of [["en", "Open"], ["es", "Abrir"], ["pt", "Abrir"], ["zh-Hans", "打开"], ["ak", "Bue"]]) {
+      await inSettings(b, async () => (await b.$("[data-testid=language]")).selectByAttribute("value", tag));
+      await until(b, `the header in ${tag}`, async () => (await b.$(`button=${open}`)).isExisting());
+      await b.refresh();
+      await until(b, `the header in ${tag} after a reload`, async () => (await b.$(`button=${open}`)).isExisting());
+      const first = await box();
+      assert.equal(first.oneRow, true, `the header is one row at first paint (${tag})`);
+      await until(b, "the header texts", async () => (await b.$("[data-testid=engine-version]").getText()) !== "");
+      if (SHOTS) await (await b.$("header")).saveScreenshot(path.join(SHOTS, `945-header-${tag}.png`));
+      assert.deepEqual(await box(), first, `the Settings button moved when the header text drew in (${tag})`);
+      assert.equal(await setMeta(["", "", ""]), 3, "the three header texts are in the page");
+      assert.deepEqual(await box(), first, `the button moved with empty header text (${tag})`);
+      await setMeta([name25, "Defaults: River standard", "Engine 0.3.0"]);
+      assert.deepEqual(await box(), first, `the button moved with a 25-character file name (${tag})`);
+      await setMeta([long, long, long]);
+      assert.deepEqual(await box(), first, `the button moved with long header text (${tag})`);
+    }
+  });
+
+  // DONE-TEST #945 — do not edit in the build
+  it("shows a 25-character file name in full in the header (issue #945)", async () => {
+    const b = await start();
+    await b.url(`${origin}/ovd/app`);
+    await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
+    await (await b.$("button=I understand")).click();
+    await ready(b);
+    await openDesign(b, DRY_FIXTURE);
+    // The file label is the first header text (the native test reads it the same way, smoke.test.mjs `fileLabel`).
+    const label = await b.execute(() => {
+      const el = document.querySelector("header .meta");
+      const r = el.getBoundingClientRect();
+      const header = document.querySelector("header").getBoundingClientRect();
+      return { text: el.textContent, cut: el.scrollWidth > el.clientWidth, width: r.width, inHeader: r.right <= header.right && r.left >= header.left };
+    });
+    assert.equal(label.text, "dry_bulk_box_hold.vdesign");
+    assert.equal(label.cut, false, `the file name is cut (${label.width} px wide): ${JSON.stringify(label)}`);
+    assert.equal(label.inHeader, true, `the file label runs outside the header: ${JSON.stringify(label)}`);
+    assert.equal(await (await b.$("header .meta")).getText(), "dry_bulk_box_hold.vdesign", "the file name reads in full");
+  });
 });
