@@ -1,0 +1,2 @@
+# Done-test for #945 (design lane d945). Build lanes must not edit these.
+app/e2e/web-smoke.test.mjs
