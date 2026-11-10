@@ -3205,6 +3205,10 @@
           "value": 10.0,
           "source": "typed"
         },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
+        },
         "fill_ratio": {
           "value": 0.98,
           "source": "default"
@@ -3862,6 +3866,10 @@
         "bow_rake_max_length_m": {
           "value": 12.0,
           "source": "typed"
+        },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
         },
         "fill_ratio": {
           "value": 0.98,
@@ -4521,6 +4529,10 @@
           "value": 20.0,
           "source": "typed"
         },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
+        },
         "fill_ratio": {
           "value": 0.98,
           "source": "default"
@@ -5178,6 +5190,10 @@
         "bow_rake_max_length_m": {
           "value": 20.0,
           "source": "typed"
+        },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
         },
         "fill_ratio": {
           "value": 0.98,
@@ -5837,6 +5853,10 @@
           "value": 30.0,
           "source": "typed"
         },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
+        },
         "fill_ratio": {
           "value": 0.98,
           "source": "default"
@@ -6494,6 +6514,10 @@
         "bow_rake_max_length_m": {
           "value": 35.0,
           "source": "typed"
+        },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
         },
         "fill_ratio": {
           "value": 0.98,
@@ -7153,6 +7177,10 @@
           "value": 40.0,
           "source": "typed"
         },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
+        },
         "fill_ratio": {
           "value": 0.98,
           "source": "default"
@@ -7810,6 +7838,10 @@
         "bow_rake_max_length_m": {
           "value": 45.0,
           "source": "typed"
+        },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
         },
         "fill_ratio": {
           "value": 0.98,
@@ -8469,6 +8501,10 @@
           "value": 48.0,
           "source": "typed"
         },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
+        },
         "fill_ratio": {
           "value": 0.98,
           "source": "default"
@@ -9126,6 +9162,10 @@
         "bow_rake_max_length_m": {
           "value": 10.0,
           "source": "typed"
+        },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
         },
         "fill_ratio": {
           "value": 0.98,
@@ -9785,6 +9825,10 @@
           "value": 12.0,
           "source": "typed"
         },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
+        },
         "fill_ratio": {
           "value": 0.98,
           "source": "default"
@@ -10442,6 +10486,10 @@
         "bow_rake_max_length_m": {
           "value": 20.0,
           "source": "typed"
+        },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
         },
         "fill_ratio": {
           "value": 0.98,
@@ -11101,6 +11149,10 @@
           "value": 20.0,
           "source": "typed"
         },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
+        },
         "fill_ratio": {
           "value": 0.98,
           "source": "default"
@@ -11758,6 +11810,10 @@
         "bow_rake_max_length_m": {
           "value": 30.0,
           "source": "typed"
+        },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
         },
         "fill_ratio": {
           "value": 0.98,
@@ -12417,6 +12473,10 @@
           "value": 35.0,
           "source": "typed"
         },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
+        },
         "fill_ratio": {
           "value": 0.98,
           "source": "default"
@@ -13074,6 +13134,10 @@
         "bow_rake_max_length_m": {
           "value": 40.0,
           "source": "typed"
+        },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
         },
         "fill_ratio": {
           "value": 0.98,
@@ -13733,6 +13797,10 @@
           "value": 45.0,
           "source": "typed"
         },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
+        },
         "fill_ratio": {
           "value": 0.98,
           "source": "default"
@@ -14390,6 +14458,10 @@
         "bow_rake_max_length_m": {
           "value": 48.0,
           "source": "typed"
+        },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
         },
         "fill_ratio": {
           "value": 0.98,
