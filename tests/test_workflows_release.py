@@ -153,8 +153,11 @@ def wheel_check_plan():
     import shlex
     lines = [ln for ln in wheel_check_run().splitlines() if not ln.strip().startswith("#")]
     words = shlex.split("\n".join(lines).replace("\\\n", " "))
-    cp = words.index("cp")
-    copied = set(words[cp + 2:words.index('$RUNNER_TEMP/wheel-check/', cp)])
+    copied = set()
+    for cp in (i for i, w in enumerate(words) if w == "cp"):
+        end = next(i for i in range(cp + 2, len(words)) if words[i].startswith("$RUNNER_TEMP/wheel-check"))
+        # A folder inside `crates/` counts as `crates` (the evaluation harness and the parity guard read some).
+        copied |= {w.split("/")[0] for w in words[cp + 2:end]}
     ignored = [w.split("=", 1)[1] for w in words if w.startswith(("--ignore=", "--ignore-glob="))]
     deselected = [w.split("=", 1)[1] for w in words if w.startswith("--deselect=")]
     return copied, ignored, deselected

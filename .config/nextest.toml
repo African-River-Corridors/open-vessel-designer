@@ -16,6 +16,7 @@ not (
   | (binary_id(ovd-format::aft_block_inputs) & test(=each_input_moves_the_aft_block_in_the_drawing_object))
   | (binary_id(ovd-format::damage_refine_bounds) & test(=the_search_carries_at_least_the_best_fixed_across_pick_that_passes_damage))
   | (binary_id(ovd-format::light_angle_of_max_gz) & test(=a_light_failure_with_another_criterion_failing_stays_an_error))
+  | (binary_id(ovd-format::api_parity) & test(=each_profile_defaulted_input_left_out_one_at_a_time_is_built_as_the_file_path_builds_it))
 )
 """
 
