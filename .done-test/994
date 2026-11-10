@@ -1,0 +1,6 @@
+# Done-test for #994, the collision bulkhead rework: the forward house stands aft of the collision bulkhead plane (ES-TRIN 2025/1 Article 3.03). Build lanes must not edit these.
+# The coordinator must update the `until:` line: #994 is closed and PR #1075 will not merge. Replace #1075 with the new build issue when it opens.
+until: #1075
+crates/ovd-core/tests/collision_bulkhead.rs
+crates/ovd-format/tests/collision_bulkhead.rs
+crates/ovd-format/tests/collision_bulkhead_rules.rs

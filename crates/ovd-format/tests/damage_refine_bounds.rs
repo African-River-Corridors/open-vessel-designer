@@ -118,7 +118,9 @@ fn the_search_carries_at_least_the_best_fixed_across_pick_that_passes_damage() {
 
 /// The damage-run limit is where the refinement used to run out and take designs backwards (review of #1031): the
 /// refinement leaves runs for the check of the winner at its own lightship, and a stale failing size is worked out
-/// again only while it can be. These designs are feasible on `main` before this change (cargo printed by the code
+/// again only while it can be. The 80 x 9 m forward-house row carries 294 t since #994 (475 t before): the house
+/// stands aft of the collision bulkhead plane, the cargo zone is 0.68 m shorter, and the tank search takes a 5.06 m
+/// tank where it took a 7.44 m one. These designs are feasible on `main` before this change (cargo printed by the code
 /// there); each stays feasible, with no failing igc/2.7 row, and carries at least what it did. Label: snapshot.
 #[test]
 fn designs_the_budget_could_take_backwards_are_no_worse_than_before() {
@@ -127,7 +129,7 @@ fn designs_the_budget_could_take_backwards_are_no_worse_than_before() {
         (89.0, 16.0, json!({}), 1625.0),
         (80.0, 11.4, json!({}), 839.0),
         (80.0, 10.0, json!({}), 629.0),
-        (80.0, 9.0, forward.clone(), 475.0),
+        (80.0, 9.0, forward.clone(), 294.0),
         (110.0, 11.4, forward, 1529.0),
     ] {
         let r = run_default(loa, beam, extra);
