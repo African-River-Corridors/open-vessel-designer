@@ -230,6 +230,8 @@ pub struct FitOptions {
     pub bow_rake_length_m: Option<f64>,
     /// Issue #446: the keel height at the bow (m); `None`: each candidate's moulded depth.
     pub bow_rake_rise_m: Option<f64>,
+    /// Issue #994: the distance of the collision bulkhead aft of the forward perpendicular (m); `None`: 0.04 L.
+    pub collision_bulkhead_m: Option<f64>,
     /// Issue #449: bilge radius, sheer and camber of every candidate.
     pub hull_shape: crate::hull::hull_form::HullShape,
     /// Issue #282: the angle of down-flooding the designer gives (degrees); `None`: none.
@@ -598,6 +600,7 @@ impl Default for FitOptions {
             bow_rake_max_length_m: None,
             bow_rake_length_m: None,
             bow_rake_rise_m: None,
+            collision_bulkhead_m: None,
             hull_shape: crate::hull::hull_form::HullShape::default(),
             downflooding_angle_deg: None,
             downflooding_openings: Vec::new(),
@@ -1620,6 +1623,7 @@ impl Search<'_> {
         inp.bow_rake_max_length_m = self.o.bow_rake_max_length_m;
         inp.bow_rake_length_m = self.o.bow_rake_length_m;
         inp.bow_rake_rise_m = self.o.bow_rake_rise_m;
+        inp.collision_bulkhead_m = self.o.collision_bulkhead_m;
         inp.hull_shape = self.o.hull_shape.clone();
         inp.downflooding_angle_deg = self.o.downflooding_angle_deg;
         inp.downflooding_openings = self.o.downflooding_openings.clone();

@@ -1163,6 +1163,12 @@ pub const LEGACY_FIXED_OTHER: &[LegacyFixedJson] = &[
         applies_to: AppliesTo::All,
         value: "null",
     },
+    // Issue #994: a file saved before types no collision bulkhead distance: 0.04 L.
+    LegacyFixedJson {
+        name: "collision_bulkhead_m",
+        applies_to: AppliesTo::All,
+        value: "null",
+    },
     // Issue #777: a file saved before types no gross tonnage, so it is worked out; no result reads
     // it yet.
     LegacyFixedJson {
@@ -2469,6 +2475,14 @@ pub const INPUTS: &[InputSpec] = &[
     spec(
         "bow_rake_max_length_m",
         "Longest bow rake from depth",
+        NUM_OR_NONE,
+        false,
+        Group::HullAndContainment,
+    ),
+    // Issue #994: none, 0.04 L aft of the forward perpendicular (ES-TRIN 2025/1, 3.03(1)(a)).
+    spec(
+        "collision_bulkhead_m",
+        "Collision bulkhead distance from the forward perpendicular",
         NUM_OR_NONE,
         false,
         Group::HullAndContainment,

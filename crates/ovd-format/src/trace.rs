@@ -1102,6 +1102,10 @@ pub const CHECK_RULES: &[(&str, &str)] = &[
         "forward wheelhouse blind distance",
         "ovd/aft-block/forward-wheelhouse-blind-distance",
     ),
+    (
+        "house aft of collision bulkhead",
+        "es-trin/3.03(2)/no-accommodation-ahead-of-collision-bulkhead",
+    ),
     ("aft end bulkhead space", "lr-inland/3.5.3/aft-end-space"),
     ("opening setback", "lr-inland/3.3.7/opening-setback"),
     ("fwd end bulkhead space", "lr-inland/3.5.3/end-space"),

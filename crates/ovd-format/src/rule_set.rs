@@ -72,6 +72,11 @@ const BUILT_IN: &[(&str, &str)] = &[
         "rules/es-trin-2025/2.1.0.json",
         include_str!("../rules/es-trin-2025/2.1.0.json"),
     ),
+    // Issue #994: ES-TRIN 3.03, the collision bulkhead plane and the house aft of it.
+    (
+        "rules/es-trin-2025/2.2.0.json",
+        include_str!("../rules/es-trin-2025/2.2.0.json"),
+    ),
     (
         "rules/icll-freeboard/1.0.0.json",
         include_str!("../rules/icll-freeboard/1.0.0.json"),
@@ -149,6 +154,11 @@ const BUILT_IN: &[(&str, &str)] = &[
     (
         "rules/igc-2g/4.1.0.json",
         include_str!("../rules/igc-2g/4.1.0.json"),
+    ),
+    // Issue #994: IGC 2.4.4, no cargo tank forward of the collision bulkhead.
+    (
+        "rules/igc-2g/4.2.0.json",
+        include_str!("../rules/igc-2g/4.2.0.json"),
     ),
     // Issue #781: the MLC 2006 accommodation Standard, for a Service Area that reaches sea.
     (

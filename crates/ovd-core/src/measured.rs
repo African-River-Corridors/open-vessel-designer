@@ -164,6 +164,50 @@ pub fn loading_condition_kind(name: &str) -> &'static str {
 }
 
 impl Measured {
+    /// The collision bulkhead plane and the forward end of the cargo zone (issue #994): the plane, and
+    /// m forward of the stern where the cargo zone ends.
+    fn collision_bulkhead(&self) -> Option<(crate::collision_bulkhead::CollisionBulkhead, f64)> {
+        let r = &self.vessel.as_ref()?.result;
+        let cargo_fwd = r.collision_bulkhead?.length_m - r.bow_void_length_m?;
+        Some((r.collision_bulkhead?, cargo_fwd))
+    }
+
+    /// The value of a `collision bulkhead` Measure (issue #994); `None` for any other Measure.
+    fn collision_bulkhead_value(&self, id: &str) -> Option<Result<MeasureValue, String>> {
+        const EPS: f64 = 1e-9;
+        if id == "arrangement.house_aft_of_collision_bulkhead" {
+            return Some(
+                self.vessel
+                    .as_ref()
+                    .and_then(|v| v.result.aft_arrangement.as_ref())
+                    .and_then(|a| a.house_aft_of_collision_bulkhead)
+                    .map(MeasureValue::Bool)
+                    .ok_or_else(|| {
+                        "the Option has no stern block to check against the plane".to_string()
+                    }),
+            );
+        }
+        if !matches!(
+            id,
+            "arrangement.collision_bulkhead_within_band"
+                | "arrangement.collision_bulkhead_at_least_0_03_l"
+                | "arrangement.cargo_aft_of_collision_bulkhead"
+        ) {
+            return None;
+        }
+        let Some((c, cargo_fwd)) = self.collision_bulkhead() else {
+            return Some(Err("the result has no collision bulkhead plane".to_string()));
+        };
+        let l = c.length_m;
+        Some(Ok(MeasureValue::Bool(match id {
+            "arrangement.collision_bulkhead_within_band" => {
+                c.from_fp_m >= 0.04 * l - EPS && c.from_fp_m <= 0.04 * l + 2.0 + EPS
+            }
+            "arrangement.collision_bulkhead_at_least_0_03_l" => c.from_fp_m >= 0.03 * l - EPS,
+            _ => cargo_fwd <= c.x_m + EPS,
+        })))
+    }
+
     /// The view aft from the wings of a forward wheelhouse (issue #994); `None` for any other style.
     pub fn wing_view(&self) -> Option<&crate::rear_view::WingView> {
         self.vessel
@@ -591,6 +635,15 @@ impl Measured {
             "wheelhouse.wing_sees_hull_side" | "wheelhouse.wing_short_by" => {
                 self.wing_view().is_some()
             }
+            // Issue #994: the collision bulkhead plane.
+            "arrangement.house_aft_of_collision_bulkhead" => self
+                .vessel
+                .as_ref()
+                .and_then(|v| v.result.aft_arrangement.as_ref())
+                .is_some_and(|a| a.house_aft_of_collision_bulkhead.is_some()),
+            "arrangement.collision_bulkhead_within_band"
+            | "arrangement.collision_bulkhead_at_least_0_03_l"
+            | "arrangement.cargo_aft_of_collision_bulkhead" => self.collision_bulkhead().is_some(),
             // Issue #781: the deckhouse rooms of a deckhouse stern; none on the container block.
             id if id.starts_with("rooms.") => self.rooms().is_some_and(|r| !r.rows.is_empty()),
             "powering.depth_over_draught" => self.depth_over_draught.is_some(),
@@ -781,6 +834,9 @@ impl Measured {
         }
         if let Some(name) = m.id.strip_prefix("rooms.") {
             return self.rooms_value(name, m);
+        }
+        if let Some(v) = self.collision_bulkhead_value(&m.id) {
+            return v;
         }
         if m.id == "wheelhouse.wing_sees_hull_side" || m.id == "wheelhouse.wing_short_by" {
             let w = self

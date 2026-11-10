@@ -1700,6 +1700,7 @@ fn simulate_once_inner(
     inp.bow_rake_length_m = Some(rake_length);
     inp.bow_rake_rise_m = Some(rake_rise);
     inp.bow_rake_max_length_m = opt_float(p, "bow_rake_max_length_m")?;
+    inp.collision_bulkhead_m = opt_float(p, "collision_bulkhead_m")?;
     inp.hull_shape = hull_shape_of(p)?;
     inp.downflooding_angle_deg = opt_float(p, "downflooding_angle_deg")?;
     inp.downflooding_openings = openings_of(p)?;
@@ -1924,6 +1925,9 @@ fn simulate_once_inner(
         "stern_void_length_m": opt_num(r.stern_void_length_m),
         "cargo_zone_length_m": opt_num(r.cargo_zone_length_m),
         "bow_rake_length_m": opt_num(r.bow_rake_length_m),
+        "forward_perpendicular_x_m": opt_num(r.collision_bulkhead.map(|c| c.forward_perpendicular_x_m)),
+        "collision_bulkhead_from_fp_m": opt_num(r.collision_bulkhead.map(|c| c.from_fp_m)),
+        "collision_bulkhead_x_m": opt_num(r.collision_bulkhead.map(|c| c.x_m)),
         "tank_outer_diameter_m": opt_num(r.tank_outer_diameter_m),
         "n_tanks_wide": opt_int(r.n_tanks_wide),
         "n_tanks_total": opt_int(r.n_tanks_total),
@@ -3451,6 +3455,7 @@ fn simulate_gas(
         // Issue #448: a typed bow rake and rise hold for every candidate depth.
         bow_rake_length_m: opt_float(p, "bow_rake_length_m")?,
         bow_rake_rise_m: opt_float(p, "bow_rake_rise_m")?,
+        collision_bulkhead_m: opt_float(p, "collision_bulkhead_m")?,
         hull_shape: hull_shape_of(p)?,
         downflooding_angle_deg: opt_float(p, "downflooding_angle_deg")?,
         downflooding_openings: openings_of(p)?,
@@ -3762,6 +3767,9 @@ fn simulate_gas(
         "stern_void_length_m": opt_num(r.stern_void_length_m),
         "cargo_zone_length_m": opt_num(r.cargo_zone_length_m),
         "bow_rake_length_m": opt_num(r.bow_rake_length_m),
+        "forward_perpendicular_x_m": opt_num(r.collision_bulkhead.map(|c| c.forward_perpendicular_x_m)),
+        "collision_bulkhead_from_fp_m": opt_num(r.collision_bulkhead.map(|c| c.from_fp_m)),
+        "collision_bulkhead_x_m": opt_num(r.collision_bulkhead.map(|c| c.x_m)),
         "tank_outer_diameter_m": opt_num(r.tank_outer_diameter_m),
         "n_tanks_wide": opt_int(r.n_tanks_wide),
         "n_tanks_total": opt_int(r.n_tanks_total),

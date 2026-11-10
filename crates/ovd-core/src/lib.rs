@@ -18,6 +18,7 @@ pub mod barge_cost;
 pub mod box_stability;
 pub mod cargo;
 pub mod checks;
+pub mod collision_bulkhead;
 pub mod compartments;
 pub mod confined_water;
 pub mod constants;

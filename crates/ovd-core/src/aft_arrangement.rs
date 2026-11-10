@@ -452,6 +452,10 @@ pub struct AftArrangementInputs {
     /// Issue #994: where the forward house stands, for `WheelhouseForward` (the capacity run works it
     /// out from the bow). `None`: the house follows the deck items of the block.
     pub forward_house_site: Option<ForwardHouseSite>,
+    /// Issue #994: the collision bulkhead plane, m forward of the stern (ES-TRIN 2025/1, 3.03(2): no
+    /// accommodation or installation needed for the safety of the vessel stands ahead of it). The
+    /// capacity run gives it; `None` for a bare block, which then makes no such check.
+    pub collision_bulkhead_x_m: Option<f64>,
 }
 
 impl AftArrangementInputs {
@@ -496,6 +500,7 @@ impl AftArrangementInputs {
             rooms_basis: None,
             wheelhouse_eye_min_m: None,
             forward_house_site: None,
+            collision_bulkhead_x_m: None,
         }
     }
 
@@ -609,6 +614,11 @@ pub struct AftArrangementResult {
     /// knows the cargo; `None` for every other style and for a bare `compute`.
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub wing_view: Option<crate::rear_view::WingView>,
+    /// Issue #994: whether every house on deck has its forward face at or aft of the collision
+    /// bulkhead plane (ES-TRIN 3.03(2)). `None` when the block was given no plane. Not in the result JSON:
+    /// the check list and the Rule Trace carry it.
+    #[cfg_attr(feature = "serde", serde(skip))]
+    pub house_aft_of_collision_bulkhead: Option<bool>,
 }
 
 /// The forward house of the `wheelhouse_forward` style (issue #994): a house over the forepeak with
@@ -1779,6 +1789,26 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
             ),
         ),
     ];
+    // Issue #994: no house stands ahead of the collision bulkhead plane. The forward house's front is
+    // its site; every other style keeps its house on the stern block, whose forward face is the end
+    // of the deck items.
+    let house_aft_of_collision_bulkhead = inp.collision_bulkhead_x_m.map(|plane| {
+        let front = forward_house.as_ref().map_or(deck_len, |f| f.x_fwd_m);
+        front <= plane + 1e-9
+    });
+    if let (Some(ok), Some(plane)) = (house_aft_of_collision_bulkhead, inp.collision_bulkhead_x_m) {
+        let front = forward_house.as_ref().map_or(deck_len, |f| f.x_fwd_m);
+        checks.push(Check::new(
+            "house aft of collision bulkhead",
+            ok,
+            text!(
+                "check-house-aft-of-collision-bulkhead",
+                "house front {front} m forward of the stern, collision bulkhead plane at {plane} m",
+                front = Arg::fixed(front, 2),
+                plane = Arg::fixed(plane, 2),
+            ),
+        ));
+    }
     let mut warnings: Vec<Text> = Vec::new();
     if let Some(d) = &deckhouse {
         let n_kind = |k: TierKind| d.tiers_plan.iter().filter(|t| t.kind == k).count();
@@ -1886,7 +1916,7 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
         if f.cargo_length_lost_m > 1e-9 {
             warnings.push(text!(
                 "warn-aft-forward-house-cargo-length",
-                "The forepeak is too short for the forward house: the house takes {lost} m of cargo length.",
+                "The forward house stands aft of the collision bulkhead plane: the house takes {lost} m of cargo length.",
                 lost = Arg::fixed(f.cargo_length_lost_m, 2),
             ));
         }
@@ -2092,6 +2122,7 @@ pub fn compute(inp: &AftArrangementInputs) -> Result<AftArrangementResult, PyExc
         deckhouse,
         forward_house,
         wing_view: None,
+        house_aft_of_collision_bulkhead,
     })
 }
 

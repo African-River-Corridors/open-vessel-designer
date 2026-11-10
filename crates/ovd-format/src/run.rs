@@ -236,6 +236,7 @@ pub fn simulate_params_of(option: &DesignOption) -> Result<Map<String, Value>, S
         "tank_structure_factor",
         "bow_rake_length_to_depth_ratio",
         "bow_rake_max_length_m",
+        "collision_bulkhead_m",
         "pushed_stern_void_m",
         "bulk_end_bulkhead_m",
         "hold_wing_void_width_m",
