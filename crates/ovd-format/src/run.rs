@@ -476,7 +476,7 @@ pub fn option_vessel_model(
 
 /// One floating position of a run, for its waterline: the draughts (m) and the trim (m, by the bow
 /// positive).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Waterline {
     pub name: String,
     pub draught_m: f64,
@@ -485,8 +485,9 @@ pub struct Waterline {
     pub trim_m: f64,
 }
 
-/// The Vessel Model of an Option and the waterlines of its run (issues #454, #457).
-#[derive(Debug, Clone, PartialEq)]
+/// The Vessel Model of an Option and the waterlines of its run (issues #454, #457). It is JSON-able so that a
+/// damage run done in a worker can hand the screened model to the page (issue #1041).
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct VesselRun {
     pub model: ovd_core::vessel_model::VesselModel,
     pub waterlines: Vec<Waterline>,
@@ -511,14 +512,30 @@ pub fn option_vessel_run_with_damage(
     option: &DesignOption,
     damage: &DamageControl,
 ) -> Result<VesselRun, String> {
-    match run_option_full(option, &Library::built_in(), &[], damage) {
-        (RunOutcome::Results { results, .. }, _, Some(inputs)) => Ok(VesselRun {
-            model: ovd_core::vessel_model::assemble(&inputs),
-            waterlines: waterlines(&results),
-        }),
-        (RunOutcome::Results { .. }, _, None) => Err("the run gave no Vessel Model".to_string()),
-        (RunOutcome::Failed(message) | RunOutcome::NotAvailable(message), _, _) => Err(message),
+    match run_option_with_vessel(option, &Library::built_in(), &[], damage) {
+        (RunOutcome::Results { .. }, Some(run)) => Ok(run),
+        (RunOutcome::Results { .. }, None) => Err("the run gave no Vessel Model".to_string()),
+        (RunOutcome::Failed(message) | RunOutcome::NotAvailable(message), _) => Err(message),
     }
+}
+
+/// [`run_option_with_damage`], and the Vessel Model and waterlines of the same run (issue #1041): the model of the
+/// pick the results report. A damage run keeps both, so the 3D view needs no second search.
+pub fn run_option_with_vessel(
+    option: &DesignOption,
+    library: &Library,
+    extra: &[(String, String)],
+    damage: &DamageControl,
+) -> (RunOutcome, Option<VesselRun>) {
+    let (outcome, _, inputs) = run_option_full(option, library, extra, damage);
+    let run = match (&outcome, inputs) {
+        (RunOutcome::Results { results, .. }, Some(inputs)) => Some(VesselRun {
+            model: ovd_core::vessel_model::assemble(&inputs),
+            waterlines: waterlines(results),
+        }),
+        _ => None,
+    };
+    (outcome, run)
 }
 
 /// The floating positions of a run: each loading condition, or each stability condition, or with

@@ -176,11 +176,18 @@ impl AppState {
     /// the model is of the stage the results show, the damage run's pick when the Option has one for its inputs.
     fn vessel(&mut self, option: &str) -> Result<&vessel::Kept, String> {
         let screened = self.damage_shown(option);
+        // The damage run's own model, so that the screened model needs no second damage search (issue #1041).
+        let from_damage = self
+            .damage
+            .get(option)
+            .filter(|_| screened)
+            .and_then(|k| k.model.as_deref());
         vessel::kept(
             &mut self.vessel,
             &self.session.design().options,
             option,
             screened,
+            from_damage,
         )
     }
 
@@ -471,7 +478,7 @@ impl AppState {
     /// Keep the results of a damage run done elsewhere (the web build runs it in a worker): `fingerprint`
     /// is the run's, and must be the Option's now.
     pub fn keep_damage(&mut self, option: &str, fingerprint: &str, end: End) -> bool {
-        let End::Done(outcome) = end else {
+        let End::Done(outcome, model) = end else {
             return false;
         };
         if self.session.option_fingerprint(option).ok().as_deref() != Some(fingerprint) {
@@ -482,19 +489,23 @@ impl AppState {
             Kept {
                 fingerprint: fingerprint.to_string(),
                 outcome,
+                model,
             },
         );
         true
     }
 
-    /// The kept damage run of an Option as JSON, `{ fingerprint, results }`, for a worker that ran it
-    /// to hand back (the web build). `None` when the Option has no kept run.
+    /// The kept damage run of an Option as JSON, `{ fingerprint, results, model }`, for a worker that ran it
+    /// to hand back (the web build). `model` is the Vessel Model of the run's pick (issue #1041), so the page
+    /// builds the screened 3D model without a second damage search. `None` when the Option has no kept run.
     pub fn damage_run_json(&self, option: &str) -> Option<Value> {
         let kept = self.damage.get(option)?;
         match &kept.outcome {
-            RunOutcome::Results { results, .. } => {
-                Some(json!({ "fingerprint": kept.fingerprint, "results": results }))
-            }
+            RunOutcome::Results { results, .. } => Some(json!({
+                "fingerprint": kept.fingerprint,
+                "results": results,
+                "model": kept.model,
+            })),
             _ => None,
         }
     }
@@ -1080,6 +1091,75 @@ mod tests {
         let (screened, screened_hash) = tanks(&mut state);
         assert_eq!(screened, ["CT1P", "CT1S", "CT2P", "CT2S", "CT3P", "CT3S"]);
         assert_ne!(screened_hash, first_hash);
+    }
+
+    /// The mesh hash the screened model has when the damage search runs for it, as the page did before the damage run
+    /// handed its model back (issue #1041).
+    fn searched_hash(state: &AppState) -> String {
+        let option = state.session().design().options[0].clone();
+        let damage = ovd_format::damage::DamageControl {
+            run: true,
+            progress: None,
+        };
+        let run = ovd_format::option_vessel_run_with_damage(&option, &damage).unwrap();
+        ovd_format::mesh_hash(&run.meshes())
+    }
+
+    /// Issue #1041: after a damage run the screened 3D model is built from the run's own model, with no second
+    /// damage search, and it is the same mesh the search gives.
+    /// Label: regression (the web page ran the search again on its own thread, 48 s in wasm).
+    #[test]
+    fn the_screened_model_needs_no_second_damage_search() {
+        let mut state = gas_state();
+        let (_, kept) = run_damage(&mut state);
+        assert!(kept);
+        let hash = state.mesh_groups("Option 1").unwrap()["hash"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        let model = state.vessel.as_ref().unwrap();
+        assert!(model.screened, "the model is the screened one");
+        assert!(model.from_kept, "it was built from the damage run's model");
+        assert_eq!(hash, searched_hash(&state));
+    }
+
+    /// Issue #1041: the web build's page keeps the model a worker's damage run hands back as JSON, and builds the
+    /// screened model from it with no search.
+    /// Label: regression (as `the_screened_model_needs_no_second_damage_search`).
+    #[test]
+    fn a_model_handed_back_by_a_worker_builds_the_screened_model() {
+        let mut worker = gas_state();
+        run_damage(&mut worker);
+        let handed = worker.damage_run_json("Option 1").unwrap().to_string();
+
+        let mut page = gas_state();
+        let run: Value = serde_json::from_str(&handed).unwrap();
+        let outcome = ovd_format::RunOutcome::Results {
+            hash: ovd_format::results_hash(&run["results"]),
+            results: run["results"].clone(),
+        };
+        let model = serde_json::from_value::<ovd_format::VesselRun>(run["model"].clone())
+            .ok()
+            .map(Box::new);
+        assert!(model.is_some(), "the model reads back from JSON");
+        let fingerprint = run["fingerprint"].as_str().unwrap();
+        assert!(page.keep_damage("Option 1", fingerprint, End::Done(outcome, model)));
+        let hash = page.mesh_groups("Option 1").unwrap()["hash"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        assert!(page.vessel.as_ref().unwrap().from_kept);
+        assert_eq!(hash, searched_hash(&page));
+        // Without a readable model the page still shows the screened model: it runs the search for it.
+        let mut bare = gas_state();
+        let outcome = ovd_format::RunOutcome::Results {
+            hash: ovd_format::results_hash(&run["results"]),
+            results: run["results"].clone(),
+        };
+        assert!(bare.keep_damage("Option 1", fingerprint, End::Done(outcome, None)));
+        let bare_hash = bare.mesh_groups("Option 1").unwrap()["hash"].clone();
+        assert!(!bare.vessel.as_ref().unwrap().from_kept);
+        assert_eq!(bare_hash, json!(hash));
     }
 
     /// Issue #1041: the web build's model export follows the stage the page shows, as the 3D view does. Before a

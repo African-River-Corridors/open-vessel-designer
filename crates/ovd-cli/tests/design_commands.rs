@@ -1307,8 +1307,9 @@ fn fill_with_a_service_area_then_run_succeeds() {
     assert!(stderr(&bad).contains("`river-only`"), "{}", stderr(&bad));
 }
 
-/// Issue #1041: `ovd export --no-damage` is the unscreened model, the export of main before the model followed the
-/// results; plain `ovd export` runs damage and shows the screened pick. Label: snapshot (the 140 x 29 x 12 m
+/// Issue #1041: `ovd export --no-damage` gives the unscreened stage of the model, built as the app's first evaluation
+/// builds it; plain `ovd export` runs damage and shows the screened pick. (It is not main's export: the model's
+/// waterlines moved, see `changes/ticket-1041-model-stage.md`.) Label: snapshot (the 140 x 29 x 12 m
 /// coastal LNG reference design of `ovd-format/tests/vessel_stage.rs`).
 #[test]
 fn export_no_damage_is_the_unscreened_model() {

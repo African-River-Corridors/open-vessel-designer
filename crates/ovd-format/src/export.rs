@@ -445,6 +445,18 @@ pub fn option_export_with_damage(
     if below.is_some() && !matches!(format, "stl" | "obj") {
         return Err("--below clips a mesh: use it with --format stl or obj".to_string());
     }
+    // An STL or OBJ with no `--below` is the hull alone. The damage screen picks tanks, not the hull, unless
+    // the depth is optimised, so without that the hull is the same at both stages and the search is skipped.
+    let hull_alone = matches!(format, "stl" | "obj")
+        && below.is_none()
+        && !option
+            .input("optimise_depth")
+            .is_some_and(|i| i.value.as_bool() == Some(true));
+    let skipped = crate::damage::DamageControl {
+        run: false,
+        progress: None,
+    };
+    let damage = if hull_alone { &skipped } else { damage };
     match format {
         "gltf" => option_glb(option, damage),
         "stl" => option_panel_mesh(option, below, damage).map(|m| stl_binary(&m)),

@@ -76,7 +76,8 @@ impl Session {
 
     /// Run the damage cases of an Option here (issue #924). The page calls this in a Web Worker, on a
     /// session of its own, so the page stays live. `progress(done, total)` is called as cases finish.
-    /// Gives `{ "fingerprint", "results" }` for the page's session to keep with `keep_damage`.
+    /// Gives `{ "fingerprint", "results", "model" }` for the page's session to keep with `keep_damage`; `model` is the
+    /// Vessel Model of the run's pick, so that the page builds its 3D model without a second damage search (issue #1041).
     pub fn run_damage(&mut self, option: &str, progress: &js_sys::Function) -> Js<String> {
         let job = ok(self.state.damage_job(option))?;
         let callback = progress.clone();
@@ -110,10 +111,14 @@ impl Session {
             return Err(err("the damage run holds no results".into()));
         }
         let hash = ovd_format::results_hash(&results);
+        // A model that cannot be read is no reason to refuse the results: the 3D view then runs the search itself.
+        let model = serde_json::from_value::<ovd_format::VesselRun>(run["model"].clone())
+            .ok()
+            .map(Box::new);
         Ok(self.state.keep_damage(
             option,
             fingerprint,
-            ovd_shell::damage::End::Done(ovd_format::RunOutcome::Results { results, hash }),
+            ovd_shell::damage::End::Done(ovd_format::RunOutcome::Results { results, hash }, model),
         ))
     }
 

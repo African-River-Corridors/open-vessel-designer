@@ -114,7 +114,8 @@ Usage:
       is one). `--hash` prints the SHA-256 of each Option's bytes instead, for the web parity check.
       Damage stability runs, as in `ovd run` (about 15 s on a 140 m gas design), so the model is the
       arrangement the results report (the damage screen's pick, issue #1041). `--no-damage` skips it:
-      the unscreened model, as the web page shows it before a damage run.
+      the unscreened model, as the web page shows it before a damage run. An stl or obj with no `--below`
+      is the hull alone and skips the damage search (unless the Option optimises its depth).
   ovd mesh [--profile <profile.json>] --hash <file.vdesign>
       Print the mesh hash of each Option (spec 0008, issue #456): the SHA-256 of the meshes of its
       Vessel Model (hull, decks, bulkheads, Spaces, waterlines). The web parity check compares it

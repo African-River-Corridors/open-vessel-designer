@@ -44,6 +44,7 @@ pub struct VesselModelInputs {
 /// today, as the panel model (`hull_panels`: Q = 1); the higher-strength grades come with their
 /// material factors in the rule set (spec 0013, T2).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SteelGrade {
     /// Ordinary-strength hull steel, material factor Q = 1.
     #[default]
@@ -71,6 +72,7 @@ impl SteelGrade {
 /// plate model lays its plates, stiffeners and primary members out on. The defaults are the spec's
 /// (see [`StructureBlock::default`]). Inputs only in issue #739: no result reads them yet.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StructureBlock {
     /// The spacing of the web frames and floors (m). It sets the frames.
     pub frame_spacing_m: f64,
@@ -106,6 +108,7 @@ impl Default for StructureBlock {
 
 /// A frame: a named transverse reference plane at `x_m` (spec 0013; OCX names frames the same way).
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Frame {
     /// `FR0`, `FR1`, ... from the aft end.
     pub name: String,
@@ -144,6 +147,7 @@ pub fn frames_of(hull: &SectionsTable, spacing_m: f64) -> Vec<Frame> {
 
 /// A deck: a horizontal plane at `z_m` from `x_aft_m` to `x_fwd_m`, clipped by the hull.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Deck {
     /// A key, the same in every language: `main_deck`, `inner_bottom`.
     pub name: String,
@@ -155,6 +159,7 @@ pub struct Deck {
 
 /// A transverse bulkhead: a plane at `x_m`, clipped by the hull.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bulkhead {
     /// A key, the same in every language: `cargo_zone_aft`, `hold_1_2`, `zone_3_fwd`.
     pub name: String,
@@ -168,6 +173,7 @@ pub struct Bulkhead {
 /// are not in the hydrostatics. Their masses are already in the lightship; the Outfit adds only
 /// their shape: the Deck Items and the Propulsor Layout (spec 0009).
 #[derive(Debug, Clone, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Outfit {
     /// The Deck Items of the stern block: the container units, then the wheelhouse lowered and
     /// raised, then its lift column. Empty without a stern block.
@@ -182,6 +188,7 @@ pub struct Outfit {
 /// The lift of the wheelhouse and the light air draft it costs (spec 0009, "Wheelhouse"), from the
 /// capacity result.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct WheelhouseLift {
     /// The lift the sightline limit needs (`sightline.lift_needed_m`); `None` when no limit is set.
     pub needed_m: Option<f64>,
@@ -196,6 +203,7 @@ pub struct WheelhouseLift {
 
 /// The two positions of a lifting wheelhouse.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum WheelhousePosition {
     Lowered,
     Raised,
@@ -204,6 +212,7 @@ pub enum WheelhousePosition {
 /// What a Deck Item is, and where its size comes from in the stern block's result
 /// (`AftArrangementResult`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum DeckItemKind {
     /// A container unit: entry `index` of `container_units`, an accommodation or a battery unit.
     Unit {
@@ -218,6 +227,7 @@ pub enum DeckItemKind {
 /// A Deck Item (GLOSSARY.md): an Outfit part that stands on the deck, as a box in hull axes (x
 /// forward from the aft end, y to starboard, z up from the keel).
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DeckItem {
     pub kind: DeckItemKind,
     /// The unit's label from the stern block ("ACCOM 40 FT"); the kind's name for the others.
@@ -235,6 +245,7 @@ pub struct DeckItem {
 /// plus the clearance; side walls at the hull sides and end walls at the ends of the zone, standing
 /// on the wing plate or on the deck where the deck is higher. All plates `thickness_m` thick.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct WeatherShield {
     pub x_aft_m: f64,
     pub x_fwd_m: f64,
@@ -252,6 +263,7 @@ pub const LIFT_COLUMN_SIDE_OVER_WHEELHOUSE_WIDTH: f64 = 0.25;
 
 /// The Vessel Model of spec 0008, with the tank Spaces and the Outfit layer of ADR 0021.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct VesselModel {
     pub hull: SectionsTable,
     pub decks: Vec<Deck>,

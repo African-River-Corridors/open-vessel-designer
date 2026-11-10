@@ -91,3 +91,43 @@ fn the_export_is_the_screened_model() {
         "three tanks along"
     );
 }
+
+/// Whether an export at the damage-on stage worked any damage case out: the progress hook is called when it does.
+fn export_searched(option: &DesignOption, format: &str, below: Option<&str>) -> bool {
+    let calls = std::rc::Rc::new(std::cell::Cell::new(0usize));
+    let seen = calls.clone();
+    let control = DamageControl {
+        run: true,
+        progress: Some(std::rc::Rc::new(move |_| {
+            seen.set(seen.get() + 1);
+            std::ops::ControlFlow::Continue(())
+        })),
+    };
+    option_export_with_damage(format, option, below, &control).unwrap();
+    calls.get() > 0
+}
+
+/// An STL or OBJ with no `--below` is the hull alone, the same at both stages, so it skips the damage search; a glTF
+/// and a clipped mesh (which reads the waterlines) still run it. Label: regression (the screened export searched
+/// for a hull it did not use: OBJ 22 s native on the reference design).
+#[test]
+fn a_hull_alone_export_skips_the_damage_search() {
+    let option = reference();
+    for format in ["stl", "obj"] {
+        let hull = option_export_with_damage(format, &option, None, &damage(true)).unwrap();
+        assert_eq!(
+            bytes_hash(&hull),
+            bytes_hash(&option_export_with_damage(format, &option, None, &damage(false)).unwrap()),
+            "{format}: the hull is the same at both stages"
+        );
+        assert!(!export_searched(&option, format, None), "{format} searched");
+    }
+    assert!(
+        export_searched(&option, "gltf", None),
+        "the glTF skipped the search"
+    );
+    assert!(
+        export_searched(&option, "obj", Some("Full load, departure")),
+        "a clipped OBJ skipped the search"
+    );
+}
