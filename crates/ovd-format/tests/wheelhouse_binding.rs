@@ -36,6 +36,9 @@ fn run_with(air_draft_limit_m: f64, lift_m: Option<f64>) -> Value {
     }
 }
 
+/// Cargo of the 140 x 29 x 12 m design with a 22 m limit and a lift of 0 (the PR of #1034 Phase 2).
+const PINNED_CARGO_T: f64 = 8350.7;
+
 fn air_draft_light(r: &Value) -> f64 {
     r["results"]["air_draft_light_m"].as_f64().unwrap()
 }
@@ -64,6 +67,27 @@ fn a_limit_the_fixed_wheelhouse_breaks_lifts_it() {
     assert_eq!(s["wheelhouse"], json!("elevating"));
     assert_eq!(s["wheelhouse_basis"], json!("air_draft_limit"));
     assert!(air_draft_light(&r) < fixed, "{}", air_draft_light(&r));
+    // The lifted design meets the limit it was lifted for.
+    assert!(
+        air_draft_light(&r) <= fixed - 1.0,
+        "lifted air draft {} over the limit {}",
+        air_draft_light(&r),
+        fixed - 1.0
+    );
+}
+
+#[test]
+fn a_typed_lift_of_zero_under_a_limit_stays_fixed_and_sizes_tiers_in_two_passes() {
+    // `wheelhouse_max_lift_m` = 0 with a limit of 22 m: the wheelhouse cannot lift, so the tier count is
+    // sized in two passes (barge_capacity.rs, `sized_by_pass`). The cargo is pinned, so a change to that
+    // path shows here.
+    let r = run_with(22.0, Some(0.0));
+    assert_eq!(r["stern_arrangement"]["wheelhouse"], json!("fixed"));
+    let cargo_t = r["results"]["cargo_t"].as_f64().unwrap();
+    assert!(
+        (cargo_t - PINNED_CARGO_T).abs() < 1.0,
+        "cargo {cargo_t} t, pinned {PINNED_CARGO_T} t"
+    );
 }
 
 #[test]
