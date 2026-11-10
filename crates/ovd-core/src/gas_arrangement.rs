@@ -2755,7 +2755,8 @@ pub fn fit_with(
     };
     // Issue #992: the share is at most the limit (D1: the search may pick less if depth, freeboard or
     // sightline need it). Stage 1 searches the shares from the limit down on the intact checks, with
-    // no damage, and stops at the first that passes them. Stage 2 screens that share by damage, and
+    // no damage. It starts at the tallest share that passes them and climbs down while the cargo rises
+    // by 1 % or more (#1034). Stage 2 screens the share it keeps by damage, and
     // the next share down too if it fails. So the damage screen runs on at most two shares: at most
     // twice `damage_run_cap` damage runs, not five times.
     let (idx, mut intact, climb_from) = share_stage_one(loa, beam, cargo, t_max, o, &levels)?;
