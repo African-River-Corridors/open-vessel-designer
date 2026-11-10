@@ -1,12 +1,12 @@
 <!-- unreleased -->
-- The river share of the tank diameter now climbs to the most cargo (issue #1034, the maintainer's decision of 2026-11-09). With the share searched, the search starts at the tallest share that passes the intact checks, goes down one share at a time while the next share passes and its cargo rises by 1 % or more of the cargo in hand, and keeps the last share that rose. A tie, a smaller gain, a fall or an infeasible share stops it, so the taller share (less depth, less steel) wins. Damage screens the share kept, as before, under the same budget of 24 runs. `ovd run` says "the most cargo within the limits" on the share line, and names the tallest passing share and its cargo when the climb moved the share; the results carry `arrangement.share_climb_from` only then. River-only designs whose tallest passing share is not the one with the most cargo move; coastal-and-river designs and designs with a typed standing height do not search the share and do not move. In the design-impact sweep one case moves because of this change: "sweep default depth gas 90x14", from share 0.5 (930.66 t, 6.3 m deep) to share 0.25 (1,742.14 t, 9.5 m deep). The table below also lists the two deckhouse cases that Phase 2 (#1055) moves, because its base is `main` until #1055 merges.
+- The river share of the tank diameter now climbs to the most cargo (issue #1034, the maintainer's decision of 2026-11-09). With the share searched, the search starts at the tallest share that passes the intact checks, goes down one share at a time while the next share passes and its cargo rises by 1 % or more of the cargo in hand, and keeps the last share that rose. A tie, a smaller gain, a fall or an infeasible share stops it, so the taller share (less depth, less steel) wins. Damage screens the share kept, as before, under the same budget of 24 runs. `ovd run` says "the most cargo within the limits" on the share line, and names the tallest passing share and its cargo when the climb moved the share; the results carry `arrangement.share_climb_from` only then. River-only designs whose tallest passing share is not the one with the most cargo move; coastal-and-river designs and designs with a typed standing height do not search the share and do not move. In the design-impact sweep one case moves because of this change: "sweep default depth gas 90x14", from share 0.5 (930.66 t, 6.3 m deep) to share 0.25 (1,742.14 t, 9.5 m deep).
 
 <!-- design-impact -->
 ### ticket/1034-p3-climb (2026-11-10)
 
-Between `main 6b39849` and `this branch dd81936e`.
+Between `main 2b25ee7` and `this branch 324f733b`.
 
-The table is against `main`, so it lists the moves of Phase 2 (#1055: "sweep gas river-only deckhouse 140x29" and "sweep optional deckhouse_openings") as well as this change's move (the 90x14 case). The 90x14 case goes from share 0.5, 930.66 t, 6.3 m deep to share 0.25, 1,742.14 t, 9.5 m deep.
+The table lists only this change's move: the 90x14 case, from share 0.5, 930.66 t, 6.3 m deep to share 0.25, 1,742.14 t, 9.5 m deep.
 
 | Case | Quantity | Before | After | Change |
 |---|---|---|---|---|
@@ -50,4 +50,4 @@ The table is against `main`, so it lists the moves of Phase 2 (#1055: "sweep gas
 | sweep default depth gas 90x14 | `loading_conditions.conditions[2].ballast[2].vcg_m` | absent | 0.285 | changed |
 | sweep default depth gas 90x14 | `loading_conditions.conditions[2].ballast[3].fill` | absent | 0.95 | changed |
 | sweep default depth gas 90x14 | `loading_conditions.conditions[2].ballast[3].free_surface_moment_tm` | absent | 797.589333333 | changed |
-| ... | 2481 more changed quantities | | | |
+| ... | 1219 more changed quantities | | | |
