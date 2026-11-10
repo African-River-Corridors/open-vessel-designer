@@ -13,7 +13,10 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use ovd_core::sections::{SectionsTable, Waterplane, immersed};
-use ovd_format::export::{obj_text, option_export, option_panel_mesh, stl_binary};
+use ovd_format::damage::DamageControl;
+use ovd_format::export::{
+    obj_text, option_export, option_export_with_damage, option_panel_mesh, stl_binary,
+};
 use ovd_format::{
     Profile, RunOutcome, check, option_hull_table, option_model_waterlines, results_hash,
     run_design,
@@ -23,6 +26,15 @@ use serde_json::{Value, json};
 type Triangle = [[f32; 3]; 3];
 
 /// The triangles of a binary STL, after the length check.
+/// The stage that skips damage (issue #1041): these checks are of the geometry, the same at either stage, and
+/// the damage search would only slow them.
+fn off() -> DamageControl {
+    DamageControl {
+        run: false,
+        progress: None,
+    }
+}
+
 fn read_stl(b: &[u8]) -> Vec<Triangle> {
     let n = u32::from_le_bytes(b[80..84].try_into().unwrap()) as usize;
     assert_eq!(b.len(), 84 + 50 * n, "a binary STL is 84 + 50 n bytes");
@@ -111,11 +123,11 @@ fn every_fixture_hull_is_a_closed_stl_and_obj_with_the_sections_volume() {
             .design
             .expect("a valid fixture");
         for option in &design.options {
-            let Ok(mesh) = option_panel_mesh(option, None) else {
+            let Ok(mesh) = option_panel_mesh(option, None, &off()) else {
                 continue;
             };
             let at = format!("{} / {}", path.display(), option.name);
-            let stl = option_export("stl", option, None).unwrap();
+            let stl = option_export_with_damage("stl", option, None, &off()).unwrap();
             let tris = read_stl(&stl);
             assert_eq!(tris.len() * 3, mesh.indices.len(), "{at}");
             closed(&tris).unwrap_or_else(|e| panic!("{at}: {e}"));
@@ -131,7 +143,9 @@ fn every_fixture_hull_is_a_closed_stl_and_obj_with_the_sections_volume() {
                 );
             }
             // The OBJ has the same vertices and faces, one-based.
-            let obj = String::from_utf8(option_export("obj", option, None).unwrap()).unwrap();
+            let obj =
+                String::from_utf8(option_export_with_damage("obj", option, None, &off()).unwrap())
+                    .unwrap();
             assert_eq!(obj, obj_text(&mesh));
             let vs = obj.lines().filter(|l| l.starts_with("v ")).count();
             let fs: Vec<Vec<usize>> = obj
@@ -158,13 +172,13 @@ fn clipped_at_a_condition_the_hull_is_closed_with_the_immersed_volume_of_the_sec
             .design
             .expect("a valid fixture");
         for option in &design.options {
-            let Ok((model, waterlines)) = option_model_waterlines(option) else {
+            let Ok((model, waterlines)) = option_model_waterlines(option, &off()) else {
                 continue;
             };
             let l = model.hull.sections.last().unwrap().x - model.hull.sections[0].x;
             for (name, aft, fwd) in waterlines {
                 let at = format!("{} / {} / {name}", path.display(), option.name);
-                let stl = option_export("stl", option, Some(&name)).unwrap();
+                let stl = option_export_with_damage("stl", option, Some(&name), &off()).unwrap();
                 let tris = read_stl(&stl);
                 if tris.is_empty() {
                     continue;
@@ -195,7 +209,7 @@ fn clipped_at_a_condition_the_hull_is_closed_with_the_immersed_volume_of_the_sec
 fn a_clip_names_its_condition_or_says_which_there_are() {
     let text = std::fs::read_to_string(&fixtures()[0]).unwrap();
     let design = check(&text, &Profile::built_in()).design.unwrap();
-    let e = option_panel_mesh(&design.options[0], Some("No such condition")).unwrap_err();
+    let e = option_panel_mesh(&design.options[0], Some("No such condition"), &off()).unwrap_err();
     assert!(e.contains("no condition named `No such condition`"), "{e}");
     let e = option_export("gltf", &design.options[0], Some("Laden")).unwrap_err();
     assert!(e.contains("--below clips a mesh"), "{e}");

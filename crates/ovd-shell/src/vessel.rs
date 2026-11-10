@@ -8,24 +8,49 @@
 //! JSON calls carry the group table and the values only.
 
 use ovd_core::mesh::Mesh;
-use ovd_format::{DesignOption, VesselRun, mesh_hash, option_vessel_run};
+use ovd_format::damage::DamageControl;
+use ovd_format::{DesignOption, VesselRun, mesh_hash, option_vessel_run_with_damage};
 use serde_json::{Value, json};
 
 /// One Option's run, its meshes and their hash.
 pub(crate) struct Kept {
     option: DesignOption,
+    /// Issue #1041: whether the run worked damage out, so the model is the screened pick.
+    pub(crate) screened: bool,
+    /// Whether the run came from a model a damage run kept (issue #1041), not from a search of its own. The tests
+    /// read it to show that the screened model needs no second search.
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub(crate) from_kept: bool,
     run: VesselRun,
     mesh: Mesh,
     hash: String,
 }
 
 impl Kept {
-    fn new(option: &DesignOption) -> Result<Kept, String> {
-        let run = option_vessel_run(option)?;
+    /// `kept` is the Vessel Model a damage run handed back for this Option's inputs: the screened model is then
+    /// built from it, with no second damage search (issue #1041).
+    fn new(
+        option: &DesignOption,
+        screened: bool,
+        kept: Option<&VesselRun>,
+    ) -> Result<Kept, String> {
+        let from_kept = kept.is_some();
+        let run = match kept {
+            Some(run) => run.clone(),
+            None => {
+                let damage = DamageControl {
+                    run: screened,
+                    progress: None,
+                };
+                option_vessel_run_with_damage(option, &damage)?
+            }
+        };
         let mesh = run.meshes();
         let hash = mesh_hash(&mesh);
         Ok(Kept {
             option: option.clone(),
+            screened,
+            from_kept,
             run,
             mesh,
             hash,
@@ -33,20 +58,32 @@ impl Kept {
     }
 }
 
-/// The kept run of `option` in `design`: the one held when the Option is unchanged, else a new run.
+/// The kept run of `option` in `design`: the one held when the Option and the stage are unchanged, else a new
+/// run. `screened` (issue #1041): the results shown are those of a damage run, so the model is its pick, and
+/// `from_damage` is that run's own model when it kept one.
 pub(crate) fn kept<'a>(
     cache: &'a mut Option<Kept>,
     options: &[DesignOption],
     name: &str,
+    screened: bool,
+    from_damage: Option<&VesselRun>,
 ) -> Result<&'a Kept, String> {
     let option = options
         .iter()
         .find(|o| o.name == name)
         .ok_or_else(|| format!("no Option named '{name}'"))?;
-    if cache.as_ref().is_none_or(|k| k.option != *option) {
-        *cache = Some(Kept::new(option)?);
+    if cache
+        .as_ref()
+        .is_none_or(|k| k.option != *option || k.screened != screened)
+    {
+        *cache = Some(Kept::new(option, screened, from_damage)?);
     }
     cache.as_ref().ok_or_else(|| "no Vessel Model".to_string())
+}
+
+/// The `.glb` of the kept run's model: the bytes of `ovd_format::export::option_glb` at the kept stage, with no second run.
+pub(crate) fn glb(k: &Kept) -> Vec<u8> {
+    ovd_format::export::gltf_glb(&k.mesh)
 }
 
 /// The vertex data: x, y, z per vertex (m, hull axes), and three indices per triangle.

@@ -381,6 +381,7 @@ pub fn free_surface_moment_cylindrical(
 /// The cargo zone along the hull: from the stern void forward to the bow void (m from the aft end).
 /// The tanks and the cargo lie in it.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CargoZone {
     pub x_aft_m: f64,
     pub x_fwd_m: f64,
@@ -425,6 +426,7 @@ pub fn tank_axis_z(tank_bottom_m: f64, outer_diameter_m: f64) -> f64 {
 
 /// One tank's place along the hull: its axis from `x0` to `x1`, and its centre.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TankAxisX {
     pub x0_m: f64,
     pub x1_m: f64,
@@ -463,6 +465,7 @@ pub fn tank_axes_y(
 
 /// The shape of a Tank Head (GLOSSARY.md).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum HeadKind {
     Hemisphere,
     Ellipsoidal2To1,
@@ -489,6 +492,7 @@ impl HeadKind {
 /// A Tank Head: its shape, and its length along the axis outside the insulation (`TankResult`'s
 /// `head_length`).
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TankHead {
     pub kind: HeadKind,
     pub length_m: f64,
@@ -496,6 +500,7 @@ pub struct TankHead {
 
 /// What places the tanks.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TankPlacement {
     pub zone: CargoZone,
     pub beam_m: f64,
@@ -513,6 +518,7 @@ pub struct TankPlacement {
 
 /// One cargo tank of a Tank Layout.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TankPlace {
     /// A short name, the same in every language: "CT1C", "CT2P", "CT1.3".
     pub name: String,
@@ -527,6 +533,7 @@ pub struct TankPlace {
 
 /// A tank dome: a cylinder standing on the tank top over the middle of the tank.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DomePlace {
     pub x_m: f64,
     pub y_m: f64,
@@ -539,6 +546,7 @@ pub struct DomePlace {
 /// The Tank Layout (GLOSSARY.md): where each cargo tank and dome is. The capacity, the loading
 /// conditions, the stability, the weights, the drawings and the Vessel Model read it.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TankLayout {
     pub zone: CargoZone,
     pub outer_diameter_m: f64,

@@ -8,7 +8,7 @@
 
 use ovd_format::damage::{ControlFlow, DAMAGE_CANCELLED, DamageControl};
 use ovd_format::rule_set::Library;
-use ovd_format::{DesignOption, RunOutcome, run_option_with_damage};
+use ovd_format::{DesignOption, RunOutcome, VesselRun, run_option_with_vessel};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -25,8 +25,10 @@ pub fn off() -> DamageControl {
 /// How a damage run ended.
 #[derive(Debug, Clone, PartialEq)]
 pub enum End {
-    /// The run finished; the outcome holds the results.
-    Done(RunOutcome),
+    /// The run finished; the outcome holds the results. The Vessel Model of the run's own pick goes with them
+    /// (issue #1041), so the 3D view builds the screened model without a second search. `None` when the run
+    /// gave none, or a worker's hand-back could not be read.
+    Done(RunOutcome, Option<Box<VesselRun>>),
     /// The user (or an edit) cancelled it. Nothing is kept.
     Cancelled,
     /// The engine refused the Option; the text says why.
@@ -84,15 +86,15 @@ impl Job {
                 }
             })),
         };
-        match run_option_with_damage(&self.run_option, &Library::built_in(), &[], &control) {
-            RunOutcome::Failed(m) if m.contains(DAMAGE_CANCELLED) => End::Cancelled,
-            RunOutcome::Failed(m) => End::Failed(m),
-            RunOutcome::NotAvailable(m) => End::Failed(m),
-            done @ RunOutcome::Results { .. } => {
+        match run_option_with_vessel(&self.run_option, &Library::built_in(), &[], &control) {
+            (RunOutcome::Failed(m), _) if m.contains(DAMAGE_CANCELLED) => End::Cancelled,
+            (RunOutcome::Failed(m), _) => End::Failed(m),
+            (RunOutcome::NotAvailable(m), _) => End::Failed(m),
+            (done @ RunOutcome::Results { .. }, model) => {
                 if self.cancel.load(Ordering::SeqCst) {
                     End::Cancelled
                 } else {
-                    End::Done(done)
+                    End::Done(done, model.map(Box::new))
                 }
             }
         }
@@ -104,6 +106,8 @@ impl Job {
 pub(crate) struct Kept {
     pub fingerprint: String,
     pub outcome: RunOutcome,
+    /// The Vessel Model of the run's pick, for the 3D view (issue #1041); `None` when the run gave none.
+    pub model: Option<Box<VesselRun>>,
 }
 
 /// The run under way, so that an edit of its Option can cancel it.

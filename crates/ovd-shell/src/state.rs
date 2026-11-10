@@ -172,9 +172,61 @@ impl AppState {
         &self.session
     }
 
-    /// The kept run of the Option named `option` for the 3D view, run again when the Option changed.
+    /// The kept run of the Option named `option` for the 3D view, run again when the Option changed. Issue #1041:
+    /// the model is of the stage the results show, the damage run's pick when the Option has one for its inputs.
     fn vessel(&mut self, option: &str) -> Result<&vessel::Kept, String> {
-        vessel::kept(&mut self.vessel, &self.session.design().options, option)
+        let screened = self.damage_shown(option);
+        // The damage run's own model, so that the screened model needs no second damage search (issue #1041).
+        let from_damage = self
+            .damage
+            .get(option)
+            .filter(|_| screened)
+            .and_then(|k| k.model.as_deref());
+        vessel::kept(
+            &mut self.vessel,
+            &self.session.design().options,
+            option,
+            screened,
+            from_damage,
+        )
+    }
+
+    /// An export of an Option (issues #460, #461, #1041) at the stage the page shows, as the 3D view: the screened pick
+    /// while a kept damage run matches the Option's inputs, else the unscreened model, which runs no damage. The glTF
+    /// is the kept 3D run's model, so it costs no second run; `stl` and `obj` run the model once more.
+    pub fn export_model(
+        &mut self,
+        option: &str,
+        format: &str,
+        below: &str,
+    ) -> Result<Vec<u8>, String> {
+        let below = (!below.is_empty()).then_some(below);
+        if format == "gltf" && below.is_none() {
+            return self.vessel(option).map(vessel::glb);
+        }
+        let damage = ovd_format::damage::DamageControl {
+            run: self.damage_shown(option),
+            progress: None,
+        };
+        let found = self
+            .session
+            .design()
+            .options
+            .iter()
+            .find(|o| o.name == option)
+            .ok_or_else(|| format!("no Option named '{option}'"))?;
+        ovd_format::export::option_export_with_damage(format, found, below, &damage)
+    }
+
+    /// Whether the results shown for an Option are its kept damage run: the run's fingerprint is the Option's now.
+    fn damage_shown(&self, option: &str) -> bool {
+        match (
+            self.damage.get(option),
+            self.session.option_fingerprint(option),
+        ) {
+            (Some(kept), Ok(now)) => kept.fingerprint == now,
+            _ => false,
+        }
     }
 
     /// The mesh vertex data of an Option (issue #457): positions (f32, x y z per vertex) and
@@ -426,7 +478,7 @@ impl AppState {
     /// Keep the results of a damage run done elsewhere (the web build runs it in a worker): `fingerprint`
     /// is the run's, and must be the Option's now.
     pub fn keep_damage(&mut self, option: &str, fingerprint: &str, end: End) -> bool {
-        let End::Done(outcome) = end else {
+        let End::Done(outcome, model) = end else {
             return false;
         };
         if self.session.option_fingerprint(option).ok().as_deref() != Some(fingerprint) {
@@ -437,19 +489,23 @@ impl AppState {
             Kept {
                 fingerprint: fingerprint.to_string(),
                 outcome,
+                model,
             },
         );
         true
     }
 
-    /// The kept damage run of an Option as JSON, `{ fingerprint, results }`, for a worker that ran it
-    /// to hand back (the web build). `None` when the Option has no kept run.
+    /// The kept damage run of an Option as JSON, `{ fingerprint, results, model }`, for a worker that ran it
+    /// to hand back (the web build). `model` is the Vessel Model of the run's pick (issue #1041), so the page
+    /// builds the screened 3D model without a second damage search. `None` when the Option has no kept run.
     pub fn damage_run_json(&self, option: &str) -> Option<Value> {
         let kept = self.damage.get(option)?;
         match &kept.outcome {
-            RunOutcome::Results { results, .. } => {
-                Some(json!({ "fingerprint": kept.fingerprint, "results": results }))
-            }
+            RunOutcome::Results { results, .. } => Some(json!({
+                "fingerprint": kept.fingerprint,
+                "results": results,
+                "model": kept.model,
+            })),
             _ => None,
         }
     }
@@ -996,6 +1052,185 @@ mod tests {
         let kept = state.finish_damage(&job, end);
         let calls = calls.borrow().clone();
         (calls, kept)
+    }
+
+    /// Issue #1041: the 3D model is of the stage the results show. On the 140 x 29 x 12 m coastal LNG reference
+    /// design the first evaluation picks 2 x 2 tanks; the damage run picks 2 x 3, and the model follows it.
+    /// Label: snapshot (`ovd-format/tests/vessel_stage.rs`).
+    #[test]
+    fn the_3d_model_follows_the_damage_run() {
+        let file = json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": {
+                "cargo": { "value": "LNG", "source": "typed" },
+                "hull_form": { "value": "raked_box", "source": "typed" },
+                "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+                "length_overall_m": { "value": 140.0, "source": "typed" },
+                "beam_m": { "value": 29.0, "source": "typed" },
+                "moulded_depth_m": { "value": 12.0, "source": "typed" },
+                "service_area": { "value": "coastal-and-river", "source": "typed" },
+                "loading_conditions": { "value": "is_code_2008", "source": "typed" }
+            } }]
+        });
+        let text = ovd_format::fill_as_new(&file.to_string(), &Profile::built_in())
+            .design
+            .unwrap()
+            .to_text();
+        let mut state = AppState::open(Path::new("/x/gas.vdesign"), &text).unwrap();
+        let tanks = |state: &mut AppState| {
+            let groups = state.mesh_groups("Option 1").unwrap();
+            let mut names: Vec<String> = groups["groups"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|g| g["layer"] == "space")
+                .filter_map(|g| g["id"].as_str())
+                .filter(|id| id.starts_with("CT"))
+                .map(String::from)
+                .collect();
+            names.sort();
+            (names, groups["hash"].as_str().unwrap().to_string())
+        };
+        let (first, first_hash) = tanks(&mut state);
+        assert_eq!(first, ["CT1P", "CT1S", "CT2P", "CT2S"]);
+        let (_, kept) = run_damage(&mut state);
+        assert!(kept);
+        assert_eq!(results_of(&state)["arrangement"]["n_long"], 3);
+        let (screened, screened_hash) = tanks(&mut state);
+        assert_eq!(screened, ["CT1P", "CT1S", "CT2P", "CT2S", "CT3P", "CT3S"]);
+        assert_ne!(screened_hash, first_hash);
+    }
+
+    /// The mesh hash the screened model has when the damage search runs for it, as the page did before the damage run
+    /// handed its model back (issue #1041).
+    fn searched_hash(state: &AppState) -> String {
+        let option = state.session().design().options[0].clone();
+        let damage = ovd_format::damage::DamageControl {
+            run: true,
+            progress: None,
+        };
+        let run = ovd_format::option_vessel_run_with_damage(&option, &damage).unwrap();
+        ovd_format::mesh_hash(&run.meshes())
+    }
+
+    /// Issue #1041: after a damage run the screened 3D model is built from the run's own model, with no second
+    /// damage search, and it is the same mesh the search gives.
+    /// Label: regression (the web page ran the search again on its own thread, 48 s in wasm).
+    #[test]
+    fn the_screened_model_needs_no_second_damage_search() {
+        let mut state = gas_state();
+        let (_, kept) = run_damage(&mut state);
+        assert!(kept);
+        let hash = state.mesh_groups("Option 1").unwrap()["hash"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        let model = state.vessel.as_ref().unwrap();
+        assert!(model.screened, "the model is the screened one");
+        assert!(model.from_kept, "it was built from the damage run's model");
+        assert_eq!(hash, searched_hash(&state));
+    }
+
+    /// Issue #1041: the web build's page keeps the model a worker's damage run hands back as JSON, and builds the
+    /// screened model from it with no search.
+    /// Label: regression (as `the_screened_model_needs_no_second_damage_search`).
+    #[test]
+    fn a_model_handed_back_by_a_worker_builds_the_screened_model() {
+        let mut worker = gas_state();
+        run_damage(&mut worker);
+        let handed = worker.damage_run_json("Option 1").unwrap().to_string();
+
+        let mut page = gas_state();
+        let run: Value = serde_json::from_str(&handed).unwrap();
+        let outcome = ovd_format::RunOutcome::Results {
+            hash: ovd_format::results_hash(&run["results"]),
+            results: run["results"].clone(),
+        };
+        let model = serde_json::from_value::<ovd_format::VesselRun>(run["model"].clone())
+            .ok()
+            .map(Box::new);
+        assert!(model.is_some(), "the model reads back from JSON");
+        let fingerprint = run["fingerprint"].as_str().unwrap();
+        assert!(page.keep_damage("Option 1", fingerprint, End::Done(outcome, model)));
+        let hash = page.mesh_groups("Option 1").unwrap()["hash"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        assert!(page.vessel.as_ref().unwrap().from_kept);
+        assert_eq!(hash, searched_hash(&page));
+        // Without a readable model the page still shows the screened model: it runs the search for it.
+        let mut bare = gas_state();
+        let outcome = ovd_format::RunOutcome::Results {
+            hash: ovd_format::results_hash(&run["results"]),
+            results: run["results"].clone(),
+        };
+        assert!(bare.keep_damage("Option 1", fingerprint, End::Done(outcome, None)));
+        let bare_hash = bare.mesh_groups("Option 1").unwrap()["hash"].clone();
+        assert!(!bare.vessel.as_ref().unwrap().from_kept);
+        assert_eq!(bare_hash, json!(hash));
+    }
+
+    /// Issue #1041: the web build's model export follows the stage the page shows, as the 3D view does. Before a
+    /// damage run it is the unscreened model and runs no damage; after a matching damage run it is the screened one.
+    /// Label: snapshot (`ovd-format/tests/vessel_stage.rs`).
+    #[test]
+    fn the_model_export_follows_the_stage_the_page_shows() {
+        let file = json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": {
+                "cargo": { "value": "LNG", "source": "typed" },
+                "hull_form": { "value": "raked_box", "source": "typed" },
+                "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+                "length_overall_m": { "value": 140.0, "source": "typed" },
+                "beam_m": { "value": 29.0, "source": "typed" },
+                "moulded_depth_m": { "value": 12.0, "source": "typed" },
+                "service_area": { "value": "coastal-and-river", "source": "typed" },
+                "loading_conditions": { "value": "is_code_2008", "source": "typed" }
+            } }]
+        });
+        let text = ovd_format::fill_as_new(&file.to_string(), &Profile::built_in())
+            .design
+            .unwrap()
+            .to_text();
+        let mut state = AppState::open(Path::new("/x/gas.vdesign"), &text).unwrap();
+        let option = state.session().design().options[0].clone();
+        let at = |run: bool| {
+            let damage = ovd_format::damage::DamageControl {
+                run,
+                progress: None,
+            };
+            ovd_format::export::option_export_with_damage("gltf", &option, None, &damage).unwrap()
+        };
+        let (unscreened, screened) = (at(false), at(true));
+        assert_ne!(unscreened, screened, "the two stages differ on this design");
+        for format in ["gltf", "obj"] {
+            let before = state.export_model("Option 1", format, "").unwrap();
+            let damage_off = ovd_format::damage::DamageControl {
+                run: false,
+                progress: None,
+            };
+            let want =
+                ovd_format::export::option_export_with_damage(format, &option, None, &damage_off);
+            assert_eq!(before, want.unwrap(), "{format} before a damage run");
+        }
+        assert_eq!(
+            state.export_model("Option 1", "gltf", "").unwrap(),
+            unscreened
+        );
+        let (_, kept) = run_damage(&mut state);
+        assert!(kept);
+        assert_eq!(
+            state.export_model("Option 1", "gltf", "").unwrap(),
+            screened
+        );
+        // An edit makes the damage run stale: the export goes back to the unscreened stage.
+        state
+            .set_input("Option 1", "moulded_depth_m", json!(12.5))
+            .unwrap();
+        assert_ne!(
+            state.export_model("Option 1", "gltf", "").unwrap(),
+            screened
+        );
     }
 
     /// Issue #924: only a run the user asks for works damage out. Every path of the app that reaches the

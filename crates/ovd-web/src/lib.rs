@@ -76,7 +76,8 @@ impl Session {
 
     /// Run the damage cases of an Option here (issue #924). The page calls this in a Web Worker, on a
     /// session of its own, so the page stays live. `progress(done, total)` is called as cases finish.
-    /// Gives `{ "fingerprint", "results" }` for the page's session to keep with `keep_damage`.
+    /// Gives `{ "fingerprint", "results", "model" }` for the page's session to keep with `keep_damage`; `model` is the
+    /// Vessel Model of the run's pick, so that the page builds its 3D model without a second damage search (issue #1041).
     pub fn run_damage(&mut self, option: &str, progress: &js_sys::Function) -> Js<String> {
         let job = ok(self.state.damage_job(option))?;
         let callback = progress.clone();
@@ -110,10 +111,14 @@ impl Session {
             return Err(err("the damage run holds no results".into()));
         }
         let hash = ovd_format::results_hash(&results);
+        // A model that cannot be read is no reason to refuse the results: the 3D view then runs the search itself.
+        let model = serde_json::from_value::<ovd_format::VesselRun>(run["model"].clone())
+            .ok()
+            .map(Box::new);
         Ok(self.state.keep_damage(
             option,
             fingerprint,
-            ovd_shell::damage::End::Done(ovd_format::RunOutcome::Results { results, hash }),
+            ovd_shell::damage::End::Done(ovd_format::RunOutcome::Results { results, hash }, model),
         ))
     }
 
@@ -212,22 +217,17 @@ impl Session {
 
     /// The glTF binary of an Option's Vessel Model (issue #460): the bytes `ovd export --format gltf`
     /// writes.
-    pub fn export_gltf(&self, option: &str) -> Js<Vec<u8>> {
+    pub fn export_gltf(&mut self, option: &str) -> Js<Vec<u8>> {
         self.export_model(option, "gltf", "")
     }
 
     /// An export of an Option (issues #460, #461): `format` is `gltf`, `stl`, `obj` or
     /// `offsets-csv`; `below` is a loading condition's name for a clipped `stl` or `obj`, or empty.
-    /// The bytes `ovd export` writes.
-    pub fn export_model(&self, option: &str, format: &str, below: &str) -> Js<Vec<u8>> {
-        let design = self.state.session().design();
-        let found = design
-            .options
-            .iter()
-            .find(|o| o.name == option)
-            .ok_or_else(|| err(format!("no Option named '{option}'")))?;
-        let below = (!below.is_empty()).then_some(below);
-        ok(ovd_format::export::option_export(format, found, below))
+    /// The bytes `ovd export` writes, at the stage the page shows (issue #1041): the damage run's pick while one
+    /// matches the Option's inputs, else the unscreened model (`ovd export --no-damage`), which runs no damage. The screened stage works the
+    /// model out again on the page thread unless the 3D view already holds it (the glTF only).
+    pub fn export_model(&mut self, option: &str, format: &str, below: &str) -> Js<Vec<u8>> {
+        ok(self.state.export_model(option, format, below))
     }
 
     /// The mesh hash of an Option's Vessel Model (issue #456), as `ovd mesh --hash` prints it.

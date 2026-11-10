@@ -172,7 +172,7 @@ fn run_damage(app: AppHandle, option: String, state: State<Shared>) -> Result<()
         let (outcome, message) = match &end {
             End::Cancelled => ("cancelled", None),
             End::Failed(m) => ("failed", Some(m.clone())),
-            End::Done(_) => ("done", None),
+            End::Done(..) => ("done", None),
         };
         let kept = match app.state::<Shared>().lock() {
             Ok(mut guard) => guard.finish_damage(&job, end),

@@ -44,9 +44,9 @@ pub use profile::Profile;
 pub use run::{
     CONVOY_NOT_AVAILABLE, HashStatus, RunOption, RunOutcome, UNHASHED_KEYS, VesselRun, Waterline,
     canonical_json, hash_warning, mesh_hash, option_hull_table, option_meshes,
-    option_model_waterlines, option_vessel_model, option_vessel_run, results_hash, run_design,
-    run_design_with, run_design_with_damage, run_option, run_option_with, run_option_with_damage,
-    simulate_params_of, stamp, summary_lines,
+    option_model_waterlines, option_vessel_model, option_vessel_run, option_vessel_run_with_damage,
+    results_hash, run_design, run_design_with, run_design_with_damage, run_option, run_option_with,
+    run_option_with_damage, run_option_with_vessel, simulate_params_of, stamp, summary_lines,
 };
 pub use session::{
     DesignSession, Evaluation, Message, OpenReport, OptionEvaluation, Scope, Severity, input_schema,
