@@ -1,5 +1,5 @@
 <!-- unreleased -->
-- A typed `lock_length_m` or `lock_width_m` the Formation does not fit blocks the Design on every hull (issue #1043): `ovd` 3.4.0 adds `ovd/waterway/within-lock-length` and `ovd/waterway/within-lock-width`, one blocking Rule per Waterway Limit check, so the Rule Trace names the lock as the cause. `arrangement.feasible` is the search's answer about the tanks, and the lock rows carry the block. New Designs take `ovd` 3.4.0; a saved file keeps its version. No lock, or a lock that fits: no change.
+- A typed `lock_length_m` or `lock_width_m` the Formation does not fit blocks the Design on every hull (issue #1043): `ovd` 3.4.0 adds `ovd/waterway/within-lock-length` and `ovd/waterway/within-lock-width`, one blocking Rule per Waterway Limit check, so the Rule Trace names the lock as the cause. `arrangement.feasible` is the search's answer about the tanks, and the lock rows carry the block. New Designs take `ovd` 3.4.0; a saved file keeps its version, so a file saved at `ovd` 3.3.0 or older still passes its Rule Trace with a lock it does not fit (gas files included, which PR #1074's flag had caught): its lock check still fails in the checks list, and re-pinning the file to `ovd` 3.4.0 makes the lock rows block it. No lock, or a lock that fits: no change.
 
 <!-- design-impact -->
 ### ticket-1043-locks-all-hulls (2026-11-10)
