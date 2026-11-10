@@ -114,7 +114,8 @@ fn a_bulkhead_outside_the_band_warns_because_a_flooding_calculation_must_prove_i
     for typed in [0.03 * l, 0.04 * l + 2.5] {
         let r = river_110("deckhouse", json!({ "collision_bulkhead_m": typed }));
         let b = row(&r, BAND_ROW).unwrap();
-        assert_eq!(b["outcome"], json!("fail"), "{typed}: {b}");
+        // A failed warn row reports outcome "warn" (crates/arc-rules/src/eval.rs, `failed`).
+        assert_eq!(b["outcome"], json!("warn"), "{typed}: {b}");
         assert_eq!(b["consequence"], json!("warn"), "{typed}");
         // 0.03 L is the floor of the calculation route: the minimum row still passes there.
         assert_eq!(outcome(&r, MINIMUM_ROW), json!("pass"), "{typed}");
