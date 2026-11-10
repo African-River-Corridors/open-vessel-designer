@@ -5,7 +5,7 @@
     {
       "name": "A basis",
       "status": "results",
-      "results_hash": "63830cce3605a1268ff8d481abd4191459f28318bdf4b09a8e1c067ea2a32412",
+      "results_hash": "42707576dd68e5c2239ce1e2b7430eb94db17694ac6a3fed95e43cd9b83c6718",
       "hash_status": "matches",
       "screen_changes_pick": false,
       "results": {
@@ -279,6 +279,9 @@
           "stern_void_length_m": 20.492,
           "cargo_zone_length_m": 99.80799999999999,
           "bow_rake_length_m": 19.200000000000003,
+          "forward_perpendicular_x_m": 137.10399999999998,
+          "collision_bulkhead_from_fp_m": 5.6000000000000005,
+          "collision_bulkhead_x_m": 131.504,
           "tank_outer_diameter_m": 11.0,
           "n_tanks_wide": 2,
           "n_tanks_total": 4,
@@ -427,6 +430,12 @@
                 "name": "wheelhouse_fits_beam",
                 "ok": true,
                 "message": "wheelhouse 6.40 m wide on a 29.00 m beam",
+                "severity": "error"
+              },
+              {
+                "name": "house aft of collision bulkhead",
+                "ok": true,
+                "message": "house front 19.89 m forward of the stern, collision bulkhead plane at 131.50 m",
                 "severity": "error"
               },
               {
@@ -717,6 +726,12 @@
             "name": "wheelhouse fits beam",
             "ok": true,
             "message": "wheelhouse 6.40 m wide on a 29.00 m beam",
+            "severity": "error"
+          },
+          {
+            "name": "house aft of collision bulkhead",
+            "ok": true,
+            "message": "house front 19.89 m forward of the stern, collision bulkhead plane at 131.50 m",
             "severity": "error"
           },
           {
@@ -5331,6 +5346,19 @@
               }
             }
           },
+          "house front 19.89 m forward of the stern, collision bulkhead plane at 131.50 m": {
+            "id": "check-house-aft-of-collision-bulkhead",
+            "args": {
+              "front": {
+                "num": "19.89",
+                "value": 19.892
+              },
+              "plane": {
+                "num": "131.50",
+                "value": 131.504
+              }
+            }
+          },
           "2 x 40 ft units beside a 6.40 m wheelhouse need 14.88 m of 29.00 m beam": {
             "id": "check-accom-beside-wheelhouse",
             "args": {
@@ -6664,8 +6692,8 @@
           ],
           "service_area": "coastal-and-river",
           "warnings": [
-            "Rule Set igc-2g@2.0.0 is used as the file stores it; 4.1.0 is also built in with other content",
-            "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.1.0 is also built in with other content",
+            "Rule Set igc-2g@2.0.0 is used as the file stores it; 4.2.0 is also built in with other content",
+            "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.2.0 is also built in with other content",
             "Rule Set icll-freeboard@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set solas-v22@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set ovd@3.0.0 is used as the file stores it; 3.3.0 is also built in with other content"
@@ -11860,7 +11888,7 @@
     {
       "name": "B profile",
       "status": "results",
-      "results_hash": "23a2b26e238f97da639dacb621487640c2a6e08f67aff3a05235c1ff37298361",
+      "results_hash": "96f6d7b61ea90d6c0630d058deaec940fb878a5e463b524fca2bb7e97e331ffa",
       "hash_status": "matches",
       "screen_changes_pick": false,
       "results": {
@@ -12134,6 +12162,9 @@
           "stern_void_length_m": 20.092,
           "cargo_zone_length_m": 100.508,
           "bow_rake_length_m": 19.200000000000003,
+          "forward_perpendicular_x_m": 137.10399999999998,
+          "collision_bulkhead_from_fp_m": 5.6000000000000005,
+          "collision_bulkhead_x_m": 131.504,
           "tank_outer_diameter_m": 11.0,
           "n_tanks_wide": 2,
           "n_tanks_total": 4,
@@ -12282,6 +12313,12 @@
                 "name": "wheelhouse_fits_beam",
                 "ok": true,
                 "message": "wheelhouse 6.40 m wide on a 29.00 m beam",
+                "severity": "error"
+              },
+              {
+                "name": "house aft of collision bulkhead",
+                "ok": true,
+                "message": "house front 19.89 m forward of the stern, collision bulkhead plane at 131.50 m",
                 "severity": "error"
               },
               {
@@ -12572,6 +12609,12 @@
             "name": "wheelhouse fits beam",
             "ok": true,
             "message": "wheelhouse 6.40 m wide on a 29.00 m beam",
+            "severity": "error"
+          },
+          {
+            "name": "house aft of collision bulkhead",
+            "ok": true,
+            "message": "house front 19.89 m forward of the stern, collision bulkhead plane at 131.50 m",
             "severity": "error"
           },
           {
@@ -17186,6 +17229,19 @@
               }
             }
           },
+          "house front 19.89 m forward of the stern, collision bulkhead plane at 131.50 m": {
+            "id": "check-house-aft-of-collision-bulkhead",
+            "args": {
+              "front": {
+                "num": "19.89",
+                "value": 19.892
+              },
+              "plane": {
+                "num": "131.50",
+                "value": 131.504
+              }
+            }
+          },
           "2 x 40 ft units beside a 6.40 m wheelhouse need 14.88 m of 29.00 m beam": {
             "id": "check-accom-beside-wheelhouse",
             "args": {
@@ -18519,8 +18575,8 @@
           ],
           "service_area": "coastal-and-river",
           "warnings": [
-            "Rule Set igc-2g@2.0.0 is used as the file stores it; 4.1.0 is also built in with other content",
-            "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.1.0 is also built in with other content",
+            "Rule Set igc-2g@2.0.0 is used as the file stores it; 4.2.0 is also built in with other content",
+            "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.2.0 is also built in with other content",
             "Rule Set icll-freeboard@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set solas-v22@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set ovd@3.0.0 is used as the file stores it; 3.3.0 is also built in with other content"
@@ -23715,7 +23771,7 @@
     {
       "name": "C deep",
       "status": "results",
-      "results_hash": "561e72336a1ec0eef7109e7a880ed9e03790bc530ba1ef8af53a2a64594a660c",
+      "results_hash": "40209d365bb36bfb4a8e16390ea0511ff39005d2f8855f103ec2e1a446661b5f",
       "hash_status": "matches",
       "screen_changes_pick": false,
       "results": {
@@ -23989,6 +24045,9 @@
           "stern_void_length_m": 20.492,
           "cargo_zone_length_m": 93.488,
           "bow_rake_length_m": 25.52,
+          "forward_perpendicular_x_m": 137.104,
+          "collision_bulkhead_from_fp_m": 5.6000000000000005,
+          "collision_bulkhead_x_m": 131.50400000000002,
           "tank_outer_diameter_m": 12.0,
           "n_tanks_wide": 2,
           "n_tanks_total": 4,
@@ -24137,6 +24196,12 @@
                 "name": "wheelhouse_fits_beam",
                 "ok": true,
                 "message": "wheelhouse 6.40 m wide on a 29.00 m beam",
+                "severity": "error"
+              },
+              {
+                "name": "house aft of collision bulkhead",
+                "ok": true,
+                "message": "house front 19.89 m forward of the stern, collision bulkhead plane at 131.50 m",
                 "severity": "error"
               },
               {
@@ -24427,6 +24492,12 @@
             "name": "wheelhouse fits beam",
             "ok": true,
             "message": "wheelhouse 6.40 m wide on a 29.00 m beam",
+            "severity": "error"
+          },
+          {
+            "name": "house aft of collision bulkhead",
+            "ok": true,
+            "message": "house front 19.89 m forward of the stern, collision bulkhead plane at 131.50 m",
             "severity": "error"
           },
           {
@@ -29063,6 +29134,19 @@
               }
             }
           },
+          "house front 19.89 m forward of the stern, collision bulkhead plane at 131.50 m": {
+            "id": "check-house-aft-of-collision-bulkhead",
+            "args": {
+              "front": {
+                "num": "19.89",
+                "value": 19.892
+              },
+              "plane": {
+                "num": "131.50",
+                "value": 131.50400000000002
+              }
+            }
+          },
           "2 x 40 ft units beside a 6.40 m wheelhouse need 14.88 m of 29.00 m beam": {
             "id": "check-accom-beside-wheelhouse",
             "args": {
@@ -30396,8 +30480,8 @@
           ],
           "service_area": "coastal-and-river",
           "warnings": [
-            "Rule Set igc-2g@2.0.0 is used as the file stores it; 4.1.0 is also built in with other content",
-            "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.1.0 is also built in with other content",
+            "Rule Set igc-2g@2.0.0 is used as the file stores it; 4.2.0 is also built in with other content",
+            "Rule Set es-trin-2025@1.0.0 is used as the file stores it; 2.2.0 is also built in with other content",
             "Rule Set icll-freeboard@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set solas-v22@1.0.0 is used as the file stores it; 2.0.0 is also built in with other content",
             "Rule Set ovd@3.0.0 is used as the file stores it; 3.3.0 is also built in with other content"
