@@ -1505,18 +1505,22 @@ fn arrangement(inp: &BargeCapacityInputs, class: CargoClass) -> Result<Arrangeme
         CargoClass::LiquidBulk => (0.0, 0.0, None),
     };
 
-    // Issue #994: the forward house stands over the forepeak, the length of the bow rake. If the
-    // rake is too short for the house and the clear deck ahead of it, the house takes cargo length
+    // Issue #994: the forward house stands over the forepeak. Its footprint needs non-cargo length:
+    // the bow rake plus the forward separation. The clear deck ahead of it (about 3 m) lies on the
+    // deck over the raked bow and needs no length of its own (the maintainer's decision of
+    // 2026-11-10). The house stands as far forward as its clear deck allows, and no further aft
+    // than the cargo zone ends. If the footprint does not fit, the house takes cargo length
     // (D1 B), and the site says how much.
     let mut bow_void_m = rake + fwd_sep;
     if inp.self_propelled && aft_in.arrangement_style.is_wheelhouse_forward() {
         use crate::aft_arrangement::{ForwardHouseSite, forward_house_sizes as fh};
-        let needed = fh::LENGTH_M + fh::BOW_CLEAR_M;
-        let lost = (needed - rake).max(0.0);
-        bow_void_m = rake + lost + fwd_sep;
+        let lost = (fh::LENGTH_M - bow_void_m).max(0.0);
+        bow_void_m += lost;
+        // The clear deck is what the bow void leaves ahead of the house, up to its full length.
+        let clear = (bow_void_m - fh::LENGTH_M).clamp(0.0, fh::BOW_CLEAR_M);
         aft_in.forward_house_site = Some(ForwardHouseSite {
-            x_aft_m: inp.loa - fh::BOW_CLEAR_M - fh::LENGTH_M,
-            x_fwd_m: inp.loa - fh::BOW_CLEAR_M,
+            x_aft_m: inp.loa - clear - fh::LENGTH_M,
+            x_fwd_m: inp.loa - clear,
             cargo_length_lost_m: lost,
         });
     }
