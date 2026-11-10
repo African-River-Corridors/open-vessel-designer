@@ -1237,4 +1237,138 @@ describe("OVD web smoke tests", () => {
     await ready(b);
     assert.equal(await (await b.$("[data-testid=notice]")).isExisting(), false);
   });
+
+  // DONE-TEST #945 — do not edit in the build
+  it("keeps the Settings button where it is while the header text draws in, in each language (issue #945)", async () => {
+    const b = await start();
+    await b.url(`${origin}/ovd/app`);
+    await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
+    await (await b.$("button=I understand")).click();
+    await ready(b);
+    const box = () =>
+      b.execute(() => {
+        const s = document.querySelector("[data-testid=settings]").getBoundingClientRect();
+        // One header row: every visible child is centred on the same line as the Settings button.
+        const mid = (r) => (r.top + r.bottom) / 2;
+        const oneRow = [...document.querySelector("header").children]
+          .map((c) => c.getBoundingClientRect())
+          .filter((r) => r.width > 0 && r.height > 0)
+          .every((r) => Math.abs(mid(r) - mid(s)) < s.height / 2);
+        return { x: s.x, y: s.y, oneRow };
+      });
+    // The three header texts (file, Defaults Profile, engine version) draw in once the Design is loaded, and their
+    // length depends on the language and the file. None of that may move the Settings button or add a header row.
+    const setMeta = (texts) =>
+      b.execute((texts) => {
+        const metas = [...document.querySelectorAll("header .meta")];
+        metas.forEach((m, i) => (m.textContent = texts[i]));
+        return metas.length;
+      }, texts);
+    const name25 = "dry_bulk_box_hold.vdesign";
+    const long = "a_very_long_design_file_name_that_would_push_the_header_wide.vdesign";
+    for (const [tag, open] of [["en", "Open"], ["es", "Abrir"], ["pt", "Abrir"], ["zh-Hans", "打开"], ["ak", "Bue"]]) {
+      await inSettings(b, async () => (await b.$("[data-testid=language]")).selectByAttribute("value", tag));
+      await until(b, `the header in ${tag}`, async () => (await b.$(`button=${open}`)).isExisting());
+      await b.refresh();
+      await until(b, `the header in ${tag} after a reload`, async () => (await b.$(`button=${open}`)).isExisting());
+      const first = await box();
+      assert.equal(first.oneRow, true, `the header is one row at first paint (${tag})`);
+      await until(b, "the header texts", async () => (await b.$("[data-testid=engine-version]").getText()) !== "");
+      if (SHOTS) await (await b.$("header")).saveScreenshot(path.join(SHOTS, `945-header-${tag}.png`));
+      assert.deepEqual(await box(), first, `the Settings button moved when the header text drew in (${tag})`);
+      assert.equal(await setMeta(["", "", ""]), 3, "the three header texts are in the page");
+      assert.deepEqual(await box(), first, `the button moved with empty header text (${tag})`);
+      await setMeta([name25, "Defaults: River standard", "Engine 0.3.0"]);
+      assert.deepEqual(await box(), first, `the button moved with a 25-character file name (${tag})`);
+      await setMeta([long, long, long]);
+      assert.deepEqual(await box(), first, `the button moved with long header text (${tag})`);
+    }
+  });
+
+  /**
+   * The three header texts, as the native test and WebKit's WebDriver see them. `shown` is WebKit's rule
+   * (WebKit, Source/WebKit/UIProcess/Automation/atoms/utils.js, `isShown`): an element whose own computed
+   * `overflow` is `hidden` and whose children are only text counts as hidden by overflow, and its
+   * Get Element Text is the empty string, even when the text is drawn whole. The native smoke test reads
+   * the file name through that call (smoke.test.mjs `fileLabel`), so a hidden label fails every open there.
+   * `partly` is a text cut by its container's edge: in the container's box on one side and outside it on
+   * the other.
+   */
+  const headerTexts = (b) =>
+    b.execute(() => {
+      const metas = [...document.querySelectorAll("header .meta")];
+      const header = document.querySelector("header").getBoundingClientRect();
+      const box = metas[0].parentElement.getBoundingClientRect();
+      const inside = (r) => r.left >= box.left - 0.5 && r.right <= box.right + 0.5 && r.top >= box.top - 0.5 && r.bottom <= box.bottom + 0.5;
+      const outside = (r) => r.right <= box.left + 0.5 || r.left >= box.right - 0.5 || r.bottom <= box.top + 0.5 || r.top >= box.bottom - 0.5;
+      return metas.map((el) => {
+        const r = el.getBoundingClientRect();
+        const textOnly = [...el.childNodes].every((n) => n.nodeType === Node.TEXT_NODE);
+        return {
+          text: el.textContent,
+          width: Math.round(r.width),
+          cut: el.scrollWidth > el.clientWidth,
+          inHeader: r.right <= header.right + 0.5 && r.left >= header.left - 0.5,
+          shown: !(getComputedStyle(el).overflow === "hidden" && textOnly),
+          partly: !inside(r) && !outside(r),
+          inBox: inside(r),
+          boxWidth: Math.round(box.width),
+        };
+      });
+    });
+
+  // DONE-TEST #945 — do not edit in the build
+  it("shows a 25-character file name in full at 1280 px in each language, readable by WebKit's WebDriver, and never a cut profile or engine text (issue #945)", async () => {
+    const b = await start();
+    await b.url(`${origin}/ovd/app`);
+    await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
+    await (await b.$("button=I understand")).click();
+    await ready(b);
+    await openDesign(b, DRY_FIXTURE);
+    // 1280 px is the app's default window; the native tests run at it.
+    await b.setWindowSize(1280, 950);
+    for (const [tag, open] of [["en", "Open"], ["es", "Abrir"], ["pt", "Abrir"], ["zh-Hans", "打开"], ["ak", "Bue"]]) {
+      await inSettings(b, async () => (await b.$("[data-testid=language]")).selectByAttribute("value", tag));
+      await until(b, `the header in ${tag}`, async () => (await b.$(`button=${open}`)).isExisting());
+      const texts = await headerTexts(b);
+      assert.equal(texts.length, 3, `the three header texts are in the page (${tag})`);
+      const [file, profile, engine] = texts;
+      // The file label is the first header text (the native test reads it the same way, smoke.test.mjs `fileLabel`).
+      assert.equal(file.text, "dry_bulk_box_hold.vdesign", `the first header text is the file name (${tag})`);
+      assert.equal(file.cut, false, `the file name is cut at 1280 px (${tag}, ${file.width} px of ${file.boxWidth}): ${JSON.stringify(texts)}`);
+      assert.equal(file.inHeader, true, `the file label runs outside the header (${tag}): ${JSON.stringify(file)}`);
+      for (const t of texts) assert.equal(t.shown, true, `WebKit's WebDriver would read no text from this header text (${tag}): ${JSON.stringify(t)}`);
+      // The Defaults Profile and the engine version are whole or absent, never a stub.
+      for (const t of [profile, engine]) {
+        assert.equal(t.cut, false, `a header text is cut to a stub (${tag}): ${JSON.stringify(t)}`);
+        assert.equal(t.partly, false, `a header text is partly shown (${tag}): ${JSON.stringify(t)}`);
+      }
+    }
+    await inSettings(b, async () => (await b.$("[data-testid=language]")).selectByAttribute("value", "en"));
+    await until(b, "the header in English", async () => (await b.$("button=Open")).isExisting());
+    assert.equal(await (await b.$("header .meta")).getText(), "dry_bulk_box_hold.vdesign", "the file name reads in full");
+  });
+
+  // DONE-TEST #945 — do not edit in the build
+  it("cuts a long file name with an ellipsis and keeps the profile and engine texts whole or drops them (issue #945)", async () => {
+    const b = await start();
+    await b.url(`${origin}/ovd/app`);
+    await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
+    await (await b.$("button=I understand")).click();
+    await ready(b);
+    await openDesign(b, DRY_FIXTURE);
+    await b.setWindowSize(1280, 950);
+    const long = "a_very_long_design_file_name_that_would_push_the_header_wide.vdesign";
+    await b.execute((long) => (document.querySelector("header .meta").textContent = long), long);
+    const [file, profile, engine] = await headerTexts(b);
+    // The long name takes the room the texts have, and is cut there, with the full name still in the page.
+    assert.equal(file.cut, true, `a 68-character name is not cut at 1280 px: ${JSON.stringify(file)}`);
+    assert.equal(file.inBox, true, `the cut file label is not inside the texts' box: ${JSON.stringify(file)}`);
+    assert.ok(file.width >= 0.9 * file.boxWidth, `the file label does not take the room there is (${file.width} of ${file.boxWidth} px)`);
+    assert.equal(await (await b.$("header .meta")).getText(), long, "the whole name is in the label for the tooltip and the tests");
+    for (const t of [profile, engine]) {
+      assert.equal(t.cut, false, `a header text is cut to a stub beside a long name: ${JSON.stringify(t)}`);
+      assert.equal(t.partly, false, `a header text is partly shown beside a long name: ${JSON.stringify(t)}`);
+    }
+  });
 });

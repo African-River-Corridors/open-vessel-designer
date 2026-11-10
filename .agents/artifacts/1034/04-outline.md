@@ -42,14 +42,34 @@ Result: no new river-only Option runs without an answer for both limits.
 
 ## Phase 3: the climb share rule
 
-Files: `crates/ovd-core/src/gas_arrangement.rs` (`fit_with`, `share_stage_one`, `share_better`; a `SHARE_CLIMB_MIN_GAIN` of 1 %), `crates/ovd-format/src/simulate.rs` (summary line), `run.rs` (`summary_lines`), `builtin_profile.json` (the `tank_top_above_deck_od_fraction` basis), a `changes/` note.
-- Fails today: the 100 x 20 m river-only LNG barge with draught limit 4.5 m and air-draft limit 9.1 m picks share 0.375, 2 x 2 tanks of 6.6 m, about 1,559 t (today: share 0.5, 1,328 t). Label: snapshot.
-- Fails today: with high limits that do not bind (a number, not "no limit") the same barge stays at share 0.375, 2,351 t: the climb stops when the cargo falls at 0.25. Label: snapshot. (Re-measure: the figure came from the run with no limits.)
-- Fails today: a gain under 1 % does not move the share (the 110 x 11.4 m tanker, with high limits that do not bind: 0.375, not a deeper share with the same 1,461 t). Label: rule.
-- Test: a coastal-and-river Option with a typed share keeps one damage budget of 24 runs over every share the climb visits (extend `damage_budget.rs`).
-- Mutation proof: with the climb step forced to 0 (tallest that passes), the first test fails.
-- Re-pins: river-only designs whose answer moves, every one named through `tools/design_impact.py changelog`. No Rule Set data changes.
-- PR body: the timing table of design D3 re-measured on the merged tree.
+Files: `crates/ovd-core/src/gas_arrangement.rs` (`fit_with`, `share_stage_one`, `share_better`; a public `SHARE_CLIMB_MIN_GAIN` of 1 % and the step rule `climb_continues(from_t, to_t)`), `crates/ovd-format/src/simulate.rs` (`arrangement.share_climb_from`, only when the climb moved the share), `run.rs` (`summary_lines`: the rule, and the share the climb left with its cargo), `builtin_profile.json` (the `tank_top_above_deck_od_fraction` basis), a `changes/` note.
+
+Re-measured 2026-11-10 on the Phase 2 branch (PR #1055, `206ba491`, release build; each share typed as a limit, `ovd run --json`). No figure moved against the design note (D2) or research section 5. Phase 2 made both limits required, so "high limits that do not bind" are now numbers: 3.5 m draught and 40 m air draft, what the Phase 2 tests use. With them the 100 x 20 m barge gives the same answer as the old "no limits" run (0.375, 2,350.73 t).
+
+| Case | Share | Tanks | Depth (m) | Cargo (t) | Base today | Climb |
+|---|---|---|---|---|---|---|
+| 100 x 20 m river LNG, 4.5 / 9.1 m | 0.5 | 2 x 2 x 6.1 m | 4.80 | 1,328.13 | **picks** | start |
+| | 0.375 | 2 x 2 x 6.6 m | 5.22 | 1,558.95 | | **picks** (+17 %) |
+| | 0.25 | 2 x 2 x 6.6 m | 6.05 | 1,526.83 | | falls: stop |
+| 100 x 20 m, 3.5 / 40 m | 0.5 | fails intact | | | | |
+| | 0.375 | 2 x 2 x 8.1 m | 6.16 | 2,350.73 | **picks** | **picks** |
+| | 0.25 | 2 x 2 x 8.1 m | 7.18 | 2,345.42 | | falls: stop |
+| | 0.125 | 1 x 2 x 13.0 m | 12.48 | 3,054.99 | | never reached (air draft 15.6 m) |
+| 110 x 11.4 m river LNG, 3.5 / 40 m | 0.5 | 1 x 2 x 7.6 m | 4.90 | 1,163.05 | **picks** | start |
+| | 0.375 | 1 x 2 x 8.6 m | 6.48 | 1,461.09 | | **picks** (+26 %) |
+| | 0.25, 0.125 | 1 x 2 x 8.6 m | 7.55, 8.63 | 1,461.09 | | gain 0 %: stop |
+| 110 x 11.4 m, 4.5 / 9.1 m | 0.5 | 1 x 2 x 6.6 m | 4.80 | 861.97 | **picks** | **picks** |
+| | 0.375 | 1 x 2 x 6.6 m | 5.22 | 853.70 | | falls: stop |
+
+The done-tests are committed on the branch (`ticket/1034-p3-climb`), each headed `// DONE-TEST #1034 P3 — do not edit in the build`:
+- Fails today (`crates/ovd-format/tests/share_climb.rs`): the 100 x 20 m barge at 4.5 / 9.1 m picks share 0.375, 2 x 2 x 6.6 m, 5.22 m deep, 1,558.95 t (today: 0.5, 1,328.13 t), and the summary line reads "the most cargo within the limits" and "0.500 carries 1328.1 t". Label: snapshot.
+- Fails today (same file): the 110 x 11.4 m tanker at 3.5 / 40 m picks 0.375, 1,461.09 t (today: 0.5, 1,163.05 t); the lower shares carry the same cargo on a deeper hull, a gain under 1 %. Label: rule, on a snapshot.
+- Guard, passes today but for the summary line (same file): the 100 x 20 m barge at 3.5 / 40 m stays at 0.375, 2,350.73 t; the climb stops when the cargo falls at 0.25 and never reaches the 12.5 m hull at 0.125. "Most cargo over every share" would take that hull. Label: snapshot.
+- Fails today, does not compile (`crates/ovd-core/tests/share_climb.rs`): `SHARE_CLIMB_MIN_GAIN == 0.01`; `climb_continues` goes on at a gain over 1 % and stops at a smaller gain, a tie or a fall. Label: property.
+- Test (`crates/ovd-format/tests/damage_budget.rs`, extended): the coastal-and-river 100 x 20 m barge with a typed share of 0.5 and two along keeps one damage budget of 24 runs over every share the climb visits, and one count that never falls.
+- Mutation proof: with the climb step forced to 0 (tallest that passes), the first test fails; with `climb_continues` always true (most cargo over every share), the third test fails.
+- Re-pins: river-only designs whose answer moves, every one named through `tools/design_impact.py changelog`; the share-searched fixtures and examples through `tools/check_fixture_hashes.py` (`gas_adn_river_two_wide`, `gas_deckhouse_self_propelled`, `gas_igc_2g_exact`, `gas_igc_2g_self_propelled`, the 140 x 29 m sensitivities example). No Rule Set data changes.
+- PR body: the timing table of design D3 re-measured on the merged tree (CPU seconds; the base figures of 2026-11-10 are in the build brief).
 Result: river-only designs carry the most cargo within the limits.
 
 ## Follow-up issues (no code here)
