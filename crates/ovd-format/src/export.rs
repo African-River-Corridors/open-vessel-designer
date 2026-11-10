@@ -230,9 +230,12 @@ pub fn gltf_glb(mesh: &Mesh) -> Vec<u8> {
     out
 }
 
-/// The `.glb` of an Option's Vessel Model.
-pub fn option_glb(option: &crate::DesignOption) -> Result<Vec<u8>, String> {
-    crate::option_meshes(option).map(|m| gltf_glb(&m))
+/// The `.glb` of an Option's Vessel Model, at the stage `damage` gives (issue #1041).
+pub fn option_glb(
+    option: &crate::DesignOption,
+    damage: &crate::damage::DamageControl,
+) -> Result<Vec<u8>, String> {
+    crate::option_vessel_run_with_damage(option, damage).map(|run| gltf_glb(&run.meshes()))
 }
 
 /// The SHA-256 of `bytes`, as hex: what the parity check compares between native and WebAssembly.
@@ -373,12 +376,13 @@ pub fn obj_text(mesh: &Mesh) -> String {
 }
 
 /// The closed hull mesh of an Option to the deck, or with `below` (a loading condition's name) the
-/// part under that condition's waterline with the lid.
+/// part under that condition's waterline with the lid; at the stage `damage` gives (issue #1041).
 pub fn option_panel_mesh(
     option: &crate::DesignOption,
     below: Option<&str>,
+    damage: &crate::damage::DamageControl,
 ) -> Result<Mesh, String> {
-    let (model, waterlines) = crate::option_model_waterlines(option)?;
+    let (model, waterlines) = crate::option_model_waterlines(option, damage)?;
     let hull = weld_f32(&ovd_core::mesh::hull_mesh(&model.hull));
     let Some(name) = below else {
         return Ok(hull);
@@ -415,19 +419,52 @@ pub fn option_steel_csv(option: &crate::DesignOption) -> Result<String, String> 
 pub const FORMATS: [&str; 5] = ["gltf", "stl", "obj", "offsets-csv", "steel-csv"];
 
 /// The bytes of an Option's export in `format` (one of [`FORMATS`]). `below` (a loading condition's
-/// name) clips an `stl` or `obj` at that waterline; it is an error for the others.
+/// name) clips an `stl` or `obj` at that waterline; it is an error for the others. Damage runs, as in
+/// `run_option`, so the model is the arrangement the results report (issue #1041).
 pub fn option_export(
     format: &str,
     option: &crate::DesignOption,
     below: Option<&str>,
 ) -> Result<Vec<u8>, String> {
+    option_export_with_damage(
+        format,
+        option,
+        below,
+        &crate::damage::DamageControl::default(),
+    )
+}
+
+/// [`option_export`] at the stage `damage` gives (issue #1041): with damage run, the arrangement the damage screen
+/// chose, as the results report it.
+pub fn option_export_with_damage(
+    format: &str,
+    option: &crate::DesignOption,
+    below: Option<&str>,
+    damage: &crate::damage::DamageControl,
+) -> Result<Vec<u8>, String> {
     if below.is_some() && !matches!(format, "stl" | "obj") {
         return Err("--below clips a mesh: use it with --format stl or obj".to_string());
     }
+    // An STL or OBJ with no `--below` is the hull alone. The damage screen picks tanks, not the hull, unless the
+    // depth can follow the pick: an optimised depth, or one that is not typed (it follows the tank, issue #992).
+    // Only when the hull is the same at both stages is the search skipped.
+    let depth_typed = option
+        .input("moulded_depth_m")
+        .is_some_and(|i| i.source == crate::vdesign::Source::Typed);
+    let optimised = option
+        .input("optimise_depth")
+        .is_some_and(|i| i.value.as_bool() == Some(true));
+    let hull_alone =
+        matches!(format, "stl" | "obj") && below.is_none() && depth_typed && !optimised;
+    let skipped = crate::damage::DamageControl {
+        run: false,
+        progress: None,
+    };
+    let damage = if hull_alone { &skipped } else { damage };
     match format {
-        "gltf" => option_glb(option),
-        "stl" => option_panel_mesh(option, below).map(|m| stl_binary(&m)),
-        "obj" => option_panel_mesh(option, below).map(|m| obj_text(&m).into_bytes()),
+        "gltf" => option_glb(option, damage),
+        "stl" => option_panel_mesh(option, below, damage).map(|m| stl_binary(&m)),
+        "obj" => option_panel_mesh(option, below, damage).map(|m| obj_text(&m).into_bytes()),
         "offsets-csv" => option_offsets_csv(option).map(String::into_bytes),
         // Issue #742: the plate model's steel list.
         "steel-csv" => option_steel_csv(option).map(String::into_bytes),

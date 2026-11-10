@@ -29,6 +29,7 @@ use libm::{cos, fabs, sin, sqrt};
 /// `(0, z_keel)`, round the bottom and the side to the deck edge, and across the deck to the centre
 /// line `(0, z_deck)`. Points are `(y, z)` in metres.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Section {
     /// Station, m from the aft end.
     pub x: f64,
@@ -40,6 +41,7 @@ pub struct Section {
 /// The master hull geometry: Sections in ascending x, with the same point count on each, so point
 /// `i` of every Section lies on one longitudinal line. Two Sections may share an x (a step).
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SectionsTable {
     pub sections: Vec<Section>,
     /// Deck edge height per Section (the sheer), for the freeboard.
@@ -48,6 +50,7 @@ pub struct SectionsTable {
 
 /// Why a Sections Table is refused, or why an upright cut has no answer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SectionsError {
     /// Fewer than two Sections.
     TooFewSections { count: usize },
@@ -274,6 +277,7 @@ fn crosses_itself(pts: &[(f64, f64)]) -> bool {
 /// axes `k = (−sin θ, −sin φ cos θ, cos φ cos θ)`. A point is immersed when `p · k < c`. Upright and
 /// level, `c` is the draught.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Waterplane {
     /// Heel φ, degrees, positive to starboard.
     pub heel_deg: f64,
@@ -308,6 +312,7 @@ fn radians(deg: f64) -> f64 {
 /// What one cut of the hull by a waterplane gives. Lengths in m, areas in m², volume in m³, second
 /// moments in m⁴. Centroids are in hull axes. When nothing is immersed, every centroid is 0.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Immersed {
     /// Immersed volume ∇.
     pub volume_m3: f64,
@@ -337,6 +342,7 @@ pub struct Immersed {
 
 /// The upright hydrostatics at one draught, level. MCT uses KG = KB, the usual first estimate.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Upright {
     pub draught_m: f64,
     pub immersed: Immersed,
@@ -899,6 +905,7 @@ pub const TRIM_LIMIT_DEG: f64 = 10.0;
 
 /// The centre of gravity of the loaded hull: x (LCG), y (TCG) and z (KG), m in hull axes.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Gravity {
     pub lcg_m: f64,
     pub tcg_m: f64,
@@ -907,6 +914,7 @@ pub struct Gravity {
 
 /// The floating position at one heel: the height of the waterplane, the trim, and the cut there.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Equilibrium {
     pub waterplane: Waterplane,
     pub immersed: Immersed,
@@ -1263,6 +1271,7 @@ pub(crate) fn less_free_surface(
 /// An opening through which the hull may flood, as a point in hull axes: x from the aft end, y
 /// across from the centre line (either side), z above the base line (m).
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct OpeningPoint {
     pub x_m: f64,
     pub y_m: f64,

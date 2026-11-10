@@ -20,6 +20,7 @@ use crate::tanks::{TankHead, TankLayout};
 
 /// What a Space holds. The liquid bulk module adds the cargo kinds (#330).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SpaceKind {
     /// A double-bottom water ballast tank.
     DoubleBottomBallast,
@@ -95,6 +96,7 @@ impl SpaceKind {
 
 /// The side of the centre line a Space lies on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Side {
     Port,
     Starboard,
@@ -129,6 +131,7 @@ impl Side {
 
 /// The shape of a Space (ADR 0021): a prism, or a Type C cargo tank.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SpaceShape {
     /// The cross-section, (y, z) corners in order, a simple polygon, swept from `x_aft` to `x_fwd`.
     Prism { section: Vec<(f64, f64)> },
@@ -153,6 +156,7 @@ pub enum SpaceShape {
 
 /// One compartment: a prism or a tank (`shape`) from `x_aft` to `x_fwd`.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Space {
     /// A short name, the same in every language: "DB1P", "WB1S", "CT1C".
     pub name: String,
@@ -167,6 +171,7 @@ pub struct Space {
 /// #455): the prism less what lies outside the hull. A Space wholly inside the hull keeps its prism
 /// values exactly, and its fills are the prism's.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ClippedSpace {
     pub space: Space,
     pub volume_m3: f64,
@@ -179,6 +184,7 @@ pub struct ClippedSpace {
 /// One interval of the hull over the Space's length: the half-sections at its two ends, with the
 /// part of the Space's length it covers.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 struct HullPiece {
     x0: f64,
     x1: f64,
@@ -609,6 +615,7 @@ fn integrate(p: &HullPiece, clipper: &[(f64, f64)], surface: Option<(f64, &[(f64
 }
 /// The liquid in a Space at one fill.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Fill {
     /// The fraction of the Space's volume that is full, 0 to 1.
     pub fraction: f64,

@@ -1502,3 +1502,59 @@ fn new_takes_the_two_river_limits_as_typed_numbers() {
         stderr(&alone)
     );
 }
+
+/// Issue #1041: `ovd export --no-damage` gives the unscreened stage of the model, built as the app's first evaluation
+/// builds it; plain `ovd export` runs damage and shows the screened pick. (It is not main's export: the model's
+/// waterlines moved, see `changes/ticket-1041-model-stage.md`.) Label: snapshot (the 140 x 29 x 12 m
+/// coastal LNG reference design of `ovd-format/tests/vessel_stage.rs`).
+#[test]
+fn export_no_damage_is_the_unscreened_model() {
+    let dir = temp_dir("export-no-damage");
+    let file = serde_json::json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": {
+            "cargo": { "value": "LNG", "source": "typed" },
+            "hull_form": { "value": "raked_box", "source": "typed" },
+            "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+            "length_overall_m": { "value": 140.0, "source": "typed" },
+            "beam_m": { "value": 29.0, "source": "typed" },
+            "moulded_depth_m": { "value": 12.0, "source": "typed" },
+            "service_area": { "value": "coastal-and-river", "source": "typed" },
+            "loading_conditions": { "value": "is_code_2008", "source": "typed" }
+        } }]
+    });
+    let raw = dir.join("raw.vdesign");
+    std::fs::write(&raw, file.to_string()).unwrap();
+    let design = dir.join("gas.vdesign");
+    let filled = ovd(&[
+        "fill",
+        "--as-new",
+        raw.to_str().unwrap(),
+        design.to_str().unwrap(),
+    ]);
+    assert!(filled.status.success(), "{}", stderr(&filled));
+    let path = design.to_str().unwrap();
+    let hash = |extra: &[&str]| {
+        let mut args = vec!["export", "--format", "gltf", "--hash"];
+        args.extend_from_slice(extra);
+        args.push(path);
+        let out = ovd(&args);
+        assert!(out.status.success(), "{}", stderr(&out));
+        stdout(&out)
+    };
+    // Main's export: the glTF of the unscreened model.
+    let text = std::fs::read_to_string(&design).unwrap();
+    let option = ovd_format::check(&text, &ovd_format::Profile::built_in())
+        .design
+        .unwrap()
+        .options
+        .remove(0);
+    let old = ovd_format::export::gltf_glb(&ovd_format::option_meshes(&option).unwrap());
+    let want = format!("Option 1\t{}\n", ovd_format::export::bytes_hash(&old));
+    assert_eq!(hash(&["--no-damage"]), want);
+    assert_ne!(
+        hash(&[]),
+        want,
+        "with damage on, the model is the screened pick"
+    );
+}

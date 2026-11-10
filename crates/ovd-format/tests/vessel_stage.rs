@@ -1,0 +1,161 @@
+//! Seam: the Vessel Model, the meshes and the exports follow the stage of the results (issue #1041). A run with
+//! damage screens the arrangement (issue #935), so the model and `ovd export` show the screened pick; a run that
+//! skips damage shows the unscreened one, as the app's first evaluation does.
+//!
+//! Label: snapshot - the 140 x 29 x 12 m coastal LNG reference design of `damage_tanks_along.rs`: unscreened 2 x 2
+//! (13.28 m), screened 2 x 3 (13.38 m). Provisional until #1009 lands, as there.
+
+use ovd_format::damage::DamageControl;
+use ovd_format::export::{bytes_hash, option_export, option_export_with_damage};
+use ovd_format::{
+    DesignOption, Profile, RunOutcome, VesselRun, fill_as_new, option_vessel_run,
+    option_vessel_run_with_damage, run_option_with_damage,
+};
+use serde_json::{Value, json};
+
+fn reference() -> DesignOption {
+    with_depth(Some(12.0))
+}
+
+/// The reference design with the depth typed, or left out (`None`) so it follows the tank (issue #992).
+fn with_depth(depth: Option<f64>) -> DesignOption {
+    let mut inputs = json!({
+        "cargo": { "value": "LNG", "source": "typed" },
+        "hull_form": { "value": "raked_box", "source": "typed" },
+        "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+        "length_overall_m": { "value": 140.0, "source": "typed" },
+        "beam_m": { "value": 29.0, "source": "typed" },
+        "service_area": { "value": "coastal-and-river", "source": "typed" },
+        "loading_conditions": { "value": "is_code_2008", "source": "typed" }
+    });
+    if let Some(d) = depth {
+        inputs["moulded_depth_m"] = json!({ "value": d, "source": "typed" });
+    }
+    let file = json!({
+        "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+        "options": [{ "name": "Option 1", "inputs": inputs }]
+    });
+    let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+    filled.design.unwrap().options.remove(0)
+}
+
+fn damage(run: bool) -> DamageControl {
+    DamageControl {
+        run,
+        progress: None,
+    }
+}
+
+fn results(option: &DesignOption, run: bool) -> Value {
+    match run_option_with_damage(option, ovd_format::rule_set::built_in(), &[], &damage(run)) {
+        RunOutcome::Results { results, .. } => results,
+        other => panic!("{other:?}"),
+    }
+}
+
+/// The tanks of a model: (number, outer diameter in m).
+fn tanks(run: &VesselRun) -> (usize, f64) {
+    let layout = run.model.tank_layout.as_ref().expect("a Tank Layout");
+    (layout.tanks.len(), layout.outer_diameter_m)
+}
+
+/// Each stage's model holds that stage's tanks: the screened run's 2 x 3, the unscreened run's 2 x 2.
+#[test]
+fn the_model_holds_the_tanks_of_its_stage() {
+    let option = reference();
+    let mut found = Vec::new();
+    for run in [true, false] {
+        let r = results(&option, run);
+        let want_n = (r["arrangement"]["n_wide"].as_i64().unwrap()
+            * r["arrangement"]["n_long"].as_i64().unwrap()) as usize;
+        let want_od = r["arrangement"]["tank_od_m"].as_f64().unwrap();
+        let (n, od) = tanks(&option_vessel_run_with_damage(&option, &damage(run)).unwrap());
+        assert_eq!(n, want_n, "damage run: {run}");
+        assert!(
+            (od - want_od).abs() < 1e-9,
+            "damage run {run}: {od} against {want_od}"
+        );
+        found.push((n, od));
+    }
+    // The two stages differ on this design, so the test can tell them apart.
+    assert_eq!((found[0].0, found[1].0), (6, 4));
+    // `option_vessel_run` is the unscreened stage, the app's first evaluation.
+    assert_eq!(tanks(&option_vessel_run(&option).unwrap()), found[1]);
+}
+
+/// `ovd export` runs damage, as `ovd run` and `ovd draw` do: its glTF is the screened model's. (The OBJ is the
+/// hull alone, which on this design's typed depth is the same at both stages.)
+#[test]
+fn the_export_is_the_screened_model() {
+    let option = reference();
+    let screened = option_export("gltf", &option, None).unwrap();
+    let unscreened = option_export_with_damage("gltf", &option, None, &damage(false)).unwrap();
+    assert_ne!(bytes_hash(&screened), bytes_hash(&unscreened));
+    // The glTF names its tank nodes: three rows along.
+    let has = |name: &str| screened.windows(name.len()).any(|w| w == name.as_bytes());
+    assert!(
+        has("CT3P") && has("CT3S") && !has("CT4P"),
+        "three tanks along"
+    );
+}
+
+/// Whether an export at the damage-on stage worked any damage case out: the progress hook is called when it does.
+fn export_searched(option: &DesignOption, format: &str, below: Option<&str>) -> bool {
+    let calls = std::rc::Rc::new(std::cell::Cell::new(0usize));
+    let seen = calls.clone();
+    let control = DamageControl {
+        run: true,
+        progress: Some(std::rc::Rc::new(move |_| {
+            seen.set(seen.get() + 1);
+            std::ops::ControlFlow::Continue(())
+        })),
+    };
+    option_export_with_damage(format, option, below, &control).unwrap();
+    calls.get() > 0
+}
+
+/// An STL or OBJ with no `--below` is the hull alone, the same at both stages, so it skips the damage search; a glTF
+/// and a clipped mesh (which reads the waterlines) still run it. Label: regression (the screened export searched
+/// for a hull it did not use: OBJ 22 s native on the reference design).
+#[test]
+fn a_hull_alone_export_skips_the_damage_search() {
+    let option = reference();
+    for format in ["stl", "obj"] {
+        let hull = option_export_with_damage(format, &option, None, &damage(true)).unwrap();
+        assert_eq!(
+            bytes_hash(&hull),
+            bytes_hash(&option_export_with_damage(format, &option, None, &damage(false)).unwrap()),
+            "{format}: the hull is the same at both stages"
+        );
+        assert!(!export_searched(&option, format, None), "{format} searched");
+    }
+    assert!(
+        export_searched(&option, "gltf", None),
+        "the glTF skipped the search"
+    );
+    assert!(
+        export_searched(&option, "obj", Some("Full load, departure")),
+        "a clipped OBJ skipped the search"
+    );
+}
+
+/// Issue #1041: when the depth follows the tank, the hull differs between the stages, so an STL or OBJ with no
+/// `--below` is the screened hull, at the depth the results report. Label: regression (the skip exported the
+/// unscreened 12.884 m hull against 12.986 m in the results).
+#[test]
+fn a_hull_export_follows_a_depth_that_follows_the_tank() {
+    let option = with_depth(None);
+    let depth_of = |run: bool| results(&option, run)["dims"]["depth_m"].as_f64().unwrap();
+    let (want, unscreened) = (depth_of(true), depth_of(false));
+    assert!(
+        want > unscreened + 0.05,
+        "the stages differ: {want} against {unscreened}"
+    );
+    // The same hull, typed at the results' depth.
+    let typed = with_depth(Some(want));
+    for format in ["stl", "obj"] {
+        let hull = option_export_with_damage(format, &option, None, &damage(true)).unwrap();
+        let want_hull = option_export_with_damage(format, &typed, None, &damage(false)).unwrap();
+        assert_eq!(bytes_hash(&hull), bytes_hash(&want_hull), "{format}");
+    }
+}

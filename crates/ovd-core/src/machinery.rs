@@ -785,7 +785,7 @@ pub fn drive_unit_positions(propulsor: PropulsorType, drive_lcg_m: f64, d: f64) 
 
 /// A shaft line from the aft peak forward, on the shaft axis.
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ShaftPlace {
     pub x_aft_m: f64,
     pub length_m: f64,
@@ -831,7 +831,7 @@ pub fn bow_thruster_position(inp: &MachineryInputs) -> Place {
 
 /// A nozzle round a propeller disc.
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Nozzle {
     pub inner_diameter_m: f64,
     pub outer_diameter_m: f64,
@@ -840,7 +840,7 @@ pub struct Nozzle {
 
 /// The leg and pod of an azimuth unit: the leg from the pod up to `leg_top_z_m`.
 #[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AzimuthLeg {
     pub leg_top_z_m: f64,
     pub leg_chord_m: f64,
@@ -869,7 +869,7 @@ pub struct PropulsorPart {
 
 /// One rudder blade: its centre, span (vertical), chord (fore and aft) and thickness.
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RudderPart {
     pub x_m: f64,
     pub y_m: f64,
@@ -883,7 +883,7 @@ pub struct RudderPart {
 
 /// The bow thruster: a tunnel across the hull on its axis.
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct BowThrusterPart {
     pub x_m: f64,
     pub z_m: f64,
@@ -893,6 +893,75 @@ pub struct BowThrusterPart {
     pub power_kw: f64,
     pub lcg_m: f64,
     pub kcg_m: f64,
+}
+
+/// A key read back into the `&'static str` a layout holds (issue #1041: a damage run's Vessel Model
+/// crosses from a worker to the page as JSON): a Propulsor type or a mass item. The keys are few and
+/// short, so the text is leaked once per read rather than looked up.
+#[cfg(feature = "serde")]
+fn static_key(key: String) -> &'static str {
+    alloc::boxed::Box::leak(key.into_boxed_str())
+}
+
+/// [`PropulsorPart`] as JSON gives it back: the same fields, the key as owned text.
+#[cfg(feature = "serde")]
+#[derive(serde::Deserialize)]
+struct PropulsorPartWire {
+    x_m: f64,
+    y_m: f64,
+    z_m: f64,
+    mass_item: String,
+    lcg_m: f64,
+    kcg_m: f64,
+    nozzle: Option<Nozzle>,
+    azimuth: Option<AzimuthLeg>,
+    shaft: Option<ShaftPlace>,
+}
+
+/// [`PropulsorLayout`] as JSON gives it back (its `warnings` are not carried).
+#[cfg(feature = "serde")]
+#[derive(serde::Deserialize)]
+struct PropulsorLayoutWire {
+    propulsor_type: String,
+    diameter_m: f64,
+    axis_z_m: f64,
+    ducted: bool,
+    unit_power_kw: Option<f64>,
+    propulsors: Vec<PropulsorPartWire>,
+    rudders: Vec<RudderPart>,
+    bow_thruster: Option<BowThrusterPart>,
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for PropulsorLayout {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let w = <PropulsorLayoutWire as serde::Deserialize>::deserialize(d)?;
+        Ok(PropulsorLayout {
+            propulsor_type: static_key(w.propulsor_type),
+            diameter_m: w.diameter_m,
+            axis_z_m: w.axis_z_m,
+            ducted: w.ducted,
+            unit_power_kw: w.unit_power_kw,
+            propulsors: w
+                .propulsors
+                .into_iter()
+                .map(|p| PropulsorPart {
+                    x_m: p.x_m,
+                    y_m: p.y_m,
+                    z_m: p.z_m,
+                    mass_item: static_key(p.mass_item),
+                    lcg_m: p.lcg_m,
+                    kcg_m: p.kcg_m,
+                    nozzle: p.nozzle,
+                    azimuth: p.azimuth,
+                    shaft: p.shaft,
+                })
+                .collect(),
+            rudders: w.rudders,
+            bow_thruster: w.bow_thruster,
+            warnings: Vec::new(),
+        })
+    }
 }
 
 /// The Propulsor Layout (spec 0009): the place and size of each propulsor, nozzle, rudder and bow
