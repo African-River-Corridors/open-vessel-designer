@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { OptionEvaluation, Schema, Snapshot } from "./api";
   import InputField from "./InputField.svelte";
+  import { isShown } from "./inputsShown";
   import VesselClass from "./VesselClass.svelte";
   import { schemaText, t } from "./i18n.svelte";
 
@@ -30,9 +31,9 @@
     (schema?.groups ?? []).map((g) => ({
       name: g,
       inputs: (schema?.inputs ?? []).filter(
-        // Issue #925: a required choice the Option does not hold yet (the Service Area, which has no
-        // default) is drawn with nothing chosen, so the designer is asked for it.
-        (i) => i.group === g && (option?.inputs[i.name] !== undefined || (i.required && i.kind === "choice"))
+        // Issues #925, #1034: a required choice or a river-only limit the Option does not hold yet is
+        // drawn empty, so the designer is asked for it. See isShown.
+        (i) => i.group === g && isShown(i, option?.inputs ?? {}, riverOnly)
           && i.kind !== "vessel_scheme" && i.kind !== "vessel_class", // drawn by VesselClass
       ),
     })).filter((g) => g.inputs.length > 0 || g.name === VESSEL_CLASS_GROUP),

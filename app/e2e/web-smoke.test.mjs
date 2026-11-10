@@ -67,6 +67,9 @@ async function ready(b) {
     for (const [name, text] of [["draught_limit_m", "12"], ["air_draft_limit_m", "40"]]) {
       const box = b.$(`.field[data-input="${name}"] input[type=text]`);
       await box.waitForExist({ timeout: 15000, timeoutMsg: `the ${name} box` });
+      // The box is drawn empty and marked required until a number is typed (issue #1034).
+      assert.equal(await box.getValue(), "", `the ${name} box starts empty`);
+      assert.match(await b.$(`.field[data-input="${name}"] .badge.required`).getText(), /required/i, `the ${name} box is marked required`);
       await box.setValue(text);
     }
     // Choosing it is an edit, so the Design is unsaved; the tests that open a file next accept the discard prompt.
@@ -1090,11 +1093,8 @@ describe("OVD web smoke tests", () => {
     assert.deepEqual(lowered.sea, before.sea);
     assert.deepEqual(lowered.river, fixed(lowered.air.conditions, "river_m"));
     // A typed limit adds the outcome column, one cell for each condition.
-    // The limit is shown as "none" until a number is typed: clear that box with a real click (`openDesign`
-    // turns the script's own `click()` on inputs off), then type the number.
-    const none = await b.$('.field[data-input="air_draft_limit_m"] label.none input[type=checkbox]');
-    await none.scrollIntoView();
-    if (await none.isSelected()) await none.click();
+    // The Design is river-only (issue #1034), so the limit box is drawn empty and has no "none" choice: type the number.
+    await b.$('.field[data-input="air_draft_limit_m"]').scrollIntoView();
     await until(b, "the limit box", async () => (await b.$('.field[data-input="air_draft_limit_m"] input[type=text]')).isExisting());
     await (await b.$('.field[data-input="air_draft_limit_m"] input[type=text]')).setValue("60");
     await until(b, "the limit column", async () => (await read()).limit.length > 0);
