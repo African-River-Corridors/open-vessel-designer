@@ -34,6 +34,28 @@ fn vdesign_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
     }
 }
 
+/// Issue #1034: a river-only Option needs a number for both river limits, and `fill --as-new` and the dict
+/// step refuse one stored as `null`. The guard compares the dict step with the file path, not the limit
+/// rule, so a river-only Option with no number gets the pair the design-impact sweep gives
+/// (`tools/design_impact.py`): 6.0 m draught and 40 m air draft, which do not bind. Both paths read the
+/// same pair, typed. An Option that names a Vessel Class or scheme is left alone: the class fills them.
+const RIVER_LIMIT_PAIR: [(&str, f64); 2] = [("draught_limit_m", 6.0), ("air_draft_limit_m", 40.0)];
+
+fn give_river_limits(option: &mut Value) {
+    let inputs = option["inputs"].as_object_mut().expect("inputs");
+    if inputs.get("service_area").map(|i| &i["value"]) != Some(&json!("river-only"))
+        || inputs.contains_key("vessel_class")
+        || inputs.contains_key("vessel_scheme")
+    {
+        return;
+    }
+    for (name, value) in RIVER_LIMIT_PAIR {
+        if !inputs.get(name).is_some_and(|i| i["value"].is_number()) {
+            inputs.insert(name.into(), json!({ "value": value, "source": "typed" }));
+        }
+    }
+}
+
 fn cases() -> Vec<Case> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let mut files = Vec::new();
@@ -42,8 +64,12 @@ fn cases() -> Vec<Case> {
     assert!(files.len() >= 15, "found only {} files", files.len());
     let mut out = Vec::new();
     for path in files {
-        let text = std::fs::read_to_string(&path).expect("read");
-        let design: Value = serde_json::from_str(&text).expect("JSON");
+        let mut design: Value =
+            serde_json::from_str(&std::fs::read_to_string(&path).expect("read")).expect("JSON");
+        for option in design["options"].as_array_mut().expect("options") {
+            give_river_limits(option);
+        }
+        let text = design.to_string();
         for (index, option) in design["options"]
             .as_array()
             .expect("options")
@@ -201,6 +227,14 @@ fn every_profile_defaulted_input_left_out_at_once_is_built_as_the_file_path_buil
     let mut failed = Vec::new();
     for case in per_containment() {
         let mut typed = typed_only(&case);
+        // A default that depends on the Cargo Containment (the box-hold lightship factor) fires only if the
+        // Design holds it, and a fixture stores it as a default, so it is kept here as the Service Area is.
+        // The full-run cases below still derive it from the Cargo, from typed inputs alone.
+        for (k, v, _) in &case.stored {
+            if k == "cargo_containment" {
+                typed.insert(k.clone(), v.clone());
+            }
+        }
         for key in by_design_refused(&typed) {
             typed.remove(&key);
         }
@@ -234,7 +268,12 @@ fn each_profile_defaulted_input_left_out_one_at_a_time_is_built_as_the_file_path
             full.remove(&key);
         }
         for (key, _, source) in &case.stored {
-            if source != "default" || key == "service_area" || !full.contains_key(key) {
+            // A river limit left out is refused on both paths (issue #1034), so it is not a default to compare.
+            if source != "default"
+                || key == "service_area"
+                || RIVER_LIMIT_PAIR.iter().any(|(n, _)| n == key)
+                || !full.contains_key(key)
+            {
                 continue;
             }
             let mut left_out = full.clone();
@@ -303,9 +342,18 @@ fn per_containment() -> Vec<Case> {
 
 fn typed_only(case: &Case) -> Map<String, Value> {
     // The Service Area has no default (issue #925), so a fixture that holds it as a default gives it too.
+    // A river-only Option also gives its two river limits (issue #1034); a numeric stored pair is kept.
+    let river = case
+        .stored
+        .iter()
+        .any(|(k, v, _)| k == "service_area" && v == "river-only");
     case.stored
         .iter()
-        .filter(|(k, _, s)| s == "typed" || k == "service_area")
+        .filter(|(k, _, s)| {
+            s == "typed"
+                || k == "service_area"
+                || (river && RIVER_LIMIT_PAIR.iter().any(|(n, _)| n == k))
+        })
         .map(|(k, v, _)| (k.clone(), v.clone()))
         .collect()
 }

@@ -9,6 +9,10 @@ check that step by the input values it builds, with no run, through the `option_
 Label: property. Each test compares two paths to one answer; no number is pinned.
 """
 import json
+import os
+import subprocess
+import tempfile
+from functools import cache
 from pathlib import Path
 
 import pytest
@@ -27,6 +31,25 @@ PER_CONTAINMENT = [
 ]
 
 
+# Issue #1034: a river-only Option needs a number for both river limits, and `fill --as-new` and the dict
+# step refuse one stored as null. The guard compares the dict step with the file path, not the limit rule,
+# so a river-only Option with no number gets the pair the design-impact sweep gives
+# (`tools/design_impact.py`): 6.0 m draught and 40 m air draft, which do not bind. Both paths read the
+# same pair, typed. An Option that names a Vessel Class or scheme is left alone: the class fills them.
+RIVER_LIMIT_PAIR = {"draught_limit_m": 6.0, "air_draft_limit_m": 40.0}
+
+
+def _give_river_limits(option):
+    inputs = option["inputs"]
+    if (inputs.get("service_area", {}).get("value") != "river-only"
+            or "vessel_class" in inputs or "vessel_scheme" in inputs):
+        return
+    for name, value in RIVER_LIMIT_PAIR.items():
+        number = inputs.get(name, {}).get("value")
+        if isinstance(number, bool) or not isinstance(number, (int, float)):
+            inputs[name] = {"value": value, "source": "typed"}
+
+
 def _cases():
     """Every Option of every file of `examples/` and of the fixtures: (label, text, index, stored)."""
     files = sorted((ROOT / "examples").rglob("*.vdesign"))
@@ -34,8 +57,11 @@ def _cases():
     assert len(files) >= 15, files
     out = []
     for path in files:
-        text = path.read_text(encoding="utf-8")
-        for index, option in enumerate(json.loads(text)["options"]):
+        design = json.loads(path.read_text(encoding="utf-8"))
+        for option in design["options"]:
+            _give_river_limits(option)
+        text = json.dumps(design)
+        for index, option in enumerate(design["options"]):
             stored = {k: (i["value"], i["source"]) for k, i in option["inputs"].items()}
             out.append((f"{path.name} #{index} ({option['name']})", text, index, stored))
     return out
@@ -43,6 +69,30 @@ def _cases():
 
 CASES = _cases()
 FIRST = {Path(label.split(" #")[0]).stem: c for c in CASES for label in [c[0]] if c[2] == 0}
+
+
+@cache
+def _ovd():
+    """The `ovd` command line: `OVD_BIN`, else the debug build under the cargo target folder (built if
+    it is not there). The full-run check compares with it, so it is not skipped when it is missing."""
+    if os.environ.get("OVD_BIN"):
+        return os.environ["OVD_BIN"]
+    # `joinpath`, not `ROOT / "target"`: the release wheel check has no checkout `target` folder, and it
+    # deselects the one test that reaches this (`.github/workflows/release.yml`).
+    exe = Path(os.environ.get("CARGO_TARGET_DIR") or ROOT.joinpath("target")) / "debug" / "ovd"
+    subprocess.run(["cargo", "build", "-q", "-p", "ovd-cli"], cwd=ROOT, check=True)
+    return str(exe)
+
+
+def _ovd_run(dict_):
+    """The results `ovd fill --as-new` then `ovd run --json --steel-list` give (the whole value) for a dict's typed file."""
+    with tempfile.TemporaryDirectory() as tmp:
+        typed, filled = Path(tmp, "typed.vdesign"), Path(tmp, "filled.vdesign")
+        typed.write_text(_file_of(dict_), encoding="utf-8")
+        for args in (["fill", "--as-new", str(typed), str(filled)], ["run", "--json", "--steel-list", str(filled)]):
+            done = subprocess.run([_ovd(), *args], capture_output=True, text=True)
+            assert done.returncode == 0, f"ovd {args[0]}: {done.stderr[-600:]}"
+    return json.loads(done.stdout)["options"][0]["results"]
 
 
 def _inputs(args):
@@ -93,8 +143,11 @@ def _differences(got, want):
 
 
 def _typed(stored):
-    # The Service Area has no default (issue #925), so a fixture that holds it as a default gives it too.
-    return {k: v for k, (v, source) in stored.items() if source == "typed" or k == "service_area"}
+    # The Service Area has no default (issue #925), so a fixture that holds it as a default gives it too,
+    # and so do the two river limits of a river-only Option (issue #1034).
+    river = stored.get("service_area", (None,))[0] == "river-only"
+    return {k: v for k, (v, source) in stored.items()
+            if source == "typed" or k == "service_area" or (river and k in RIVER_LIMIT_PAIR)}
 
 
 def test_the_dict_step_builds_the_files_option_input_by_input():
@@ -119,6 +172,11 @@ def test_every_profile_defaulted_input_left_out_at_once_is_built_as_the_file_pat
     for name in PER_CONTAINMENT:
         label, _, _, stored = FIRST[name]
         typed = _typed(stored)
+        # A default that depends on the Cargo Containment (the box-hold lightship factor) fires only if the
+        # Design holds it, and a fixture stores it as a default, so it is kept here as the Service Area is.
+        # The full-run cases still derive it from the Cargo, from typed inputs alone.
+        if "cargo_containment" in stored:
+            typed["cargo_containment"] = stored["cargo_containment"][0]
         for k in _refused_by_design(typed):
             del typed[k]
         got = _inputs({"params": typed})
@@ -137,7 +195,8 @@ def test_each_profile_defaulted_input_left_out_one_at_a_time_is_built_as_the_fil
         for k in _refused_by_design(full):
             del full[k]
         for key, (_, source) in stored.items():
-            if source != "default" or key == "service_area" or key not in full:
+            # A river limit left out is refused on both paths (issue #1034), so it is not a default to compare.
+            if source != "default" or key == "service_area" or key in RIVER_LIMIT_PAIR or key not in full:
                 continue
             left_out = {k: v for k, v in full.items() if k != key}
             tried += 1
@@ -164,10 +223,10 @@ def test_every_input_of_the_schema_is_accepted_by_the_dict_step():
 
 
 @pytest.mark.parametrize("name", PER_CONTAINMENT)
-def test_simulate_with_damage_equals_the_damage_stage_on_the_whole_value(name):
+def test_simulate_with_damage_equals_ovd_run_on_the_whole_value(name):
     """Label: property"""
-    # The `ovd run` side of this equality is in crates/ovd-format/tests/api_parity.rs.
+    # Issue #939 item 4: `simulate(dict, damage=True)` against `ovd run` on the filled file, the real CLI.
     _, _, _, stored = FIRST[name]
     dict_ = _typed(stored)
     got = simulate(dict_, damage=True)
-    assert json.dumps(got, sort_keys=True) == json.dumps(simulate_damage(dict_), sort_keys=True)
+    assert json.dumps(got, sort_keys=True) == json.dumps(_ovd_run(dict_), sort_keys=True)

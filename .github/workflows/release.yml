@@ -114,7 +114,8 @@ jobs:
           # The evaluation harness reads the built-in Rule Set files from the checkout.
           mkdir -p "$RUNNER_TEMP/wheel-check/crates/ovd-format"
           cp -r crates/ovd-format/rules "$RUNNER_TEMP/wheel-check/crates/ovd-format/"
-          # The parity guard (tests/test_parity.py, #939) reads the fixture designs.
+          # The parity guard (tests/test_parity.py, #939) reads the fixture designs. Its `ovd run` test needs the
+          # command line, which this check does not build, so it is deselected below and runs in `test`.
           mkdir -p "$RUNNER_TEMP/wheel-check/crates/ovd-format/tests"
           cp -r crates/ovd-format/tests/fixtures "$RUNNER_TEMP/wheel-check/crates/ovd-format/tests/"
           cd "$RUNNER_TEMP/wheel-check"
@@ -132,7 +133,8 @@ jobs:
             --deselect=tests/test_public_api.py::test_the_names_that_are_not_kept_are_only_standard_library_and_numpy_helpers \
             --deselect=tests/test_public_api.py::test_every_name_removed_on_purpose_is_in_the_changelog \
             --deselect=tests/test_calibration_runs.py::test_the_ci_runs_the_check_without_letting_a_band_miss_fail_the_build \
-            --deselect=tests/test_i18n_check.py::test_the_text_library_is_whole_and_the_check_is_fast
+            --deselect=tests/test_i18n_check.py::test_the_text_library_is_whole_and_the_check_is_fast \
+            --deselect=tests/test_parity.py::test_simulate_with_damage_equals_ovd_run_on_the_whole_value
       - uses: actions/upload-artifact@v4
         with:
           name: wheel-${{ matrix.os }}
