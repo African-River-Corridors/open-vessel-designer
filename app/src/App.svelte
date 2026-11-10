@@ -307,15 +307,19 @@
     <button onclick={() => fileAction(api.saveAs, false)}>{t("app-save-as")}</button>
     <button onclick={() => (noticeOpen = true)}>{t("app-about")}</button>
     {#if web}<span class="web-badge" data-testid="web-label">{t("app-web-version")}</span> <a href="/ovd#install">{t("app-download-desktop")}</a>{/if}
-    <span class="grow"></span>
+    <span class="status">
+      {#if snap}
+        {@const fileText = snap.dirty ? t("app-file-unsaved", { file: snap.file_name }) : snap.file_name}
+        {@const profileText = t("app-header-profile", { profile: snap.profile })}
+        {@const engineText = t("app-engine-version", { version: snap.engine_version })}
+        <span class="meta file" title={fileText}>{fileText}</span>
+        <span class="meta" title={profileText}>{profileText}</span>
+        <span class="meta" data-testid="engine-version" title={engineText}>{engineText}</span>
+      {/if}
+    </span>
     <button type="button" aria-label={t(showInput ? "app-input-panel-hide" : "app-input-panel-show")} aria-pressed={showInput} onclick={() => (showInput = !showInput)}>{t("app-input-panel")}</button>
     <button type="button" aria-label={t(showOutputs ? "app-outputs-panel-hide" : "app-outputs-panel-show")} aria-pressed={showOutputs} onclick={() => (showOutputs = !showOutputs)}>{t("app-outputs-panel")}</button>
     <button type="button" data-testid="settings" aria-haspopup="dialog" onclick={() => (settingsOpen = true)}>{t("app-settings")}</button>
-    {#if snap}
-      <span class="meta file">{snap.dirty ? t("app-file-unsaved", { file: snap.file_name }) : snap.file_name}</span>
-      <span class="meta">{t("app-header-profile", { profile: snap.profile })}</span>
-      <span class="meta" data-testid="engine-version">{t("app-engine-version", { version: snap.engine_version })}</span>
-    {/if}
   </header>
 
   <MessageBar {messages} />
@@ -357,9 +361,16 @@
   header button[aria-pressed] { background: transparent; }
   header button[aria-pressed="true"],
   header button[aria-pressed="true"]:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); }
-  .grow { flex: 1; }
-  .meta { color: var(--ink-3); font-size: var(--fs-12); margin-left: var(--sp-2); }
-  .meta.file { font-family: var(--font-mono); }
+  /* Basis 0: a wrapping row breaks lines on each item's hypothetical size, so these texts never push a button or add a row. */
+  .status {
+    flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: flex-end;
+    gap: var(--sp-2); overflow: hidden;
+  }
+  .meta {
+    color: var(--ink-3); font-size: var(--fs-12); flex: 0 1 auto;
+    min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .meta.file { flex: 1 1 auto; font-family: var(--font-mono); }
   header :global(.web-badge) {
     font-size: var(--fs-11); text-transform: uppercase; letter-spacing: 0.08em; padding: 1px var(--sp-2);
     background: var(--surface-2); color: var(--ink-2); border: var(--lw-thin) solid var(--rule-strong); border-radius: var(--radius);
