@@ -463,11 +463,45 @@ fn answer_of(
     }
 }
 
+/// Test seam (issue #939): the input values of an Option, name to value, with no run. With `params` it
+/// is the Option the dict step builds ([`option_of`]); with `design` (`.vdesign` text) and an optional
+/// `index` it is that file's Option after `ovd fill --as-new`. The parity guard compares the two.
+/// With `schema` true it is the name of every input in `INPUTS`, in order.
+fn option_inputs(args: &Value) -> Result<Value, EvalError> {
+    if args.get("schema").and_then(Value::as_bool) == Some(true) {
+        return ok(json!(INPUTS.iter().map(|s| s.name).collect::<Vec<_>>()));
+    }
+    let option = match args.get("design").and_then(Value::as_str) {
+        Some(text) => {
+            let checked = crate::vdesign::fill_as_new(text, &Profile::built_in());
+            if !checked.report.is_ok() {
+                return Err(EvalError::BadInput(checked.report.errors.join("\n")));
+            }
+            let index = args.get("index").and_then(Value::as_u64).unwrap_or(0) as usize;
+            checked
+                .design
+                .and_then(|d| d.options.into_iter().nth(index))
+                .ok_or_else(|| EvalError::BadInput("the design has no such Option".into()))?
+        }
+        None => match built(args) {
+            Ok(o) => o,
+            Err(answer) => return answer,
+        },
+    };
+    let inputs: Map<String, Value> = option
+        .inputs
+        .into_iter()
+        .map(|(name, stored)| (name, stored.value))
+        .collect();
+    ok(Value::Object(inputs))
+}
+
 /// Run one `api` function on case-shaped arguments.
 pub fn run(function: &str, args: &Value) -> Result<Value, EvalError> {
     match function {
         "simulate" => simulate_design(args),
         "simulate_damage" => simulate_damage_with(args, None, &|| false),
+        "option_inputs" => option_inputs(args),
         other => Err(EvalError::BadInput(format!(
             "api has no function `{other}`"
         ))),
