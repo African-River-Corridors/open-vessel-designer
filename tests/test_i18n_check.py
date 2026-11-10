@@ -1,4 +1,5 @@
 """The Text Library check (spec 0005): the real library is whole, and each kind of problem is caught."""
+import re
 import sys
 import time
 from pathlib import Path
@@ -8,18 +9,43 @@ sys.path.insert(0, str(ROOT / "tools"))
 import i18n_check  # noqa: E402
 
 
+def reference_work() -> int:
+    """A fixed task of the same kind as the check (read the code files, scan them with a regex).
+
+    It does not call the check, so a slow check cannot slow it. Both run on the same machine at the
+    same moment, so machine load moves them together and the ratio between them stays steady.
+    """
+    found = 0
+    for name, _suffixes in i18n_check.CODE:
+        base = ROOT / name
+        files = [base] if base.is_file() else [p for p in base.rglob("*") if p.is_file() and "node_modules" not in p.parts and "target" not in p.parts]
+        for path in files:
+            found += len(re.findall(r"[a-z]+-[a-z0-9-]+", path.read_text(encoding="utf-8", errors="ignore")))
+    for path in (ROOT / "locales").rglob("*.ftl"):
+        found += len(re.findall(r"\{\s*\$\w+", path.read_text(encoding="utf-8")))
+    return found
+
+
+def timed(task) -> float:
+    start = time.perf_counter()
+    task()
+    return time.perf_counter() - start
+
+
 def test_the_text_library_is_whole_and_the_check_is_fast():
     """Label: property"""
-    # The check is fast when the machine is not busy. The pytest run is parallel and the CI runner has
-    # four cores, so one slow run is load, not a slow check: the best of three runs must be under 1 s.
-    best = float("inf")
-    for _ in range(3):
-        start = time.perf_counter()
-        assert i18n_check.check() == []
-        best = min(best, time.perf_counter() - start)
-        if best < 1.0:
+    # A wall-clock limit failed on busy runners (a best of 1.065 s against 1.0 s, issue 986). So the
+    # check is timed against a reference task run beside it. Measured under heavy load, the check took
+    # 0.6 to 1.3 times as long as the reference; the limit is 4 times, so a check that turns four times
+    # slower fails and load alone cannot.
+    assert i18n_check.check() == []  # the library is whole; this run also warms the caches
+    reference = check = float("inf")
+    for _ in range(5):
+        reference = min(reference, timed(reference_work))
+        check = min(check, timed(i18n_check.check))
+        if check <= 4 * reference:
             break
-    assert best < 1.0
+    assert check <= 4 * reference, f"the check took {check:.3f} s; the reference task took {reference:.3f} s"
 
 
 def tree(tmp_path: Path, english: str, code: str, **translations: str) -> Path:
