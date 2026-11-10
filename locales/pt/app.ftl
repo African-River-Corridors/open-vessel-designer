@@ -15,7 +15,7 @@ app-about = Sobre
 # status: draft
 app-web-version = Versão web
 # status: draft
-app-download-desktop = Baixar o aplicativo para desktop
+app-download-desktop = Baixar para desktop
 # status: draft
 app-input-panel = Painel de entradas
 # status: draft

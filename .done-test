@@ -1,3 +1,6 @@
+# Done-test for #945 (design lane d945). Build lanes must not edit these.
+app/e2e/web-smoke.test.mjs
+
 # Done-test for #1034 Phase 3 (the design commit "Done-test for #1034 Phase 3: the climb share rule"). Build lanes must not edit these.
 crates/ovd-core/tests/share_climb.rs
 crates/ovd-format/tests/share_climb.rs
