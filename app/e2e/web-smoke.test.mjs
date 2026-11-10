@@ -1191,15 +1191,22 @@ describe("OVD web smoke tests", () => {
     await (await b.$("button=I understand")).click();
     await ready(b);
     await openDesign(b, coastalGasDesign());
-    const result = await b.execute(async () => {
+    // The run takes longer than the browser driver waits for one script (30 s), and the driver runs a timed-out script
+    // again: the rename then fails on a name that is gone. So the script only starts the run and renames; the page keeps
+    // the result and the test polls for it.
+    await b.execute(() => {
       const p = window.__ovdPlatform;
+      window.__renameRun = null;
       const run = p.runDamage("Option 1", () => {});
-      await new Promise((r) => setTimeout(r, 300));
-      await p.renameOption("Option 1", "Renamed");
-      const end = await run;
-      const ev = await p.evaluate();
-      return { end, option: ev.options[0].name, status: ev.options[0].outcome.results.damage_status };
+      setTimeout(async () => {
+        await p.renameOption("Option 1", "Renamed");
+        const end = await run;
+        const ev = await p.evaluate();
+        window.__renameRun = { end, option: ev.options[0].name, status: ev.options[0].outcome.results.damage_status };
+      }, 300);
     });
+    await until(b, "the renamed run to end", async () => (await b.execute(() => window.__renameRun)) !== null, 240000);
+    const result = await b.execute(() => window.__renameRun);
     assert.equal(result.end.outcome, "done", JSON.stringify(result));
     assert.equal(result.end.option, "Renamed");
     assert.deepEqual([result.option, result.status], ["Renamed", "run"]);
