@@ -2056,7 +2056,8 @@ fn aft_block(c: &mut Canvas, h: &Hull, view: View, labels: &mut Vec<(String, [f6
                         count = a.thruster_offsets.len()
                     ),
                     [room_mid, THRUSTER_LIFT_M],
-                    [room_mid + 2.0 * k, -6.0 * k],
+                    // text to the left, off the stern end: END CLEARANCE stands to the right
+                    [room_mid - 2.0 * k, -6.0 * k],
                 );
             }
             // Labels above the block; the lower one is the one further from the stern end. The
@@ -2156,7 +2157,8 @@ fn aft_block(c: &mut Canvas, h: &Hull, view: View, labels: &mut Vec<(String, [f6
                             count = a.thruster_offsets.len()
                         ),
                         [room_mid, low - r],
-                        [room_mid + 2.0 * k, -h.beam / 2.0 - 6.0 * k],
+                        // text to the left, off the stern end: END CLEARANCE stands to the right
+                        [room_mid - 2.0 * k, -h.beam / 2.0 - 6.0 * k],
                     );
                 }
             }

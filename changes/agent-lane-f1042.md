@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Drawing (issue #1042): on the plan and the side elevation of a self-propelled hull, the THRUSTERS label text now stands to the left of its label point, off the stern end, so it no longer overlaps END CLEARANCE. Moved sheets: the plan and side elevation of the three Options (A basis, B profile, C deep) of the coastal LNG example, `examples/gas-140x29-coastal-lng/ga/`. No result moves.
