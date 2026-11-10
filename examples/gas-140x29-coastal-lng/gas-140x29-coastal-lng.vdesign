@@ -624,8 +624,8 @@
             },
             {
               "id": "ovd",
-              "version": "3.0.0",
-              "hash": "88869f85bacb1baab3ecd5336a60642423a5e82cac6960c9d8e329cdceb63333",
+              "version": "3.4.0",
+              "hash": "e2e943dc4d06b3a48713606ef9ef1966949fd7a5196d6b03e7c6c7679b68e67c",
               "source": "default"
             }
           ],
@@ -1254,8 +1254,8 @@
             },
             {
               "id": "ovd",
-              "version": "3.0.0",
-              "hash": "88869f85bacb1baab3ecd5336a60642423a5e82cac6960c9d8e329cdceb63333",
+              "version": "3.4.0",
+              "hash": "e2e943dc4d06b3a48713606ef9ef1966949fd7a5196d6b03e7c6c7679b68e67c",
               "source": "default"
             }
           ],
@@ -1884,8 +1884,8 @@
             },
             {
               "id": "ovd",
-              "version": "3.0.0",
-              "hash": "88869f85bacb1baab3ecd5336a60642423a5e82cac6960c9d8e329cdceb63333",
+              "version": "3.4.0",
+              "hash": "e2e943dc4d06b3a48713606ef9ef1966949fd7a5196d6b03e7c6c7679b68e67c",
               "source": "default"
             }
           ],

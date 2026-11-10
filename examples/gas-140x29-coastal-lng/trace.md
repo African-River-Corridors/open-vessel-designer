@@ -1,6 +1,6 @@
 # Rule trace: Option A basis
 
-Scope: Service Area coastal-and-river; Rule Sets igc-2g@2.0.0, is2008-a@2.0.0, lr-inland-gas@2.0.0, es-trin-2025@1.0.0, icll-freeboard@1.0.0, solas-v22@1.0.0, abs-barges@1.0.0, ovd@3.0.0; only these Rule Sets were checked, not a statutory technical code. meets every evaluated blocking Rule; 4 blocking Rule(s) not evaluated: Survival after the assumed damage, Severe wind and rolling criterion (weather criterion), Capacity of each cargo tank within Table 4.3.1, Hull in the cargo area: one of the three designs the clause allows (Type G)
+Scope: Service Area coastal-and-river; Rule Sets igc-2g@2.0.0, is2008-a@2.0.0, lr-inland-gas@2.0.0, es-trin-2025@1.0.0, icll-freeboard@1.0.0, solas-v22@1.0.0, abs-barges@1.0.0, ovd@3.4.0; only these Rule Sets were checked, not a statutory technical code. meets every evaluated blocking Rule; 4 blocking Rule(s) not evaluated: Survival after the assumed damage, Severe wind and rolling criterion (weather criterion), Capacity of each cargo tank within Table 4.3.1, Hull in the cargo area: one of the three designs the clause allows (Type G)
 
 One row per Rule and object. Status is the Rule's verification status, then the Measure's method status. "Finding" is the register ticket.
 
@@ -149,6 +149,7 @@ One row per Rule and object. Status is the Rule's verification status, then the 
 | ovd/resistance/blockage-in-range |  | not applicable |  |  |  | block | unverified / verified |  |  |
 | ovd/resistance/service-clears-squat |  | not applicable |  |  |  | warn | unverified / verified |  |  |
 | ovd/resistance/lackenby-fit |  | not applicable |  |  |  | warn | unverified / verified |  |  |
+| ovd/resistance/method-in-range |  | not applicable |  |  |  | warn | unverified / verified |  | I. Ortigosa, R. López and J. García, Prediction of total resistance coefficients using neural networks, Journal of Maritime Research VI(III), 2009 (the data range of Holtrop and Mennen 1982), Vol. VI, No. III, pp. 15-26, 2009, Table 1, tankers and bulk carriers; general cargo |
 | ovd/resistance/first-order-coefficients | A basis | pass | True |  |  | warn | unverified / verified |  |  |
 | ovd/powering/installed-covers-design-speed | A basis | pass | 1.176 | 1 | - | block | unverified / verified |  |  |
 | ovd/wheelhouse/lift-enough | A basis | pass | True |  | - | block | unverified / verified |  |  |
@@ -160,6 +161,10 @@ One row per Rule and object. Status is the Rule's verification status, then the 
 | ovd/stability/light-angle-of-max-gz | Full load, arrival | not applicable |  |  | deg | warn | unverified / unverified | #498 |  |
 | ovd/stability/light-angle-of-max-gz | Ballast, departure | not applicable |  |  | deg | warn | unverified / unverified | #498 |  |
 | ovd/stability/light-angle-of-max-gz | Ballast, arrival | not applicable |  |  | deg | warn | unverified / unverified | #498 |  |
+| ovd/4.23.1.2/min-design-pressure-reference |  | not applicable |  |  | MPa | warn | unverified / verified | #926 | IGC Code, resolution MSC.370(93), as amended, IGC Code as adopted by MSC.370(93); the IGC Code does not bind a river-only Design, whose ADN stack gives no number, 4.23.1.2 |
+| ovd/aft-block/forward-wheelhouse-blind-distance |  | not applicable |  |  |  | block | unverified / verified |  |  |
+| ovd/waterway/within-lock-length |  | not applicable |  |  |  | block | unverified / verified |  |  |
+| ovd/waterway/within-lock-width |  | not applicable |  |  |  | block | unverified / verified |  |  |
 
 ## Gaps the trace reports
 
