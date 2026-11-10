@@ -112,8 +112,9 @@ Usage:
       the import format; `steel-csv` is the steel list of a gas hull's plate model (issue #742),
       one row per plate, stiffener and primary member. `-o` names the file; `--option` picks the Option (the only one, when there
       is one). `--hash` prints the SHA-256 of each Option's bytes instead, for the web parity check.
-      Damage stability runs, as in `ovd run`, so the model is the arrangement the results report
-      (the damage screen's pick, issue #1041).
+      Damage stability runs, as in `ovd run` (about 15 s on a 140 m gas design), so the model is the
+      arrangement the results report (the damage screen's pick, issue #1041). `--no-damage` skips it:
+      the unscreened model, as the web page shows it before a damage run.
   ovd mesh [--profile <profile.json>] --hash <file.vdesign>
       Print the mesh hash of each Option (spec 0008, issue #456): the SHA-256 of the meshes of its
       Vessel Model (hull, decks, bulkheads, Spaces, waterlines). The web parity check compares it
@@ -657,6 +658,7 @@ fn validate(args: &[&str]) -> Result<bool, String> {
 /// `ovd export`: the Vessel Model of an Option as a file, or its hash (issue #460).
 fn export(args: &[&str]) -> Result<(), String> {
     let (mut format, mut option, mut out, mut hash, mut below) = (None, None, None, false, None);
+    let mut no_damage = false;
     let mut rest = Vec::new();
     let mut it = args.iter();
     while let Some(&a) = it.next() {
@@ -666,9 +668,15 @@ fn export(args: &[&str]) -> Result<(), String> {
             "-o" => out = Some(*it.next().ok_or("-o needs a file")?),
             "--below" => below = Some(*it.next().ok_or("--below needs a condition name")?),
             "--hash" => hash = true,
+            // Issue #1041: the unscreened model, as the web page shows it before a damage run.
+            "--no-damage" => no_damage = true,
             a => rest.push(a),
         }
     }
+    let damage = ovd_format::damage::DamageControl {
+        run: !no_damage,
+        progress: None,
+    };
     let format = format.ok_or("give --format gltf, stl, obj, offsets-csv or steel-csv")?;
     if !ovd_format::export::FORMATS.contains(&format) {
         return Err(format!(
@@ -700,7 +708,7 @@ fn export(args: &[&str]) -> Result<(), String> {
     }
     if hash {
         for o in chosen {
-            match ovd_format::export::option_export(format, o, below) {
+            match ovd_format::export::option_export_with_damage(format, o, below, &damage) {
                 Ok(b) => println!("{}	{}", o.name, ovd_format::export::bytes_hash(&b)),
                 Err(e) => println!("{}	-	{e}", o.name),
             }
@@ -710,7 +718,7 @@ fn export(args: &[&str]) -> Result<(), String> {
     let [one] = chosen.as_slice() else {
         return Err("the file has more than one Option: give --option <name>".into());
     };
-    let bytes = ovd_format::export::option_export(format, one, below)?;
+    let bytes = ovd_format::export::option_export_with_damage(format, one, below, &damage)?;
     let file = out.ok_or("give -o <file>")?;
     std::fs::write(file, &bytes).map_err(|e| format!("cannot write {file}: {e}"))?;
     println!("{file}: {} bytes", bytes.len());

@@ -62,6 +62,11 @@ pub(crate) fn kept<'a>(
     cache.as_ref().ok_or_else(|| "no Vessel Model".to_string())
 }
 
+/// The `.glb` of the kept run's model: the bytes of `ovd_format::export::option_glb` at the kept stage, with no second run.
+pub(crate) fn glb(k: &Kept) -> Vec<u8> {
+    ovd_format::export::gltf_glb(&k.mesh)
+}
+
 /// The vertex data: x, y, z per vertex (m, hull axes), and three indices per triangle.
 pub(crate) fn buffers(k: &Kept) -> (Vec<f32>, Vec<u32>) {
     (k.mesh.positions.clone(), k.mesh.indices.clone())

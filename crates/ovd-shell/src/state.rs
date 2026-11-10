@@ -184,6 +184,33 @@ impl AppState {
         )
     }
 
+    /// An export of an Option (issues #460, #461, #1041) at the stage the page shows, as the 3D view: the screened pick
+    /// while a kept damage run matches the Option's inputs, else the unscreened model, which runs no damage. The glTF
+    /// is the kept 3D run's model, so it costs no second run; `stl` and `obj` run the model once more.
+    pub fn export_model(
+        &mut self,
+        option: &str,
+        format: &str,
+        below: &str,
+    ) -> Result<Vec<u8>, String> {
+        let below = (!below.is_empty()).then_some(below);
+        if format == "gltf" && below.is_none() {
+            return self.vessel(option).map(vessel::glb);
+        }
+        let damage = ovd_format::damage::DamageControl {
+            run: self.damage_shown(option),
+            progress: None,
+        };
+        let found = self
+            .session
+            .design()
+            .options
+            .iter()
+            .find(|o| o.name == option)
+            .ok_or_else(|| format!("no Option named '{option}'"))?;
+        ovd_format::export::option_export_with_damage(format, found, below, &damage)
+    }
+
     /// Whether the results shown for an Option are its kept damage run: the run's fingerprint is the Option's now.
     fn damage_shown(&self, option: &str) -> bool {
         match (
@@ -1053,6 +1080,69 @@ mod tests {
         let (screened, screened_hash) = tanks(&mut state);
         assert_eq!(screened, ["CT1P", "CT1S", "CT2P", "CT2S", "CT3P", "CT3S"]);
         assert_ne!(screened_hash, first_hash);
+    }
+
+    /// Issue #1041: the web build's model export follows the stage the page shows, as the 3D view does. Before a
+    /// damage run it is the unscreened model and runs no damage; after a matching damage run it is the screened one.
+    /// Label: snapshot (`ovd-format/tests/vessel_stage.rs`).
+    #[test]
+    fn the_model_export_follows_the_stage_the_page_shows() {
+        let file = json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": {
+                "cargo": { "value": "LNG", "source": "typed" },
+                "hull_form": { "value": "raked_box", "source": "typed" },
+                "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+                "length_overall_m": { "value": 140.0, "source": "typed" },
+                "beam_m": { "value": 29.0, "source": "typed" },
+                "moulded_depth_m": { "value": 12.0, "source": "typed" },
+                "service_area": { "value": "coastal-and-river", "source": "typed" },
+                "loading_conditions": { "value": "is_code_2008", "source": "typed" }
+            } }]
+        });
+        let text = ovd_format::fill_as_new(&file.to_string(), &Profile::built_in())
+            .design
+            .unwrap()
+            .to_text();
+        let mut state = AppState::open(Path::new("/x/gas.vdesign"), &text).unwrap();
+        let option = state.session().design().options[0].clone();
+        let at = |run: bool| {
+            let damage = ovd_format::damage::DamageControl {
+                run,
+                progress: None,
+            };
+            ovd_format::export::option_export_with_damage("gltf", &option, None, &damage).unwrap()
+        };
+        let (unscreened, screened) = (at(false), at(true));
+        assert_ne!(unscreened, screened, "the two stages differ on this design");
+        for format in ["gltf", "obj"] {
+            let before = state.export_model("Option 1", format, "").unwrap();
+            let damage_off = ovd_format::damage::DamageControl {
+                run: false,
+                progress: None,
+            };
+            let want =
+                ovd_format::export::option_export_with_damage(format, &option, None, &damage_off);
+            assert_eq!(before, want.unwrap(), "{format} before a damage run");
+        }
+        assert_eq!(
+            state.export_model("Option 1", "gltf", "").unwrap(),
+            unscreened
+        );
+        let (_, kept) = run_damage(&mut state);
+        assert!(kept);
+        assert_eq!(
+            state.export_model("Option 1", "gltf", "").unwrap(),
+            screened
+        );
+        // An edit makes the damage run stale: the export goes back to the unscreened stage.
+        state
+            .set_input("Option 1", "moulded_depth_m", json!(12.5))
+            .unwrap();
+        assert_ne!(
+            state.export_model("Option 1", "gltf", "").unwrap(),
+            screened
+        );
     }
 
     /// Issue #924: only a run the user asks for works damage out. Every path of the app that reaches the

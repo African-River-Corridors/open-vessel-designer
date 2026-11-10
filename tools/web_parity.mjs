@@ -49,9 +49,10 @@ let bad = 0;
 let compared = 0;
 const EXPORT_FORMATS = ["gltf", "stl", "obj", "offsets-csv"];
 
-// `ovd export --format <f> --hash`: name -> SHA-256 of the bytes, or "-".
+// `ovd export --format <f> --no-damage --hash`: name -> SHA-256 of the bytes, or "-". The web session has run no
+// damage, so its export is the unscreened stage (issue #1041); `--no-damage` makes native the same.
 function nativeGlb(file, format) {
-  const r = spawnSync(bin, ["export", "--format", format, "--hash", file], { encoding: "utf8", maxBuffer: 1 << 24 });
+  const r = spawnSync(bin, ["export", "--format", format, "--no-damage", "--hash", file], { encoding: "utf8", maxBuffer: 1 << 24 });
   if (r.error) throw r.error;
   const out = new Map();
   for (const line of r.stdout.split("\n").filter((l) => l.length > 0)) {
