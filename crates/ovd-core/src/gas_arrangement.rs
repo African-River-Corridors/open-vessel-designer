@@ -201,8 +201,9 @@ pub struct FitOptions {
     pub tank_top_above_deck_od_fraction: Option<f64>,
     /// Issue #992: read `tank_top_above_deck_od_fraction` as the most the share may be, and try
     /// [`STANDING_SHARE_STEPS`] of it, from the top down to none (the deck at the keel of the tank
-    /// top, the tanks in hold), keeping the share that carries the most cargo and passes. `false`:
-    /// the share is exactly the one given.
+    /// top, the tanks in hold). The search starts at the tallest share that passes the intact checks and
+    /// goes down while the cargo rises by [`SHARE_CLIMB_MIN_GAIN`] or more (issue #1034). `false`: the
+    /// share is exactly the one given.
     pub standing_share_search: bool,
     /// Issue #992: the draught the waterway or the user allows (m), without the hull's own limit.
     /// With a standing height the depth is never less than this plus the least freeboard plus
@@ -662,6 +663,9 @@ pub struct ArrangementFit {
     /// Issue #992: the share of the tank diameter the tank top stands above the deck, when it was a
     /// share (the one the search chose, at most the limit given); `None` for a height or no height.
     pub standing_share: Option<f64>,
+    /// Issue #1034: when the climb moved the share, the tallest share that passed the intact checks and its
+    /// cargo in tonnes; `None` when the share did not move, or was not searched.
+    pub share_climb_from: Option<(f64, f64)>,
     pub loa_m: f64,
     pub beam_m: f64,
     pub depth_m: f64,
@@ -2734,9 +2738,10 @@ fn tanks_along_to_try(o: &FitOptions, runner: &dyn DamageRunner) -> Vec<i64> {
 /// [`fit`], with the damage of a candidate worked out by `runner` (issue #935): the caller's threads, progress
 /// and cancel. A cancelled run is `Err` with kind `Cancelled` and the message [`gas_damage::DAMAGE_CANCELLED`].
 ///
-/// Issue #992: with `standing_share_search` the share of the tank diameter is at most the limit given;
-/// each step of [`STANDING_SHARE_STEPS`] is searched and the best kept: a feasible one over an
-/// infeasible one, then the most cargo, the higher share first.
+/// Issue #992, #1034: with `standing_share_search` the share of the tank diameter is at most the limit
+/// given. The search starts at the tallest step of [`STANDING_SHARE_STEPS`] that passes the intact checks
+/// and goes down one step at a time while the next step passes and its cargo rises by
+/// [`SHARE_CLIMB_MIN_GAIN`] or more; a tie goes to the taller share. Damage then screens the share kept.
 pub fn fit_with(
     loa: f64,
     beam: f64,
@@ -2750,20 +2755,23 @@ pub fn fit_with(
     };
     // Issue #992: the share is at most the limit (D1: the search may pick less if depth, freeboard or
     // sightline need it). Stage 1 searches the shares from the limit down on the intact checks, with
-    // no damage, and stops at the first that passes them. Stage 2 screens that share by damage, and
+    // no damage. It starts at the tallest share that passes them and climbs down while the cargo rises
+    // by 1 % or more (#1034). Stage 2 screens the share it keeps by damage, and
     // the next share down too if it fails. So the damage screen runs on at most two shares: at most
     // twice `damage_run_cap` damage runs, not five times.
-    let (idx, intact) = share_stage_one(loa, beam, cargo, t_max, o, &levels)?;
+    let (idx, mut intact, climb_from) = share_stage_one(loa, beam, cargo, t_max, o, &levels)?;
     if !runner.enabled() {
+        intact.share_climb_from = climb_from;
         return Ok(intact);
     }
-    let first = fit_once(loa, beam, cargo, t_max, &at_share(o, levels[idx]), runner)?;
+    let mut first = fit_once(loa, beam, cargo, t_max, &at_share(o, levels[idx]), runner)?;
     // One damage budget for the whole run: the runner counts the runs of every search and every depth pass (a
     // runner that does not count, the serial one, gets what the first search left).
     let counted = runner.runs_used() > 0;
     let used = runner.runs_used().max(first.damage_runs);
     let left = o.damage_run_cap.saturating_sub(used);
     if first.feasible || idx + 1 >= levels.len() || left == 0 {
+        first.share_climb_from = climb_from;
         return Ok(first);
     }
     // The chosen share fails damage: the next share down, on what the budget has left. The runner's budget plans
@@ -2782,12 +2790,16 @@ pub fn fit_with(
     };
     out.damage_runs = runs;
     out.damage_planned_runs = planned;
+    out.share_climb_from = climb_from;
     Ok(out)
 }
 
-/// The first stage of the share search (issue #992): the shares from the limit down, each searched on the
-/// intact checks with no damage, stopping at the first that passes them. Returns the index of the share
-/// kept and its answer; with none passing, the best of the shares by [`share_better`].
+/// The first stage of the share search (issue #992, #1034): the shares from the limit down, each searched on
+/// the intact checks with no damage. The search starts at the tallest share that passes them. It then goes
+/// down one share at a time while the next share passes and [`climb_continues`] says its cargo rose enough,
+/// and keeps the last share that rose. Returns the index of the share kept, its answer, and, when the climb
+/// moved the share, the tallest passing share with its cargo. With none passing, the best of the shares by
+/// [`share_better`].
 fn share_stage_one(
     loa: f64,
     beam: f64,
@@ -2795,7 +2807,7 @@ fn share_stage_one(
     t_max: f64,
     o: &FitOptions,
     levels: &[f64],
-) -> Result<(usize, ArrangementFit), PyError> {
+) -> Result<ShareStageOne, PyError> {
     let mut chosen: Option<(usize, ArrangementFit)> = None;
     for (i, share) in levels.iter().enumerate() {
         let f = fit_once(loa, beam, cargo, t_max, &at_share(o, *share), &NoDamage)?;
@@ -2807,10 +2819,39 @@ fn share_stage_one(
             break;
         }
     }
-    chosen.ok_or_else(|| PyError {
+    let (mut idx, mut best) = chosen.ok_or_else(|| PyError {
         kind: "IndexError",
         message: "list index out of range".to_string(),
-    })
+    })?;
+    if !best.feasible {
+        return Ok((idx, best, None));
+    }
+    let tallest = (levels[idx], best.payload_t);
+    while let Some(share) = levels.get(idx + 1) {
+        let next = fit_once(loa, beam, cargo, t_max, &at_share(o, *share), &NoDamage)?;
+        if !(next.feasible && climb_continues(best.payload_t, next.payload_t)) {
+            break;
+        }
+        idx += 1;
+        best = next;
+    }
+    let from = (levels[idx] != tallest.0).then_some(tallest);
+    Ok((idx, best, from))
+}
+
+/// What the first stage of the share search keeps: the index of the share, its answer, and the tallest
+/// passing share and its cargo when the climb moved the share.
+type ShareStageOne = (usize, ArrangementFit, Option<(f64, f64)>);
+
+/// The least rise in cargo, as a share of the cargo in hand, for the climb to take one more share down
+/// (issue #1034, D2 rule C). Under it the taller share stays: less depth, less steel.
+pub const SHARE_CLIMB_MIN_GAIN: f64 = 0.01;
+
+/// Whether the climb takes the step from the cargo it has (`from_t`) to the cargo of the next share down
+/// (`to_t`): only when the cargo rises by at least [`SHARE_CLIMB_MIN_GAIN`]. A tie, a smaller gain or a fall
+/// stops it.
+pub fn climb_continues(from_t: f64, to_t: f64) -> bool {
+    to_t >= from_t * (1.0 + SHARE_CLIMB_MIN_GAIN)
 }
 
 /// The options at one share of the tank diameter, searched no further.
@@ -3021,6 +3062,7 @@ fn fit_once(
         standing_share: o
             .tank_top_above_deck_od_fraction
             .filter(|_| o.tank_top_above_deck_m.is_none()),
+        share_climb_from: None,
         loa_m: loa,
         beam_m: beam,
         depth_m: d,
@@ -3130,7 +3172,7 @@ pub fn probe_depth(
     // With a share to search, the depth of the share the first stage of `fit_with` keeps: the same
     // intact searches, so the run that follows settles in one pass.
     if let Some(levels) = share_levels(o) {
-        let (_, f) = share_stage_one(loa, beam, cargo, t_max, o, &levels)?;
+        let (_, f, _) = share_stage_one(loa, beam, cargo, t_max, o, &levels)?;
         return Ok(Some(f.depth_m));
     }
     let mut s = Search {

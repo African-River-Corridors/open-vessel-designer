@@ -814,7 +814,7 @@
       "hard": { "gt": 0, "le": 1 },
       "soft": { "min": 0.25, "max": 0.75 },
       "status": "estimate",
-      "basis": "The tank top stands this share of the tank outer diameter above the main deck (issue #992); read only when `tank_top_above_deck_m` is none. River only: 0.5, so the main deck sits at the tank axis, the widest point of the tank (the maintainer's decision of 2026-11-07), with no weather shield. Coastal and river: none. A file saved before keeps none"
+      "basis": "The tank top stands this share of the tank outer diameter above the main deck (issue #992); read only when `tank_top_above_deck_m` is none. River only: 0.5, so the main deck sits at the tank axis, the widest point of the tank (the maintainer's decision of 2026-11-07), with no weather shield. The share is a limit: the search keeps the share with the most cargo within the river limits, climbing down from the tallest share that passes while the cargo rises by 1 % or more (issue #1034, the maintainer's decision of 2026-11-09). Coastal and river: none. A file saved before keeps none"
     },
     "tanks_in_line": {
       "default": 2,

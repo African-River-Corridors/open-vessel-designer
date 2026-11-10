@@ -3956,6 +3956,11 @@ fn simulate_gas(
             // The most the share may be: what the Defaults Profile or the file gave.
             arrangement["tank_top_above_deck_od_fraction_limit"] =
                 num(options.tank_top_above_deck_od_fraction.unwrap_or(share));
+            // Issue #1034: only when the climb moved the share, so other results keep their hash.
+            if let Some((from_share, from_cargo)) = f.share_climb_from {
+                arrangement["share_climb_from"] =
+                    json!({ "share": num(from_share), "cargo_t": num(from_cargo) });
+            }
         }
         arrangement["tank_top_above_keel_m"] = num(ga::tank_top_above_keel_m(r));
         arrangement["depth_follows_tank"] = json!(true);
