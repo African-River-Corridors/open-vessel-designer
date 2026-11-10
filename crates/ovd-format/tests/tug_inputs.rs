@@ -22,7 +22,7 @@ fn input(s: &DesignSession, name: &str) -> Option<(Value, Source)> {
 }
 
 fn barge(kind: &str) -> DesignSession {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     s.set_input("Option 1", "cargo", json!("bauxite")).unwrap();
     s.set_formation("Option 1", kind, None, None).unwrap();
     s
@@ -128,7 +128,7 @@ fn an_atb_and_a_towed_barge_vessel_class_can_be_picked() {
             .iter()
             .find(|c| c.formation == kind && c.pickable())
             .unwrap_or_else(|| panic!("no pickable {kind} class"));
-        let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+        let mut s = river_session();
         s.set_input("Option 1", "cargo", json!("bauxite")).unwrap();
         s.set_input("Option 1", "vessel_class", json!(class.id))
             .unwrap();
@@ -152,4 +152,17 @@ fn a_file_saved_before_has_no_tug_and_keeps_its_hash() {
             assert_eq!(v, json!(false), "{name}");
         }
     }
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

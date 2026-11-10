@@ -40,6 +40,8 @@ fn hand(cargo: &str) -> Value {
             "formation": { "value": { "kind": "pushed_barge" }, "source": "typed" },
             "length_overall_m": { "value": 76.5, "source": "typed" },
             "service_area": { "value": "river-only", "source": "typed" },
+            "draught_limit_m": { "value": 12.0, "source": "typed" },
+            "air_draft_limit_m": { "value": 40.0, "source": "typed" },
             "beam_m": { "value": 11.4, "source": "typed" },
             "moulded_depth_m": { "value": 3.5, "source": "typed" }
         }}]

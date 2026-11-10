@@ -300,7 +300,10 @@ pub(crate) mod tests {
                 "loading_conditions": { "value": "is_code_2008", "source": "typed" }
             } }]
         });
-        let filled = fill_as_new(&file.to_string(), &Profile::built_in());
+        // Issue #1034: a river-only Option needs a number for both river limits (high enough not to bind).
+        let text =
+            ovd_format::with_river_limits(&file.to_string(), Some(12.0), Some(40.0)).unwrap();
+        let filled = fill_as_new(&text, &Profile::built_in());
         run_option(&filled.design.unwrap().options[0])
     }
 

@@ -24,7 +24,7 @@ fn results(s: &DesignSession) -> Value {
 }
 
 fn session(cargo: &str, formation: &str) -> DesignSession {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     for (n, v) in [
         ("cargo", json!(cargo)),
         ("length_overall_m", json!(110.0)),
@@ -131,7 +131,7 @@ fn a_new_option_is_checked_in_the_is_code_conditions() {
     // Issue #426 part 3: the gas arrangement search uses the IS Code conditions, so they are the
     // default for a new Option, gas and dry bulk.
     for cargo in ["bauxite", "LNG"] {
-        let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+        let mut s = river_session();
         s.set_input("Option 1", "cargo", json!(cargo)).unwrap();
         let r = results(&s);
         assert_eq!(roles(&r)[0], "full_load_departure", "{cargo}");
@@ -184,4 +184,17 @@ fn a_file_saved_before_keeps_the_legacy_conditions_and_its_hash() {
         let r = results(&s);
         assert!(r.get("loading_conditions").is_none(), "{name}");
     }
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

@@ -80,9 +80,32 @@ fn schema_takes_a_profile() {
 #[test]
 fn new_design_equals_ovd_new() {
     // Issue #925: the starter has no Service Area until one is given; `ovd new --service-area` gives it.
-    let out = ovd(&["new", "--service-area", "river-only"]);
-    let session = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    // Issue #1034: a river-only starter needs a number for both river limits to be saved.
+    let out = ovd(&[
+        "new",
+        "--service-area",
+        "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
+    ]);
+    let mut session = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    session
+        .set_input("Option 1", "draught_limit_m", json!(12.0))
+        .unwrap();
+    session
+        .set_input("Option 1", "air_draft_limit_m", json!(40.0))
+        .unwrap();
     assert_eq!(session.save().unwrap(), stdout(&out));
+    // Without the two limits the starter is not saved, and `ovd new` says why.
+    let bare_river = ovd(&["new", "--service-area", "river-only"]);
+    assert!(!bare_river.status.success());
+    assert!(
+        stderr(&bare_river).contains("draught_limit_m and air_draft_limit_m"),
+        "{}",
+        stderr(&bare_river)
+    );
     // Without the flag the starter has none, and `ovd new` says so.
     let bare = ovd(&["new"]);
     let session = DesignSession::new_design(Profile::built_in()).unwrap();
@@ -104,14 +127,17 @@ fn open_of_a_hand_written_file_equals_ovd_fill() {
             { "name": "A", "inputs": {
                 "cargo": "LPG_propane", "hull_form": "raked_box", "service_area": "river-only",
                 "formation": { "kind": "self_propelled" },
-                "length_overall_m": 100, "beam_m": 12, "moulded_depth_m": 5 } },
+                "length_overall_m": 100, "beam_m": 12, "moulded_depth_m": 5,
+                "draught_limit_m": 12, "air_draft_limit_m": 40 } },
             { "name": "B", "inputs": {
                 "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only",
                 "formation": { "kind": "pushed_convoy", "abreast": 2, "in_line": 2 },
                 "length_overall_m": 76.5, "beam_m": 11.4, "moulded_depth_m": 3.5,
-                "cargo_containment": "sloped_hopper_hold", "block_coefficient": 0.9 } }
+                "cargo_containment": "sloped_hopper_hold", "block_coefficient": 0.9,
+                "draught_limit_m": 12, "air_draft_limit_m": 40 } }
         ]
     });
+    // Issue #1034: a river-only Option needs a number for both river limits, so a hand-written file gives them.
     std::fs::write(&file, hand.to_string()).unwrap();
     let filled = ovd(&[
         "fill",
@@ -172,6 +198,13 @@ fn a_saved_design_passes_ovd_validate() {
     // Issue #925: a new Option has no Service Area until one is chosen.
     session
         .set_input("Option 2", "service_area", json!("river-only"))
+        .unwrap();
+    // Issue #1034: a river-only Option needs a number for both river limits to be saved.
+    session
+        .set_input("Option 2", "draught_limit_m", json!(12.0))
+        .unwrap();
+    session
+        .set_input("Option 2", "air_draft_limit_m", json!(40.0))
         .unwrap();
     let file = dir.join("saved.vdesign");
     std::fs::write(&file, session.save().unwrap()).unwrap();

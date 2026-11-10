@@ -17,7 +17,7 @@ ovd - Open Vessel Designer
 
 Usage:
   ovd new [--profile <profile.json>] [--class <class id>] [--service-area <river-only|coastal-and-river>]
-          [<file.vdesign>]
+          [--draught-limit <m>] [--air-draft-limit <m>] [<file.vdesign>]
       Write a starter Design with one Option. Its five required inputs (Cargo, Hull Form,
       Formation, length, beam) are examples to edit, and so is its moulded depth, which you may
       delete: a left-out depth is the beam times the depth-to-beam ratio of the Cargo, from the
@@ -34,7 +34,7 @@ Usage:
       take the table's values. Prints to stdout when no output file is given; never overwrites.
   ovd fill [--profile <profile.json>] [--rule-set <file>]... [--add-rule-set <id>@<version>]...
             [--remove-rule-set <id>]... [--as-new] [--service-area <river-only|coastal-and-river>]
-            <in.vdesign> [<out.vdesign>]
+            [--draught-limit <m>] [--air-draft-limit <m>] <in.vdesign> [<out.vdesign>]
       Write every input a hand-written Design leaves out in, as used and marked \"default\",
       from the Defaults Profile. Prints to stdout when no output file is given; never
       overwrites a file. Writes nothing and exits 1 if there is any hard error.
@@ -46,6 +46,9 @@ Usage:
       selected set includes.
       The Service Area has no default: a Design with none is an error. --service-area sets it, as
       typed, in every Option that has none (an Option that has one keeps it).
+      A river-only Option needs a number for the draught limit and the air-draft limit (there is no
+      \"no limit\"): type them, or pick a Vessel Class. --draught-limit and --air-draft-limit (metres)
+      write them, as typed, in every river-only Option that has none.
   ovd validate [--profile <profile.json>] [--rule-set <file>]... [--inputs] <file.vdesign>
       List hard errors and soft warnings without running. --inputs also lists every input
       as used, typed or default. Exits 1 if there is any hard error. A file must store
@@ -203,6 +206,8 @@ struct Flags<'a> {
     no_damage: bool,
     as_new: bool,
     service_area: Option<&'a str>,
+    draught_limit: Option<f64>,
+    air_draft_limit: Option<f64>,
     files: Vec<&'a str>,
 }
 
@@ -223,6 +228,8 @@ fn parse_flags<'a>(
         no_damage: false,
         as_new: false,
         service_area: None,
+        draught_limit: None,
+        air_draft_limit: None,
         files: Vec::new(),
     };
     let mut it = args.iter();
@@ -261,11 +268,26 @@ fn parse_flags<'a>(
                         .ok_or("--service-area needs river-only or coastal-and-river")?,
                 );
             }
+            // Issue #1034: the river limits, in metres, typed into every river-only Option with no answer.
+            "--draught-limit" if allow_as_new => {
+                flags.draught_limit = Some(limit_arg("--draught-limit", it.next())?);
+            }
+            "--air-draft-limit" if allow_as_new => {
+                flags.air_draft_limit = Some(limit_arg("--air-draft-limit", it.next())?);
+            }
             a if a.starts_with('-') => return Err(format!("unknown option `{a}`")),
             a => flags.files.push(a),
         }
     }
     Ok(flags)
+}
+
+/// A river limit given on the command line: a number of metres above 0 (issue #1034).
+fn limit_arg(flag: &str, value: Option<&&str>) -> Result<f64, String> {
+    value
+        .and_then(|v| v.parse::<f64>().ok())
+        .filter(|v| v.is_finite() && *v > 0.0)
+        .ok_or_else(|| format!("{flag} needs a number of metres above 0"))
 }
 
 fn load_profile(path: Option<&str>) -> Result<Profile, String> {
@@ -426,6 +448,8 @@ fn new(args: &[&str]) -> Result<(), String> {
     // `--service-area <value>` sets the Service Area, which has no default (issue #925).
     let mut class: Option<&str> = None;
     let mut service_area: Option<&str> = None;
+    let mut draught_limit: Option<f64> = None;
+    let mut air_draft_limit: Option<f64> = None;
     let mut rest: Vec<&str> = Vec::new();
     let mut it = args.iter();
     while let Some(&arg) = it.next() {
@@ -436,6 +460,10 @@ fn new(args: &[&str]) -> Result<(), String> {
                 it.next()
                     .ok_or("--service-area needs river-only or coastal-and-river")?,
             );
+        } else if arg == "--draught-limit" {
+            draught_limit = Some(limit_arg("--draught-limit", it.next())?);
+        } else if arg == "--air-draft-limit" {
+            air_draft_limit = Some(limit_arg("--air-draft-limit", it.next())?);
         } else {
             rest.push(arg);
         }
@@ -456,7 +484,19 @@ fn new(args: &[&str]) -> Result<(), String> {
                 ));
             }
             session.set_input("Option 1", "service_area", serde_json::json!(area))?;
+            // Issue #1034: the river limits go in as typed; a river-only starter needs both.
+            for (name, v) in [
+                ("draught_limit_m", draught_limit),
+                ("air_draft_limit_m", air_draft_limit),
+            ] {
+                if let Some(v) = v {
+                    session.set_input("Option 1", name, serde_json::json!(v))?;
+                }
+            }
             session.save()?
+        }
+        None if draught_limit.is_some() || air_draft_limit.is_some() => {
+            return Err("--draught-limit and --air-draft-limit go with --service-area".into());
         }
         None => {
             // Not a default: the starter has no Service Area until the designer gives one.
@@ -523,6 +563,14 @@ fn fill(args: &[&str]) -> Result<(), String> {
     // Option that has none.
     if let Some(area) = flags.service_area {
         text = ovd_format::vdesign::with_service_area(&text, area)?;
+    }
+    // Issue #1034: the river limits are the designer's answer too: typed into every river-only Option with none.
+    if flags.draught_limit.is_some() || flags.air_draft_limit.is_some() {
+        text = ovd_format::vdesign::with_river_limits(
+            &text,
+            flags.draught_limit,
+            flags.air_draft_limit,
+        )?;
     }
     let filled = if flags.as_new {
         ovd_format::fill_as_new(&text, &profile)
@@ -789,8 +837,17 @@ fn run(args: &[&str]) -> Result<bool, String> {
             for e in &checked.report.errors {
                 eprintln!("error: {e}");
             }
+            // Issue #1034: for a river limit, `ovd fill` alone is no way round: the hint says what answers it.
+            let river = |e: &String| e.contains("river-only Option needs a number");
+            let hint = if !checked.report.errors.iter().any(river) {
+                "Fix the file, or run `ovd fill` if inputs are left out."
+            } else if checked.report.errors.iter().all(river) {
+                "Type a number for each river limit, or pick a Vessel Class."
+            } else {
+                "Type a number for each river limit, or pick a Vessel Class. `ovd fill` writes in the other left-out inputs."
+            };
             eprintln!(
-                "{} error(s); nothing run. Fix the file, or run `ovd fill` if inputs are left out.",
+                "{} error(s); nothing run. {hint}",
                 checked.report.errors.len().max(1)
             );
             return Ok(false);

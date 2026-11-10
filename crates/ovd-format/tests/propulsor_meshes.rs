@@ -490,8 +490,7 @@ fn every_propulsor_part_is_a_named_gltf_node_with_the_propulsor_material() {
 }
 
 fn new_self_propelled(propulsor: &str, stern: &str) -> ovd_format::DesignSession {
-    let mut s =
-        ovd_format::DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     for (n, v) in [
         ("cargo", serde_json::json!("bauxite")),
         ("length_overall_m", serde_json::json!(110.0)),
@@ -575,4 +574,17 @@ fn each_propulsor_place_is_tied_to_its_mass_item_by_type() {
         }
     }
     assert_eq!(checked, 24, "six types, two sterns, two units each");
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

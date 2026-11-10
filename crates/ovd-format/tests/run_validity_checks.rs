@@ -12,6 +12,7 @@ use serde_json::{Value, json};
 fn hopper_channel(loa: f64, beam: f64, bottom_width: Option<f64>) -> Value {
     let mut inputs = json!({
         "cargo": "bauxite", "hull_form": "raked_box", "service_area": "river-only", "formation": { "kind": "self_propelled" },
+        "draught_limit_m": 12.0, "air_draft_limit_m": 40.0,
         "length_overall_m": loa, "beam_m": beam, "moulded_depth_m": 4.5,
         "cargo_containment": "sloped_hopper_hold", "max_speed_kn": 9.0,
         "channel_current_kn": 1.5, "channel_depth_m": 5.0,

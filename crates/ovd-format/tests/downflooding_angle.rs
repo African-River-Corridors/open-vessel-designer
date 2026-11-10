@@ -27,6 +27,8 @@ fn with_angle(angle: Value) -> Value {
         "options": [{ "name": "Option 1", "inputs": {
             "cargo": { "value": "LNG", "source": "typed" },
             "service_area": { "value": "river-only", "source": "typed" },
+            "draught_limit_m": { "value": 12.0, "source": "typed" },
+            "air_draft_limit_m": { "value": 40.0, "source": "typed" },
             "hull_form": { "value": "raked_box", "source": "typed" },
             "formation": { "value": { "kind": "pushed_barge" }, "source": "typed" },
             "length_overall_m": { "value": 90.0, "source": "typed" },

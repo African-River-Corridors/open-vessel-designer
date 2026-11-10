@@ -26,7 +26,9 @@ fn results(service_area: &str, extra: Value) -> Value {
         "options": [{ "name": "Option 1", "inputs": inputs }]
     })
     .to_string();
-    let d = fill_as_new(&text, &Profile::built_in()).design.unwrap();
+    let d = fill_as_new(&river_limits(&text), &Profile::built_in())
+        .design
+        .unwrap();
     match run_option(&d.options[0]) {
         RunOutcome::Results { results, .. } => results,
         other => panic!("{other:?}"),
@@ -51,7 +53,9 @@ fn small_hull(cargo: &str, containment: &str, service_area: &str, loa: f64, beam
         "options": [{ "name": "Option 1", "inputs": inputs }]
     })
     .to_string();
-    let d = fill_as_new(&text, &Profile::built_in()).design.unwrap();
+    let d = fill_as_new(&river_limits(&text), &Profile::built_in())
+        .design
+        .unwrap();
     match run_option(&d.options[0]) {
         RunOutcome::Results { results, .. } => results,
         other => panic!("{other:?}"),
@@ -304,6 +308,8 @@ fn river_140x29(extra: Value) -> Value {
         "beam_m": { "value": 29.0, "source": "typed" },
         "moulded_depth_m": { "value": 12.0, "source": "typed" },
         "service_area": { "value": "river-only", "source": "typed" },
+        "draught_limit_m": { "value": 12.0, "source": "typed" },
+        "air_draft_limit_m": { "value": 40.0, "source": "typed" },
         "arrangement_style": { "value": "deckhouse", "source": "typed" }
     });
     for (k, v) in extra.as_object().unwrap() {
@@ -314,7 +320,9 @@ fn river_140x29(extra: Value) -> Value {
         "options": [{ "name": "Option 1", "inputs": inputs }]
     })
     .to_string();
-    let d = fill_as_new(&text, &Profile::built_in()).design.unwrap();
+    let d = fill_as_new(&river_limits(&text), &Profile::built_in())
+        .design
+        .unwrap();
     match run_option(&d.options[0]) {
         RunOutcome::Results { results, .. } => results,
         other => panic!("{other:?}"),
@@ -338,4 +346,10 @@ fn a_river_only_option_with_untyped_hours_sails_round_the_clock_in_mode_b() {
     assert_eq!(a1["crew"]["rpn"]["operating_mode"], json!("A1"));
     assert_eq!(a1["crew"]["minimum"], json!(4));
     assert_eq!(a1["crew"]["berths"], json!(7));
+}
+
+/// Issue #1034: a river-only Option needs a number for both river limits. These are high enough not to bind, so
+/// no value of these tests moves.
+fn river_limits(text: &str) -> String {
+    ovd_format::with_river_limits(text, Some(12.0), Some(40.0)).unwrap()
 }

@@ -14,6 +14,8 @@ fn design(cargo: &str, formation: &str, extra: Value) -> String {
     let mut inputs = json!({
         "cargo": { "value": cargo, "source": "typed" },
         "service_area": { "value": "river-only", "source": "typed" },
+        "draught_limit_m": { "value": 12.0, "source": "typed" },
+        "air_draft_limit_m": { "value": 40.0, "source": "typed" },
         "hull_form": { "value": "shipd", "source": "typed" },
         "formation": { "value": { "kind": formation }, "source": "typed" },
         "length_overall_m": { "value": 80.0, "source": "typed" },

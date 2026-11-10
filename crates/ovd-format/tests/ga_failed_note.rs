@@ -30,7 +30,8 @@ fn gas_hull(cargo: &str, loa: f64, beam: f64, depth: f64) -> Value {
             "formation": t(json!({"kind": "self_propelled"})), "length_overall_m": t(json!(loa)),
             "beam_m": t(json!(beam)), "moulded_depth_m": t(json!(depth)),
             "cargo_containment": t(json!("type_c_tanks")),
-            "service_area": t(json!("river-only"))}}]});
+            "service_area": t(json!("river-only")),
+            "draught_limit_m": t(json!(12.0)), "air_draft_limit_m": t(json!(40.0))}}]});
     let checked = check(&design.to_string(), &Profile::built_in());
     match run_design(&checked.design.expect("a valid Design"))
         .remove(0)

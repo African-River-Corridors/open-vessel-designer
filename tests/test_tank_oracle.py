@@ -22,7 +22,8 @@ def case(**over) -> dict:
     i = {"loa_m": 76.5, "beam_m": 11.4, "depth_m": 3.5, "zone_aft_m": 3.0, "zone_fwd_m": 40.0,
          "double_side_m": 1.2, "double_bottom_m": 0.9, "tanks_in_line": 3, "centreline_bulkhead": False,
          "cofferdam_m": 0.8, "pump_room_m": 0.0, "slop_share": 0.0, "deadweight_t": 1500.0,
-         "service_area": "river-only", "adn_vessel_type": "C"}
+         "service_area": "river-only", "adn_vessel_type": "C",
+         "draught_limit_m": 12.0, "air_draft_limit_m": 40.0}
     i.update(over)
     return i
 

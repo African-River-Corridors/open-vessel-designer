@@ -530,6 +530,12 @@ mod tests {
         state
             .set_input("Option 1", "service_area", serde_json::json!("river-only"))
             .unwrap();
+        // Issue #1034: a river-only Option needs a number for both river limits before it runs.
+        for (name, v) in [("draught_limit_m", 12.0), ("air_draft_limit_m", 40.0)] {
+            state
+                .set_input("Option 1", name, serde_json::json!(v))
+                .unwrap();
+        }
         state.dirty = false;
         state
     }
@@ -541,6 +547,8 @@ mod tests {
     /// The starter with a river-only Service Area (issue #925), and its results hash.
     fn starter_text_with_area() -> String {
         let text = ovd_format::with_service_area(&starter_text(), "river-only").unwrap();
+        // Issue #1034: a river-only Option needs a number for both river limits.
+        let text = ovd_format::with_river_limits(&text, Some(12.0), Some(40.0)).unwrap();
         ovd_format::fill(&text, &Profile::built_in())
             .design
             .unwrap()

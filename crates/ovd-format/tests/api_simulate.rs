@@ -16,6 +16,11 @@ fn typed(file: &str, index: usize) -> Map<String, Value> {
     let mut p = typed_only(file, index);
     // The Service Area has no default (issue #925); a fixture of an older file may not give one.
     p.entry("service_area").or_insert(json!("river-only"));
+    // Issue #1034: a river-only Option needs a number for both river limits (high enough not to bind).
+    if p["service_area"] == json!("river-only") {
+        p.entry("draught_limit_m").or_insert(json!(12.0));
+        p.entry("air_draft_limit_m").or_insert(json!(40.0));
+    }
     p
 }
 
@@ -81,7 +86,15 @@ fn the_coastal_lng_example_as_river_only_and_coastal_gives_runs_results() {
     same("coastal", &base);
     same(
         "river-only",
-        &with(base, "service_area", json!("river-only")),
+        &with(
+            with(
+                with(base, "service_area", json!("river-only")),
+                "draught_limit_m",
+                json!(12.0),
+            ),
+            "air_draft_limit_m",
+            json!(40.0),
+        ),
     );
 }
 

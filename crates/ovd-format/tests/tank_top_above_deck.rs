@@ -257,7 +257,10 @@ fn the_river_barge_is_feasible_because_the_search_takes_a_lower_share_than_half(
 fn river_design(extra: Value) -> Value {
     let mut base = json!({
         "cargo": "LNG", "hull_form": "raked_box", "formation": { "kind": "self_propelled" },
-        "length_overall_m": 100.0, "beam_m": 20.0, "service_area": "river-only"
+        "length_overall_m": 100.0, "beam_m": 20.0, "service_area": "river-only",
+        // Issue #1034: a river-only Option needs a number for both river limits. A 3.5 m draught limit keeps the
+        // share search where it was with no limit (share 0.375, 2,351 t); the air-draft limit does not bind.
+        "draught_limit_m": 3.5, "air_draft_limit_m": 40.0
     });
     for (k, v) in extra.as_object().unwrap() {
         base[k] = v.clone();
@@ -292,6 +295,7 @@ fn the_depth_is_never_less_than_the_draught_limit_plus_the_freeboard() {
             "service_area": { "value": "river-only", "source": "typed" },
             "min_freeboard_m": { "value": 0.3, "source": "typed" },
             "draught_limit_m": { "value": 3.0, "source": "typed" },
+            "air_draft_limit_m": { "value": 40.0, "source": "typed" },
             "tank_top_above_deck_m": { "value": 2.5, "source": "typed" }
         } }]
     });
@@ -414,6 +418,7 @@ fn the_floor_applies_with_optimise_depth_too() {
             "service_area": { "value": "river-only", "source": "typed" },
             "min_freeboard_m": { "value": 0.3, "source": "typed" },
             "draught_limit_m": { "value": 3.0, "source": "typed" },
+            "air_draft_limit_m": { "value": 40.0, "source": "typed" },
             "optimise_depth": { "value": true, "source": "typed" },
             "tank_top_above_deck_m": { "value": 2.5, "source": "typed" }
         } }]

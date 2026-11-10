@@ -103,6 +103,12 @@ fn barge(area: &str, extra: serde_json::Value) -> ovd_format::vdesign::Design {
         "beam_m": { "value": 20.0, "source": "typed" },
         "service_area": { "value": area, "source": "typed" }
     });
+    // Issue #1034: a river-only Option needs a number for both river limits (high enough not to bind).
+    if area == "river-only" {
+        // A 3.5 m draught limit keeps the share search where it was with no limit (share 0.375).
+        inputs["draught_limit_m"] = json!({ "value": 3.5, "source": "typed" });
+        inputs["air_draft_limit_m"] = json!({ "value": 40.0, "source": "typed" });
+    }
     for (k, v) in extra.as_object().unwrap() {
         inputs[k] = json!({ "value": v, "source": "typed" });
     }

@@ -25,6 +25,11 @@ fn typed(file: &str) -> Map<String, Value> {
         .map(|(k, i)| (k.clone(), i["value"].clone()))
         .collect();
     p.entry("service_area").or_insert(json!("river-only"));
+    // Issue #1034: a river-only Option needs a number for both river limits (high enough not to bind).
+    if p["service_area"] == json!("river-only") {
+        p.entry("draught_limit_m").or_insert(json!(12.0));
+        p.entry("air_draft_limit_m").or_insert(json!(40.0));
+    }
     p
 }
 

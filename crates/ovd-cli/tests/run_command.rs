@@ -44,7 +44,16 @@ fn read_json(path: &Path) -> Value {
 /// A starter Design written by `ovd new`.
 fn starter(dir: &Path) -> PathBuf {
     let file = dir.join("starter.vdesign");
-    let out = ovd(&["new", "--service-area", "river-only", p(&file)]);
+    let out = ovd(&[
+        "new",
+        "--service-area",
+        "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
+        p(&file),
+    ]);
     assert!(out.status.success(), "{}", stderr(&out));
     file
 }
@@ -62,7 +71,17 @@ fn filled(dir: &Path, name: &str, inputs: Value) -> PathBuf {
         }),
     );
     let out = dir.join(format!("{name}.vdesign"));
-    let r = ovd(&["fill", "--service-area", "river-only", p(&raw), p(&out)]);
+    let r = ovd(&[
+        "fill",
+        "--service-area",
+        "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
+        p(&raw),
+        p(&out),
+    ]);
     assert!(r.status.success(), "{}", stderr(&r));
     out
 }
@@ -352,7 +371,8 @@ fn json_results_are_what_simulate_answers_for_a_pushed_barge() {
     let expected = simulate_answer(json!({
         "vessel": "box_barge", "cargo": "bauxite", "loa_m": 76.5, "beam_m": 11.4, "depth_m": 3.5,
         "cb": 0.928, "lightship_k_t_per_m3": 0.1093, "freeboard_min_m": 0.3,
-        "self_propelled": false, "eta_d": 0.45, "speed_max_kn": 10.0, "service_area": "river-only"
+        "self_propelled": false, "eta_d": 0.45, "speed_max_kn": 10.0, "service_area": "river-only",
+        "draught_limit_m": 12.0, "air_draft_limit_m": 40.0
     }));
     assert_eq!(results, &expected);
     // Pinned values from the original Python.
@@ -580,7 +600,7 @@ fn json_results_are_what_simulate_answers_for_a_river_only_gas_hull_on_the_adn_s
         "optimise_depth": false, "eta_d": 0.45, "speed_max_kn": 10.0,
         "aft_end_space_m": 0.6, "fwd_end_space_m": 0.5,
         "opening_setback_basis": "tank_end",
-        "service_area": "river-only",
+        "service_area": "river-only", "air_draft_limit_m": 40.0,
         "entrance_distance_m": 2.0, "engine_room_vent_inlet_distance_m": 2.0,
         "funnel_outlet_distance_m": 2.0
     }));
@@ -733,6 +753,10 @@ fn fill_adds_and_removes_rule_sets_and_run_states_the_scope() {
         "fill",
         "--service-area",
         "river-only",
+        "--draught-limit",
+        "12",
+        "--air-draft-limit",
+        "40",
         "--remove-rule-set",
         "ovd",
         p(&file),
@@ -886,4 +910,42 @@ fn run_compares_the_unscreened_stamp_with_the_unscreened_stage_and_says_when_the
             "cap {cap}"
         );
     }
+}
+
+#[test]
+fn a_river_only_file_with_no_limit_is_refused_by_fill_and_the_run_hint_does_not_send_it_to_fill() {
+    // Issue #1034: plain `ovd fill` must not fill a null and run with no limit.
+    let dir = temp_dir("river-limit-way-round");
+    let raw = dir.join("raw.vdesign");
+    write_json(
+        &raw,
+        &json!({
+            "format": "vdesign", "format_version": 3, "engine_version": "0.3.0", "units": "SI",
+            "options": [{ "name": "Option 1", "inputs": {
+                "cargo": { "value": "LNG", "source": "typed" },
+                "hull_form": { "value": "raked_box", "source": "typed" },
+                "formation": { "value": { "kind": "self_propelled" }, "source": "typed" },
+                "length_overall_m": { "value": 110.0, "source": "typed" },
+                "beam_m": { "value": 11.4, "source": "typed" },
+                "service_area": { "value": "river-only", "source": "typed" },
+                "draught_limit_m": null
+            } }]
+        }),
+    );
+    let out = dir.join("out.vdesign");
+    let fill = ovd(&["fill", p(&raw), p(&out)]);
+    assert_eq!(fill.status.code(), Some(1), "{}", stderr(&fill));
+    assert!(stderr(&fill).contains("river-only Option needs a number"));
+    assert!(!out.exists());
+    let run = ovd(&["run", p(&raw)]);
+    assert!(!run.status.success());
+    let e = stderr(&run);
+    assert!(e.contains("river-only Option needs a number"), "{e}");
+    assert!(
+        e.contains("Type a number") && e.contains("Vessel Class"),
+        "{e}"
+    );
+    // The hint line (the last): the other left-out inputs' own error may name `ovd fill`, the hint must not.
+    let hint = e.lines().rfind(|l| l.contains("nothing run")).unwrap();
+    assert!(!hint.contains("run `ovd fill`"), "{hint}");
 }

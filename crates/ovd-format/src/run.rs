@@ -694,6 +694,24 @@ pub(crate) fn run_option_detail(
     extra: &[(String, String)],
     damage: &DamageControl,
 ) -> (RunOutcome, Option<(String, String)>) {
+    // Issue #1034: a river-only Option answers both river limits. One stored as null (a file saved before)
+    // runs as it did; one left out, or a typed null, is the one message.
+    if option.input("service_area").and_then(|i| i.value.as_str()) == Some("river-only") {
+        let missing: Vec<&str> = crate::vdesign::RIVER_LIMITS
+            .into_iter()
+            .filter(|n| {
+                option.input(n).is_none_or(|i| {
+                    i.value.is_null() && i.source != crate::vdesign::Source::Default
+                })
+            })
+            .collect();
+        if !missing.is_empty() {
+            return (
+                RunOutcome::Failed(crate::vdesign::river_limits_required(&missing).to_string()),
+                None,
+            );
+        }
+    }
     let params = match simulate_params_of(option) {
         Ok(p) => p,
         Err(m) => return (RunOutcome::Failed(m), None),
@@ -1167,7 +1185,7 @@ fn stern_arrangement_of(
     let limit_set = vessel.capacity.air_draft_limit_m.is_some();
     let hazard = hazard_study_json(aft, vessel);
     Some(match &aft.deckhouse {
-        // D4: fixed on the deckhouse, unless an air-draft limit is set and the wheelhouse can lift.
+        // D4: fixed on the deckhouse, unless a fixed one would break the air-draft limit and the wheelhouse can lift.
         Some(d) => {
             let mut block = json!({
                 "style": if aft.forward_house.is_some() { "wheelhouse_forward" } else { "deckhouse" },
@@ -1180,6 +1198,8 @@ fn stern_arrangement_of(
                     "air_draft_limit"
                 } else if limit_set && lift <= 0.0 {
                     "no_lift"
+                } else if limit_set {
+                    "limit_not_binding"
                 } else {
                     "no_air_draft_limit"
                 },

@@ -755,6 +755,19 @@ impl DesignSession {
             "vessel_scheme" => self.pick_scheme(i, value),
             _ => self.put(i, name, value),
         }
+        // Issue #1034: a river-only Option has no "no limit": a river limit that is only a default
+        // `null` (from before the Service Area was river-only) is unanswered again, so a run says so.
+        if name == "service_area"
+            && self.design.options[i]
+                .input("service_area")
+                .is_some_and(|s| s.value.as_str() == Some("river-only"))
+        {
+            self.design.options[i].inputs.retain(|(n, s)| {
+                !(crate::vdesign::RIVER_LIMITS.contains(&n.as_str())
+                    && s.source == Source::Default
+                    && s.value.is_null())
+            });
+        }
         self.normalise();
         // Issue #275: the default Rule Sets follow the Service Area and the Cargo; typed ones stay.
         if matches!(name, "cargo" | "cargo_containment" | "service_area") {

@@ -24,7 +24,7 @@ fn legacy(name: &str) -> String {
 }
 
 fn new_lpg(carriage: &str) -> DesignSession {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     for (name, value) in [
         ("cargo", json!("LPG_propane")),
         ("length_overall_m", json!(110.0)),
@@ -156,4 +156,17 @@ fn a_typed_stress_above_the_igc_limit_warns_and_one_below_does_not() {
     s.set_input("Option 1", "tank_allowable_stress_mpa", json!(200.0))
         .unwrap();
     assert!(!warns(&s));
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

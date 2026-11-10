@@ -30,7 +30,7 @@ fn legacy(name: &str) -> String {
 
 /// A new Design of this Cargo (and carriage condition, for an LPG Cargo), as a session makes it.
 fn new_session(cargo: &str, carriage: &str) -> DesignSession {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     s.set_input("Option 1", "cargo", json!(cargo)).unwrap();
     s.set_input("Option 1", "length_overall_m", json!(110.0))
         .unwrap();
@@ -774,4 +774,17 @@ fn a_typed_design_pressure_replaces_the_igc_minimum() {
         .as_f64()
         .unwrap();
     assert_eq!(p, 0.7);
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

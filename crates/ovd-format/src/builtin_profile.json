@@ -1021,7 +1021,7 @@
       "unit": "m",
       "hard": { "gt": 0, "le": 1000 },
       "soft": { "min": 3.0, "max": 40.0 },
-      "basis": "catalogue air drafts span 3.0 to 35.5 m"
+      "basis": "catalogue air drafts span 3.0 to 35.5 m. A river-only Option must carry a number (issue #1034): type one, or pick a Vessel Class, which fills it. There is no default and no \"none\" for a river-only Option, as the CEMT air drafts alone span 3.0 to 9.1 m (ECMT Resolution 92/2, Table 1) and a wrong default would block or pass a design without a word. A coastal-and-river Option may leave it out. A limit above a typed `bridge_clearance_m` gives a warning"
     },
     "bridge_clearance_m": {
       "default": null,
@@ -1050,7 +1050,7 @@
       "unit": "m",
       "hard": { "gt": 0, "le": 100 },
       "soft": { "min": 0.8, "max": 12.0 },
-      "basis": "catalogue single-hull draughts span 1.0 to 9 m"
+      "basis": "catalogue single-hull draughts span 1.0 to 9 m. A river-only Option must carry a number (issue #1034): type one, or pick a Vessel Class, which fills it. There is no default and no \"none\" for a river-only Option. A coastal-and-river Option may leave it out"
     },
     "lock_length_m": {
       "default": null,

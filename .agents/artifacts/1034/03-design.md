@@ -2,7 +2,7 @@
 ticket: 1034
 phase: design
 date: 2026-11-08
-status: draft, for the maintainer's gate
+status: approved (the maintainer's gate, 2026-11-09)
 repos:
   - identifier: African-River-Corridors/open-vessel-designer
     sha: a85c10002f3e7e752f587d5ac0e745834532a76f
@@ -120,6 +120,19 @@ Options for the maintainer (CPU s measured or estimated, research section 6):
 ### D5. River runs keep 2 tanks along
 
 A river-only run does not search 3 or 4 along: the choice is tied to the IGC damage screen (#935). Under tight limits (2.5 m / 7.0 m) both river designs fail length over diameter with 2 along. **Recommended: a separate issue** to let a river-only run choose tanks along on the intact checks. Out of scope here.
+
+## Gate outcome
+
+The maintainer approved this design at the gate on 2026-11-09. The answers below **override** the text above where they differ. In particular, the text above lets a designer type "no limit" (D1, Q3). The gate said no: there is no "no limit" for a river-only Option.
+
+1. **Q1.** Every river-only Option, with any Cargo, must answer both limits.
+2. **Q2.** Coastal-and-river Options: the limits stay optional, as today.
+3. **Q3.** No "no limit". A river-only Option must carry a number, typed or filled by a Vessel Class. So there is no `none` value for `--draught-limit` or `--air-draft-limit`, and no "no limit" choice in the app. Python `simulate` raises `TypeError` for a missing or `None` limit on a river-only Option. `calibration.py` and the river-only tests get real numbers. Saved files are unchanged: a file that stores a limit as `null` with source `default` still runs, with the same results and hash, and a validation warning (not a results warning).
+4. **Q4.** The climb rule (Phase 3, a later PR).
+5. **Q5.** The damage-run cap stays 24.
+6. **Q6.** Bridge clearance stays a warning. A new warning fires when the air-draft limit is above a typed bridge clearance.
+7. **Q7.** The follow-ups are separate issues: #1049, #1050, #1051 and #1052.
+8. **The wheelhouse lift (answer of 2026-11-09, after Phase 2 made the air-draft limit required).** An existing rule makes a deckhouse wheelhouse elevating whenever a limit is set, so every river-only deckhouse design would have lifted its wheelhouse, even under a loose 40 m limit (the 140 x 29 m LNG deckhouse top fell from 25.8 m to 18.0 m above the keel, so the light air draft fell from 24.29 m to 16.52 m). **The wheelhouse lifts only when a fixed wheelhouse would break the air-draft limit.** Where the fixed wheelhouse meets the limit, it stays fixed and the design does not move. The engine runs the fixed design first and runs the lifting one only when the fixed one fails `air_draft_within_limit`. A limit equal to the fixed air draft keeps it fixed. The run's `wheelhouse_basis` is `limit_not_binding` for a fixed wheelhouse under a limit, `air_draft_limit` for one lifted by the limit. The tests no longer type `wheelhouse_max_lift_m = 0` to hide the lift.
 
 ## Risks
 

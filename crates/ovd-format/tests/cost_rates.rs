@@ -139,7 +139,7 @@ fn every_cost_rate_is_an_input_in_the_cost_rates_group_with_the_example_file_def
 
 #[test]
 fn a_new_design_holds_the_example_rates_and_its_budget_uses_them() {
-    let s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let s = river_session();
     for (name, want) in example() {
         assert_eq!(
             s.design().options[0].input(name).unwrap().value.as_f64(),
@@ -785,4 +785,17 @@ fn an_item_rate_moves_only_the_budget_and_a_pushed_option_has_no_item_lines() {
             );
         }
     }
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

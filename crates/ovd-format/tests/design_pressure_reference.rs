@@ -25,7 +25,7 @@ fn example() -> DesignSession {
 fn river_twin() -> DesignSession {
     let reference = example();
     let option = &reference.design().options[0];
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     for (name, stored) in &option.inputs {
         let skip = matches!(
             name.as_str(),
@@ -144,4 +144,17 @@ fn the_warning_fails_a_kilopascal_under_the_minimum_and_passes_a_kilopascal_over
             assert_eq!(row["outcome"], json!(outcome), "typed {typed}");
         }
     }
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

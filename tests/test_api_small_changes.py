@@ -17,7 +17,8 @@ CN_II = dict(vessel="gas_barge", cargo="LPG_propane", loa_m=90, beam_m=14.8, dep
              freeboard_min_m=0.3, draught_limit_m=4.4, self_propelled=True,
              fill_ratio=0.95, max_tank_od_m=12.0, service_area="coastal-and-river")
 BOX = dict(vessel="box_barge", cargo="bauxite", loa_m=76.5, beam_m=11.4, depth_m=3.5,
-           lightship_k_t_per_m3=0.1093, freeboard_min_m=0.3, service_area="river-only")
+           lightship_k_t_per_m3=0.1093, freeboard_min_m=0.3, service_area="river-only",
+           draught_limit_m=12.0, air_draft_limit_m=40.0)
 
 
 @pytest.mark.parametrize("ruleset", [None, 5, 1.5, True, ["a", 1], "IGC_2G"])

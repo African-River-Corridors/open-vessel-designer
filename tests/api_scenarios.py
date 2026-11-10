@@ -579,7 +579,7 @@ def _(c):
     return c.mod("simulate").simulate(dict(
         vessel="box_barge", cargo="bauxite", loa_m=c.n(76.5), beam_m=c.n(11.4), depth_m=c.n(3.5),
         lightship_k_t_per_m3=c.n(0.1093), freeboard_min_m=c.n(0.3),
-        service_area="river-only"))
+        service_area="river-only", draught_limit_m=12.0, air_draft_limit_m=40.0))
 
 
 @scenario("simulate.hopper_channel", covers=["simulate.simulate"])
@@ -587,14 +587,15 @@ def _(c):
     return c.mod("simulate").simulate(dict(
         vessel="hopper_barge", cargo="bauxite", loa_m=c.n(80), beam_m=c.n(12), depth_m=c.n(4),
         channel=dict(depth_m=c.n(5), ukc_m=c.n(1), bottom_width_m=c.n(40)),
-        air_draft_limit_m=c.n(6), speed_max_kn=c.n(6), service_area="river-only"))
+        air_draft_limit_m=c.n(6), speed_max_kn=c.n(6), service_area="river-only",
+        draught_limit_m=12.0))
 
 
 @scenario("simulate.wrong_vessel_for_cargo", covers=["simulate.simulate"])
 def _(c):
     return c.mod("simulate").simulate(dict(
         vessel="box_barge", cargo="LNG", loa_m=c.n(80), beam_m=c.n(12), depth_m=c.n(4),
-        service_area="river-only"))
+        service_area="river-only", draught_limit_m=12.0, air_draft_limit_m=40.0))
 
 
 # --- an edited or rebuilt object is used as it is (issue #126) ------------------------------

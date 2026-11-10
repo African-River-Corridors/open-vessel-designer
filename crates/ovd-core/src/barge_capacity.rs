@@ -1538,7 +1538,33 @@ const BULK_GM_WARNING: &str = "Bulk GM is first-order (assumed lightship KG); \
 cargo-shift/angle-of-repose not modelled \u{2014} confirm with a full intact-stability booklet.";
 
 /// Run the unified barge capacity chain (volume-bound).
+///
+/// Issue #1034: a deckhouse wheelhouse is fixed unless a fixed one would break the air-draft limit
+/// (the maintainer's answer of 2026-11-09). The fixed design is run first; it is kept when it meets
+/// the limit, and the lifting wheelhouse is run only when it does not.
 pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError> {
+    let can_lift = inp.air_draft_limit_m.is_some()
+        && inp.aft.is_none()
+        && inp.aft_design.arrangement_style.has_aft_deckhouse()
+        && inp.aft_design.wheelhouse_max_lift_m > 0.0;
+    if !can_lift {
+        return compute_sized(inp);
+    }
+    let mut fixed = inp.clone();
+    fixed.aft_design.wheelhouse_max_lift_m = 0.0;
+    let fixed_result = compute_sized(&fixed)?;
+    let breaks_limit = fixed_result
+        .checks
+        .iter()
+        .any(|c| c.name == "air_draft_within_limit" && !c.ok);
+    if breaks_limit {
+        compute_sized(inp)
+    } else {
+        Ok(fixed_result)
+    }
+}
+
+fn compute_sized(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError> {
     let first = compute_once(inp)?;
     // Issue #779: a fixed deckhouse wheelhouse is sized in two passes. The first cannot know the
     // light waterline, so it takes the keel, which is never too low and can add a tier. The second
@@ -1555,7 +1581,7 @@ pub fn compute(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyError
         && inp.sightline_limit_m.is_some()
         && inp.aft.is_none()
         && inp.aft_design.arrangement_style == crate::aft_arrangement::ArrangementStyle::Deckhouse
-        && inp.air_draft_limit_m.is_none();
+        && (inp.air_draft_limit_m.is_none() || inp.aft_design.wheelhouse_max_lift_m <= 0.0);
     let (Some(t1), true) = (tiers(&first), sized_by_pass) else {
         return Ok(first);
     };

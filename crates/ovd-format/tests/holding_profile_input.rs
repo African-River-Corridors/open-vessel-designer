@@ -43,7 +43,7 @@ fn old_file(name: &str) -> String {
 }
 
 fn gas_session() -> DesignSession {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     s.set_input("Option 1", "cargo", json!("LNG")).unwrap();
     s.set_input("Option 1", "length_overall_m", json!(110.0))
         .unwrap();
@@ -149,7 +149,7 @@ fn a_new_gas_option_has_the_default_profile_labelled_default() {
 
 #[test]
 fn an_option_without_type_c_tanks_has_none_of_them_and_refuses_them() {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     s.set_input("Option 1", "cargo", json!("diesel_en590"))
         .unwrap();
     s.set_input("Option 1", "length_overall_m", json!(80.0))
@@ -359,4 +359,17 @@ fn the_default_passage_speed_is_the_options_design_speed_marked_default() {
     assert_eq!(passage_speed_kn(&typed[0], design), Some((8.0, false)));
     // The stored default holds no speed: nothing in the file goes stale.
     assert!(profile[0].get("passage_speed_kn").is_none());
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

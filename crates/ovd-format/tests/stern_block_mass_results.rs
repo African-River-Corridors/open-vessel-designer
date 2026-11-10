@@ -23,7 +23,7 @@ fn results(s: &DesignSession) -> Value {
 
 #[test]
 fn a_new_self_propelled_option_carries_the_block_and_shows_it() {
-    let mut s = DesignSession::new_design_in(Profile::built_in(), "river-only").unwrap();
+    let mut s = river_session();
     for (n, v) in [
         ("cargo", json!("LNG")),
         ("length_overall_m", json!(110.0)),
@@ -60,4 +60,17 @@ fn a_file_saved_before_has_no_block_mass_and_keeps_its_hash() {
         DesignSession::open(&read_with_area(path).unwrap(), Profile::built_in()).unwrap();
     assert_eq!(opened.hash_status[0].1, HashStatus::Matches);
     assert!(results(&s).get("stern_block_mass").is_none());
+}
+
+/// Issue #1034: a new river-only session needs a number for both river limits before it runs. These are high enough
+/// not to bind, so no value of these tests moves.
+fn river_session() -> ovd_format::DesignSession {
+    let mut s =
+        ovd_format::DesignSession::new_design_in(ovd_format::Profile::built_in(), "river-only")
+            .unwrap();
+    s.set_input("Option 1", "draught_limit_m", serde_json::json!(12.0))
+        .unwrap();
+    s.set_input("Option 1", "air_draft_limit_m", serde_json::json!(40.0))
+        .unwrap();
+    s
 }

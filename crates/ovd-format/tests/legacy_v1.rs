@@ -18,7 +18,16 @@ fn legacy_raw(name: &str) -> String {
 /// #925: the legacy files have none, and a Design with none is an error). The migration tests below are about
 /// what else an old file gets.
 fn legacy(name: &str) -> String {
-    ovd_format::with_service_area(&legacy_raw(name), "river-only").unwrap()
+    let text = ovd_format::with_service_area(&legacy_raw(name), "river-only").unwrap();
+    // Issue #1034: a file saved before the rule has no river limit; one with a `null` marked `default` is the
+    // only kind that keeps its results. Written in as a file saved after Phase 1 holds them.
+    let mut file: Value = serde_json::from_str(&text).unwrap();
+    for option in file["options"].as_array_mut().unwrap() {
+        for limit in ["draught_limit_m", "air_draft_limit_m"] {
+            option["inputs"][limit] = json!({ "value": null, "source": "default" });
+        }
+    }
+    file.to_string()
 }
 
 #[test]
@@ -115,7 +124,21 @@ fn fill_writes_a_version_2_file_that_validates_without_those_warnings() {
     );
     let again = check(&text, &p);
     assert_eq!(again.report.errors, Vec::<String>::new());
-    assert_eq!(again.report.warnings, Vec::<String>::new());
+    // Issue #1034: the file stores no river limits, so the one note about them stays.
+    let rest = again
+        .report
+        .warnings
+        .iter()
+        .filter(|w| !w.contains("saved before the rule that needs a number"))
+        .cloned()
+        .collect::<Vec<_>>();
+    assert_eq!(rest, Vec::<String>::new());
+    assert_eq!(
+        again.report.warnings.len(),
+        1,
+        "{:?}",
+        again.report.warnings
+    );
 }
 
 #[test]
@@ -132,11 +155,13 @@ fn the_design_session_opens_it_with_the_warnings_and_runs_it_as_igc_2g() {
         opened.hash_status
     );
     let e = session.evaluate();
-    assert!(
-        e.options[0].messages.is_empty(),
-        "{:?}",
-        e.options[0].messages
-    );
+    // Issue #1034: the one note about the river limits the file stores none of.
+    let others: Vec<_> = e.options[0]
+        .messages
+        .iter()
+        .filter(|m| !m.text.contains("saved before the rule that needs a number"))
+        .collect();
+    assert!(others.is_empty(), "{others:?}");
     let outcome = e.options[0].outcome.as_ref().expect("it ran");
     let text = format!("{outcome:?}");
     assert!(text.contains("IGC_2G"), "{text}");
@@ -151,7 +176,7 @@ fn a_bare_value_form_is_changed_too() {
     let file = json!({
         "format": "vdesign", "format_version": 1, "engine_version": "0.1.0",
         "options": [{ "name": "A", "inputs": {
-            "cargo": "LNG", "hull_form": "raked_box", "service_area": "river-only", "length_overall_m": 80.0, "beam_m": 12.0,
+            "cargo": "LNG", "hull_form": "raked_box", "service_area": "river-only", "draught_limit_m": 12.0, "air_draft_limit_m": 40.0, "length_overall_m": 80.0, "beam_m": 12.0,
             "moulded_depth_m": 5.0, "formation": { "kind": "self_propelled" },
             "ruleset": "ADN_G", "adn_tank_cap_m3": 380.0
         } }]
@@ -173,8 +198,10 @@ fn a_version_1_dry_bulk_file_gets_only_the_note_about_the_new_hold_inputs() {
     assert_eq!(checked.report.errors, Vec::<String>::new());
     let w = &checked.report.warnings;
     // Issue #448: and the stored block coefficient, now a result of the hull, is dropped. Issue
-    // #739: and the structure block of the Hull, which the file lacks.
-    assert_eq!(w.len(), 3, "{w:?}");
+    // #739: and the structure block of the Hull, which the file lacks. Issue #1034: and the river limits the
+    // file stores none of.
+    assert_eq!(w.len(), 4, "{w:?}");
+    assert!(has(w, "saved before the rule that needs a number"), "{w:?}");
     assert!(has(w, "before the structure block of the Hull"), "{w:?}");
     assert!(
         has(w, "fixed value the engine used before it was an input"),

@@ -135,7 +135,7 @@ fn rows(cargo: &str, service_area: &str) -> Vec<Value> {
             "moulded_depth_m": { "value": 6.0, "source": "typed" }
         }}]
     });
-    let filled = fill_as_new(&raw.to_string(), &Profile::built_in());
+    let filled = fill_as_new(&river_limits(&raw.to_string()), &Profile::built_in());
     assert_eq!(filled.report.errors, Vec::<String>::new());
     let text = filled.design.unwrap().to_text();
     let design = check(&text, &Profile::built_in()).design.unwrap();
@@ -167,4 +167,10 @@ fn a_river_only_option_does_not_have_the_set() {
         r.iter()
             .all(|x| !x["rule"].as_str().unwrap().starts_with("abs-steel-barges/"))
     );
+}
+
+/// Issue #1034: a river-only Option needs a number for both river limits. These are high enough not to bind, so
+/// no value of these tests moves.
+fn river_limits(text: &str) -> String {
+    ovd_format::with_river_limits(text, Some(12.0), Some(40.0)).unwrap()
 }

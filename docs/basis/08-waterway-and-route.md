@@ -161,6 +161,9 @@ Through the evaluation API only (`crates/ovd-format/src/eval.rs`, not from a Des
 5. The limit is compared as it is: no clearance margin, no water level allowance.
 6. A Vessel Class fills `air_draft_limit_m` with the **bottom** of its air-draft range, the lowest bridge
    clearance (`vessel_classes.rs`, `air_draft_limit_m`, line 84; `class_input.rs`).
+   A river-only Option must carry a number for this limit and for `draught_limit_m` (issue #1034): typed, or
+   filled by a Vessel Class. There is no default and no "no limit". A saved file that stores none keeps its
+   results and gets a validation warning. A limit above a typed `bridge_clearance_m` gives a warning.
 7. The gas-fuelled stern block leaves the exhaust uptake and the vent mast out of the air draft, as lowerable
    (`aft_arrangement.rs`, warning text near line 940).
 
