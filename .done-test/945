@@ -1,0 +1,3 @@
+# Done-test for #945: the Settings button stays still and the file name shows. Build lanes must not edit these.
+until: #945
+app/e2e/web-smoke.test.mjs
