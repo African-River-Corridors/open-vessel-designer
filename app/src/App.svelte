@@ -27,6 +27,11 @@
   /** The first-run notice: open on first start, and again from About. */
   let noticeOpen = $state(false);
   let noticeIsFirstRun = $state(false);
+  // The header texts that draw in once a Design is loaded (empty before).
+  const headerFile = $derived(snap ? (snap.dirty ? t("app-file-unsaved", { file: snap.file_name }) : snap.file_name) : "");
+  const headerProfile = $derived(snap ? t("app-header-profile", { profile: snap.profile }) : "");
+  const headerEngine = $derived(snap ? t("app-engine-version", { version: snap.engine_version }) : "");
+
   /** Settings: Display Language, theme and Defaults Profile. */
   let settingsOpen = $state(false);
   /** The browser build: shows a label and a link to the desktop app. */
@@ -311,11 +316,11 @@
     <button type="button" aria-label={t(showInput ? "app-input-panel-hide" : "app-input-panel-show")} aria-pressed={showInput} onclick={() => (showInput = !showInput)}>{t("app-input-panel")}</button>
     <button type="button" aria-label={t(showOutputs ? "app-outputs-panel-hide" : "app-outputs-panel-show")} aria-pressed={showOutputs} onclick={() => (showOutputs = !showOutputs)}>{t("app-outputs-panel")}</button>
     <button type="button" data-testid="settings" aria-haspopup="dialog" onclick={() => (settingsOpen = true)}>{t("app-settings")}</button>
-    {#if snap}
-      <span class="meta file">{snap.dirty ? t("app-file-unsaved", { file: snap.file_name }) : snap.file_name}</span>
-      <span class="meta">{t("app-header-profile", { profile: snap.profile })}</span>
-      <span class="meta" data-testid="engine-version">{t("app-engine-version", { version: snap.engine_version })}</span>
-    {/if}
+    <!-- These three draw in after the Design loads and their width depends on the language, so each has a
+         fixed width: the Settings button, to their left, never moves after first paint (issue #945). -->
+    <span class="meta file" title={headerFile}>{headerFile}</span>
+    <span class="meta profile" title={headerProfile}>{headerProfile}</span>
+    <span class="meta engine" data-testid="engine-version" title={headerEngine}>{headerEngine}</span>
   </header>
 
   <MessageBar {messages} />
@@ -358,8 +363,13 @@
   header button[aria-pressed="true"],
   header button[aria-pressed="true"]:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); }
   .grow { flex: 1; }
-  .meta { color: var(--ink-3); font-size: var(--fs-12); margin-left: var(--sp-2); }
-  .meta.file { font-family: var(--font-mono); }
+  .meta {
+    color: var(--ink-3); font-size: var(--fs-12); margin-left: var(--sp-2);
+    flex: none; box-sizing: border-box; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .meta.file { font-family: var(--font-mono); width: 8rem; }
+  .meta.profile { width: 10.5rem; }
+  .meta.engine { width: 5rem; }
   header :global(.web-badge) {
     font-size: var(--fs-11); text-transform: uppercase; letter-spacing: 0.08em; padding: 1px var(--sp-2);
     background: var(--surface-2); color: var(--ink-2); border: var(--lw-thin) solid var(--rule-strong); border-radius: var(--radius);

@@ -1224,4 +1224,36 @@ describe("OVD web smoke tests", () => {
     await ready(b);
     assert.equal(await (await b.$("[data-testid=notice]")).isExisting(), false);
   });
+
+  it("keeps the Settings button where it is while the header text draws in, in each language (issue #945)", async () => {
+    const b = await start();
+    await b.url(`${origin}/ovd/app`);
+    await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
+    await (await b.$("button=I understand")).click();
+    await ready(b);
+    const x = () => b.execute(() => document.querySelector("[data-testid=settings]").getBoundingClientRect().x);
+    // The three header texts after the button draw in once the Design is loaded; their width must not move it.
+    const setMeta = (texts) =>
+      b.execute((texts) => {
+        const metas = [...document.querySelectorAll("header .meta")];
+        metas.forEach((m, i) => (m.textContent = texts[i]));
+        return metas.length;
+      }, texts);
+    const long = "a_very_long_design_file_name_that_would_push_the_header_wide.vdesign";
+    for (const [tag, open] of [["en", "Open"], ["es", "Abrir"], ["pt", "Abrir"], ["zh-Hans", "打开"], ["ak", "Bue"]]) {
+      await inSettings(b, async () => (await b.$("[data-testid=language]")).selectByAttribute("value", tag));
+      await until(b, `the header in ${tag}`, async () => (await b.$(`button=${open}`)).isExisting());
+      await b.refresh();
+      await until(b, `the header in ${tag} after a reload`, async () => (await b.$(`button=${open}`)).isExisting());
+      const first = await x();
+      await until(b, "the header texts", async () => (await b.$("[data-testid=engine-version]").getText()) !== "");
+      if (SHOTS) await (await b.$("header")).saveScreenshot(path.join(SHOTS, `945-header-${tag}.png`));
+      const drawn = await x();
+      assert.equal(drawn, first, `the Settings button moved when the header text drew in (${tag})`);
+      await setMeta(["", "", ""]);
+      assert.equal(await x(), first, `the button moved with empty header text (${tag})`);
+      await setMeta([long, long, long]);
+      assert.equal(await x(), first, `the button moved with long header text (${tag})`);
+    }
+  });
 });
