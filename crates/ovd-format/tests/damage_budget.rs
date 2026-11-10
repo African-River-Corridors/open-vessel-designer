@@ -187,3 +187,67 @@ fn the_share_search_and_the_depth_passes_of_a_run_share_one_budget_and_one_progr
         eprintln!("{area}: {runs} damage runs, {} progress calls", calls.len());
     }
 }
+
+// DONE-TEST #1034 P3 — do not edit in the build
+/// Issue #1034, Phase 3 (the climb share rule, design note D2 C). The coastal-and-river 100 x 20 m barge with the
+/// share typed at 0.5 and two along: 0.5 fails the intact checks, 0.375 passes (one tank across, 12.6 m, about
+/// 2,987 t on an 8.9 m hull) and 0.25 carries the same cargo on a 10.5 m hull, so the climb keeps 0.375. The whole
+/// run, every share the climb visits and every depth pass together, keeps one damage budget of 24 runs in the
+/// searches plus the answer's own, one count from 0 that never falls, and no pass stopped at the limit.
+/// Label: snapshot (the share and the cargo are what the code printed, 2026-11-10); the budget is the rule (Q5).
+#[test]
+fn the_coastal_share_search_keeps_one_damage_budget_over_every_share_the_climb_visits() {
+    let d = barge(
+        "coastal-and-river",
+        json!({ "tank_top_above_deck_od_fraction": 0.5, "tank_top_above_deck_m": null, "tanks_in_line": 2 }),
+    );
+    let log = Rc::new(RefCell::new(Vec::<DamageProgress>::new()));
+    let seen = log.clone();
+    let control = DamageControl {
+        run: true,
+        progress: Some(Rc::new(move |p| {
+            seen.borrow_mut().push(p);
+            ControlFlow::Continue(())
+        })),
+    };
+    let before = ovd_format::damage::damage_runs_started();
+    let RunOutcome::Results { results, .. } = run_option_with_damage(
+        &d.options[0],
+        ovd_format::rule_set::built_in(),
+        &[],
+        &control,
+    ) else {
+        panic!("no results");
+    };
+    let runs = ovd_format::damage::damage_runs_started() - before;
+    assert_eq!(results["damage_status"], "run");
+    assert!(
+        runs <= 24 + 1,
+        "{runs} damage runs over the shares the climb visited"
+    );
+    assert!(
+        results["damage_screening"]["limit_note"].is_null(),
+        "{}",
+        results["damage_screening"]["limit_note"]
+    );
+    let share = results["arrangement"]["tank_top_above_deck_od_fraction"].as_f64();
+    assert_eq!(share, Some(0.375), "{}", results["arrangement"]);
+    let t = results["results"]["cargo_t"].as_f64().unwrap();
+    assert!((t - 2987.07).abs() < 1.0, "cargo {t} t");
+    let calls = log.borrow();
+    assert_eq!(
+        calls.iter().filter(|p| p.done == 0).count(),
+        1,
+        "the count went back to 0"
+    );
+    assert!(
+        calls.windows(2).all(|w| w[0].done <= w[1].done),
+        "done fell"
+    );
+    let last = calls.last().unwrap();
+    assert_eq!(last.done, last.total);
+    eprintln!(
+        "coastal climb: {runs} damage runs, {} progress calls",
+        calls.len()
+    );
+}
