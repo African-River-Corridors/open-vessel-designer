@@ -1569,8 +1569,20 @@ pub fn summary_lines(name: &str, results: &Value) -> Vec<String> {
     let a = &results["arrangement"];
     if a["tank_top_above_deck_m"].is_number() {
         let share = if a["tank_top_above_deck_od_fraction"].is_number() {
+            // Issue #1034: the search keeps the share with the most cargo within the limits; when the
+            // climb moved it, say what the tallest passing share carried.
+            let from = &a["share_climb_from"];
+            let climbed = if from.is_object() {
+                format!(
+                    "; {} carries {} t",
+                    f(from, &["share"], 3),
+                    f(from, &["cargo_t"], 1)
+                )
+            } else {
+                String::new()
+            };
             format!(
-                " (share {} of the tank diameter, at most {})",
+                " (share {} of the tank diameter, at most {}, the most cargo within the limits{climbed})",
                 f(a, &["tank_top_above_deck_od_fraction"], 3),
                 f(a, &["tank_top_above_deck_od_fraction_limit"], 3)
             )
