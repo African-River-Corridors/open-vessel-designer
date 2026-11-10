@@ -1,0 +1,4 @@
+# Done-test for #1043 follow-up: the lock checks block every hull through their own Rule rows (design commit "Done-test for #1043 follow-up: lock Rule rows on every hull"). Build lanes must not edit these.
+until: #1043
+crates/ovd-format/tests/lock_rule_rows.rs
+crates/ovd-format/tests/lock_fits_unchanged.rs

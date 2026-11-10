@@ -267,8 +267,6 @@ check-name-within-lock-length = within lock length
 check-lock-length = overall length { $length } m <= lock length { $limit } m
 check-name-within-lock-width = within lock width
 check-lock-width = overall beam { $width } m <= lock width { $limit } m
-check-feasible-arrangement-lock = The arrangement fails a lock limit of the route: { $fails }.
-check-name-feasible-arrangement = Feasible arrangement
 
 ## crates/ovd-format/src/deckhouse_openings.rs
 

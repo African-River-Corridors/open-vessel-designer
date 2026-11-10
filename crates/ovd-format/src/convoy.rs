@@ -120,7 +120,9 @@ pub(crate) fn scale_cost(barges: u64, cost: &mut Value) {
 
 /// The Waterway Limit checks of the lock, on the overall size of the Formation: a self-propelled
 /// hull and a pushed barge are one hull; a pushed convoy is `abreast` x `in_line` barges. An ATB or
-/// a tow is not checked yet. Nothing is added when the Option gives no lock.
+/// a tow is not checked yet. Nothing is added when the Option gives no lock. A failed check blocks
+/// through its own Rule row (`ovd/waterway/within-lock-length`, `…-width`); `arrangement.feasible`
+/// stays the search's answer about the tanks, which cannot see the lock.
 pub(crate) fn add_lock_checks(option: &DesignOption, v: &mut Value) {
     let (abreast, in_line) = match counts(option) {
         Some(c) => c,
@@ -157,24 +159,6 @@ pub(crate) fn add_lock_checks(option: &DesignOption, v: &mut Value) {
                 limit = Arg::py(limit),
             ),
         ));
-    }
-    // Issue #1043: a typed lock is a hard route limit, like `draught_limit_m`. A lock check that fails makes
-    // the arrangement infeasible, so the flag and the Rule Trace agree. The hull's length and beam are inputs,
-    // so the search could not have chosen differently.
-    let failed: Vec<&str> = checks
-        .iter()
-        .filter(|c| !c.ok)
-        .map(|c| c.name.as_str())
-        .collect();
-    let was_feasible = v["arrangement"]["feasible"] == json!(true);
-    if !failed.is_empty() && was_feasible {
-        let message = text!(
-            "check-feasible-arrangement-lock",
-            "The arrangement fails a lock limit of the route: {fails}.",
-            fails = failed.join("; "),
-        );
-        v["arrangement"]["feasible"] = json!(false);
-        checks.push(Check::new("Feasible arrangement", false, message));
     }
     let mut ids = TextIds::default();
     ids.checks(&checks);

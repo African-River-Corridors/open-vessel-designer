@@ -277,18 +277,23 @@ fn propulsive_efficiency_is_taken_where_it_is_used_and_it_moves_the_fuel_and_car
 }
 
 #[test]
-fn a_lock_the_hull_does_not_fit_gives_the_same_infeasible_answer_by_simulate_and_by_file() {
-    // Issue #1043: simulate and `ovd run` share the lock rule, and the Rule Trace agrees with the flag.
+fn a_lock_the_hull_does_not_fit_gives_the_same_answer_by_simulate_and_by_file() {
+    // Issue #1043: simulate and `ovd run` share the lock check, and its own Rule row carries the block.
+    // The flag stays the search's answer about the tanks.
+    let none = simulate(&typed(EXAMPLE, 0), false).unwrap_or_else(|e| panic!("{e}"));
     let params = with(typed(EXAMPLE, 0), "lock_length_m", json!(100.0));
     same("lock", &params);
     let got = simulate(&params, false).unwrap_or_else(|e| panic!("{e}"));
-    assert_eq!(got["arrangement"]["feasible"], false);
+    assert_eq!(
+        got["arrangement"]["feasible"], none["arrangement"]["feasible"],
+        "the lock leaves the arrangement flag alone"
+    );
     let row = got["rule_trace"]["rows"]
         .as_array()
         .and_then(|rows| {
             rows.iter()
-                .find(|r| r["rule"] == "ovd/gas-arrangement/feasible-arrangement")
+                .find(|r| r["rule"] == "ovd/waterway/within-lock-length")
         })
-        .unwrap_or_else(|| panic!("no feasible-arrangement row in {}", got["rule_trace"]));
+        .unwrap_or_else(|| panic!("no lock length row in {}", got["rule_trace"]));
     assert_eq!(row["outcome"], "fail", "{row}");
 }
