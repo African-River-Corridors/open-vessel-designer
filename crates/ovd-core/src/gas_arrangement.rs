@@ -2104,8 +2104,10 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
                 }
             }
             if ok && screening {
+                // Issue #994: at the damage-run limit a candidate that needs a run is left unscreened, and the walk
+                // goes on: a later candidate may have a verdict an earlier depth pass kept, which costs no run.
                 if screen_damage(s, &mut pool.all[i], false)? == Screened::CapReached {
-                    break 'counts;
+                    continue;
                 }
                 ok = passes_all(&pool.all[i], o);
             }
@@ -2132,7 +2134,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
         // is refined when no number of tanks along still to be screened has a candidate that carries more than the
         // failing size (the largest first, so the budget goes where the cargo is, and never starves the first
         // screening of a number along that carries more). The groups left are refined after the last number along.
-        if screening && s.runner.enabled() && !s.cap_hit {
+        if screening && s.runner.enabled() {
             let ahead = s.along[s
                 .along
                 .iter()
@@ -2160,7 +2162,7 @@ fn search(s: &mut Search<'_>, t_max: f64, stop_at_first_pass: bool) -> Result<Po
             }
         }
     }
-    if screening && s.runner.enabled() && !stop_at_first_pass && !s.cap_hit {
+    if screening && s.runner.enabled() && !stop_at_first_pass {
         let all = s.along.clone();
         refine_failed_groups(s, &mut pool, t_max, &all, 0.0)?;
     }
@@ -2348,7 +2350,7 @@ fn refine_groups(
         let mut hi_cand = hi_cand;
         if hi_cand.damage_stale && may_run(s) {
             if screen_damage(s, &mut hi_cand, true)? == Screened::CapReached {
-                return Ok(());
+                continue;
             }
             pool.all[hi_idx].damage = hi_cand.damage.clone();
             pool.all[hi_idx].damage_stale = false;
@@ -2461,8 +2463,10 @@ fn refine_groups(
             };
             let idx = pool.all.len();
             let mut passes = cand.cheap_failed == 0 && passes_all(&cand, o);
+            // Issue #994: at the damage-run limit the bisect of this group stops; the next group may still go on
+            // the verdicts an earlier depth pass kept.
             if passes && screen_damage(s, &mut cand, false)? == Screened::CapReached {
-                return Ok(());
+                break;
             }
             let mut now = passes && passes_all(&cand, o);
             // Issue #1031: a size that failed on a kept verdict from a basis that has since moved is worked out
@@ -2476,7 +2480,7 @@ fn refine_groups(
                     .is_none_or(|b| cand.tonnage > pool.all[b].tonnage + 1e-6)
             {
                 if screen_damage(s, &mut cand, true)? == Screened::CapReached {
-                    return Ok(());
+                    break;
                 }
                 now = passes_all(&cand, o);
             }
