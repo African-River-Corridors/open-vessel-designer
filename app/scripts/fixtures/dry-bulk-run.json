@@ -1,0 +1,388 @@
+{
+ "options": [
+  {
+   "name": "Option 1",
+   "results": {
+    "results": {
+     "cargo_t": 2346.1989450000005,
+     "cargo_volume_bound_t": 2957.2141500000002,
+     "cargo_weight_bound_t": 2346.1989450000005,
+     "governs": "draught \u2014 Hull (depth \u2212 min. freeboard)",
+     "cargo_volume_m3": 1971.4761,
+     "lightship_t": 333.62185500000004,
+     "displacement_t": 2679.8208000000004,
+     "deadweight_t": 2346.1989450000005,
+     "draught_m": 3.2,
+     "draught_max_m": 3.2,
+     "freeboard_m": 0.2999999999999998,
+     "light_draught_m": 0.41086078605899046,
+     "air_draft_loaded_m": 1.2999999999999998,
+     "air_draft_light_m": 4.089139213941009,
+     "h_over_T": null
+    },
+    "checks": [
+     {
+      "name": "Cargo > 0",
+      "ok": true,
+      "message": "OK",
+      "severity": "error"
+     },
+     {
+      "name": "feasible geometry",
+      "ok": true,
+      "message": "cargo volume must be positive (tank/hold fits)",
+      "severity": "error"
+     },
+     {
+      "name": "not overloaded",
+      "ok": false,
+      "message": "volume-bound load must float within the moulded depth",
+      "severity": "warning"
+     },
+     {
+      "name": "freeboard ok",
+      "ok": false,
+      "message": "freeboard 0.00 m >= required 0.3 m",
+      "severity": "warning"
+     },
+     {
+      "name": "cargo zone positive",
+      "ok": true,
+      "message": "cargo zone 66.90 m = LOA 76.5 - bow void 6.10 m - stern void 3.50 m",
+      "severity": "error"
+     },
+     {
+      "name": "intact gm at reported cargo",
+      "ok": true,
+      "message": "intact GM 2.41 m >= 0.15 m at the reported cargo 2346 t, draught 3.20 m (first-order; cargo KG of the full hold; KG_light @0.5D)",
+      "severity": "warning"
+     },
+     {
+      "name": "coefficients are first order",
+      "ok": true,
+      "message": "Residuary Cr/Cf fit, Lackenby shallow-water, blockage and 1.02 form factor are uncalibrated first-order estimates (RS1) \u2014 ITTC-1957 friction is standard.",
+      "severity": "warning"
+     },
+     {
+      "name": "Stability \u2014 full load, departure",
+      "ok": false,
+      "message": "GM 2.41 m (fluid), max GZ 0.18 m at 7\u00b0 \u2014 fails: Area 0\u201330\u00b0 0.031 < 0.055, Area 0\u201340\u00b0 -0.009 < 0.09, Area 30\u201340\u00b0 -0.039 < 0.03, GZ at \u2265 30\u00b0 -0.140 < 0.2, Angle of max GZ 7.000 < 25.0",
+      "severity": "warning"
+     },
+     {
+      "name": "Stability \u2014 full load, arrival",
+      "ok": false,
+      "message": "GM 2.41 m (fluid), max GZ 0.18 m at 7\u00b0 \u2014 fails: Area 0\u201330\u00b0 0.031 < 0.055, Area 0\u201340\u00b0 -0.009 < 0.09, Area 30\u201340\u00b0 -0.039 < 0.03, GZ at \u2265 30\u00b0 -0.140 < 0.2, Angle of max GZ 7.000 < 25.0",
+      "severity": "warning"
+     },
+     {
+      "name": "Stability \u2014 ballast, departure",
+      "ok": true,
+      "message": "GM 7.78 m (fluid), max GZ 2.10 m at 25\u00b0",
+      "severity": "warning"
+     },
+     {
+      "name": "Stability \u2014 ballast, arrival",
+      "ok": true,
+      "message": "GM 7.78 m (fluid), max GZ 2.10 m at 25\u00b0",
+      "severity": "warning"
+     },
+     {
+      "name": "Stability \u2014 lightship, no ballast",
+      "ok": false,
+      "message": "GM 24.55 m (fluid), max GZ 3.40 m at 22\u00b0 \u2014 fails: Angle of max GZ 22.000 < 25.0",
+      "severity": "warning"
+     }
+    ],
+    "arrangement": null,
+    "powering": null,
+    "damage_status": "not applicable",
+    "rule_trace": {
+     "scope": "Service Area river-only; Rule Sets is2008-a@1.0.0, ovd@3.0.0; no statutory technical code was checked, only these Rule Sets. meets every evaluated blocking Rule; 7 blocking Rule(s) not evaluated: Area under the GZ curve from 0 to 30 degrees, at least 0.055 m.rad, Area under the GZ curve from 0 to 40 degrees, at least 0.09 m.rad, Area under the GZ curve from 30 to 40 degrees, at least 0.03 m.rad, Righting lever at least 0.2 m at a heel of 30 degrees or more, Maximum righting lever at a heel of at least 25 degrees, Initial metacentric height at least 0.15 m, Severe wind and rolling criterion (weather criterion)",
+     "rows": [
+      {
+       "title": "Area under the GZ curve from 0 to 30 degrees, at least 0.055 m.rad",
+       "consequence": "block",
+       "outcome": "not evaluated"
+      },
+      {
+       "title": "Area under the GZ curve from 0 to 40 degrees, at least 0.09 m.rad",
+       "consequence": "block",
+       "outcome": "not evaluated"
+      },
+      {
+       "title": "Area under the GZ curve from 30 to 40 degrees, at least 0.03 m.rad",
+       "consequence": "block",
+       "outcome": "not evaluated"
+      },
+      {
+       "title": "Righting lever at least 0.2 m at a heel of 30 degrees or more",
+       "consequence": "block",
+       "outcome": "not evaluated"
+      },
+      {
+       "title": "Maximum righting lever at a heel of at least 25 degrees",
+       "consequence": "block",
+       "outcome": "not evaluated"
+      },
+      {
+       "title": "Initial metacentric height at least 0.15 m",
+       "consequence": "block",
+       "outcome": "not evaluated"
+      },
+      {
+       "title": "Each loading condition's stability check; false also if it does not float",
+       "consequence": "note",
+       "outcome": "not evaluated"
+      },
+      {
+       "title": "Severe wind and rolling criterion (weather criterion)",
+       "consequence": "block",
+       "outcome": "not evaluated"
+      },
+      {
+       "title": "The hull carries some cargo",
+       "consequence": "block",
+       "outcome": "pass"
+      },
+      {
+       "title": "The cargo space has a positive volume",
+       "consequence": "block",
+       "outcome": "pass"
+      },
+      {
+       "title": "The cargo zone is longer than zero",
+       "consequence": "block",
+       "outcome": "pass"
+      },
+      {
+       "title": "Light air draft (with ballast where carried) within the typed limit",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The air draft of each IS Code loading condition is within the typed limit (a failed condition only: a condition within the limit has no check)",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "A ballast plan meets every stability criterion in each ballast condition (a failed condition only: a condition with a plan has no check)",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "First-order hold GM at the reported cargo at least 0.15 m (an estimate, not a stability check)",
+       "consequence": "warn",
+       "outcome": "pass"
+      },
+      {
+       "title": "Some tank arrangement passes every check on this hull",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "Tank length at most 7 inner shell diameters",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The thrusters fit within the beam",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The requested number of thrusters fits",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The 40 ft units fit within the beam",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The 40 ft units fit in one row",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The wheelhouse fits within the beam",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The accommodation units fit beside the wheelhouse",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The gas gensets fit within the beam",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The gas gensets fit under the deck with 1.0 m allowance (an estimate)",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The gensets carry the load with one set in reserve",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The wheelhouse eye sees over the cargo with the margin",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "Depth Froude number below the squat method's range limit 0.7",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "Blockage at most 0.35, the squat method's range",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The keel clears the bed at speed",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The keel clears the bed at speed with the safety margin",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The two squat methods agree within 50 %",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "Wave length within the added-resistance method's range",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "Significant wave height at most 3.0 m, the screening range",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "Service speed within the Schijf limiting speed",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The full tank volume floats within the hull (information: it does not gate, #418)",
+       "consequence": "warn",
+       "outcome": "warn"
+      },
+      {
+       "title": "Freeboard at the full-volume draught at least the required freeboard (information: it does not gate, #418)",
+       "consequence": "warn",
+       "outcome": "warn"
+      },
+      {
+       "title": "The cargo is bound by the tank volume, not overloaded",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The payload the draught limit leaves is above zero",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The draught limit leaves room for the under-keel clearance",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The payload uses a reasonable share of the tank volume",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "Freeboard at the carried draught at least the required freeboard",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The engine could assess the stability of every loading condition",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The bow length the wave method needs is given, not estimated",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "Service speed at most 0.95 times the Schijf limiting speed, in each channel",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "Channel blockage ratio between 0 and 1, in each channel",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "At the service speed the squat leaves the under-keel clearance, in each channel",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "Depth Froude number below 0.95, where the shallow-water correction is used",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The resistance coefficients are uncalibrated first-order estimates",
+       "consequence": "warn",
+       "outcome": "pass"
+      },
+      {
+       "title": "The installed power gives at least the Design Speed in every environment",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The lift the Blind Distance needs is within the maximum lift of the wheelhouse",
+       "consequence": "block",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The design channel is at least twice as deep as the loaded draught (h/T of 2.0 or more), where the shallow-water method is valid",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The propeller diameter is within the largest the Stern Form allows (D over D_max of 1 or less)",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The shaft axis is at least 0.76 diameters under the water at the lightest aft draught (0.71 for a ducted propeller): a guide, not a tunnel stern",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The delivered power of one unit at the Installed Power is at most 400 kW per m2 of disc (500 for a ducted propeller)",
+       "consequence": "warn",
+       "outcome": "not applicable"
+      },
+      {
+       "title": "The angle of maximum GZ is at least 25 degrees in a light condition with no ballast: a warning, with ballast to sail light, not a failure (the bilge emerges early on a wide, shallow hull)",
+       "consequence": "warn",
+       "outcome": "not evaluated"
+      }
+     ]
+    }
+   }
+  }
+ ]
+}
