@@ -44,6 +44,22 @@
   let pending: ReturnType<typeof setTimeout> | undefined;
   let queue: Array<{ send: () => Promise<Snapshot>; redraw: boolean }> = [];
 
+  // Issue #1082 (spec 0017, D13): "Calculating…" from the moment an edit is sent until the new evaluation is
+  // drawn, but only once the wait passes about 200 ms, so a quick result does not flash it.
+  const CALCULATING_AFTER_MS = 200;
+  let calculating = $state(false);
+  let calculatingTimer: ReturnType<typeof setTimeout> | undefined;
+  async function whileCalculating<T>(work: () => Promise<T>): Promise<T> {
+    clearTimeout(calculatingTimer);
+    calculatingTimer = setTimeout(() => (calculating = true), CALCULATING_AFTER_MS);
+    try {
+      return await work();
+    } finally {
+      clearTimeout(calculatingTimer);
+      calculating = false;
+    }
+  }
+
   async function guard<T>(work: () => Promise<T>): Promise<T | undefined> {
     try {
       error = null;
@@ -135,9 +151,11 @@
     const work = queue;
     queue = [];
     if (work.length === 0) return;
-    let last: Snapshot | undefined;
-    for (const w of work) last = await w.send();
-    await adopt(last, false, work.some((w) => w.redraw));
+    await whileCalculating(async () => {
+      let last: Snapshot | undefined;
+      for (const w of work) last = await w.send();
+      await adopt(last, false, work.some((w) => w.redraw));
+    });
   }
 
   /** An edit: send it after a pause in typing (about 150 ms), then evaluate the whole Design. */
@@ -316,6 +334,8 @@
         <span class="meta" title={profileText}>{profileText}</span>
         <span class="meta" data-testid="engine-version" title={engineText}>{engineText}</span>
       {/if}
+      <!-- Always in the page, so a screen reader hears the text once, politely, when it arrives. -->
+      <span class="meta calculating" role="status" data-testid="calculating">{calculating ? t("app-calculating") : ""}</span>
     </span>
     <button type="button" aria-label={t(showInput ? "app-input-panel-hide" : "app-input-panel-show")} aria-pressed={showInput} onclick={() => (showInput = !showInput)}>{t("app-input-panel")}</button>
     <button type="button" aria-label={t(showOutputs ? "app-outputs-panel-hide" : "app-outputs-panel-show")} aria-pressed={showOutputs} onclick={() => (showOutputs = !showOutputs)}>{t("app-outputs-panel")}</button>
@@ -370,6 +390,8 @@
   }
   /* No `overflow: hidden` on a text-only element: WebKit's WebDriver reads its text as empty (see the design note). */
   .meta { color: var(--ink-3); font-size: var(--fs-12); flex: 0 0 auto; white-space: nowrap; }
+  /* Empty at rest: it takes no room, not even the gap. */
+  .meta.calculating:empty { margin-left: calc(-1 * var(--sp-2)); }
   .meta.file { flex: 0 1 auto; min-width: 0; overflow: clip; text-overflow: ellipsis; font-family: var(--font-mono); }
   header :global(.web-badge) {
     font-size: var(--fs-11); text-transform: uppercase; letter-spacing: 0.08em; padding: 1px var(--sp-2);

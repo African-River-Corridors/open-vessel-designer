@@ -124,11 +124,19 @@ export type TextIds = Record<string, EngineMsg>;
  * Engine text in the Display Language. The engine's own English is the source: it is shown as it is
  * in English, and whenever the Display Language has no message for it. `msg` is the text's Message
  * Id where the engine sent one with it; otherwise the text is looked up in the result's `text_ids`.
+ * A message with app wording (`app-plain-<id>`, issue #1082) shows that wording in every language.
  */
 export function say(text: string, ids?: TextIds | null, msg?: EngineMsg | null): string {
   const m = msg ?? ids?.[text];
-  if (!m || state.language.tag === SOURCE.tag) return text;
-  return format(BUNDLES.get(state.language.tag), m.id, engineArgs(m.args ?? {}, ids)) ?? text;
+  if (!m) return text;
+  const args = engineArgs(m.args ?? {}, ids);
+  // The app's own wording of the message comes first (issue #1082): the engine's English may point to the
+  // command line or the Python API, which the app never does. The source language fills a gap.
+  const plain = `app-plain-${m.id}`;
+  const own = format(BUNDLES.get(state.language.tag), plain, args) ?? format(BUNDLES.get(SOURCE.tag), plain, args);
+  if (own !== null) return own;
+  if (state.language.tag === SOURCE.tag) return text;
+  return format(BUNDLES.get(state.language.tag), m.id, args) ?? text;
 }
 
 /** Text the engine sends under a derived id (an input label, a choice): the English unless translated. */

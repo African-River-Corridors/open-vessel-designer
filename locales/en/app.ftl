@@ -27,6 +27,9 @@ app-theme-dark = Dark
 app-settings = Settings
 app-settings-close = Close
 
+# Issue #1082: the sign while an edit is being calculated (spec 0017, D13).
+app-calculating = Calculating…
+
 ## Banners and common words
 
 app-dismiss = Dismiss
@@ -56,6 +59,18 @@ app-out-of-date = out of date
 app-range-to = { $min } to { $max }
 app-unsaved-discard = The Design has unsaved changes. Discard them?
 app-file-name = File name
+
+# Issue #1082: plain words for engine messages that give a command-line or Python hint (spec 0017, D12).
+# `app-plain-<id>` is shown in the app in place of the engine message `<id>`, in every Display Language
+# until it is translated. The command line and the Python API keep the engine message and its hint.
+app-plain-msg-service-area-required = Choose a Service Area: river only, or coastal and river.
+app-plain-msg-river-limit-required-draught = A river-only Option needs a number for the draught limit: not set. Type a value, or pick a Vessel Class that gives it.
+app-plain-msg-river-limit-required-air-draft = A river-only Option needs a number for the air-draft limit: not set. Type a value, or pick a Vessel Class that gives it.
+app-plain-msg-river-limits-required = A river-only Option needs a number for the draught limit and the air-draft limit: not set. Type a value for each, or pick a Vessel Class that gives them.
+app-plain-msg-river-limits-legacy = This river-only file was saved before the rule that needs a number for the draught limit and the air-draft limit; it stores none for at least one of them, so its hull is not bounded by it. It keeps its results. Type the limits in the Input panel.
+app-plain-msg-inputs-not-stored = Inputs not stored in the file: { $inputs }. A saved Design holds every input as used, so a Defaults Profile edit cannot change it.
+app-plain-msg-scheme = { $input } = { $value } is not a scheme with a Vessel Class that can define a vessel.
+app-plain-msg-class-unknown = { $input } = { $value } is not a Vessel Class.
 
 ## The first-run notice
 

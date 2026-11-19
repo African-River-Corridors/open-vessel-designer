@@ -2,7 +2,7 @@
 
 No message the app can show tells the designer to run the command-line program or to use the Python
 API. The engine's own message keeps its hint, for the command line and the Python API. The app shows
-another message for the same id, `app-engine-<id>` in `locales/en/app.ftl`. This test reads the whole
+another message for the same id, `app-plain-<id>` in `locales/en/app.ftl`. This test reads the whole
 catalogue, so a new message is covered with no change here.
 """
 import re
@@ -17,7 +17,7 @@ LOCALES = ROOT / "locales"
 # The program's name and a sub-command (`ovd fill`, `ovd run --json`), the words "simulate call" or
 # the Python API's own names.
 COMMAND_LINE = re.compile(r"\bovd\s+[a-z]|(?i:\bsimulate\b|\bpython\b)")
-APP_OVERRIDE = "app-engine-"
+APP_OVERRIDE = "app-plain-"
 
 
 def messages(path: Path) -> dict[str, i18n_check.Message]:
@@ -53,7 +53,7 @@ def test_every_engine_message_with_a_command_line_hint_has_app_wording():
                 hinted.append(m.id)
     assert "msg-service-area-required" in hinted, "the catalogue still holds the Service Area hint"
     missing = sorted({i for i in hinted if APP_OVERRIDE + i not in app})
-    assert missing == [], f"no app wording (add app-engine-<id> to locales/en/app.ftl): {missing}"
+    assert missing == [], f"no app wording (add app-plain-<id> to locales/en/app.ftl): {missing}"
 
 
 def test_app_wording_is_plain_and_fits_the_engine_message_it_replaces():
