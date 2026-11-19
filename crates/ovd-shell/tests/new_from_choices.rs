@@ -14,7 +14,7 @@ fn lng_barge() -> Map<String, Value> {
     json!({
         "cargo": "LNG",
         "hull_form": "raked_box",
-        "formation": "self_propelled",
+        "formation": { "kind": "self_propelled" },
         "length_overall_m": 140.0,
         "beam_m": 29.0,
         "service_area": "coastal-and-river",
@@ -148,5 +148,8 @@ fn the_example_list_has_the_barge_and_its_inputs_make_the_design_of_the_first_te
         text_of_call(title, inputs),
         text_of_call(title, &lng_barge())
     );
-    assert_eq!(text_of_call(title, inputs), text_of_cli(title, &lng_barge()));
+    assert_eq!(
+        text_of_call(title, inputs),
+        text_of_cli(title, &lng_barge())
+    );
 }

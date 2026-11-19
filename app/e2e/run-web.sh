@@ -8,4 +8,4 @@ cd "$(dirname "$0")/.."
 export OVD_CLI="${OVD_CLI:-$(cd .. && pwd)/target/debug/ovd}"
 [ -x "$OVD_CLI" ] || { echo "e2e-web: no CLI at $OVD_CLI (cargo build -p ovd-cli)" >&2; exit 1; }
 npx vite build --config vite.web.config.ts --mode test --outDir dist-web-test
-node --test e2e/web-smoke.test.mjs
+node --test e2e/web-smoke.test.mjs e2e/web-smoke.*.test.mjs

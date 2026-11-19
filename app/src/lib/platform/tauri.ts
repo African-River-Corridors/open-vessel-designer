@@ -1,7 +1,7 @@
 // The desktop implementation: today's Tauri commands, unchanged.
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { Evaluation, Schema, Snapshot } from "../api";
+import type { DesignExample, Evaluation, Schema, Snapshot } from "../api";
 import type { DamageEnd, DamageProgress, DeckItems, MeshGroup, Platform, PropulsorPart, SectionOutline, SpaceInfo, Waterline } from "./types";
 
 /** What the webview gives for a raw response: an ArrayBuffer, or (when the IPC falls back to JSON) an array of bytes. */
@@ -53,6 +53,8 @@ export const tauriPlatform: Platform = {
     return invoke<void>("cancel_damage");
   },
   newFile: () => invoke<Snapshot | null>("new_file"),
+  newDesignFrom: (option, inputs) => invoke<Snapshot>("new_design_from", { option, inputs }),
+  designExamples: () => invoke<DesignExample[]>("design_examples"),
   openFile: () => invoke<Snapshot | null>("open_file"),
   onOpenedFromOutside: async (opened, failed) => {
     await listen("design-opened", () => opened());

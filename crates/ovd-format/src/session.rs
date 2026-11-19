@@ -600,6 +600,40 @@ impl DesignSession {
         })
     }
 
+    /// A new Design from typed choices (spec 0017, D4): one Option, named `option`, that holds the
+    /// typed inputs, marked `typed`, and every other input from the Defaults Profile, marked
+    /// `default`. It does not start from the starter Design, so none of the starter's example values
+    /// stay behind. A Vessel Class choice works as it does in the Input panel (length, beam and
+    /// Formation from the class, marked `class`). The Design is the one `ovd fill --as-new` makes
+    /// from a short file of the same inputs, because it is made by the same function. A choice the
+    /// schema refuses gives the schema's first error.
+    pub fn from_typed(
+        profile: Profile,
+        option: &str,
+        inputs: &Map<String, Value>,
+    ) -> Result<DesignSession, String> {
+        let short_file = json!({
+            "format": "vdesign",
+            "format_version": 2,
+            "engine_version": "0.0.0",
+            "options": [{ "name": option, "inputs": inputs }],
+        });
+        let filled = crate::vdesign::fill_as_new(&short_file.to_string(), &profile);
+        match (filled.design, filled.report.is_ok()) {
+            (Some(design), true) => Ok(DesignSession {
+                profile,
+                design,
+                hidden: Vec::new(),
+            }),
+            _ => Err(filled
+                .report
+                .errors
+                .first()
+                .cloned()
+                .unwrap_or_else(|| "the choices do not make a Design".into())),
+        }
+    }
+
     /// The starter Design with its Service Area chosen (issue #925): what the app's new-design choice
     /// makes. `new_design` leaves it unset, because it has no default.
     pub fn new_design_in(profile: Profile, service_area: &str) -> Result<DesignSession, String> {
