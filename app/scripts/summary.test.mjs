@@ -12,6 +12,7 @@ const INPUTS = { hull: { source: "typed" }, cargo: { source: "typed" }, beam_m: 
 const input = (results, extra = {}) => ({ results, message: null, blockers: [], inputs: INPUTS, ...extra });
 const label = (s, id) => s.rows.find((r) => r.label === id);
 
+// The coastal example has a deep-water speed and no channel one, so it gets one speed line.
 test("a feasible gas barge: verdict met, the scope sentence, and every headline number read from the results", () => {
   const s = summarise(input(GAS));
   assert.deepEqual(s.verdict, { kind: "met" });
@@ -23,7 +24,7 @@ test("a feasible gas barge: verdict met, the scope sentence, and every headline 
       "app-metric-cargo-volume", "app-metric-cargo", "app-metric-governs",
       "app-metric-tanks-across", "app-metric-tanks-along", "app-metric-tank-od",
       "app-metric-draught", "app-metric-draught-max", "app-metric-freeboard", "app-metric-lightship", "app-metric-displacement",
-      "app-metric-installed-power", "app-metric-service-speed-deep", "app-metric-service-speed-channel",
+      "app-metric-installed-power", "app-metric-service-speed-deep",
       "app-metric-air-draft-loaded", "app-metric-air-draft-light",
     ],
   );
@@ -38,9 +39,14 @@ test("the warning checks that are not met come with the Checks panel's name and 
   results.checks.push({ name: "slender hull", ok: false, message: "L/B is over 8", severity: "warning" });
   results.checks.push({ name: "other", ok: true, message: "OK", severity: "warning" });
   const s = summarise(input(results));
-  assert.deepEqual(s.warnings, [{ name: "slender hull", message: "L/B is over 8" }]);
+  // The example already has one warning check not met (boil-off); the new one follows it, in the list's order.
+  assert.deepEqual(s.warnings.map((w) => w.name), ["boil-off within gas use", "slender hull"]);
+  assert.equal(s.warnings[1].message, "L/B is over 8");
   assert.deepEqual(s.verdict, { kind: "met" }, "a warning check does not fail the verdict");
-  assert.deepEqual(summarise(input(GAS)).warnings, []);
+  assert.deepEqual(
+    summarise(input(GAS)).warnings,
+    GAS.checks.filter((c) => !c.ok && c.severity === "warning").map((c) => ({ name: c.name, message: c.message })),
+  );
 });
 
 test("an Option with a blocking Rule not met: the verdict names it by title", () => {
