@@ -44,7 +44,7 @@ use serde_json::{Map, Value, json};
 /// { "profile": name, "engine_version": v,
 ///   "groups": ["Required", ...],
 ///   "group_notes": { group name: note },
-///   "inputs": [ { "name", "group", "kind", "required", "applies_to": [containments],
+///   "inputs": [ { "name", "group", "kind", "required", "essential", "applies_to": [containments],
 ///                 "applies_to_formation": [Formation kinds],
 ///                 "applies_to_cargo": [Cargo keys],
 ///                 "applies_when": { "input", "values" } (only when the input has a condition),
@@ -56,6 +56,12 @@ use serde_json::{Map, Value, json};
 ///                 "hard": { "gt"|"ge"|"lt"|"le" }, "soft": { "min", "max" }, "basis" } ] }
 /// ```
 ///
+/// `essential` is true for an input a first Design needs to see: every required input, and the few
+/// others a form shows first (issue #1083). It does not override `applies_to`: an essential input
+/// that does not apply to the Cargo or Formation is not shown. Within a group the inputs come in the
+/// table's order, except that the Required group lists cargo, formation, length, beam, Hull Form and
+/// Service Area.
+///
 /// `kind` is `number`, `bool`, `choice`, `cargo`, `formation`, `vessel_scheme` or `vessel_class`. The
 /// `formation` input also holds `convoy`, the `abreast` and `in_line` ranges of a pushed convoy.
 /// `vessel_scheme` and `vessel_class` are held only by an Option defined by a standard class; their
@@ -63,7 +69,10 @@ use serde_json::{Map, Value, json};
 /// kind the class gives, `length_max_m` and `beam_max_m` what picking it sets, `draught_limit_m` and
 /// `air_draft_limit_m` the limits it fills, `reference_dwt_t` the deadweight shown beside the cargo).
 pub fn input_schema(profile: &Profile) -> Value {
-    let inputs: Vec<Value> = INPUTS.iter().map(|s| input_entry(s, profile)).collect();
+    let inputs: Vec<Value> = schema_order()
+        .into_iter()
+        .map(|s| input_entry(s, profile))
+        .collect();
     json!({
         "profile": profile.name(),
         "engine_version": ENGINE_VERSION,
@@ -76,6 +85,33 @@ pub fn input_schema(profile: &Profile) -> Value {
     })
 }
 
+/// The order the Required group lists its inputs. The table keeps its own order, which is the order
+/// defaults resolve in; the schema puts the required inputs in these places of the table's order.
+const REQUIRED_ORDER: [&str; 6] = [
+    "cargo",
+    "formation",
+    "length_overall_m",
+    "beam_m",
+    "hull_form",
+    "service_area",
+];
+
+/// The input table in the order the schema lists it: the table's order, with the required inputs
+/// put in [`REQUIRED_ORDER`] among the places the required inputs hold.
+fn schema_order() -> Vec<&'static crate::vdesign::InputSpec> {
+    let mut out: Vec<&crate::vdesign::InputSpec> = INPUTS.iter().collect();
+    let slots: Vec<usize> = (0..out.len())
+        .filter(|&i| out[i].group == Group::Required)
+        .collect();
+    for (slot, name) in slots.into_iter().zip(REQUIRED_ORDER) {
+        out[slot] = INPUTS
+            .iter()
+            .find(|s| s.name == name)
+            .expect("a required input of REQUIRED_ORDER");
+    }
+    out
+}
+
 fn input_entry(spec: &crate::vdesign::InputSpec, profile: &Profile) -> Value {
     let name = spec.name;
     let mut e = Map::new();
@@ -83,6 +119,7 @@ fn input_entry(spec: &crate::vdesign::InputSpec, profile: &Profile) -> Value {
     e.insert("label".into(), json!(spec.label));
     e.insert("group".into(), json!(spec.group.label()));
     e.insert("required".into(), json!(spec.required));
+    e.insert("essential".into(), json!(spec.essential));
     let applies: Vec<&str> = spec.applies_to.containments();
     e.insert("applies_to".into(), json!(applies));
     // The Formation kinds the input is used for. A consumer that reads only `applies_to` still

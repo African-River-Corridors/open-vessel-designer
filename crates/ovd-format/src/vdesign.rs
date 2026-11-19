@@ -2052,7 +2052,16 @@ pub struct InputSpec {
     /// Issue #347: the input is used only when another input (earlier in [`INPUTS`]) holds one of
     /// these values; `None` for always. An input that does not apply leaves the condition met.
     pub when: Option<(&'static str, &'static [&'static str])>,
+    /// Issue #1083 (spec 0017, D9): the input is one a first Design needs to see. Every required
+    /// input is essential. A form still shows only the inputs that apply to the Cargo and Formation.
+    pub essential: bool,
     pub group: Group,
+}
+
+/// The same input, marked essential (issue #1083).
+const fn essential(mut s: InputSpec) -> InputSpec {
+    s.essential = true;
+    s
 }
 
 /// The same input, used only when `input` holds one of `values` (issue #347).
@@ -2086,6 +2095,7 @@ const fn spec(
         formations: None,
         cargos: None,
         when: None,
+        essential: required,
         group,
     }
 }
@@ -2106,6 +2116,7 @@ const fn only(
         formations: None,
         cargos: None,
         when: None,
+        essential: false,
         group,
     }
 }
@@ -2126,6 +2137,7 @@ const fn only_in(
         formations: None,
         cargos: None,
         when: None,
+        essential: false,
         group,
     }
 }
@@ -2145,6 +2157,7 @@ const fn pushed(
         formations: Some(PUSHED),
         cargos: None,
         when: None,
+        essential: false,
         group,
     }
 }
@@ -2164,6 +2177,7 @@ const fn self_propelled(
         formations: Some(SELF_PROPELLED),
         cargos: None,
         when: None,
+        essential: false,
         group,
     }
 }
@@ -2179,6 +2193,7 @@ const fn tug(name: &'static str, label: &'static str, kind: InputKind) -> InputS
         formations: Some(PUSHED),
         cargos: None,
         when: None,
+        essential: false,
         group: Group::Tug,
     }
 }
@@ -2208,6 +2223,7 @@ const fn lpg(
         formations: None,
         cargos: Some(LPG_CARGOS),
         when: None,
+        essential: false,
         group,
     }
 }
@@ -2226,7 +2242,7 @@ pub const INPUTS: &[InputSpec] = &[
         "Hull Form",
         InputKind::Choice(HULL_FORMS),
         true,
-        Group::HullForm,
+        Group::Required,
     ),
     spec(
         "formation",
@@ -2245,13 +2261,13 @@ pub const INPUTS: &[InputSpec] = &[
     spec("beam_m", "Beam", NUM, true, Group::Required),
     // Moulded depth: keel to main deck at the side. Left out, it comes from a rule in the Defaults
     // Profile: the depth-to-beam ratio of the Cargo times the beam (issue #120).
-    spec(
+    essential(spec(
         "moulded_depth_m",
         "Moulded depth",
         NUM,
         false,
         Group::HullAndContainment,
-    ),
+    )),
     // Held only when the Option is defined by a standard class (see `class_input`).
     spec(
         "vessel_scheme",
@@ -2452,13 +2468,13 @@ pub const INPUTS: &[InputSpec] = &[
         false,
         Group::Structure,
     ),
-    spec(
+    essential(spec(
         "min_freeboard_m",
         "Minimum freeboard (safety clearance)",
         NUM,
         false,
         Group::HullAndContainment,
-    ),
+    )),
     spec(
         "bow_rake_length_to_depth_ratio",
         "Bow rake length over depth",
@@ -2515,20 +2531,20 @@ pub const INPUTS: &[InputSpec] = &[
         "type_c_tanks",
         Group::GasTanks,
     ),
-    only(
+    essential(only(
         "fill_ratio",
         "Fill ratio",
         NUM,
         "type_c_tanks",
         Group::GasTanks,
-    ),
-    only(
+    )),
+    essential(only(
         "max_tank_od_m",
         "Maximum tank outer diameter",
         NUM,
         "type_c_tanks",
         Group::GasTanks,
-    ),
+    )),
     only(
         "tank_design_pressure_mpa",
         "Tank design pressure (MARVS)",
@@ -2671,20 +2687,20 @@ pub const INPUTS: &[InputSpec] = &[
         "type_c_tanks",
         Group::GasTanks,
     ),
-    only(
+    essential(only(
         "tanks_across",
         "Tanks across (override)",
         NUM_OR_NONE,
         "type_c_tanks",
         Group::GasTanks,
-    ),
-    only(
+    )),
+    essential(only(
         "tanks_in_line",
         "Tanks in line",
         NUM,
         "type_c_tanks",
         Group::GasTanks,
-    ),
+    )),
     only(
         "tank_support_height_m",
         "Tank support height",
@@ -2811,13 +2827,13 @@ pub const INPUTS: &[InputSpec] = &[
         DRY_HOLDS,
         Group::DryBulkHold,
     ),
-    only_in(
+    essential(only_in(
         "hold_covering",
         "Hold covering",
         InputKind::Choice(HOLD_COVERINGS),
         DRY_HOLDS,
         Group::DryBulkHold,
-    ),
+    )),
     only(
         "n_holds",
         "Number of holds",
@@ -2965,12 +2981,12 @@ pub const INPUTS: &[InputSpec] = &[
         "stern_form",
         &["tunnel"],
     ),
-    self_propelled(
+    essential(self_propelled(
         "propulsor_type",
         "Propulsor type",
         InputKind::Choice(PROPULSOR_TYPES),
         Group::SternAndPropulsion,
-    ),
+    )),
     when(
         self_propelled(
             "propulsor_count",
@@ -3021,24 +3037,24 @@ pub const INPUTS: &[InputSpec] = &[
         "propulsor_type",
         SPECIFIED_PROPULSORS,
     ),
-    self_propelled(
+    essential(self_propelled(
         "power_source",
         "Power source",
         InputKind::Choice(POWER_SOURCES),
         Group::SternAndPropulsion,
-    ),
+    )),
     self_propelled(
         "installed_power_kw",
         "Installed power",
         NUM_OR_NONE,
         Group::SternAndPropulsion,
     ),
-    self_propelled(
+    essential(self_propelled(
         "design_speed_kn",
         "Design speed",
         NUM_OR_NONE,
         Group::SternAndPropulsion,
-    ),
+    )),
     self_propelled(
         "installed_power_margin",
         "Installed power margin",
@@ -3240,13 +3256,13 @@ pub const INPUTS: &[InputSpec] = &[
         false,
         Group::SpeedAndPower,
     ),
-    spec(
+    essential(spec(
         "max_speed_kn",
         "Maximum speed",
         NUM,
         false,
         Group::SpeedAndPower,
-    ),
+    )),
     when(
         self_propelled(
             "thruster_count",
@@ -3328,13 +3344,13 @@ pub const INPUTS: &[InputSpec] = &[
         NUM,
         Group::AftBlock,
     ),
-    spec(
+    essential(spec(
         "air_draft_limit_m",
         "Air-draft limit",
         NUM_OR_NONE,
         false,
         Group::WaterwayLimits,
-    ),
+    )),
     spec(
         "bridge_clearance_m",
         "Bridge clearance",
@@ -3342,29 +3358,29 @@ pub const INPUTS: &[InputSpec] = &[
         false,
         Group::WaterwayLimits,
     ),
-    spec(
+    essential(spec(
         "draught_limit_m",
         "Draught limit",
         NUM_OR_NONE,
         false,
         Group::WaterwayLimits,
-    ),
+    )),
     // Issue #358: a lock chamber the convoy must fit. The overall size of a convoy is checked
     // against them; none: no check.
-    spec(
+    essential(spec(
         "lock_length_m",
         "Lock length",
         NUM_OR_NONE,
         false,
         Group::WaterwayLimits,
-    ),
-    spec(
+    )),
+    essential(spec(
         "lock_width_m",
         "Lock width",
         NUM_OR_NONE,
         false,
         Group::WaterwayLimits,
-    ),
+    )),
     spec(
         "downflooding_angle_deg",
         "Angle of down-flooding",
@@ -3786,7 +3802,7 @@ pub const INPUTS: &[InputSpec] = &[
         "Service Area",
         InputKind::Choice(SERVICE_AREAS),
         true,
-        Group::Rules,
+        Group::Required,
     ),
     // Issue #779 (spec 0011 D3): after the Service Area, which sets its default (a new coastal Option
     // takes the deckhouse).

@@ -75,6 +75,8 @@ export interface InputSpec extends Ranges {
   label: string;
   group: string;
   required: boolean;
+  /** Issue #1083: an input a first Design needs to see. Every required input is essential. It does not override `applies_to`. */
+  essential: boolean;
   /** The Cargo Containments the input is used for. */
   applies_to?: string[];
   /** The Formation kinds the input is used for. The panel needs neither: Rust sends only the inputs an Option uses. */

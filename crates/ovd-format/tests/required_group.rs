@@ -63,12 +63,7 @@ fn only_hull_form_and_service_area_changed_group() {
             assert_eq!(i["group"], "Required", "{name}");
         }
     }
-    let groups = |g: &str| {
-        inputs()
-            .iter()
-            .filter(|i| i["group"] == g)
-            .count()
-    };
+    let groups = |g: &str| inputs().iter().filter(|i| i["group"] == g).count();
     assert!(groups("Hull Form") > 0, "the other Hull Form inputs stay");
     assert!(groups("Rules") > 0, "the other Rules inputs stay");
 }
