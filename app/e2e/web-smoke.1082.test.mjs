@@ -54,12 +54,33 @@ describe("Plain words and the calculating sign (issue #1082)", () => {
     await until(b, "the Service Area error", async () => (await b.$(field)).isExisting());
     const expected = "Choose a Service Area: river only, or coastal and river.";
     assert.equal((await (await b.$(field)).getText()).trim(), expected);
-    const outputs = () => b.$$(".err").then((els) => Promise.all(els.map((e) => e.getText())));
+    const outputs = async () => {
+      const texts = [];
+      for (const e of await b.$$(".err")) texts.push(await e.getText());
+      return texts;
+    };
     await until(b, "the error in the Outputs panel", async () => (await outputs()).some((t) => t.includes("Service Area")));
     assert.ok((await outputs()).some((t) => t.includes(expected)), `the Outputs panel says: ${await outputs()}`);
     // No text on the page names the program with a sub-command.
     const page = await b.execute(() => document.body.innerText);
     assert.doesNotMatch(page, /\bovd\s+[a-z]|simulate/);
+  });
+
+  it("keeps the plain Service Area wording in another Display Language, never the command-line hint", async () => {
+    const b = await start();
+    await openApp(b);
+    await (await b.$("[data-testid=settings]")).click();
+    await until(b, "the Settings dialog", async () => (await b.$("[data-testid=settings-dialog]")).isExisting());
+    await (await b.$("[data-testid=language]")).selectByAttribute("value", "es");
+    await (await b.$("[data-testid=settings-close]")).click();
+    const field = '.field[data-input="service_area"] .msg.error';
+    await until(b, "the Service Area error", async () => (await b.$(field)).isExisting());
+    const shown = (await (await b.$(field)).getText()).trim();
+    assert.equal(shown, "Choose a Service Area: river only, or coastal and river.");
+    // Every error text on the page: none names the program, a call or the Python API.
+    const errors = (await b.execute(() => [...document.querySelectorAll(".err, .msg.error")].map((e) => e.innerText))).join("\n");
+    assert.match(errors, /Service Area/, "the error texts were read");
+    assert.doesNotMatch(errors, /\bovd\b|simulate|python/i);
   });
 
   it("shows Calculating… while a slow evaluation runs after an edit to a gas barge, and not before or after", async () => {
@@ -82,19 +103,16 @@ describe("Plain words and the calculating sign (issue #1082)", () => {
 
     // Make the evaluation take about a second, so the sign has time to show whatever the machine's speed.
     // The first answer is kept: the second part of the test hands it back at once.
-    await b.executeAsync((done) => {
+    await b.execute(async () => {
       const p = window.__ovdPlatform;
       const real = p.evaluate.bind(p);
-      real().then((kept) => {
-        window.__kept = kept;
-        window.__slow = true;
-        p.evaluate = async () => {
-          if (!window.__slow) return window.__kept;
-          await new Promise((r) => setTimeout(r, 1200));
-          return real();
-        };
-        done();
-      });
+      window.__kept = await real();
+      window.__slow = true;
+      p.evaluate = async () => {
+        if (!window.__slow) return window.__kept;
+        await new Promise((r) => setTimeout(r, 1200));
+        return real();
+      };
     });
     const toggle = b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]');
     await toggle.click();
