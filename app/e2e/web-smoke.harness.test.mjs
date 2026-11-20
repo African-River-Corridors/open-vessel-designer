@@ -8,10 +8,10 @@ import path from "node:path";
 import { after, describe, it } from "node:test";
 
 const FILE = path.join(import.meta.dirname, "harness", "one-file.mjs");
-// The cases' folders live under the run's root, so run-web.sh's clean-up covers them too. Run alone,
-// this file makes a root of its own and removes it at the end.
-const OWN = !process.env.OVD_E2E_ROOT;
-const ROOT = process.env.OVD_E2E_ROOT || fs.mkdtempSync(path.join(os.tmpdir(), "ovd-e2e-harness."));
+// This file's cases live in one folder of its own, under the run's root (so run-web.sh's clean-up covers
+// it too). Its clean-up stops and removes only what is in that folder: the run's root is shared with the
+// test files running at the same time, and their browsers name it on their command lines.
+const ROOT = fs.mkdtempSync(path.join(process.env.OVD_E2E_ROOT || os.tmpdir(), "ovd-e2e-harness."));
 const alive = (pid) => {
   try {
     process.kill(pid, 0);
@@ -27,7 +27,7 @@ const stopAll = (root) => {
 };
 after(() => {
   stopAll(ROOT);
-  if (OWN) fs.rmSync(ROOT, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  fs.rmSync(ROOT, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 /** Run the stand-in file; give how it ended, how long it took and what of it is still there. With
@@ -83,6 +83,27 @@ async function runCase(which, env = {}, killOn = null) {
 }
 
 describe("the web test harness (e2e/browser.mjs)", () => {
+  it("the harness file's clean-up stops only what is in its own folder, never the run's other browsers", async () => {
+    // A stand-in for another test file's Chrome: its command line holds the run's shared root.
+    const shared = fs.mkdtempSync(path.join(os.tmpdir(), "ovd-e2e-shared."));
+    const decoy = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)", path.join(shared, "other-file", "profile-1")], { stdio: "ignore" });
+    try {
+      // The harness file itself, in a run of its own with that shared root, its cheapest test only.
+      const { NODE_TEST_CONTEXT, ...outer } = process.env;
+      const run = spawn(process.execPath, ["--test", "--test-name-pattern=never webdriverio", import.meta.filename], {
+        env: { ...outer, OVD_E2E_ROOT: shared },
+        stdio: "ignore",
+      });
+      const code = await new Promise((r) => run.on("exit", r));
+      assert.equal(code, 0, "the harness file ran");
+      assert.equal(alive(decoy.pid), true, "the harness file's clean-up killed a process of the shared root");
+      assert.deepEqual(fs.readdirSync(shared).filter((f) => f.startsWith("ovd-e2e-harness.")), [], "the harness folder is removed");
+    } finally {
+      decoy.kill("SIGKILL");
+      fs.rmSync(shared, { recursive: true, force: true });
+    }
+  });
+
   it("every web test file opens its browsers through e2e/browser.mjs, never webdriverio's remote() itself", () => {
     const direct = fs
       .readdirSync(import.meta.dirname)
