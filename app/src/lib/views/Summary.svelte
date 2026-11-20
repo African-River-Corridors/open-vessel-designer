@@ -46,6 +46,9 @@
 </script>
 
 <section class="summary" data-testid="summary" aria-label={t("app-summary-label")}>
+  <!-- Issue #1097: the three questions in two columns where the view is wide enough, so the first answer is one page. -->
+  <div class="cols">
+  <div class="q works" data-testid="summary-works">
   <h4>{t("app-summary-works")}</h4>
   <p class="verdict {mark.tone}" data-testid="summary-verdict" data-kind={verdict.kind}>
     <span class="tag"><span aria-hidden="true">{mark.mark}</span> {t(mark.label)}</span>
@@ -83,6 +86,8 @@
     </p>
   {/if}
 
+  </div>
+  <div class="q got" data-testid="summary-got">
   <h4>{t("app-summary-got")}</h4>
   {#if summary.rows.length === 0 || !results}
     <p class="note" data-testid="summary-no-results">{t("app-summary-no-results")}</p>
@@ -100,6 +105,8 @@
     </table>
   {/if}
 
+  </div>
+  <div class="q next" data-testid="summary-next">
   <h4>{t("app-summary-next")}</h4>
   {#if results}
     {#if summary.warnings.length === 0}
@@ -121,11 +128,22 @@
     {t("app-summary-input-counts", { typed: summary.inputs.typed, defaults: summary.inputs.defaults })}
     <a href="#input-panel" data-testid="summary-open-input" onclick={(e) => { e.preventDefault(); onShowInput(); }}>{t("app-summary-open-input")}</a>
   </p>
+  </div>
+  </div>
 </section>
 
 <style>
   /* A calm page of text and numbers: no chart, no new colour. It scrolls inside its own box. */
-  .summary { height: 100%; overflow: auto; box-sizing: border-box; padding-right: var(--sp-2); font-size: var(--fs-14); line-height: var(--lh-ui); max-width: 56em; }
+  .summary { height: 100%; overflow: auto; box-sizing: border-box; padding-right: var(--sp-2); font-size: var(--fs-14); line-height: var(--lh-ui); max-width: 72em; container-type: inline-size; }
+  .q + .q { margin-top: var(--sp-4); }
+  @container (min-width: 46em) {
+    .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "works got" "next got"; column-gap: var(--sp-5); align-items: start; }
+    .works { grid-area: works; }
+    .got { grid-area: got; }
+    .next { grid-area: next; }
+    .q + .q { margin-top: 0; }
+    .next { margin-top: var(--sp-4); }
+  }
   h4 { font: 600 var(--fs-12) var(--font-ui); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); background: var(--surface-2); border-bottom: var(--lw-thin) solid var(--rule); margin: var(--sp-4) 0 var(--sp-2); padding: var(--sp-1) var(--sp-2); }
   h4:first-child { margin-top: 0; }
   p { margin: var(--sp-2) 0; overflow-wrap: anywhere; }

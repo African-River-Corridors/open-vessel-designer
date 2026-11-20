@@ -156,7 +156,8 @@
       <button type="button" role="tab" aria-selected={v.id === current} class:on={v.id === current} onclick={() => (current = v.id)}>{t(v.label)}</button>
     {/each}
   </div>
-  <PrincipalStrip {results} />
+  <!-- Issue #1097: the Summary gives its own headline numbers, so the strip that repeats them is left out there. -->
+  {#if current !== "summary"}<PrincipalStrip {results} />{/if}
   {#if stale}<div class="whyrow"><StaleWhy {blockers} /></div>{/if}
 
   <div class="view" data-view={current}>
