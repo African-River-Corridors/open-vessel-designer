@@ -320,9 +320,9 @@ mod tests {
     #[test]
     fn a_refused_choice_leaves_the_open_design_as_it_was() {
         let mut session = Session::new().unwrap();
-        let before = session.save_text().unwrap();
+        let before = session.state.session().design().to_text();
         let refused = serde_json::json!({ "no_such_input": 1 }).to_string();
         assert!(session.replace_from_choices("Refused", &refused).is_err());
-        assert_eq!(session.save_text().unwrap(), before);
+        assert_eq!(session.state.session().design().to_text(), before);
     }
 }
