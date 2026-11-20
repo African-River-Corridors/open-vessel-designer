@@ -1,7 +1,8 @@
-// Web end-to-end for the Summary after a whole damage stability run (spec 0017, D7 follow-up): everything stays in
-// sight and nothing moves when the run ends and the drawing is redrawn. The one test here waits for the whole run,
-// so it has a file of its own and a longer time limit than the run script's default per test. Run by
-// e2e/run-web.sh with the other web-smoke files.
+// Web end-to-end for the Summary when damage stability ends (spec 0017, D7 follow-up): everything stays in sight,
+// and nothing moves when the run ends and the drawing is redrawn. The damage run is a stand-in that ends when the test
+// says, and the evaluation after it gives a drawing of another shape: what is checked is the Summary's layout, so no
+// whole damage run (half a minute on a quiet machine, minutes on a busy one) is needed. Run by e2e/run-web.sh with
+// the other web-smoke files.
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -33,7 +34,7 @@ const box = (b, id) =>
     return { top: r.top, bottom: r.bottom, height: r.height };
   }, testid(id));
 
-/** A first start at 1280 × 800, then the worked example through the wizard's Create. */
+/** A first start at 1280 × 800, then the worked example through the wizard's Create, with the damage run held. */
 async function createExample(b) {
   await b.setWindowSize(1280, 800);
   await b.url(`${origin}/ovd/app`);
@@ -44,6 +45,15 @@ async function createExample(b) {
   await until(b, "the example list", () => exists(b, "start-examples"));
   await click(b, "start-example-coastal-lng-barge");
   await until(b, "the review step", () => exists(b, "wizard-create"));
+  // The damage run Create starts: it reports its first progress and ends only when the test calls __endDamage.
+  await b.execute(() => {
+    const p = window.__ovdPlatform;
+    p.runDamage = (option, onProgress) =>
+      new Promise((resolve) => {
+        onProgress({ option, done: 0, total: 106 });
+        window.__endDamage = () => resolve({ option, outcome: "done", message: null });
+      });
+  });
   await click(b, "wizard-create");
   await until(b, "the wizard to close", async () => !(await exists(b, "wizard")));
   await until(b, "the picture of the vessel", () => exists(b, "summary-vessel-side"), 120000);
@@ -75,16 +85,29 @@ async function inSummary(b) {
   return { side: { top: side.top - top, height: side.height }, numbersTop: numbers.top - top };
 }
 
-describe("The Summary through a whole damage stability run", () => {
-  // A damage run of the worked example takes about half a minute on a quiet machine and several minutes on a busy one.
-  it("at 1280 × 800 everything stays in sight, and nothing moves when the run ends and the drawing is redrawn", { timeout: 540000 }, async () => {
+describe("The Summary when damage stability ends", () => {
+  it("at 1280 × 800 everything stays in sight, and nothing moves when the run ends and the drawing is redrawn", async () => {
     const b = await openBrowser(chrome());
     await createExample(b);
     await until(b, "damage stability running", () => exists(b, "summary-provisional"), 60000);
     await allInSight(b, ["summary-verdict", "summary-provisional", "summary-damage", "summary-scope-line", "summary-vessel-side", "summary-numbers"]);
     const before = await inSummary(b);
-    await until(b, "damage stability to end", async () => (await (await b.$(testid("summary-damage"))).getAttribute("data-status")) === "run", 480000);
+    const sheetBefore = await b.execute(() => document.querySelector("[data-testid=summary-vessel-side] svg").getAttribute("viewBox"));
+    // The evaluation after the run gives a drawing of another shape (the plan's sheet where the side elevation was),
+    // a harder redraw than a real run's; then the run ends.
+    await b.execute(() => {
+      const p = window.__ovdPlatform;
+      const real = p.evaluate.bind(p);
+      p.evaluate = async () => {
+        const e = await real();
+        for (const o of e.options) if (o.outcome.views) o.outcome.views.side = o.outcome.views.plan;
+        return e;
+      };
+      window.__endDamage();
+    });
     await until(b, "the line to go", async () => !(await exists(b, "summary-provisional")));
+    await until(b, "the drawing to be redrawn", async () =>
+      (await b.execute(() => document.querySelector("[data-testid=summary-vessel-side] svg")?.getAttribute("viewBox"))) !== sheetBefore);
     await allInSight(b, ["summary-verdict", "summary-damage", "summary-scope-line", "summary-vessel-side", "summary-numbers"]);
     const later = await inSummary(b);
     assert.deepEqual(later.side, before.side, "the picture keeps its place and size");
