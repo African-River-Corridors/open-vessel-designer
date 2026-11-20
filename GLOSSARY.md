@@ -662,12 +662,14 @@ _Avoid_: priority
 
 **Display Language**:
 The language a user reads OVD in. It is a choice of the person, never of the Design: it changes no
-input, no result and no saved file.
+input, no result and no saved file. For now OVD ships one Display Language, English; the others are
+paused until the design and the engine are more stable (ADR 0026).
 _Avoid_: locale (in user text), Design language
 
 **Text Library**:
 The set of message files, one folder per language, that holds every string a user reads. English is
-the source; each other language holds translations of English messages.
+the source; each other language holds translations of English messages. For now it holds English only
+(ADR 0026).
 _Avoid_: catalogue (that is the vessel Catalogue), string table, dictionary
 
 **Message Id**:

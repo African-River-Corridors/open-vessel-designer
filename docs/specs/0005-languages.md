@@ -2,6 +2,10 @@
 
 Status: **agreed with the maintainer, 2026-10-20.** Decision record: ADR 0015 (amends ADR 0008). Issue: #307.
 
+**Paused, 2026-11-20:** OVD ships English only for now (ADR 0026, issue #1095). The Text Library and
+its Message Ids stay; the other languages, their review process and the Term List are out of the tree
+until the design and the engine are more stable. ADR 0026 says what a return needs.
+
 ## Problem Statement
 
 OVD is English only. Its users include engineers in Ghana, Latin America and China. They read

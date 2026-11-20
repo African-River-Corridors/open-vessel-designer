@@ -47,10 +47,10 @@ reports whether designs moved (`tools/design_impact.py`, see `CHANGELOG.md`).
 
 ## Translations
 
-OVD's text is in Fluent files under `locales/`, one folder per language (spec 0005). English is
-the source. The other languages are drafts until a native speaker reviews them. To review or
-improve a translation, follow [`locales/REVIEWING.md`](locales/REVIEWING.md). It needs no code
-knowledge. Label the pull request `translation`.
+OVD's text is in Fluent files under `locales/` (spec 0005). For now OVD ships English only: the
+other languages are paused until the design and the engine are more stable, and translations are not
+taken yet. ADR 0026 (`docs/adr/0026-web-and-command-line-only-english-only-for-now.md`) says what a
+language needs to return.
 
 ## Pull requests
 
