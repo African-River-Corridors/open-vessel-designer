@@ -10,6 +10,8 @@
 export class Calculating {
   private inFlight = 0;
   private shown = false;
+  /** The page has drawn a frame since the sign came on. */
+  private drawn = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private readonly afterMs: number;
   private readonly onChange: (on: boolean) => void;
@@ -26,6 +28,11 @@ export class Calculating {
     return this.inFlight;
   }
 
+  /** The page changed in a way the designer must see before the next slow run: wait for one more frame then. */
+  redraw() {
+    this.drawn = false;
+  }
+
   private show() {
     this.shown = true;
     this.onChange(true);
@@ -36,10 +43,16 @@ export class Calculating {
     this.inFlight += 1;
     if (this.inFlight === 1) this.timer = setTimeout(() => this.show(), this.afterMs);
     try {
-      if (slow && !this.shown) {
-        clearTimeout(this.timer);
-        this.show();
-        await this.paint();
+      if (slow) {
+        if (!this.shown) {
+          clearTimeout(this.timer);
+          this.show();
+        }
+        // On in the page is not yet on the screen (the timer may have just turned it on): wait for a frame.
+        if (!this.drawn) {
+          await this.paint();
+          this.drawn = true;
+        }
       }
       return await work();
     } finally {
@@ -47,6 +60,7 @@ export class Calculating {
       if (this.inFlight === 0) {
         clearTimeout(this.timer);
         this.shown = false;
+        this.drawn = false;
         this.onChange(false);
       }
     }
@@ -55,11 +69,16 @@ export class Calculating {
 
 /**
  * Resolve once the page has drawn what was just changed: a task queued from an animation frame runs after
- * that frame is painted. A hidden page draws no frames, so a short timer ends the wait there.
+ * that frame is painted. A visible page always waits for that frame, however slow; a hidden page draws no
+ * frames, so there a short timer ends the wait.
  */
 export function nextPaint(): Promise<void> {
   return new Promise((resolve) => {
-    if (typeof requestAnimationFrame === "function") requestAnimationFrame(() => setTimeout(resolve, 0));
-    setTimeout(resolve, 100);
+    const hidden = typeof document === "undefined" || document.visibilityState === "hidden";
+    if (typeof requestAnimationFrame !== "function" || hidden) {
+      setTimeout(resolve, 0);
+      return;
+    }
+    requestAnimationFrame(() => setTimeout(resolve, 0));
   });
 }

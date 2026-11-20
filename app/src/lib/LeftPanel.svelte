@@ -180,7 +180,9 @@
   .inline { display: flex; gap: var(--sp-1); margin-top: 6px; align-items: center; font-size: var(--fs-13); }
   .confirm { background: var(--fail-soft); color: var(--fail); padding: var(--sp-1) 6px; }
   details { border-top: var(--lw-thin) solid var(--rule); margin-top: 10px; padding-top: var(--sp-1); }
-  .view { margin-top: 10px; }
+  /* Issue #1096: the switch, the filter and the sign stay at the top while the inputs scroll, so the sign is
+     in sight whichever input is being edited. */
+  .view { margin-top: 10px; position: sticky; top: 0; z-index: 2; background: var(--paper); padding-bottom: var(--sp-1); }
   .moderow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3); }
   .mode { display: inline-flex; }
   .mode button { background: transparent; font-size: var(--fs-13); border-radius: 0; margin-left: -1px; }

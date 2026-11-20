@@ -78,6 +78,27 @@ test("a slow run inside a run whose timer has not fired yet shows the sign at on
   assert.deepEqual(order, ["on", "painted", "inner", "off"]);
 });
 
+test("a slow run inside a run whose timer has already turned the sign on still waits for the page to draw it", async () => {
+  const order = [];
+  const c = new Calculating(10, (on) => order.push(on ? "on" : "off"), async () => order.push("painted"));
+  await c.during(async () => {
+    await wait(30); // the timer fires: the sign is on in the page, but not yet drawn
+    await c.during(async () => order.push("inner"), true);
+  });
+  assert.deepEqual(order, ["on", "painted", "inner", "off"]);
+});
+
+test("after redraw, the next slow run waits for one more frame even when the sign was already drawn", async () => {
+  const order = [];
+  const c = new Calculating(1000, (on) => order.push(on ? "on" : "off"), async () => order.push("painted"));
+  await c.during(async () => {
+    await c.during(async () => order.push("first"), true);
+    c.redraw();
+    await c.during(async () => order.push("second"), true);
+  }, true);
+  assert.deepEqual(order, ["on", "painted", "first", "painted", "second", "off"]);
+});
+
 const finder = (table) => (id) => table[id] ?? null;
 
 test("the app wording in the Display Language wins over everything", () => {

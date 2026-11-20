@@ -29,6 +29,9 @@ const chrome = () => ({
 let origin, server;
 const sessions = [];
 async function start() {
+  // One browser at a time: Chrome may hold back the animation frames of a window that is not in front, and
+  // these tests read what was drawn frame by frame.
+  while (sessions.length > 0) await sessions.pop().deleteSession().catch(() => {});
   const b = await remote({ logLevel: "warn", strictSelectors: false, capabilities: chrome() });
   sessions.push(b);
   return b;
@@ -72,24 +75,36 @@ const record = (b) =>
   b.execute(() => {
     window.__seen = [];
     window.__summaryCalculating = false;
+    window.__trace = [];
+    window.__t0 = performance.now();
     if (window.__recording) return;
     window.__recording = true;
     const tick = () => {
       const el = document.querySelector("[data-testid=calculating]");
       const where = !el || !el.textContent.trim() ? "off" : el.closest("section.left") ? "input" : el.closest("[data-testid=views-panel]") ? "views" : "other";
       if (window.__seen.at(-1) !== where) window.__seen.push(where);
-      if (document.querySelector("[data-testid=summary-calculating]")) window.__summaryCalculating = true;
+      const calc = !!document.querySelector("[data-testid=summary-calculating]");
+      if (calc) window.__summaryCalculating = true;
+      const line = `frame ${where}${calc ? " summary-calculating" : ""}`;
+      if (window.__trace.at(-1)?.[1] !== line) window.__trace.push([Math.round(performance.now() - window.__t0), line]);
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
   });
 const seen = (b) => b.execute(() => window.__seen);
+/** What the page drew and ran since `record`, in time order, for a failure message. */
+const trace = async (b) => JSON.stringify(await b.execute(() => window.__trace));
 /** Wait until the sign has been drawn and has gone again: one evaluation began and ended. */
-const signCameAndWent = (b, what) =>
-  until(b, `the sign to come and go: ${what}`, async () => {
-    const s = await seen(b);
-    return s.some((x) => x !== "off") && s.at(-1) === "off";
-  });
+async function signCameAndWent(b, what) {
+  try {
+    await until(b, `the sign to come and go: ${what}`, async () => {
+      const s = await seen(b);
+      return s.some((x) => x !== "off") && s.at(-1) === "off";
+    });
+  } catch (e) {
+    throw new Error(`${e.message}; trace: ${await trace(b)}`);
+  }
+}
 
 /** Make every evaluation hold the page for `ms` first, as the engine does on the web for a large Design. */
 const holdEvaluations = (b, ms) =>
@@ -97,6 +112,7 @@ const holdEvaluations = (b, ms) =>
     const p = window.__ovdPlatform;
     window.__realEvaluate ??= p.evaluate.bind(p);
     p.evaluate = (...args) => {
+      window.__trace?.push([Math.round(performance.now() - (window.__t0 ?? 0)), `evaluation held (${document.visibilityState}, sign ${document.querySelector("[data-testid=calculating]")?.textContent.trim() || "off"}, summary-calculating ${!!document.querySelector("[data-testid=summary-calculating]")})`]);
       const end = performance.now() + ms;
       while (performance.now() < end) {
         /* the page is held */
@@ -110,11 +126,19 @@ const rectOf = (b, selector) =>
     const r = document.querySelector(sel).getBoundingClientRect();
     return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
   }, selector);
-/** The boxes of every control drawn on the page, but the sign. */
+/**
+ * The boxes of every control the designer can see, but the sign: drawn, and on top at its own centre (a control
+ * scrolled under the Input panel's fixed top, or out of its panel, is not in sight).
+ */
 const controls = (b) =>
   b.execute(() =>
     [...document.querySelectorAll("button, input, select, summary, a, [role=tab]")]
-      .filter((e) => e.getBoundingClientRect().width > 0 && !e.closest("[data-testid=calculating]"))
+      .filter((e) => {
+        const r = e.getBoundingClientRect();
+        if (r.width === 0 || e.closest("[data-testid=calculating]")) return false;
+        const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return top !== null && (e === top || e.contains(top) || top.contains(e));
+      })
       .map((e) => {
         const r = e.getBoundingClientRect();
         return { what: e.outerHTML.slice(0, 80), left: r.left, right: r.right, top: r.top, bottom: r.bottom };
@@ -144,7 +168,7 @@ describe("The Calculating sign beside the Input panel, for every evaluation (iss
     await until(b, "the wizard to close", async () => !(await exists(b, "wizard")));
     await until(b, "the Summary's verdict", () => exists(b, "summary-verdict"));
 
-    assert.equal(await b.execute(() => window.__summaryCalculating), true, "the Summary said the Design was being calculated");
+    assert.equal(await b.execute(() => window.__summaryCalculating), true, `the Summary said the Design was being calculated: ${await trace(b)}`);
     assert.ok((await seen(b)).includes("input"), `the sign was drawn in the Input panel: ${await seen(b)}`);
     assert.equal(await exists(b, "summary-calculating"), false, "the line goes once the result is drawn");
 
@@ -167,7 +191,7 @@ describe("The Calculating sign beside the Input panel, for every evaluation (iss
     await record(b);
     await openGasBarge(b);
     await signCameAndWent(b, "opening a Design");
-    assert.equal(await b.execute(() => window.__summaryCalculating), true, "the Summary said the opened Design was being calculated");
+    assert.equal(await b.execute(() => window.__summaryCalculating), true, `the Summary said the opened Design was being calculated: ${await trace(b)}`);
     assert.ok((await seen(b)).includes("input"), "drawn in the Input panel");
 
     await record(b);

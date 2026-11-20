@@ -149,6 +149,7 @@
       // The last Design's results are not this one's: the Summary says the Design is being calculated instead.
       evaluation = null;
       designPending = true;
+      sign.redraw(); // that line is drawn before the run holds the page
     }
     if (redraw) generation += 1;
     snap = next;
