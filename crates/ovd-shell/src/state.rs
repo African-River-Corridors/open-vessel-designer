@@ -137,7 +137,8 @@ impl AppState {
         Ok(AppState {
             session,
             path: None,
-            dirty: false,
+            // Nobody has saved it: closing or replacing it loses the work, as for any unsaved Design.
+            dirty: true,
             active_option,
             hash_changed: Vec::new(),
             migration_notes: Vec::new(),

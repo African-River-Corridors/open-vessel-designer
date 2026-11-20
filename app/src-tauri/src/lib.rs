@@ -72,9 +72,10 @@ fn confirm_discard(app: &AppHandle, state: &Shared) -> Result<bool, String> {
 }
 
 /// Spec 0017, D1: the Start page asks before its Create replaces an unsaved Design, because
-/// `new_design_from` asks nothing. `true` means go ahead.
+/// `new_design_from` asks nothing. `true` means go ahead. An `async` command runs off the main
+/// thread, where the blocking dialog is allowed.
 #[tauri::command]
-fn ask_discard_unsaved(app: AppHandle, state: State<'_, Shared>) -> Result<bool, String> {
+async fn ask_discard_unsaved(app: AppHandle, state: State<'_, Shared>) -> Result<bool, String> {
     confirm_discard(&app, &state)
 }
 

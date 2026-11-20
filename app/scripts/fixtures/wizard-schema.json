@@ -63,7 +63,7 @@
      "label": "LNG / Ethane",
      "phase": "liquid_gas",
      "status": "released",
-     "description": "LNG\u2013ethane blend at cryogenic temperature"
+     "description": "LNG–ethane blend at cryogenic temperature"
     },
     {
      "value": "LPG_propane",
@@ -365,7 +365,7 @@
     "by": "cargo_group",
     "ratios": {
      "dry_bulk": 0.33,
-     "liquid": 0.3,
+     "liquid": 0.30,
      "gas": 0.55
     },
     "cargo_group": {

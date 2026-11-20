@@ -2,6 +2,7 @@
   // The setup wizard (spec 0017, D2 and D3): five steps and a review, one question to a step. The logic is in
   // wizard.ts; this draws it. Choices, labels and limits come from the schema.
   import { tick } from "svelte";
+  import { trapFocus } from "../focusTrap";
   import type { Choice, InputSpec, Schema } from "../api";
   import VesselClass from "../VesselClass.svelte";
   import { inputText, schemaText, t } from "../i18n.svelte";
@@ -181,7 +182,7 @@
 <svelte:window onkeydown={onKey} />
 
 <div class="veil">
-  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="wizard-title" data-testid="wizard">
+  <div class="dialog" role="dialog" aria-modal="true" use:trapFocus aria-labelledby="wizard-title" data-testid="wizard">
     <header>
       {#if step !== "review"}<p class="stepof" data-testid="wizard-step-of">{t("app-wizard-step-of", { n: index + 1, total: 5 })}</p>{/if}
       <h2 id="wizard-title" tabindex="-1" bind:this={heading} data-testid="wizard-heading">{t(NAMES[step])}</h2>
@@ -255,6 +256,7 @@
               summary={null}
               messages={[]}
               byClassAtStart={a.hullMode === "class"}
+              radioName="wizard-vc-mode"
               onMode={(byClass) => {
                 a.hullMode = byClass ? "class" : "typed";
                 if (!byClass) {
