@@ -666,7 +666,6 @@ app-wizard-area-coastal-and-river = Checks the inland-waterway Rules and the sea
 app-wizard-river-limits-note = A river-only Design needs both limits below. A Vessel Class chosen in step 4 can give them instead.
 app-wizard-help-freeboard = Left empty, the safety clearance of the inland Rules is used. The load-line table value appears in the Rule checks after the first result.
 app-wizard-help-default = Left empty: { $value }, from the Defaults Profile.
-app-wizard-help-default-rule = Left empty: the depth-to-beam ratio of the Cargo times the beam.
 app-wizard-convoy-counts = { $abreast } abreast, { $inLine } in line
 app-wizard-so-far = Your answers so far
 app-wizard-not-chosen = Not chosen yet

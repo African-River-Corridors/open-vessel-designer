@@ -30,8 +30,16 @@ async function start() {
   sessions.push(b);
   return b;
 }
-const until = (b, what, check, timeout = 30000) =>
-  b.waitUntil(check, { timeout, interval: 100, timeoutMsg: `timed out waiting for: ${what}` });
+/** Wait for `check`. On a time-out, log the page text and the data-testid values, so CI shows what the page held. */
+const until = async (b, what, check, timeout = 30000) => {
+  try {
+    return await b.waitUntil(check, { timeout, interval: 100, timeoutMsg: `timed out waiting for: ${what}` });
+  } catch (e) {
+    const seen = await b.execute(() => ({ text: document.body.innerText, ids: [...document.querySelectorAll("[data-testid]")].map((n) => n.dataset.testid) })).catch(() => null);
+    console.error(`[diagnostic] waiting for ${what}:`, JSON.stringify(seen));
+    throw e;
+  }
+};
 const exists = async (b, selector) => (await b.$(selector)).isExisting();
 const testid = (id) => `[data-testid=${id}]`;
 

@@ -34,7 +34,7 @@
   } = $props();
 
   /* svelte-ignore state_referenced_locally */
-  let a = $state<Answers>(structuredClone(answers));
+  let a = $state<Answers>($state.snapshot(answers) as Answers);
   /* svelte-ignore state_referenced_locally */
   let step = $state<StepId>(firstStep);
   /** The steps where Next was pressed with something missing: only then are missing answers called errors. */
@@ -157,10 +157,20 @@
   });
 
   let heldClass = $derived(classChosen(schema, a));
+  /** The Cargo groups of the moulded-depth rule, by the engine's group name (as in InputField). */
+  const GROUP_IDS: Record<string, string> = {
+    dry_bulk: "app-cargo-group-dry-bulk",
+    liquid: "app-cargo-group-liquid",
+    gas: "app-cargo-group-gas",
+  };
   /** The wording of a hint under a limit: the default or rule that applies when the box is left empty. */
   function leftEmpty(s: InputSpec): string {
     if (s.name === "min_freeboard_m") return t("app-wizard-help-freeboard");
-    if (s.default_rule) return t("app-wizard-help-default-rule");
+    if (s.default_rule) {
+      // The schema's own rule text, as the input list shows it: on a Cargo that carries gas the depth follows the tank.
+      const by = Object.entries(s.default_rule.ratios).map(([g, v]) => `${GROUP_IDS[g] ? t(GROUP_IDS[g]) : g} ${v}`).join(", ");
+      return t("app-help-default-rule", { ratios: by });
+    }
     if (s.default !== undefined && s.default !== null) return t("app-wizard-help-default", { value: numberText(s.name, s.default) });
     return "";
   }
