@@ -76,7 +76,10 @@ jobs:
   # It left the pull request path (issue #716): it runs on a release (release.yml calls this workflow),
   # every week and on request.
   app-e2e:
-    runs-on: ubuntu-latest
+    # Pinned: `ubuntu-latest` is now Ubuntu 26.04, which renamed `webkit2gtk-driver` to `webkitgtk-webdriver`
+    # (#1089). The Tauri libraries below and `tauri-driver` are known to work on 24.04. Move back to
+    # `ubuntu-latest` only after a run proves the new package and the driver binary `tauri-driver` looks for.
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4

@@ -75,6 +75,8 @@ export interface InputSpec extends Ranges {
   label: string;
   group: string;
   required: boolean;
+  /** Issue #1083: an input a first Design needs to see. Every required input is essential. It does not override `applies_to`. */
+  essential: boolean;
   /** The Cargo Containments the input is used for. */
   applies_to?: string[];
   /** The Formation kinds the input is used for. The panel needs neither: Rust sends only the inputs an Option uses. */
@@ -103,6 +105,13 @@ export interface InputSpec extends Ranges {
     slenderness_basis: string;
   };
   convoy?: { abreast: Ranges; in_line: Ranges };
+}
+/** Spec 0017, D6: one example of the Start page. `inputs` are the typed inputs of its one Option. */
+export interface DesignExample {
+  id: string;
+  title: string;
+  text: string;
+  inputs: Record<string, unknown>;
 }
 export interface Schema {
   profile: string;
@@ -158,6 +167,11 @@ export const runDamage = (option: string, onProgress: (p: DamageProgress) => voi
 export const cancelDamage = () => platform().cancelDamage();
 /** Each of these returns null when the user cancels a dialog. */
 export const newFile = () => platform().newFile();
+/** Spec 0017, D4: a new Design from typed choices; the caller asks about unsaved changes first. */
+export const newDesignFrom = (option: string, inputs: Record<string, unknown>) =>
+  platform().newDesignFrom(option, inputs);
+/** Spec 0017, D6: the examples of the Start page. */
+export const designExamples = () => platform().designExamples();
 export const openFile = () => platform().openFile();
 export const onOpenedFromOutside = (opened: () => void, failed: (reason: string) => void) =>
   platform().onOpenedFromOutside(opened, failed);

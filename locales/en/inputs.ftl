@@ -38,14 +38,6 @@ choice-cargo-bauxite = Bauxite
 choice-cargo-crude-oil = Crude oil
 choice-cargo-diesel-en590 = Diesel fuel (EN 590)
 
-input-hull-form = Hull Form
-choice-hull-form-box = Box
-choice-hull-form-raked-box = Raked box
-choice-hull-form-v-bottom = V-bottom
-choice-hull-form-chine = Chine
-choice-hull-form-shipd = ShipD-style
-choice-hull-form-offsets = Offsets table
-
 input-formation = Formation
 choice-formation-self-propelled = Self-propelled
 choice-formation-pushed-barge = Pushed barge
@@ -56,6 +48,14 @@ choice-formation-towed-barge = Towed barge
 input-length-overall-m = Length overall
 
 input-beam-m = Beam
+
+input-hull-form = Hull Form
+choice-hull-form-box = Box
+choice-hull-form-raked-box = Raked box
+choice-hull-form-v-bottom = V-bottom
+choice-hull-form-chine = Chine
+choice-hull-form-shipd = ShipD-style
+choice-hull-form-offsets = Offsets table
 
 input-moulded-depth-m = Moulded depth
 

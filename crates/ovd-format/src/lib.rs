@@ -9,6 +9,7 @@ pub mod crew;
 pub mod damage;
 pub mod deckhouse_openings;
 mod eval;
+pub mod examples;
 pub mod export;
 mod formation;
 pub mod ga;

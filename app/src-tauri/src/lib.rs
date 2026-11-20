@@ -257,6 +257,27 @@ async fn new_file(app: AppHandle, window: Window, state: State<'_, Shared>) -> R
     finish(&window, &guard)
 }
 
+/// Spec 0017, D4: a new Design from typed choices. It asks nothing: the wizard has asked about unsaved
+/// changes before it began. A refused choice is an error and leaves the open Design as it is.
+#[tauri::command]
+fn new_design_from(
+    window: Window,
+    option: String,
+    inputs: serde_json::Map<String, serde_json::Value>,
+    state: State<Shared>,
+) -> Reply {
+    let made = AppState::new_design_from(&option, &inputs)?;
+    let mut guard = lock(&state)?;
+    *guard = made;
+    finish(&window, &guard)
+}
+
+/// Spec 0017, D6: the examples of the Start page. It makes no Design.
+#[tauri::command]
+fn design_examples() -> serde_json::Value {
+    AppState::design_examples()
+}
+
 /// `null` when the user cancels.
 #[tauri::command]
 async fn open_file(app: AppHandle, window: Window, state: State<'_, Shared>) -> Reply {
@@ -486,6 +507,8 @@ pub fn run() {
             run_damage,
             cancel_damage,
             new_file,
+            new_design_from,
+            design_examples,
             open_file,
             save,
             save_as,

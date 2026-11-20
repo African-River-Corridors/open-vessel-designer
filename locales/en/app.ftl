@@ -650,3 +650,26 @@ app-report-damage-body-cases = Damage stability has not been run ({ $cases } cas
 app-report-damage-run = Run it now
 app-report-damage-skip = Make the report without it
 app-report-damage-cancel = Cancel
+
+# The Summary view (issue #1081)
+app-group-summary = Summary
+app-view-summary = Summary
+app-summary-label = Summary of the Design
+app-summary-works = Does it work?
+app-summary-got = What did I get?
+app-summary-next = What should I look at next?
+app-summary-met = Every blocking Rule that was evaluated is met.
+app-summary-not-met = Blocking Rules not met: { $rules }
+app-summary-not-calculated = Not calculated.
+app-summary-not-calculated-fix = Not calculated: fix the error under { $inputs }
+app-summary-not-calculated-because = Not calculated: { $message }
+app-summary-damage-run = Damage stability: run.
+app-summary-damage-run-cases = Damage stability: run, { $count } cases.
+app-summary-damage-not-run = Damage stability: not run.
+app-summary-damage-not-applicable = Damage stability: not applicable.
+app-summary-damage-not-evaluated = Damage stability: not evaluated.
+app-summary-no-results = Nothing to show until the Design is calculated.
+app-summary-no-warnings = No warning checks are open.
+app-summary-show-check = Show in Checks
+app-summary-input-counts = Inputs: { $typed } typed and { $defaults } default.
+app-summary-open-input = Open the Input panel
