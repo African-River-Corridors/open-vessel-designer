@@ -96,7 +96,7 @@ fn the_schema_lists_the_two_new_inputs_and_not_the_ruleset() {
     let inputs = schema["inputs"].as_array().unwrap();
     assert!(inputs.iter().all(|i| i["name"] != "ruleset"));
     let area = inputs.iter().find(|i| i["name"] == "service_area").unwrap();
-    assert_eq!(area["group"], "Rules");
+    assert_eq!(area["group"], "Required");
     // Issue #925: required, with no default.
     assert_eq!(area["required"], true);
     assert!(area["default"].is_null(), "{area}");
