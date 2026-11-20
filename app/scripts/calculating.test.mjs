@@ -44,6 +44,40 @@ test("an error does not leave the sign on, and the error goes on", async () => {
   assert.equal(c.running, 0);
 });
 
+// Issue #1096: QA found a gap in the run counter; two quick runs that overlap turn the sign off once, after the last.
+test("two quick overlapping runs turn the sign off once, after the last run ends", async () => {
+  const { c, log } = sign(30);
+  const first = c.during(() => wait(10));
+  const second = c.during(() => wait(20));
+  await first;
+  assert.deepEqual(log, [], "nothing yet: the second run still goes");
+  await second;
+  assert.deepEqual(log, [false], "off once, never on: both were quicker than the wait");
+});
+
+// Issue #1096: on the web an evaluation blocks the page, so the timer cannot fire while it runs. A run said to be
+// slow shows the sign at once and lets the page paint it before the work starts.
+test("a run said to be slow shows the sign at once and lets the page paint before the work starts", async () => {
+  const order = [];
+  const c = new Calculating(1000, (on) => order.push(on ? "on" : "off"), async () => order.push("painted"));
+  await c.during(async () => order.push("work"), true);
+  assert.deepEqual(order, ["on", "painted", "work", "off"]);
+});
+
+test("a slow run inside a run that already shows the sign does not paint again", async () => {
+  const order = [];
+  const c = new Calculating(1000, (on) => order.push(on ? "on" : "off"), async () => order.push("painted"));
+  await c.during(() => c.during(async () => order.push("inner"), true), true);
+  assert.deepEqual(order, ["on", "painted", "inner", "off"]);
+});
+
+test("a slow run inside a run whose timer has not fired yet shows the sign at once", async () => {
+  const order = [];
+  const c = new Calculating(1000, (on) => order.push(on ? "on" : "off"), async () => order.push("painted"));
+  await c.during(() => c.during(async () => order.push("inner"), true));
+  assert.deepEqual(order, ["on", "painted", "inner", "off"]);
+});
+
 const finder = (table) => (id) => table[id] ?? null;
 
 test("the app wording in the Display Language wins over everything", () => {

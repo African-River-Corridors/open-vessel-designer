@@ -4,13 +4,16 @@
   import { hiddenByEssentials, shownInputs } from "./inputFilter";
   import { inputsView, setInputsFilter, setInputsMode } from "./inputsView.svelte";
   import VesselClass from "./VesselClass.svelte";
+  import CalculatingSign from "./CalculatingSign.svelte";
   import { schemaText, t } from "./i18n.svelte";
 
   // The left panel. The groups, their order, the labels, the choices and the ranges all come from
   // the schema. An input is drawn when the Option holds it, so the panel needs no rule for which
   // inputs a Cargo Containment uses: Rust sends only those that apply.
-  let { snap, schema, evaluation, generation, onPick, onEdit, onReset, onFormation, onImportOffsets, onOption }: {
+  let { snap, schema, evaluation, generation, sign, onPick, onEdit, onReset, onFormation, onImportOffsets, onOption }: {
     snap: Snapshot | null;
+    /** Issue #1096: the "Calculating…" sign, on or off; null when it is drawn elsewhere (the panel is hidden). */
+    sign: boolean | null;
     schema: Schema | null;
     evaluation: OptionEvaluation | undefined;
     /** Changes when the fields must be drawn afresh. */
@@ -74,13 +77,13 @@
   {#if snap}
     <section class="options">
       <h2>{t("app-option")}</h2>
-      <select aria-label={t("app-option-active")} value={snap.active_option} onchange={(e) => onPick(e.currentTarget.value)}>
+      <select data-testid="option-picker" aria-label={t("app-option-active")} value={snap.active_option} onchange={(e) => onPick(e.currentTarget.value)}>
         {#each snap.design.options as o (o.name)}
           <option value={o.name}>{o.name}</option>
         {/each}
       </select>
       <div class="buttons">
-        <button onclick={() => onOption("add")}>{t("app-option-add")}</button>
+        <button data-testid="option-add" onclick={() => onOption("add")}>{t("app-option-add")}</button>
         <button onclick={() => onOption("duplicate")}>{t("app-option-duplicate")}</button>
         <button onclick={startRename}>{t("app-option-rename")}</button>
         <button onclick={() => (confirmDelete = true)} disabled={only} title={only ? t("app-option-delete-last") : ""}>{t("app-option-delete")}</button>
@@ -107,9 +110,13 @@
     </section>
 
     <section class="view">
-      <div class="mode" role="group" aria-label={t("app-inputs-mode")}>
-        <button type="button" data-testid="mode-essentials" aria-pressed={inputsView.mode === "essentials"} onclick={() => setInputsMode("essentials")}>{t("app-inputs-essentials")}</button>
-        <button type="button" data-testid="mode-all" aria-pressed={inputsView.mode === "all"} onclick={() => setInputsMode("all")}>{t("app-inputs-all")}</button>
+      <div class="moderow">
+        <div class="mode" role="group" aria-label={t("app-inputs-mode")}>
+          <button type="button" data-testid="mode-essentials" aria-pressed={inputsView.mode === "essentials"} onclick={() => setInputsMode("essentials")}>{t("app-inputs-essentials")}</button>
+          <button type="button" data-testid="mode-all" aria-pressed={inputsView.mode === "all"} onclick={() => setInputsMode("all")}>{t("app-inputs-all")}</button>
+        </div>
+        <!-- Issue #1096: the sign beside the switch, where the eyes are while typing. -->
+        {#if sign !== null}<CalculatingSign on={sign} />{/if}
       </div>
       <div class="inline filter">
         <input
@@ -174,6 +181,7 @@
   .confirm { background: var(--fail-soft); color: var(--fail); padding: var(--sp-1) 6px; }
   details { border-top: var(--lw-thin) solid var(--rule); margin-top: 10px; padding-top: var(--sp-1); }
   .view { margin-top: 10px; }
+  .moderow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3); }
   .mode { display: inline-flex; }
   .mode button { background: transparent; font-size: var(--fs-13); border-radius: 0; margin-left: -1px; }
   .mode button:first-child { border-radius: var(--radius) 0 0 var(--radius); margin-left: 0; }

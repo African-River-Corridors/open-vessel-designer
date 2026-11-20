@@ -60,6 +60,14 @@
   let calculating = $state(false);
   const sign = new Calculating(CALCULATING_AFTER_MS, (on) => (calculating = on));
   const whileCalculating = <T,>(work: () => Promise<T>) => sign.during(work);
+  /**
+   * Issue #1096: how long the last evaluation held the page. On the web the engine runs on the page's own
+   * thread, so the sign's timer cannot fire during it: once a run has held the page past the wait, the next
+   * run shows the sign at once and lets the page draw it first.
+   */
+  let lastBlockedMs = 0;
+  /** Issue #1096: a new Design is being calculated for the first time; the Summary says so. */
+  let designPending = $state(false);
 
   async function guard<T>(work: () => Promise<T>): Promise<T | undefined> {
     try {
@@ -71,8 +79,14 @@
     }
   }
 
-  async function runEvaluation() {
-    const result = await api.evaluate();
+  /** Evaluate the Design, under the sign (issue #1096: every evaluation). `slow` shows the sign at once. */
+  async function runEvaluation(slow = false) {
+    const result = await sign.during(() => {
+      const begun = performance.now();
+      const answer = api.evaluate();
+      lastBlockedMs = performance.now() - begun;
+      return answer;
+    }, slow || lastBlockedMs >= CALCULATING_AFTER_MS);
     for (const o of result.options) {
       if (o.outcome.status === "results") lastGood[o.name] = o;
     }
@@ -132,10 +146,17 @@
       lastGood = {};
       bannerDismissed = false;
       notesDismissed = [];
+      // The last Design's results are not this one's: the Summary says the Design is being calculated instead.
+      evaluation = null;
+      designPending = true;
     }
     if (redraw) generation += 1;
     snap = next;
-    await runEvaluation();
+    try {
+      await runEvaluation(newDesign);
+    } finally {
+      if (newDesign) designPending = false;
+    }
   }
 
   async function fileAction(action: () => Promise<Snapshot | null>, newDesign: boolean) {
@@ -404,19 +425,16 @@
         <span class="meta" data-testid="engine-version" title={engineText}>{engineText}</span>
       {/if}
     </span>
-    <button type="button" aria-label={t(showInput ? "app-input-panel-hide" : "app-input-panel-show")} aria-pressed={showInput} onclick={() => (showInput = !showInput)}>{t("app-input-panel")}</button>
+    <button type="button" data-testid="toggle-input-panel" aria-label={t(showInput ? "app-input-panel-hide" : "app-input-panel-show")} aria-pressed={showInput} onclick={() => (showInput = !showInput)}>{t("app-input-panel")}</button>
     <button type="button" aria-label={t(showOutputs ? "app-outputs-panel-hide" : "app-outputs-panel-show")} aria-pressed={showOutputs} onclick={() => (showOutputs = !showOutputs)}>{t("app-outputs-panel")}</button>
     <button type="button" data-testid="settings" aria-haspopup="dialog" onclick={() => (settingsOpen = true)}>{t("app-settings")}</button>
   </header>
 
-  <!-- A line of its own under the header, so the sign takes no width from the file name and never covers a
-       button. Always in the page, so a screen reader hears the text once, politely, when it arrives. -->
-  <div class="signline"><span class="calculating" role="status" data-testid="calculating">{calculating ? t("app-calculating") : ""}</span></div>
-
   <MessageBar {messages} />
 
   <div class="body" style:grid-template-columns={showInput ? `${leftWidth}px 6px 1fr` : "0 0 1fr"} style:grid-template-rows={showOutputs ? `1fr 6px ${bottomHeight}px` : "1fr 0 0"}>
-    <section class="left" hidden={!showInput} tabindex="-1"><LeftPanel {snap} {schema} {generation} evaluation={activeEval}
+    <!-- Issue #1096: the sign shows at the top of the Input panel, near the edit; with the panel hidden, in the views' tab row. -->
+    <section class="left" hidden={!showInput} tabindex="-1"><LeftPanel {snap} {schema} {generation} evaluation={activeEval} sign={showInput ? calculating : null}
       onPick={(name) => command(() => api.setActiveOption(name))}
       onEdit={(name, value) => {
         const option = active;
@@ -431,7 +449,7 @@
       }}
       onOption={optionAction} /></section>
     <div class="handle v" hidden={!showInput} role="separator" aria-orientation="vertical" onpointerdown={drag("x")}></div>
-    <section class="main"><MainPanel {evaluation} {active} {lastGood} {blockers} {designSpeed} inputs={activeInputs} onRunDamage={() => runDamage(active)} onCancelDamage={cancelDamage} onShowInput={showInputPanel} onShowCheck={showCheck} /></section>
+    <section class="main"><MainPanel {evaluation} {active} {lastGood} {blockers} {designSpeed} inputs={activeInputs} sign={showInput ? null : calculating} {designPending} onRunDamage={() => runDamage(active)} onCancelDamage={cancelDamage} onShowInput={showInputPanel} onShowCheck={showCheck} /></section>
     <div class="handle h" hidden={!showOutputs} role="separator" aria-orientation="horizontal" onpointerdown={drag("y")}></div>
     <section class="bottom" hidden={!showOutputs}><BottomPanel {evaluation} {active} {lastGood} {blockers} onActivate={(name) => command(() => api.setActiveOption(name))} /></section>
   </div>
@@ -461,9 +479,6 @@
   }
   /* No `overflow: hidden` on a text-only element: WebKit's WebDriver reads its text as empty (see the design note). */
   .meta { color: var(--ink-3); font-size: var(--fs-12); flex: 0 0 auto; white-space: nowrap; }
-  /* A thin line under the header, the sign at its right. It keeps its height, so the panels never jump. */
-  .signline { flex: none; display: flex; justify-content: flex-end; align-items: center; box-sizing: border-box; height: 18px; padding: 0 var(--sp-3); }
-  .calculating { color: var(--ink-3); font-size: var(--fs-12); line-height: 18px; white-space: nowrap; }
   .meta.file { flex: 0 1 auto; min-width: 0; overflow: clip; text-overflow: ellipsis; font-family: var(--font-mono); }
   header :global(.web-badge) {
     font-size: var(--fs-11); text-transform: uppercase; letter-spacing: 0.08em; padding: 1px var(--sp-2);
