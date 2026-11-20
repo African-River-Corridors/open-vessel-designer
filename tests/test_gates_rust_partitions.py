@@ -52,7 +52,7 @@ def test_the_tool_leaves_a_slow_unit_test_to_the_hash_share():
     """A slow unit test of a library (binary `ovd-shell`, test `state::tests::...`) is not placed:
     the file's format names integration tests only. Its time still counts in every job's share.
 
-    Label: example"""
+    Label: property"""
     import sys
 
     sys.path.insert(0, str(ROOT / "tools"))

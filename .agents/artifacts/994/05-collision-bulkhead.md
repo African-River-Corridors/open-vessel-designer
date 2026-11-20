@@ -121,7 +121,7 @@ maintainer; made here and logged.)
 
 - `es-trin-2025` is in both default stacks (`builtin_profile.json`, `rule_sets.default_stacks`), so the
   3.03 rows of section 2 judge a coastal Option as they judge a river one.
-- **SOLAS II-1/12** was checked. The text is not in the rule sources (`~/Dev/ovcd-rule-sources/solas`
+- **SOLAS II-1/12** was checked. The text is not in the rule-source collection (its SOLAS folder
   holds MSC.269(85) only, the IS Code amendments). Secondary sources (Gard, "Collision bulkhead: very
   important valve"; Marine Insight, "What is Collision Bulkhead in Ships?") give the bulkhead not less
   than 0.05 L or 10 m, whichever is less, and not more than 0.08 L or 0.05 L + 3 m, whichever is greater,
