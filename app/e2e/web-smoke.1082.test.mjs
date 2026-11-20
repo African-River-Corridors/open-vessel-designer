@@ -71,7 +71,8 @@ describe("Plain words and the calculating sign (issue #1082)", () => {
     assert.doesNotMatch(page, /\bovd\s+[a-z]|simulate/);
   });
 
-  it("keeps the plain Service Area wording in another Display Language, never the command-line hint", async () => {
+  // English only for now (issue #1095): Settings has no Display Language control, so this test is paused.
+  it.skip("keeps the plain Service Area wording in another Display Language, never the command-line hint", async () => {
     const b = await start();
     await openApp(b);
     await (await b.$("[data-testid=settings]")).click();
