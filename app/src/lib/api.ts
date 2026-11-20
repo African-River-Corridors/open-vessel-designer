@@ -104,6 +104,13 @@ export interface InputSpec extends Ranges {
   };
   convoy?: { abreast: Ranges; in_line: Ranges };
 }
+/** Spec 0017, D6: one example of the Start page. `inputs` are the typed inputs of its one Option. */
+export interface DesignExample {
+  id: string;
+  title: string;
+  text: string;
+  inputs: Record<string, unknown>;
+}
 export interface Schema {
   profile: string;
   engine_version: string;
@@ -158,6 +165,15 @@ export const runDamage = (option: string, onProgress: (p: DamageProgress) => voi
 export const cancelDamage = () => platform().cancelDamage();
 /** Each of these returns null when the user cancels a dialog. */
 export const newFile = () => platform().newFile();
+/** Spec 0017, D4: a new Design from typed choices; the caller asks about unsaved changes first. */
+export const newDesignFrom = (option: string, inputs: Record<string, unknown>) =>
+  platform().newDesignFrom(option, inputs);
+/** Spec 0017, D6: the examples of the Start page. */
+export const designExamples = () => platform().designExamples();
+/** Spec 0017, D1: ask before a new Design replaces unsaved work; true means go ahead. */
+export const confirmDiscard = () => platform().confirmDiscard();
+/** Spec 0017, D1: the app brought back the last Design, so there is no Start page. */
+export const designRestored = () => platform().designRestored();
 export const openFile = () => platform().openFile();
 export const onOpenedFromOutside = (opened: () => void, failed: (reason: string) => void) =>
   platform().onOpenedFromOutside(opened, failed);

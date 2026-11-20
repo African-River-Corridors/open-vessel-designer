@@ -71,6 +71,14 @@ fn confirm_discard(app: &AppHandle, state: &Shared) -> Result<bool, String> {
     ))
 }
 
+/// Spec 0017, D1: the Start page asks before its Create replaces an unsaved Design, because
+/// `new_design_from` asks nothing. `true` means go ahead. An `async` command runs off the main
+/// thread, where the blocking dialog is allowed.
+#[tauri::command]
+async fn ask_discard_unsaved(app: AppHandle, state: State<'_, Shared>) -> Result<bool, String> {
+    confirm_discard(&app, &state)
+}
+
 /// Ask for a file to read. `None` when the user cancels.
 fn pick_file(
     app: &AppHandle,
@@ -255,6 +263,27 @@ async fn new_file(app: AppHandle, window: Window, state: State<'_, Shared>) -> R
     let mut guard = lock(&state)?;
     *guard = AppState::new_design()?;
     finish(&window, &guard)
+}
+
+/// Spec 0017, D4: a new Design from typed choices. It asks nothing: the wizard has asked about unsaved
+/// changes before it began. A refused choice is an error and leaves the open Design as it is.
+#[tauri::command]
+fn new_design_from(
+    window: Window,
+    option: String,
+    inputs: serde_json::Map<String, serde_json::Value>,
+    state: State<Shared>,
+) -> Reply {
+    let made = AppState::new_design_from(&option, &inputs)?;
+    let mut guard = lock(&state)?;
+    *guard = made;
+    finish(&window, &guard)
+}
+
+/// Spec 0017, D6: the examples of the Start page. It makes no Design.
+#[tauri::command]
+fn design_examples() -> serde_json::Value {
+    AppState::design_examples()
 }
 
 /// `null` when the user cancels.
@@ -486,6 +515,9 @@ pub fn run() {
             run_damage,
             cancel_damage,
             new_file,
+            new_design_from,
+            design_examples,
+            ask_discard_unsaved,
             open_file,
             save,
             save_as,

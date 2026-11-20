@@ -1,5 +1,6 @@
 <script lang="ts">
   // The first-run notice (a click-through, no warranty). It shows once per user and from About.
+  import { trapFocus } from "./focusTrap";
   import { t } from "./i18n.svelte";
 
   let { onClose }: { onClose: () => void } = $props();
@@ -8,7 +9,7 @@
 </script>
 
 <div class="veil">
-  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="notice-title" data-testid="notice">
+  <div class="dialog" role="dialog" aria-modal="true" use:trapFocus aria-labelledby="notice-title" data-testid="notice">
     <h2 id="notice-title">{t("app-notice-title")}</h2>
     <div class="tb">
       <div><span class="k">{t("app-notice-version")}</span><span class="v">{__APP_VERSION__}</span></div>

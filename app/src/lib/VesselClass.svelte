@@ -7,19 +7,26 @@
   // vessel sits in comes from Rust. Length and beam decide the class, so there is no "modified"
   // label: the panel shows the class the vessel sits in. Picking a class sets length, beam and
   // Formation; the other inputs are drawn with a "class" badge where they came from it.
-  let { schemeSpec, classSpec, inputs, summary, messages, onEdit }: {
+  let { schemeSpec, classSpec, inputs, summary, messages, onEdit, onMode, byClassAtStart = false, radioName = "vc-mode" }: {
     schemeSpec: InputSpec | undefined;
     classSpec: InputSpec | undefined;
     inputs: Record<string, StoredInput>;
     summary: VesselClassSummary | null | undefined;
     messages: Message[];
     onEdit: (name: string, value: unknown) => void;
+    /** The setup wizard (spec 0017) keeps the mode itself: told when the user switches it. */
+    onMode?: (byClass: boolean) => void;
+    /** The setup wizard draws the pickers again in the mode it already holds. */
+    byClassAtStart?: boolean;
+    /** The radio group's name: two copies on one page (the panel and the wizard) need two names. */
+    radioName?: string;
   } = $props();
 
   let scheme = $derived((inputs["vessel_scheme"]?.value ?? null) as string | null);
   let current = $derived((inputs["vessel_class"]?.value ?? null) as string | null);
   /** The user asked for a standard class but has not picked a scheme yet. */
-  let asking = $state(false);
+  /* svelte-ignore state_referenced_locally */
+  let asking = $state(byClassAtStart);
   let byClass = $derived(scheme !== null || asking);
   let kind = $derived(((inputs["formation"]?.value ?? {}) as { kind?: string }).kind);
   let classes = $derived(
@@ -44,20 +51,20 @@
     <label>
       <input
         type="radio"
-        name="vc-mode"
+        name={radioName}
         data-testid="vessel-mode-typed"
         checked={!byClass}
-        onchange={() => { asking = false; if (scheme !== null) onEdit("vessel_scheme", null); }}
+        onchange={() => { asking = false; onMode?.(false); if (scheme !== null) onEdit("vessel_scheme", null); }}
       />
       {t("app-vessel-mode-typed")}
     </label>
     <label>
       <input
         type="radio"
-        name="vc-mode"
+        name={radioName}
         data-testid="vessel-mode-class"
         checked={byClass}
-        onchange={() => (asking = true)}
+        onchange={() => { asking = true; onMode?.(true); }}
       />
       {t("app-vessel-mode-class")}
     </label>

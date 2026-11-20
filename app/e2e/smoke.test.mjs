@@ -111,6 +111,13 @@ async function type(label, text) {
   }
 }
 
+/** The app opens on the Start page after the notice (spec 0017): take its skip link, which gives the starter Design. */
+async function skipStart() {
+  await until("the Start page", async () => (await browser.$("[data-testid=start-page]")).isExisting());
+  await (await browser.$("[data-testid=start-skip]")).click();
+  await until("the Start page to close", async () => !(await browser.$("[data-testid=start-page]").isExisting()));
+}
+
 describe("OVD app smoke tests", () => {
   before(async () => {
     browser = await remote({
@@ -175,6 +182,7 @@ describe("OVD app smoke tests", () => {
     await (await browser.$("button=I understand")).click();
     await until("the notice to close", async () => !(await browser.$("[data-testid=notice]").isExisting()));
     assert.equal(fs.readdirSync(CONFIG).length, 1, "the click is remembered in the config folder");
+    await skipStart();
     // Help: the notice is reachable again.
     await (await browser.$("button=About")).click();
     await until("the notice from About", async () => (await browser.$("[data-testid=notice]")).isExisting());

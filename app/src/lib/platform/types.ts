@@ -1,7 +1,7 @@
 // The platform interface: every call the front end makes to the Rust side, and the file actions.
 // Two implementations: Tauri (desktop) and Web (the ovd-web WebAssembly session). Neither holds
 // any calculation, validation or default logic.
-import type { Evaluation, Schema, Snapshot } from "../api";
+import type { DesignExample, Evaluation, Schema, Snapshot } from "../api";
 
 export type DrawingView = "side" | "plan" | "midship";
 export type DrawingFormat = "svg" | "pdf" | "dxf";
@@ -133,6 +133,18 @@ export interface Platform {
   cancelDamage(): Promise<void>;
   /** Each of these returns null when the user cancels a dialog. */
   newFile(): Promise<Snapshot | null>;
+  /**
+   * Spec 0017, D4: a new Design from typed choices (input names and values) with one Option of this
+   * name. It asks nothing about unsaved changes: the caller asks first. A refused choice rejects with
+   * the schema's error and leaves the open Design as it is.
+   */
+  newDesignFrom(option: string, inputs: Record<string, unknown>): Promise<Snapshot>;
+  /** Spec 0017, D6: the examples of the Start page. It makes no Design. */
+  designExamples(): Promise<DesignExample[]>;
+  /** Spec 0017, D1: ask before the Start page's Create replaces an unsaved Design. `true` means go ahead. */
+  confirmDiscard(): Promise<boolean>;
+  /** Spec 0017, D1: the app brought back the last Design (the web build does, from browser storage). */
+  designRestored(): Promise<boolean>;
   openFile(): Promise<Snapshot | null>;
   /**
    * Issue #671: call `opened` when the app is given a Design from outside (Finder, "Open With",
