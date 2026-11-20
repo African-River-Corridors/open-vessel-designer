@@ -215,6 +215,7 @@ describe("OVD app smoke tests", () => {
   const HULL_TABS = { side: "Side elevation", plan: "Plan", midship: "Cross-section" };
   // The views, by top tab. Every view is checked for scrolling and photographed.
   const GROUPS = [
+    ["Summary", ["Summary"]],
     ["Drawings", ["Side elevation", "Plan", "Cross-section", "3D", "Stern & crew"]],
     ["Stability & Propulsion", ["Intact stability", "Ballast tanks", "Damage stability", "Power and speed curves", "Rule check calculations"]],
     ["BOQ & Finance", ["BOQ", "Capital budget"]],

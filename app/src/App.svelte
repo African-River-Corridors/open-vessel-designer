@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import * as api from "./lib/api";
   import type { Evaluation, Schema, Snapshot, OptionEvaluation } from "./lib/api";
   import LeftPanel from "./lib/LeftPanel.svelte";
@@ -11,6 +11,7 @@
   import { loadPanels, savePanels } from "./lib/panels";
   import { list, say, schemaText, setInputLabels, t } from "./lib/i18n.svelte";
   import { damageRun } from "./lib/damageRun.svelte";
+  import { showView } from "./lib/viewRequest.svelte";
   import { damageStatus, saveSecondsPerCase, secondsLeft, secondsPerCase, wholeSeconds } from "./lib/damage";
 
   // Display state only: the Design, its checks and its results all come from Rust.
@@ -111,6 +112,7 @@
   async function adopt(next: Snapshot | null | undefined, newDesign = false, redraw = newDesign) {
     if (!next) return;
     if (newDesign) {
+      showView("summary");
       lastGood = {};
       bannerDismissed = false;
       notesDismissed = [];
@@ -231,6 +233,21 @@
     const v = snap?.design.options.find((o) => o.name === active)?.inputs.max_speed_kn?.value;
     return typeof v === "number" ? v : null;
   });
+  /** The active Option's stored inputs, for the Summary's count of typed and default inputs. */
+  let activeInputs = $derived(snap?.design.options.find((o) => o.name === active)?.inputs ?? {});
+  /** The Summary's links: show the Input panel, or a check of the Checks panel, and put the focus there. */
+  async function showInputPanel() {
+    showInput = true;
+    await tick();
+    document.querySelector<HTMLElement>("section.left")?.focus();
+  }
+  async function showCheck(name: string) {
+    showOutputs = true;
+    await tick();
+    const row = document.querySelector<HTMLElement>(`[data-check="${CSS.escape(name)}"]`);
+    row?.scrollIntoView({ block: "center" });
+    row?.focus();
+  }
   let activeEval = $derived(evaluation?.options.find((o) => o.name === active));
   /** Whether damage stability was run for the active Option's shown results (issue #924). */
   let activeStatus = $derived(activeEval?.outcome.status === "results" ? damageStatus(activeEval.outcome.results).status : null);
@@ -325,7 +342,7 @@
   <MessageBar {messages} />
 
   <div class="body" style:grid-template-columns={showInput ? `${leftWidth}px 6px 1fr` : "0 0 1fr"} style:grid-template-rows={showOutputs ? `1fr 6px ${bottomHeight}px` : "1fr 0 0"}>
-    <section class="left" hidden={!showInput}><LeftPanel {snap} {schema} {generation} evaluation={activeEval}
+    <section class="left" hidden={!showInput} tabindex="-1"><LeftPanel {snap} {schema} {generation} evaluation={activeEval}
       onPick={(name) => command(() => api.setActiveOption(name))}
       onEdit={(name, value) => {
         const option = active;
@@ -340,7 +357,7 @@
       }}
       onOption={optionAction} /></section>
     <div class="handle v" hidden={!showInput} role="separator" aria-orientation="vertical" onpointerdown={drag("x")}></div>
-    <section class="main"><MainPanel {evaluation} {active} {lastGood} {blockers} {designSpeed} onRunDamage={() => runDamage(active)} onCancelDamage={cancelDamage} /></section>
+    <section class="main"><MainPanel {evaluation} {active} {lastGood} {blockers} {designSpeed} inputs={activeInputs} onRunDamage={() => runDamage(active)} onCancelDamage={cancelDamage} onShowInput={showInputPanel} onShowCheck={showCheck} /></section>
     <div class="handle h" hidden={!showOutputs} role="separator" aria-orientation="horizontal" onpointerdown={drag("y")}></div>
     <section class="bottom" hidden={!showOutputs}><BottomPanel {evaluation} {active} {lastGood} {blockers} onActivate={(name) => command(() => api.setActiveOption(name))} /></section>
   </div>
