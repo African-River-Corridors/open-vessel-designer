@@ -30,3 +30,17 @@ serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precisio
 [profile.dev.package.ovd-core]
 opt-level = 3
 
+# The engine tests run whole evaluations and damage runs through ovd-format, the rules kernel and the
+# libraries they use (the drawing standard, serde_json). Dev and test builds optimise those too: about
+# 15 to 25 per cent less CPU on the slowest tests. Debug assertions and overflow checks stay on: this is
+# the dev profile with optimisation, not the release profile. The thin crates over them (ovd-cli,
+# ovd-shell, ovd-web, ovd-py, xtask) stay unoptimised and quick to build.
+[profile.dev.package.ovd-format]
+opt-level = 3
+
+[profile.dev.package.arc-rules]
+opt-level = 3
+
+[profile.dev.package."*"]
+opt-level = 3
+

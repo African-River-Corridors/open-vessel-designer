@@ -25,9 +25,16 @@ def times(paths):
     return out
 
 
+def placeable(key):
+    """An integration test (`crate::binary`, a plain test name) can be placed. A unit test of a library
+    (`crate`, `module::tests::name`) stays in the hash share: it still runs, in exactly one job."""
+    binary, test = key
+    return "::" in binary and test.isidentifier()
+
+
 def place(measured, parts, over):
-    slow = sorted(((t, k) for k, t in measured.items() if t >= over), reverse=True)
-    rest = sum(t for t in measured.values() if t < over)
+    slow = sorted(((t, k) for k, t in measured.items() if t >= over and placeable(k)), reverse=True)
+    rest = sum(t for k, t in measured.items() if not (t >= over and placeable(k)))
     load = [rest / parts] * parts
     placed = []
     for t, key in slow:
