@@ -124,6 +124,35 @@ impl AppState {
         })
     }
 
+    /// A new Design from typed choices (spec 0017, D4): what the wizard's Create sends. The one
+    /// Option has the name and holds the typed inputs; every other input is the Defaults Profile's.
+    /// A refused choice gives the schema's error and makes no state, so the caller's open Design
+    /// stays as it is.
+    pub fn new_design_from(
+        option: &str,
+        inputs: &serde_json::Map<String, Value>,
+    ) -> Result<AppState, String> {
+        let session = DesignSession::from_typed(Profile::built_in(), option, inputs)?;
+        let active_option = first_option(&session);
+        Ok(AppState {
+            session,
+            path: None,
+            dirty: false,
+            active_option,
+            hash_changed: Vec::new(),
+            migration_notes: Vec::new(),
+            vessel: None,
+            damage: HashMap::new(),
+            running: None,
+        })
+    }
+
+    /// The examples of the Start page (spec 0017, D6): each one's `id`, `title`, `text` and typed
+    /// `inputs`. It makes no Design; `new_design_from` does.
+    pub fn design_examples() -> Value {
+        ovd_format::examples::examples_json()
+    }
+
     /// Open a `.vdesign` text that was read from `path`.
     pub fn open(path: &Path, text: &str) -> Result<AppState, String> {
         let (session, report) = DesignSession::open(text, Profile::built_in())?;
