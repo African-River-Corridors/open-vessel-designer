@@ -91,7 +91,8 @@ describe("The Summary's scope line", () => {
     const counts = await engineCounts(b);
     const line = (await (await b.$(testid("summary-scope-line"))).getText()).trim();
     assert.ok(line.startsWith(`${counts.sets} Rule Sets checked; ${counts.notEvaluated} blocking Rules were not evaluated.`), line);
-    assert.ok(line.endsWith("Show the scope"), line);
+    assert.ok(line.endsWith(" Show the scope"), line);
+    assert.doesNotMatch(line, /\.\S/, "a space after every full stop");
     assert.equal(await sentenceShown(b), false, "the sentence is folded at first");
 
     await click(b, "summary-scope-line");

@@ -144,7 +144,7 @@
     <!-- The scope is reference text, not the answer: one line with its two counts, the sentence on opening. The
          line always shows the count of blocking Rules not evaluated. Open or closed is kept for the session. -->
     <details class="scope" data-testid="summary-scope-box" open={summaryView.scopeOpen} ontoggle={(e) => (summaryView.scopeOpen = e.currentTarget.open)}>
-      <summary data-testid="summary-scope-line">{#if counts}{t("app-summary-scope-counts", { sets: counts.ruleSets, notEvaluated: counts.notEvaluated })}{#if counts.notRun > 0} {t("app-summary-scope-not-run", { count: counts.notRun })}{/if} {/if}<span class="show">{t(summaryView.scopeOpen ? "app-summary-scope-hide" : "app-summary-scope-show")}</span></summary>
+      <summary data-testid="summary-scope-line">{#if counts}{t("app-summary-scope-counts", { sets: counts.ruleSets, notEvaluated: counts.notEvaluated })}{#if counts.notRun > 0}{" "}{t("app-summary-scope-not-run", { count: counts.notRun })}{/if}{" "}{/if}<span class="show">{t(summaryView.scopeOpen ? "app-summary-scope-hide" : "app-summary-scope-show")}</span></summary>
       <p data-testid="summary-scope">{say(summary.scope, ids)}</p>
     </details>
   {/if}
