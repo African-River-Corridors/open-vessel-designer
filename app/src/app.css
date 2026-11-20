@@ -205,10 +205,8 @@ select {
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
 }
-/* Translated words are often longer than the English: tabs and table heads may break a long word
-   rather than overflow. Chinese breaks by the strict rules of its punctuation. */
+/* Tabs and table heads may break a long word rather than overflow. */
 [role="tab"], th { overflow-wrap: anywhere; }
-:lang(zh-Hans) body { line-break: strict; }
 :focus-visible { outline: var(--lw-thick) solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }

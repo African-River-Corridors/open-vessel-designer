@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- English only, for now (issue #1095, ADR 0026): the app and the web app show English only. The Spanish, Portuguese, Simplified Chinese and Twi drafts are out of `locales/`, with the reviewer guide and the Term List. Settings has no language control, and a language kept by an earlier version is ignored. Every text still goes through the Text Library, so a language can return. The Text Library check fails on any folder under `locales/` but `en/`. No result changes.
