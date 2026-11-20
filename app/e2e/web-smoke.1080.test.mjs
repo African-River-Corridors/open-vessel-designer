@@ -359,4 +359,64 @@ describe("OVD web: the Start page and the setup wizard (issue #1080)", () => {
     await until(b, "the wizard to close", async () => !(await exists(b, testid("wizard"))));
     assert.equal(await (await platformSnapshot(b)).design.options[0].inputs.cargo.value, "bauxite", "Escape left the Design as it was");
   });
+
+  it("after Create the Design is unsaved: an edit starts no second damage run, a second Create asks, Ctrl+N and Ctrl+O wait while the wizard is open, Tab stays inside", async () => {
+    const b = await start();
+    await firstStart(b);
+    await click(b, testid("start-example"));
+    await until(b, "the example list", () => exists(b, testid("start-examples")));
+    await click(b, testid("start-example-coastal-lng-barge"));
+    await until(b, "the review step", async () => (await exists(b, testid("wizard-heading"))) && (await heading(b)) === "Review");
+    await countDamageRuns(b);
+    await click(b, testid("wizard-create"));
+    await until(b, "the wizard to close", async () => !(await exists(b, testid("wizard"))));
+    await until(b, "damage stability to finish", async () => (await damageStatus(b)) === "run", 240000);
+    // A Design made by Create has not been saved.
+    assert.match(await (await b.$("header")).getText(), /\(unsaved\)/);
+    assert.equal((await platformSnapshot(b)).dirty, true);
+    // An edit after Create starts no second damage run.
+    const area = await b.$('.field[data-input="service_area"] select');
+    await area.waitForExist({ timeout: 15000 });
+    await area.selectByAttribute("value", "river-only");
+    await until(b, "the edit", async () => (await b.execute((el) => el.value, await b.$('.field[data-input="service_area"] select'))) === "river-only");
+    await new Promise((r) => setTimeout(r, 2000));
+    assert.equal(await b.execute(() => window.__runs), 1, "an edit after Create starts no second damage run");
+    // A second Create asks before it discards the first.
+    await b.execute(() => {
+      window.__asked = [];
+      window.__answer = false;
+      window.confirm = (message) => {
+        window.__asked.push(message);
+        return window.__answer;
+      };
+    });
+    await click(b, "button=New");
+    await until(b, "the Start page", () => exists(b, testid("start-page")));
+    await click(b, testid("start-example"));
+    await until(b, "the example list", () => exists(b, testid("start-examples")));
+    await click(b, testid("start-example-coastal-lng-barge"));
+    await until(b, "the review step", async () => (await exists(b, testid("wizard-heading"))) && (await heading(b)) === "Review");
+    await click(b, testid("wizard-create"));
+    await until(b, "the question", async () => (await b.execute(() => window.__asked.length)) === 1);
+    assert.equal(await exists(b, testid("wizard")), true, "a refusal leaves the wizard open");
+    // Ctrl+N and Ctrl+O do nothing while the wizard is open.
+    await b.keys(["Control", "n"]);
+    await b.keys(["Control", "o"]);
+    await new Promise((r) => setTimeout(r, 500));
+    assert.equal(await exists(b, testid("start-page")), false, "Ctrl+N opens no Start page under the wizard");
+    assert.equal(await exists(b, testid("wizard")), true);
+    // Tab and Shift+Tab never leave the wizard.
+    const insideWizard = () => b.execute(() => !!document.activeElement?.closest("[data-testid=wizard]"));
+    for (let i = 0; i < 14; i += 1) {
+      await b.keys(["Tab"]);
+      assert.equal(await insideWizard(), true, `Tab ${i + 1} stays inside the wizard`);
+    }
+    for (let i = 0; i < 14; i += 1) {
+      await b.keys(["Shift", "Tab"]);
+      assert.equal(await insideWizard(), true, `Shift+Tab ${i + 1} stays inside the wizard`);
+    }
+    await b.keys(["Escape"]);
+    await until(b, "the wizard to close", async () => !(await exists(b, testid("wizard"))));
+    assert.equal(await exists(b, testid("start-page")), false, "Escape closed the wizard and nothing under it");
+  });
 });

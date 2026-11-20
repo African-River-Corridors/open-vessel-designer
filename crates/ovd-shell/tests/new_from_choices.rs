@@ -153,3 +153,12 @@ fn the_example_list_has_the_barge_and_its_inputs_make_the_design_of_the_first_te
         text_of_cli(title, &lng_barge())
     );
 }
+
+#[test]
+fn a_design_made_from_choices_has_unsaved_changes_until_it_is_saved() {
+    let mut made = AppState::new_design_from("o", &lng_barge()).unwrap();
+    assert!(made.is_dirty(), "a Design nobody has saved is unsaved");
+    assert_eq!(made.snapshot()["dirty"], true);
+    made.saved(std::path::Path::new("made.vdesign"));
+    assert!(!made.is_dirty());
+}

@@ -255,6 +255,7 @@
               summary={null}
               messages={[]}
               byClassAtStart={a.hullMode === "class"}
+              radioName="wizard-vc-mode"
               onMode={(byClass) => {
                 a.hullMode = byClass ? "class" : "typed";
                 if (!byClass) {

@@ -7,7 +7,7 @@
   // vessel sits in comes from Rust. Length and beam decide the class, so there is no "modified"
   // label: the panel shows the class the vessel sits in. Picking a class sets length, beam and
   // Formation; the other inputs are drawn with a "class" badge where they came from it.
-  let { schemeSpec, classSpec, inputs, summary, messages, onEdit, onMode, byClassAtStart = false }: {
+  let { schemeSpec, classSpec, inputs, summary, messages, onEdit, onMode, byClassAtStart = false, radioName = "vc-mode" }: {
     schemeSpec: InputSpec | undefined;
     classSpec: InputSpec | undefined;
     inputs: Record<string, StoredInput>;
@@ -18,6 +18,8 @@
     onMode?: (byClass: boolean) => void;
     /** The setup wizard draws the pickers again in the mode it already holds. */
     byClassAtStart?: boolean;
+    /** The radio group's name: two copies on one page (the panel and the wizard) need two names. */
+    radioName?: string;
   } = $props();
 
   let scheme = $derived((inputs["vessel_scheme"]?.value ?? null) as string | null);
@@ -49,7 +51,7 @@
     <label>
       <input
         type="radio"
-        name="vc-mode"
+        name={radioName}
         data-testid="vessel-mode-typed"
         checked={!byClass}
         onchange={() => { asking = false; onMode?.(false); if (scheme !== null) onEdit("vessel_scheme", null); }}
@@ -59,7 +61,7 @@
     <label>
       <input
         type="radio"
-        name="vc-mode"
+        name={radioName}
         data-testid="vessel-mode-class"
         checked={byClass}
         onchange={() => { asking = true; onMode?.(true); }}

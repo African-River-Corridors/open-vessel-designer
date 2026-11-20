@@ -211,6 +211,9 @@
   function onKey(e: KeyboardEvent) {
     if (!(e.metaKey || e.ctrlKey)) return;
     const k = e.key.toLowerCase();
+    // New and Open start something new: not while a dialog is open over the app.
+    const dialogOpen = noticeOpen || startOpen || wizard !== null || settingsOpen;
+    if ((k === "o" || k === "n") && dialogOpen) return;
     if (k === "s") {
       e.preventDefault();
       fileAction(e.shiftKey ? api.saveAs : api.save, false);
