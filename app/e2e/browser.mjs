@@ -6,7 +6,7 @@
 //
 // The run script (`e2e/run-web.sh`) gives each run a temp root, `OVD_E2E_ROOT`, and removes it afterwards. Chrome on
 // macOS ignores TMPDIR, so each profile is put there by name (`--user-data-dir`).
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
@@ -99,14 +99,59 @@ export async function openBrowser(capabilities) {
   return b;
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms).unref());
+
+/** The processes that name this profile on their command line: the session's Chrome. */
+function usingProfile(profile) {
+  try {
+    return execFileSync("pgrep", ["-f", "--", `--user-data-dir=${profile}`], { encoding: "utf8" })
+      .split("\n")
+      .filter(Boolean)
+      .map(Number)
+      .filter((pid) => pid !== process.pid);
+  } catch {
+    return []; // pgrep exits 1 when nothing matches
+  }
+}
+
+/** Wait until no process uses the profile: Chrome can still write to it for a moment after the session
+ * ends. After `ms`, stop what is left. */
+async function profileReleased(profile, ms = 5000) {
+  const until = Date.now() + ms;
+  while (usingProfile(profile).length > 0) {
+    if (Date.now() > until) {
+      for (const pid of usingProfile(profile)) {
+        try {
+          process.kill(pid, "SIGKILL");
+        } catch {}
+      }
+      await sleep(200);
+      return;
+    }
+    await sleep(100);
+  }
+}
+
+/** Remove a profile once nothing writes to it, with retries as a second line. A removal that still fails
+ * does not fail the test: it is reported, and the run script removes the run's root, and fails the run if
+ * any process of it is alive, at the end. */
+async function removeProfile(profile) {
+  await profileReleased(profile);
+  try {
+    fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  } catch (e) {
+    console.error(`# ${FILE}: could not remove ${path.basename(profile)} (${e.code}); the run's clean-up removes it`);
+  }
+}
+
 /** End every session this file opened and remove their profiles. */
 export async function closeBrowsers() {
   const all = [...open];
   open.clear();
   await Promise.all(
     all.map(async ([b, profile]) => {
-      await Promise.race([b.deleteSession().catch(() => {}), new Promise((r) => setTimeout(r, 10000).unref())]);
-      fs.rmSync(profile, { recursive: true, force: true });
+      await Promise.race([b.deleteSession().catch(() => {}), sleep(10000)]);
+      await removeProfile(profile);
     }),
   );
 }
@@ -114,7 +159,7 @@ export async function closeBrowsers() {
 function finish() {
   stopDriver();
   try {
-    fs.rmSync(OWN_ROOT ? ROOT : DIR, { recursive: true, force: true });
+    fs.rmSync(OWN_ROOT ? ROOT : DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   } catch {}
 }
 

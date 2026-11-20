@@ -60,6 +60,13 @@ describe("the web test harness (e2e/browser.mjs)", () => {
     assert.deepEqual(r.left, [], "nothing left in the root");
   });
 
+  it("a profile still being written to while its session ends is removed, and the test passes", async () => {
+    const r = await runCase("busy-profile");
+    assert.equal(r.code, 0, r.out);
+    assert.equal(r.alive, "", `processes left alive: ${r.alive}`);
+    assert.deepEqual(r.left, [], "nothing left in the root");
+  });
+
   it("a file over its time limit fails, and its browser and driver are stopped", async () => {
     const r = await runCase("hangs", { OVD_E2E_FILE_LIMIT_S: "8" });
     assert.notEqual(r.code, 0, "a hung file fails");
