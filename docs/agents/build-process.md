@@ -72,14 +72,15 @@ per-ticket reviewer before a merge. See "Hardening pass" below.
 ## Which CI jobs run where
 
 Only `test` and `release-guard` are required. Keep the others from making a pull request wait (issue #565).
+The web job `web-app` runs on every pull request that changes the app, the engine or the Text Library
+(issue #1094), so it can become required; a pull request that changes none of them skips it, and a
+skipped job counts as passed.
 
 | Workflow, job | On a pull request | Elsewhere |
 |---|---|---|
 | `ci.yml`: `test` (the `gate-*` jobs), `release-guard`, `drawing-crosscheck` | always | push to main, tags (`v*`, `test-*`), the merge queue, by hand; the release workflow calls `test` and `release-guard` |
-| `app-gate.yml`: `app-e2e` (the built app, on the `e2e` profile: optimised, debug assertions on), `web-app` | never | from `release.yml` (every release); every Monday (07:47 UTC) and on request, through `app-checks.yml`; by hand |
+| `app-gate.yml`: `changes`, `web-app` (the web app's end-to-end tests, in headless Chrome) | when `app/**`, `crates/**`, `locales/**`, `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `tools/build_web.sh` or the workflow file change (else `web-app` is skipped) | the merge queue, on the same paths; from `release.yml` (every release); by hand |
 | `web-parity.yml`: `web-parity` (a release gate) | never | only from `release.yml` (every release), or by hand |
-| `app-checks.yml`: `app-linux`, `app-windows` | never | every day (07:17 UTC); on request (`workflow_dispatch`) |
-| `app-checks.yml`: `daily-failure` | never | after a failed scheduled run, it opens an issue |
 | `lean-proofs.yml`: `lean` | when `proofs/lean/**`, `crates/arc-rules/**` or the workflow file change | push to main on the same paths; every Monday (04:17 UTC); by hand |
 | `release.yml`: the release gate (`gate`, `app-gate`, `web-parity`, `calibration-bands`, `wheels`, `wasm-hashes`, `binaries`) | never | when a release is published; called from `app-build.yml`; by hand |
 | `app-build.yml`: `verify`, `gate`, `build`, `release` (installers, and the release itself) | never | push to main when `pyproject.toml` changes (only a version bump releases); push of a `v*` or `test-*` tag; by hand (builds, publishes nothing) |
@@ -98,7 +99,7 @@ of `.config/rust-partitions.txt` still run once each with any count. Make the ru
 label no runner has leaves `gate-rust` queued, and `test` waits, for up to a day. Pull requests from forks run on
 the same runner while the variable is set. To end the trial, delete both variables.
 
-A failed daily run of `app-checks.yml` opens an issue (or comments on the open one).
+The desktop app is paused (ADR 0026): its daily checks (`app-checks.yml`) and its end-to-end job are gone.
 WebAssembly parity is a release gate: `release.yml` calls `web-parity.yml`, so a release cannot ship with a
 mismatch. It left the pull request path because it never failed on a mismatch and it cost a web build on most
 pull requests. Start it by hand (`gh workflow run web-parity.yml`) for a change to `crates/ovd-web/**`.
