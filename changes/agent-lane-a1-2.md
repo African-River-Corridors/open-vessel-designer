@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- A session call makes a Design from typed choices (issue #1079, spec 0017): one Option holds the typed inputs, every other input comes from the Defaults Profile, and the Design equals the one `ovd fill --as-new` makes from a short file of the same inputs. It is a Tauri command and a web session call, with one function each in the app. A second call lists the examples, as data in the core: one, the coastal LNG barge, 140 × 29 m. The app's screens, `ovd new` and New are unchanged.

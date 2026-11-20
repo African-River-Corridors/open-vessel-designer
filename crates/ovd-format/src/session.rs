@@ -30,9 +30,10 @@ use crate::run::{
 };
 use crate::text_ids::msg_json;
 use crate::vdesign::{
-    AppliesTo, CARGO_CONTAINMENTS, Design, DesignOption, ENGINE_VERSION, FORMATION_KINDS, Group,
-    INPUTS, InputKind, KEYED_DEFAULTS, Report, Source, StoredInput, TABLE_DEFAULTS, TABLE_KEYS,
-    cargo_includes, check, choice_label, fill, formation_includes, new_design, when_includes,
+    AppliesTo, CARGO_CONTAINMENTS, Design, DesignOption, ENGINE_VERSION, FORMAT_VERSION,
+    FORMATION_KINDS, Group, INPUTS, InputKind, KEYED_DEFAULTS, Report, Source, StoredInput,
+    TABLE_DEFAULTS, TABLE_KEYS, cargo_includes, check, choice_label, fill, formation_includes,
+    new_design, when_includes,
 };
 use ovd_core::text::{Arg, Msg};
 use serde_json::{Map, Value, json};
@@ -598,6 +599,40 @@ impl DesignSession {
             design,
             hidden: Vec::new(),
         })
+    }
+
+    /// A new Design from typed choices (spec 0017, D4): one Option, named `option`, that holds the
+    /// typed inputs, marked `typed`, and every other input from the Defaults Profile, marked
+    /// `default`. It does not start from the starter Design, so none of the starter's example values
+    /// stay behind. A Vessel Class choice works as it does in the Input panel (length, beam and
+    /// Formation from the class, marked `class`). The Design is the one `ovd fill --as-new` makes
+    /// from a short file of the same inputs, because it is made by the same function. A choice the
+    /// schema refuses gives the schema's first error.
+    pub fn from_typed(
+        profile: Profile,
+        option: &str,
+        inputs: &Map<String, Value>,
+    ) -> Result<DesignSession, String> {
+        let short_file = json!({
+            "format": "vdesign",
+            "format_version": FORMAT_VERSION,
+            "engine_version": ENGINE_VERSION,
+            "options": [{ "name": option, "inputs": inputs }],
+        });
+        let filled = crate::vdesign::fill_as_new(&short_file.to_string(), &profile);
+        match (filled.design, filled.report.is_ok()) {
+            (Some(design), true) => Ok(DesignSession {
+                profile,
+                design,
+                hidden: Vec::new(),
+            }),
+            _ => Err(filled
+                .report
+                .errors
+                .first()
+                .cloned()
+                .unwrap_or_else(|| "the choices do not make a Design".into())),
+        }
     }
 
     /// The starter Design with its Service Area chosen (issue #925): what the app's new-design choice

@@ -12,6 +12,8 @@ declare module "*/wasm-pkg/ovd_web.js" {
     run_damage(option: string, progress: (done: number, total: number) => void): string;
     keep_damage(option: string, run_json: string): boolean;
     new_design(): string;
+    new_design_from(option: string, inputs_json: string): string;
+    design_examples(): string;
     open_text(name: string, text: string): string;
     save_text(): string;
     saved(name: string): string;
