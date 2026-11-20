@@ -141,6 +141,7 @@ The inputs are those of `ovd schema`. Run `ovd schema` for the units, the choice
 | `min_freeboard_m` | Minimum freeboard (safety clearance) | number |  |
 | `bow_rake_length_to_depth_ratio` | Bow rake length over depth | number |  |
 | `bow_rake_max_length_m` | Longest bow rake from depth | number |  |
+| `collision_bulkhead_m` | Collision bulkhead distance from the forward perpendicular | number |  |
 | `gross_tonnage` | Gross tonnage | number |  |
 | `pushed_stern_void_m` | Stern void of a pushed barge | number |  |
 | `lightship_factor_t_per_m3` | Lightship factor | number |  |
