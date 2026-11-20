@@ -245,9 +245,10 @@
         () => fileAction(api.snapshot, true),
         (reason) => (error = reason),
       );
-      await adopt(await api.snapshot(), true);
+      const first = await api.snapshot();
       // A Design given at launch, or brought back from the last visit, is the one to show: no Start page.
-      if (snap && snap.path === null && !(await api.designRestored())) startOpen = true;
+      startOpen = first.path === null && !(await api.designRestored());
+      await adopt(first, true);
     });
   });
 

@@ -53,6 +53,13 @@ async function start(options = {}) {
 const until = (b, what, check, timeout = 30000) =>
   b.waitUntil(check, { timeout, interval: 100, timeoutMsg: `timed out waiting for: ${what}` });
 const outputs = (b) => b.$("[data-testid=outputs]");
+/** A first start opens the Start page after the notice (spec 0017): take its skip link, which gives the starter Design. */
+async function skipStart(b) {
+  const skip = await b.$("[data-testid=start-skip]");
+  if (!(await skip.isExisting())) return;
+  await skip.click();
+  await until(b, "the Start page to close", async () => !(await b.$("[data-testid=start-page]").isExisting()));
+}
 /**
  * The starter Design has no Service Area (issue #925: it has no default), so it shows no results until one is
  * chosen. Choose river-only when the field asks, then wait for the results.
@@ -60,6 +67,7 @@ const outputs = (b) => b.$("[data-testid=outputs]");
 async function ready(b) {
   const area = () => b.$('.field[data-input="service_area"] select');
   await until(b, "the starter Design or its results", async () => (await (await outputs(b)).isExisting()) || (await (await area()).isExisting()));
+  await skipStart(b);
   const select = await area();
   if ((await select.isExisting()) && (await b.execute((el) => el.value === "__unset__", select))) {
     await select.selectByAttribute("value", "river-only");
