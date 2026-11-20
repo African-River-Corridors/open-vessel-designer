@@ -92,7 +92,7 @@
         <tbody>
           {#each ordered as r, i (i)}
             {@const o = tagOf(r.outcome)}
-            <tr class={o.tone} data-testid="rule-check-row" data-outcome={r.outcome} data-ok={r.outcome !== "fail"} data-governing={r.governing}>
+            <tr class={o.tone} data-testid="rule-check-row" data-rule={r.title} tabindex="-1" data-outcome={r.outcome} data-ok={r.outcome !== "fail"} data-governing={r.governing}>
               <td data-testid="rule-cell-result">
                 <span class="tag {o.tone}"><span aria-hidden="true">{o.mark}</span> {o.label ? t(o.label) : o.words}</span>
                 {#if r.governing}<span class="mark" title={t("app-rules-governing-hint")}>{t("app-rules-governing")}</span>{/if}
