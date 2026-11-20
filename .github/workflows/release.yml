@@ -110,7 +110,7 @@ jobs:
           # A test run here may read only the folders copied below; tests/test_workflows_release.py
           # checks that in `test`, so a new test that needs tools/ fails there, not at release (#211).
           mkdir "$RUNNER_TEMP/wheel-check"
-          cp -r tests tools examples calibration catalogue evaluation "$RUNNER_TEMP/wheel-check/"
+          cp -r tests tools examples calibration catalogue evaluation locales "$RUNNER_TEMP/wheel-check/"
           # The evaluation harness reads the built-in Rule Set files from the checkout.
           mkdir -p "$RUNNER_TEMP/wheel-check/crates/ovd-format"
           cp -r crates/ovd-format/rules "$RUNNER_TEMP/wheel-check/crates/ovd-format/"
