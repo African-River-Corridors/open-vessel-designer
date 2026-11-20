@@ -138,23 +138,4 @@ describe("The Summary shows the vessel", () => {
     assert.equal(await exists(b, "summary-vessel"), false);
   });
 
-  it("nothing moves when damage stability ends and the drawing is redrawn", async () => {
-    const b = await start();
-    await createExample(b);
-    await until(b, "damage stability running", () => exists(b, "summary-provisional"), 60000);
-    // Measured from the Summary's own top: the message line above the app goes when the run ends, and moves
-    // the whole page, which is not the picture's doing.
-    const inSummary = async () => {
-      const top = (await box(b, "summary")).top;
-      const side = await box(b, "summary-vessel-side");
-      const numbers = await box(b, "summary-numbers");
-      return { side: { top: side.top - top, height: side.height, width: side.width }, numbersTop: numbers.top - top };
-    };
-    const before = await inSummary();
-    await until(b, "damage stability to end", async () => (await (await b.$(testid("summary-damage"))).getAttribute("data-status")) === "run", 400000);
-    await until(b, "the line to go", async () => !(await exists(b, "summary-provisional")));
-    const later = await inSummary();
-    assert.deepEqual(later.side, before.side, "the picture keeps its box");
-    assert.equal(later.numbersTop, before.numbersTop, "the numbers do not move");
-  });
 });

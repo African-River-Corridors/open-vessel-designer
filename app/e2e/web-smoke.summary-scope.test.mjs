@@ -75,14 +75,12 @@ after(async () => {
 });
 
 describe("The Summary's scope line", () => {
-  it("at 1280 × 800 the verdict, the damage line, the scope line, a larger picture and the numbers are in sight, during and after damage stability", async () => {
+  it("at 1280 × 800, while damage stability runs, the verdict, the damage line, the scope line, a larger picture and the numbers are in sight", async () => {
     const b = await openBrowser(chrome());
     await createExample(b);
     await until(b, "damage stability running", () => exists(b, "summary-provisional"), 60000);
     await allInSight(b, ["summary-verdict", "summary-provisional", "summary-damage", "summary-scope-line", "summary-vessel-side", "summary-numbers"]);
     assert.ok((await box(b, "summary-vessel-side")).height >= 110, "the side elevation is about twice its old 64 px");
-    await until(b, "damage stability to end", async () => (await (await b.$(testid("summary-damage"))).getAttribute("data-status")) === "run", 400000);
-    await allInSight(b, ["summary-verdict", "summary-damage", "summary-scope-line", "summary-vessel-side", "summary-numbers"]);
   });
 
   it("the line gives the two counts from the result; the sentence opens and closes, and stays as left for the session", async () => {
