@@ -2,6 +2,7 @@
 // here, in the Display Language, with English as the fallback. Language is display state only: it
 // changes no input and no result, and it is never sent to Rust.
 import { formatNumber } from "./numberFormat.ts";
+import { wordingOf } from "./sayOrder.ts";
 import { FluentBundle, FluentResource, type FluentVariable } from "@fluent/bundle";
 
 export interface Language {
@@ -124,11 +125,15 @@ export type TextIds = Record<string, EngineMsg>;
  * Engine text in the Display Language. The engine's own English is the source: it is shown as it is
  * in English, and whenever the Display Language has no message for it. `msg` is the text's Message
  * Id where the engine sent one with it; otherwise the text is looked up in the result's `text_ids`.
+ * A message with app wording (`app-plain-<id>`, issue #1082) shows that wording in every language.
  */
 export function say(text: string, ids?: TextIds | null, msg?: EngineMsg | null): string {
   const m = msg ?? ids?.[text];
-  if (!m || state.language.tag === SOURCE.tag) return text;
-  return format(BUNDLES.get(state.language.tag), m.id, engineArgs(m.args ?? {}, ids)) ?? text;
+  if (!m) return text;
+  const args = engineArgs(m.args ?? {}, ids);
+  const display = (id: string) => format(BUNDLES.get(state.language.tag), id, args);
+  const source = (id: string) => format(BUNDLES.get(SOURCE.tag), id, args);
+  return wordingOf(text, m.id, display, source, state.language.tag === SOURCE.tag);
 }
 
 /** Text the engine sends under a derived id (an input label, a choice): the English unless translated. */
