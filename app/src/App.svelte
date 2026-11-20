@@ -16,6 +16,7 @@
   import { list, say, schemaText, setInputLabels, t } from "./lib/i18n.svelte";
   import { damageRun } from "./lib/damageRun.svelte";
   import { showView } from "./lib/viewRequest.svelte";
+  import { setInputsMode } from "./lib/inputsView.svelte";
   import { damageStatus, saveSecondsPerCase, secondsLeft, secondsPerCase, wholeSeconds } from "./lib/damage";
 
   // Display state only: the Design, its checks and its results all come from Rust.
@@ -206,7 +207,8 @@
       wizard = null;
       error = null;
       await adopt(next, true);
-      // The Summary view opens here when the app has one (issue #1081); until then the view stays as it is.
+      // adopt() opened the Summary view for the new Design (#1081); the Input panel opens on Essentials.
+      setInputsMode("essentials");
       const outcome = evaluation?.options.find((o) => o.name === next.active_option)?.outcome;
       if (outcome?.status === "results" && damageStatus(outcome.results).status === "not run") void runDamage(next.active_option);
       return null;
