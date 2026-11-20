@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import * as api from "./lib/api";
+  import { Calculating } from "./lib/calculating.ts";
   import type { Evaluation, Schema, Snapshot, OptionEvaluation } from "./lib/api";
   import LeftPanel from "./lib/LeftPanel.svelte";
   import MainPanel from "./lib/MainPanel.svelte";
@@ -44,6 +45,13 @@
   const EVALUATE_PAUSE_MS = 150;
   let pending: ReturnType<typeof setTimeout> | undefined;
   let queue: Array<{ send: () => Promise<Snapshot>; redraw: boolean }> = [];
+
+  // Issue #1082 (spec 0017, D13): "Calculating…" from the moment an edit is sent until the new evaluation is
+  // drawn, but only once the wait passes about 200 ms, so a quick result does not flash it.
+  const CALCULATING_AFTER_MS = 200;
+  let calculating = $state(false);
+  const sign = new Calculating(CALCULATING_AFTER_MS, (on) => (calculating = on));
+  const whileCalculating = <T,>(work: () => Promise<T>) => sign.during(work);
 
   async function guard<T>(work: () => Promise<T>): Promise<T | undefined> {
     try {
@@ -137,9 +145,11 @@
     const work = queue;
     queue = [];
     if (work.length === 0) return;
-    let last: Snapshot | undefined;
-    for (const w of work) last = await w.send();
-    await adopt(last, false, work.some((w) => w.redraw));
+    await whileCalculating(async () => {
+      let last: Snapshot | undefined;
+      for (const w of work) last = await w.send();
+      await adopt(last, false, work.some((w) => w.redraw));
+    });
   }
 
   /** An edit: send it after a pause in typing (about 150 ms), then evaluate the whole Design. */
@@ -339,6 +349,10 @@
     <button type="button" data-testid="settings" aria-haspopup="dialog" onclick={() => (settingsOpen = true)}>{t("app-settings")}</button>
   </header>
 
+  <!-- A line of its own under the header, so the sign takes no width from the file name and never covers a
+       button. Always in the page, so a screen reader hears the text once, politely, when it arrives. -->
+  <div class="signline"><span class="calculating" role="status" data-testid="calculating">{calculating ? t("app-calculating") : ""}</span></div>
+
   <MessageBar {messages} />
 
   <div class="body" style:grid-template-columns={showInput ? `${leftWidth}px 6px 1fr` : "0 0 1fr"} style:grid-template-rows={showOutputs ? `1fr 6px ${bottomHeight}px` : "1fr 0 0"}>
@@ -387,6 +401,9 @@
   }
   /* No `overflow: hidden` on a text-only element: WebKit's WebDriver reads its text as empty (see the design note). */
   .meta { color: var(--ink-3); font-size: var(--fs-12); flex: 0 0 auto; white-space: nowrap; }
+  /* A thin line under the header, the sign at its right. It keeps its height, so the panels never jump. */
+  .signline { flex: none; display: flex; justify-content: flex-end; align-items: center; box-sizing: border-box; height: 18px; padding: 0 var(--sp-3); }
+  .calculating { color: var(--ink-3); font-size: var(--fs-12); line-height: 18px; white-space: nowrap; }
   .meta.file { flex: 0 1 auto; min-width: 0; overflow: clip; text-overflow: ellipsis; font-family: var(--font-mono); }
   header :global(.web-badge) {
     font-size: var(--fs-11); text-transform: uppercase; letter-spacing: 0.08em; padding: 1px var(--sp-2);
