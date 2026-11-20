@@ -15,7 +15,7 @@
   import CapitalBudget from "./views/CapitalBudget.svelte";
   import type { DamageResults } from "./damage";
   import { say, t, type TextIds } from "./i18n.svelte";
-  import { viewRequest } from "./viewRequest.svelte";
+  import { viewRequest, viewShown } from "./viewRequest.svelte";
 
   // The hull views are SVG drawn in Rust to the Drawing Format Standard (ADR 0009, spec 0003); the
   // panel only places and zooms them.
@@ -93,6 +93,11 @@
     }
   });
 
+  // Issue #1097: tell the app which view shows, so it can give the Summary the whole main area.
+  $effect(() => {
+    viewShown.id = current;
+  });
+
   function pickGroup(id: string) {
     groupId = id;
     current = GROUPS.find((g) => g.id === id)!.views[0].id;
@@ -141,7 +146,7 @@
     <h2>{t("app-views")}</h2>
     <div class="tabs" role="tablist" aria-label={t("app-view-groups")}>
       {#each GROUPS as g (g.id)}
-        <button type="button" role="tab" aria-selected={g.id === groupId} class:on={g.id === groupId} onclick={() => pickGroup(g.id)}>{t(g.label)}</button>
+        <button type="button" role="tab" data-testid="group-{g.id}" aria-selected={g.id === groupId} class:on={g.id === groupId} onclick={() => pickGroup(g.id)}>{t(g.label)}</button>
       {/each}
     </div>
     {#if stale && FROM_RESULTS.includes(current)}<span class="stale">{t("app-out-of-date")}</span>{/if}

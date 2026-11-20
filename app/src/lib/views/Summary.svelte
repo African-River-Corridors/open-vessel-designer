@@ -111,7 +111,7 @@
             <span class="tag"><span aria-hidden="true">!</span> {t("app-rules-warn")}</span>
             <strong>{checkName(w.name, ids)}</strong>
             {#if w.message && w.message !== "OK"}<span class="msg">{say(w.message, ids)}</span>{/if}
-            <a href={"#check-" + slug(w.name)} onclick={(e) => { e.preventDefault(); onShowCheck(w.name); }}>{t("app-summary-show-check")}</a>
+            <a href={"#check-" + slug(w.name)} data-testid="summary-show-check" onclick={(e) => { e.preventDefault(); onShowCheck(w.name); }}>{t("app-summary-show-check")}</a>
           </li>
         {/each}
       </ul>

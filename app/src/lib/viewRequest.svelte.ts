@@ -9,3 +9,6 @@ export function showView(id: string) {
   viewRequest.id = id;
   viewRequest.count += 1;
 }
+
+/** Issue #1097: the tab id of the view the Views panel shows now; the app opens or closes the Outputs panel by it. */
+export const viewShown = $state<{ id: string }>({ id: "summary" });
