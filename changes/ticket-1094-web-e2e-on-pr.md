@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- CI (issue #1094): the web app's end-to-end tests (`app-gate.yml`, `web-app`) run on every pull request and merge group that changes `app/`, `crates/`, `locales/`, the Cargo files, the toolchain, `tools/build_web.sh` or the workflow; any other pull request skips them, which counts as passed, so the job can become a required check. The desktop app is paused: its end-to-end job and its daily Linux and Windows checks (`app-checks.yml`) are gone.
