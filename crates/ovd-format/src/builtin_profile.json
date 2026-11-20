@@ -218,6 +218,14 @@
       "status": "estimate",
       "basis": "The longest bow rake that bow_rake_length_to_depth_ratio x moulded depth gives, so a deep hull does not lose its cargo length to the rake (issue #661). none: no cap, the rule before. A working value set by the maintainer on 2026-10-30, with no published source. For scale: a 195 x 35 x 12 ft jumbo hopper barge has a rake of 27 ft 6 in, 8.4 m (Jeffboat advertisement, Maritime Reporter, 15 October 1977, p. 9). A typed bow_rake_length_m is not capped. A file saved before keeps none"
     },
+    "collision_bulkhead_m": {
+      "default": null,
+      "unit": "m",
+      "hard": { "gt": 0, "le": 100 },
+      "soft": { "min": 2.0, "max": 10.0 },
+      "status": "estimate",
+      "basis": "The distance of the collision bulkhead aft of the forward perpendicular, in the plane of maximum draught (issue #994). none: 0.04 L, the bottom of the band that ES-TRIN 2025/1 Article 3.03(1)(a) gives as a general rule (0.04 L to 0.04 L + 2 m); it keeps the most cargo. The forward perpendicular is the forward point where the hull meets the water at the maximum draught (ES-TRIN 1.01, 4.25), L the hull's length overall (1.01, 4.16). A typed value is never clamped: the Rule rows judge it (outside the band a flooding calculation must prove it, under 0.03 L it is refused). A file saved before keeps none"
+    },
     "gross_tonnage": {
       "default": null,
       "unit": "GT",

@@ -112,7 +112,7 @@
   {
    "name": "hull_form",
    "label": "Hull Form",
-   "group": "Hull Form",
+   "group": "Required",
    "required": true,
    "applies_to": [
     "box_hold",
@@ -1102,7 +1102,7 @@
   {
    "name": "service_area",
    "label": "Service Area",
-   "group": "Rules",
+   "group": "Required",
    "required": true,
    "applies_to": [
     "box_hold",
