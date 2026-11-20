@@ -296,6 +296,7 @@ fn aft_from_json(value: &Value, ctx: &str) -> Result<AftArrangementResult, EvalE
         deckhouse: None,
         forward_house: None,
         wing_view: None,
+        house_aft_of_collision_bulkhead: None,
     })
 }
 
@@ -397,6 +398,7 @@ pub(crate) fn capacity_result_from_json(
         stern_void_length_m: o.opt_f64("stern_void_length_m")?,
         cargo_zone_length_m: o.opt_f64("cargo_zone_length_m")?,
         bow_rake_length_m: o.opt_f64("bow_rake_length_m")?,
+        collision_bulkhead: None,
         aft_arrangement: nested("aft_arrangement")?
             .map(|v| aft_from_json(v, &format!("{ctx}.aft_arrangement")))
             .transpose()?,
@@ -455,6 +457,11 @@ mod tests {
             // Nor is the vent mast (issue #822), nor the highest point (issue #991).
             written.vent_mast = None;
             written.highest_point = None;
+            // Nor is the collision bulkhead plane (issue #994): the results' `geometry` block holds it.
+            written.collision_bulkhead = None;
+            if let Some(aft) = written.aft_arrangement.as_mut() {
+                aft.house_aft_of_collision_bulkhead = None;
+            }
             // Issue #448: the JSON holds the hull's dimensions only in a gas basis, so a dry
             // result comes back with no hull.
             if written.gas_basis.is_none() {

@@ -218,6 +218,14 @@ _Avoid_: dry height
 The least Freeboard a Design accepts; it caps the Draught a Hull may load to.
 _Avoid_: freeboard margin
 
+**Forward Perpendicular**:
+The forward point where the Hull meets the water at the maximum Draught (ES-TRIN 1.01, 4.25). OVD takes the maximum Draught as the Moulded Depth less the required Freeboard, and reports its position as `forward_perpendicular_x_m`.
+_Avoid_: bow, stem
+
+**Collision Bulkhead**:
+The watertight transverse bulkhead near the bow, at least 0.04 L aft of the Forward Perpendicular, where L is the length overall of the Hull (ES-TRIN 2025/1, Article 3.03(1)(a)). OVD takes 0.04 L unless `collision_bulkhead_m` says otherwise. A forward house stands aft of it, and a gas cargo tank stays aft of it (IGC 2.4.4); a house that has to move back costs cargo length.
+_Avoid_: forepeak bulkhead, bow bulkhead
+
 **Block Coefficient (Cb)**:
 The displaced volume over the box of Length of Waterline × beam × Draught that holds it.
 _Avoid_: fullness, Cb without its length basis
