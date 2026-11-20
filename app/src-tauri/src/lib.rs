@@ -71,6 +71,13 @@ fn confirm_discard(app: &AppHandle, state: &Shared) -> Result<bool, String> {
     ))
 }
 
+/// Spec 0017, D1: the Start page asks before its Create replaces an unsaved Design, because
+/// `new_design_from` asks nothing. `true` means go ahead.
+#[tauri::command]
+fn ask_discard_unsaved(app: AppHandle, state: State<'_, Shared>) -> Result<bool, String> {
+    confirm_discard(&app, &state)
+}
+
 /// Ask for a file to read. `None` when the user cancels.
 fn pick_file(
     app: &AppHandle,
@@ -509,6 +516,7 @@ pub fn run() {
             new_file,
             new_design_from,
             design_examples,
+            ask_discard_unsaved,
             open_file,
             save,
             save_as,
