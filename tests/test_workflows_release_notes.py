@@ -61,5 +61,5 @@ def test_the_0_3_0_notes_fit_and_keep_the_rename_text_and_the_calibration_cases(
 def test_the_workflow_cuts_the_notes_before_it_adds_the_footer():
     run = (ROOT / ".github" / "workflows" / "app-build.yml").read_text(encoding="utf-8")
     cut = run.index("python3 tools/release_notes.py notes.md")
-    assert run.index("> notes.md", 0, cut) < cut < run.index("These installers are not signed")
+    assert run.index("> notes.md", 0, cut) < cut < run.index("These binaries are not signed")
     assert "blob/$GITHUB_SHA/CHANGELOG.md" in run

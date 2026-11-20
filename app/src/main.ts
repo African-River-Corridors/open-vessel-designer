@@ -12,5 +12,5 @@ initLanguage();
 // The splash covers the wait for the platform too (the web build loads the WebAssembly first).
 startSplash();
 
-// The platform (desktop or browser) is ready before the first screen draws.
+// The platform is ready before the first screen draws.
 export default initPlatform().then(() => mount(App, { target: document.getElementById("app")! }));

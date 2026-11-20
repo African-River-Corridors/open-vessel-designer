@@ -19,7 +19,19 @@ things cost more than they give while that lasts:
 ## Decision
 
 1. **The web app and the command line are the product for now.** The desktop app, its tests and its
-   CI are removed (issue #1094). The Python API stays.
+   CI are removed (issue #1094). The Python API stays. What went:
+   - the desktop crate `app/src-tauri/` (the `ovd-app` workspace member, its icons, its Tauri
+     config) and its entries in `Cargo.lock`, with the `e2e` build profile only its tests used;
+   - the Tauri adapter `app/src/lib/platform/tauri.ts`, the desktop Vite config, the Tauri packages
+     and the `tauri` and `e2e` scripts of `app/package.json`;
+   - the desktop-only front-end paths: the "open with" listener (`onOpenedFromOutside`), the native
+     dialogs and the first-run marker file of the adapter, the "web version" label and the
+     "Download the desktop app" link;
+   - the desktop end-to-end tests (`app/e2e/smoke.test.mjs`, `run.sh`);
+   - the desktop CI: the `app-e2e` job, `app-checks.yml` (daily Linux and Windows builds, the issue it
+     opened on a failure) and the installer job of `app-build.yml`. A release now holds the `ovd`
+     binaries and the Python wheels that the release gate built and tested;
+   - the desktop download from the README and the website.
 2. **English is the one Display Language for now.** `locales/` holds `en/` only. Settings has no
    language control. A language kept by an earlier version (`ovd.language` in the browser's storage)
    is ignored, without an error. `tools/i18n_check.py` fails on any other folder or file under
@@ -45,9 +57,16 @@ checks of translated files in `tools/i18n_check.py` (orphans, placeholders, revi
 List) and their tests, and the per-language runs of the web end-to-end tests (issue #945). Every
 message added since then is a new draft. Allow `locales/<tag>` in the English-only check.
 
-**The desktop app.** The pull request of issue #1094 names the last commit that holds the desktop code
-and CI. A return restores them from there, on the platform seam, and makes the desktop end-to-end job
-pass before any pull request waits on it.
+**The desktop app.** The last commit that holds the desktop code and CI is the parent of the commit
+that removed it (issue #1094); `3271b020` on `main` holds them too. A return:
+
+- restores `app/src-tauri/`, `platform/tauri.ts`, the desktop Vite config, the Tauri packages, the
+  desktop end-to-end tests and the CI jobs from there, and adds the crate back to the workspace;
+- implements the `Platform` interface (`app/src/lib/platform/types.ts`) again, widening `kind` to the
+  desktop's name, and brings back the "open with" listener and the native dialogs;
+- carries over every command the web adapter gained since (the setup wizard's, say) as a Tauri
+  command over `crates/ovd-shell`;
+- makes the desktop end-to-end job pass, on a pinned runner image, before any pull request waits on it.
 
 ## Earlier records
 
