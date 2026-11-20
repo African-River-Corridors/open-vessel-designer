@@ -63,10 +63,19 @@ fn fault(s: &str) -> Option<&'static str> {
         }
     }
     let lower = s.to_lowercase();
-    if lower.contains("issue ") && lower.split("issue ").skip(1).any(|t| t.starts_with(|c: char| c.is_ascii_digit())) {
+    if lower.contains("issue ")
+        && lower
+            .split("issue ")
+            .skip(1)
+            .any(|t| t.starts_with(|c: char| c.is_ascii_digit()))
+    {
         return Some("an issue number (issue n)");
     }
-    if lower.split("spec ").skip(1).any(|t| t.len() >= 4 && t[..4].bytes().all(|c| c.is_ascii_digit())) {
+    if lower
+        .split("spec ")
+        .skip(1)
+        .any(|t| t.len() >= 4 && t[..4].bytes().all(|c| c.is_ascii_digit()))
+    {
         return Some("a spec number (spec nnnn)");
     }
     for ext in [".rs", ".py", ".yaml", ".yml", ".md"] {
@@ -89,7 +98,12 @@ fn no_text_for_a_designer_holds_a_code_path_an_issue_number_or_a_rule_set_versio
         .iter()
         .filter_map(|(p, s)| fault(s).map(|f| format!("{p}: {f}: {s}")))
         .collect();
-    assert!(bad.is_empty(), "{} text(s) for programmers:\n{}", bad.len(), bad.join("\n"));
+    assert!(
+        bad.is_empty(),
+        "{} text(s) for programmers:\n{}",
+        bad.len(),
+        bad.join("\n")
+    );
 }
 
 #[test]
@@ -115,6 +129,9 @@ fn the_four_required_choices_each_say_what_they_are() {
             .find(|i| i["name"] == name)
             .unwrap_or_else(|| panic!("{name} is not in the schema"));
         let basis = input["basis"].as_str().unwrap_or("");
-        assert!(basis.len() > 20, "{name} has no text for \"About this input\": {basis:?}");
+        assert!(
+            basis.len() > 20,
+            "{name} has no text for \"About this input\": {basis:?}"
+        );
     }
 }
