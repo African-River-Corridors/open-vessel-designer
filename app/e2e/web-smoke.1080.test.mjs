@@ -68,12 +68,13 @@ async function firstStart(b) {
 }
 const click = async (b, selector) => (await b.$(selector)).click();
 const heading = async (b) => (await b.$(testid("wizard-heading"))).getText();
-/** Choose a radio card by its visible name. */
-async function choose(b, name) {
-  await (await b.$(`//label[contains(@class,"choice")][.//span[@class="name"][normalize-space()="${name}"]]`)).click();
+/** Choose a radio card by the schema's input and value (not by its label or class). */
+async function choose(b, input, value) {
+  await (await b.$(testid(`choice-${input}-${value}`))).click();
 }
+const box = (id) => testid(`input-${id}`);
 async function typeIn(b, id, text) {
-  await (await b.$(`#wiz-${id}`)).setValue(text);
+  await (await b.$(box(id))).setValue(text);
 }
 async function nextTo(b, name) {
   await click(b, testid("wizard-next"));
@@ -84,13 +85,13 @@ async function typeWorkedExample(b) {
   await click(b, testid("start-wizard"));
   await until(b, "the wizard", () => exists(b, testid("wizard")));
   assert.equal(await heading(b), "Cargo");
-  await choose(b, "LNG");
+  await choose(b, "cargo", "LNG");
   await nextTo(b, "Service Area");
-  await choose(b, "Coastal and river");
+  await choose(b, "service_area", "coastal-and-river");
   await nextTo(b, "Formation");
-  await choose(b, "Self-propelled");
+  await choose(b, "formation", "self_propelled");
   await nextTo(b, "Hull");
-  await choose(b, "Raked box");
+  await choose(b, "hull_form", "raked_box");
   await typeIn(b, "length_overall_m", "140");
   await typeIn(b, "beam_m", "29");
   await nextTo(b, "Your own limits");
@@ -159,7 +160,7 @@ describe("OVD web: the Start page and the setup wizard (issue #1080)", () => {
     await typeWorkedExample(b);
     // The review lists the 11 typed choices, the made Option name and the count left to the Defaults Profile.
     assert.equal((await b.$$(`${testid("wizard-choices")} li`)).length, 11);
-    assert.equal(await (await b.$("#wiz-option-name")).getValue(), "LNG 140x29");
+    assert.equal(await (await b.$(box("option-name"))).getValue(), "LNG 140x29");
     assert.match(await (await b.$(testid("wizard-defaults"))).getText(), /^\d+ other inputs come from the Defaults Profile/);
     await countDamageRuns(b);
     await click(b, testid("wizard-create"));
@@ -265,28 +266,31 @@ describe("OVD web: the Start page and the setup wizard (issue #1080)", () => {
     // Nothing chosen: Next stays on the step and says what is needed.
     await click(b, testid("wizard-next"));
     assert.equal(await heading(b), "Cargo");
-    assert.match(await (await b.$(`${testid("wizard")} .main`)).getText(), /Cargo is needed/);
-    await choose(b, "LNG");
+    const msg = await b.$(testid("message-cargo"));
+    await msg.waitForExist({ timeout: 5000 });
+    assert.equal(await msg.getAttribute("role"), "alert");
+    assert.match(await msg.getText(), /Cargo is needed/);
+    await choose(b, "cargo", "LNG");
     await nextTo(b, "Service Area");
-    await choose(b, "Coastal and river");
+    await choose(b, "service_area", "coastal-and-river");
     await nextTo(b, "Formation");
-    await choose(b, "Self-propelled");
+    await choose(b, "formation", "self_propelled");
     await nextTo(b, "Hull");
-    await choose(b, "Raked box");
+    await choose(b, "hull_form", "raked_box");
     await typeIn(b, "length_overall_m", "140");
     await typeIn(b, "beam_m", "0.5");
-    await until(b, "the limit", async () => /at least 1/.test(await (await b.$('.field[data-input="beam_m"]')).getText()));
+    await until(b, "the limit", async () => /at least 1/.test(await (await b.$(testid("field-beam_m"))).getText()));
     assert.equal(await (await b.$(testid("wizard-next"))).getAttribute("aria-disabled"), "true");
     await click(b, testid("wizard-next"));
     assert.equal(await heading(b), "Hull", "a hard limit blocks Next");
     await typeIn(b, "beam_m", "36");
-    await until(b, "the warning", async () => /usual range/.test(await (await b.$('.field[data-input="beam_m"] [data-severity=warning]')).getText()));
+    await until(b, "the warning", async () => /usual range/.test(await (await b.$(`${testid("field-beam_m")} [data-severity=warning]`)).getText()));
     assert.equal(await (await b.$(testid("wizard-next"))).getAttribute("aria-disabled"), "false");
     await nextTo(b, "Your own limits");
     // Back keeps every answer.
     await click(b, testid("wizard-back"));
     await until(b, "the Hull step", async () => (await heading(b)) === "Hull");
-    assert.equal(await (await b.$("#wiz-beam_m")).getValue(), "36");
+    assert.equal(await (await b.$(box("beam_m"))).getValue(), "36");
   });
 
   it("does not let a river-only path reach Create without both limits", async () => {
@@ -294,26 +298,26 @@ describe("OVD web: the Start page and the setup wizard (issue #1080)", () => {
     await firstStart(b);
     await click(b, testid("start-wizard"));
     await until(b, "the wizard", () => exists(b, testid("wizard")));
-    await choose(b, "LNG");
+    await choose(b, "cargo", "LNG");
     await nextTo(b, "Service Area");
-    await choose(b, "River only");
-    await until(b, "the river limits", () => exists(b, "#wiz-draught_limit_m"));
-    assert.ok(await exists(b, "#wiz-air_draft_limit_m"));
+    await choose(b, "service_area", "river-only");
+    await until(b, "the river limits", () => exists(b, box("draught_limit_m")));
+    assert.ok(await exists(b, box("air_draft_limit_m")));
     await nextTo(b, "Formation");
-    await choose(b, "Self-propelled");
+    await choose(b, "formation", "self_propelled");
     await nextTo(b, "Hull");
-    await choose(b, "Raked box");
+    await choose(b, "hull_form", "raked_box");
     await typeIn(b, "length_overall_m", "100");
     await typeIn(b, "beam_m", "11");
     await nextTo(b, "Your own limits");
-    assert.equal(await exists(b, "#wiz-min_freeboard_m"), false, "minimum freeboard is for coastal and river");
+    assert.equal(await exists(b, box("min_freeboard_m")), false, "minimum freeboard is for coastal and river");
     await nextTo(b, "Review");
     assert.equal(await (await b.$(testid("wizard-create"))).getAttribute("aria-disabled"), "true");
     assert.equal((await b.$$(`${testid("wizard-stops")} li`)).length, 2, "both limits are missing");
     await click(b, testid("wizard-create"));
     assert.equal(await exists(b, testid("wizard")), true, "Create did nothing");
     // The link goes to the step; both limits typed, Create is ready.
-    await click(b, `${testid("wizard-stops")} li button`);
+    await click(b, testid("stop-go-draught_limit_m"));
     await until(b, "the Service Area step", async () => (await heading(b)) === "Service Area");
     await typeIn(b, "draught_limit_m", "3");
     await typeIn(b, "air_draft_limit_m", "12");
@@ -337,7 +341,7 @@ describe("OVD web: the Start page and the setup wizard (issue #1080)", () => {
     // One Tab reaches the choices, a second leaves them for Cancel, a third reaches Next.
     await b.keys(["Tab"]);
     await b.keys([" "]);
-    await until(b, "a Cargo chosen", async () => (await b.$("input[name=wiz-cargo]:checked")).isExisting());
+    await until(b, "a Cargo chosen", async () => (await b.$(`${testid("choices-cargo")} input:checked`)).isExisting());
     await b.keys(["Tab"]);
     assert.equal(await active(), "wizard-cancel");
     await b.keys(["Tab"]);

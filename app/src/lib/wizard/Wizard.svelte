@@ -72,6 +72,8 @@
     const name = schemaText.choice(input, c.value, c.label);
     return input === "cargo" && c.status === "development" ? t("app-cargo-development", { name }) : name;
   };
+  /** A schema description is shown only when it is meant for people: a note for programmers holds `::`. */
+  const forPeople = (d: string | undefined) => (d && !d.includes("::") ? d : undefined);
   const unitOf = (name: string) => {
     const u = spec(name)?.unit;
     return u && u !== "-" ? u : "";
@@ -183,7 +185,7 @@
     <header>
       {#if step !== "review"}<p class="stepof" data-testid="wizard-step-of">{t("app-wizard-step-of", { n: index + 1, total: 5 })}</p>{/if}
       <h2 id="wizard-title" tabindex="-1" bind:this={heading} data-testid="wizard-heading">{t(NAMES[step])}</h2>
-      <p class="plain">{t(HELP[step])}</p>
+      <p class="plain" data-testid="wizard-help">{t(HELP[step])}</p>
     </header>
 
     <div class="grid">
@@ -191,14 +193,18 @@
         {#if step === "cargo"}
           <ChoiceGroup
             name="wiz-cargo"
+            input="cargo"
+            messages={messagesOf("cargo")}
             legend={labelOf(schema, "cargo")}
-            options={choices("cargo").map((c) => ({ value: c.value, label: choiceLabel("cargo", c.value) ?? c.label, help: (c as Choice & { description?: string }).description }))}
+            options={choices("cargo").map((c) => ({ value: c.value, label: choiceLabel("cargo", c.value) ?? c.label, help: forPeople((c as Choice & { description?: string }).description) }))}
             value={a.cargo}
             onChange={(v) => (a.cargo = v)}
           />
         {:else if step === "area"}
           <ChoiceGroup
             name="wiz-area"
+            input="service_area"
+            messages={messagesOf("service_area")}
             legend={labelOf(schema, "service_area")}
             options={choices("service_area").map((c) => ({ value: c.value, label: choiceLabel("service_area", c.value) ?? c.label, help: AREA_HELP[c.value] ? t(AREA_HELP[c.value]) : undefined }))}
             value={a.serviceArea}
@@ -214,6 +220,8 @@
         {:else if step === "formation"}
           <ChoiceGroup
             name="wiz-formation"
+            input="formation"
+            messages={messagesOf("formation")}
             legend={labelOf(schema, "formation")}
             options={choices("formation").map((c) => ({ value: c.value, label: choiceLabel("formation", c.value) ?? c.label }))}
             value={a.formation?.kind ?? null}
@@ -228,6 +236,8 @@
         {:else if step === "hull"}
           <ChoiceGroup
             name="wiz-hull-form"
+            input="hull_form"
+            messages={messagesOf("hull_form")}
             legend={labelOf(schema, "hull_form")}
             options={choices("hull_form").map((c) => ({ value: c.value, label: choiceLabel("hull_form", c.value) ?? c.label }))}
             value={a.hullForm}
@@ -264,7 +274,7 @@
               <p class="note">{t("app-class-dimensions", { length: String(h.length_max_m ?? ""), beam: String(h.beam_max_m ?? "") })}</p>
             {/if}
             {#if messagesOf("vessel_scheme").length || messagesOf("vessel_class").length}
-              {#each [...messagesOf("vessel_scheme"), ...messagesOf("vessel_class")] as m}<div class="msg error">{m.text}</div>{/each}
+              {#each [...messagesOf("vessel_scheme"), ...messagesOf("vessel_class")] as m}<div class="msg error" role="alert" data-testid="message-vessel">{m.text}</div>{/each}
             {/if}
           </div>
           {#if a.hullMode === "typed"}
@@ -273,7 +283,6 @@
             <NumberField id="beam_m" label={labelOf(schema, "beam_m")} unit={unitOf("beam_m")} value={a.beam}
               onChange={(n: Num) => (a.beam = n)} messages={messagesOf("beam_m")} />
           {/if}
-          {#each messagesOf("hull_form") as m}<div class="msg error">{m.text}</div>{/each}
         {:else if step === "limits"}
           {#each inputsOnStep(schema, a, "limits") as name (name)}
             {@const s = spec(name)}
@@ -285,14 +294,14 @@
         {:else}
           <div class="field">
             <label for="wiz-option-name">{t("app-wizard-option-name")}</label>
-            <input id="wiz-option-name" type="text" class="name" value={a.optionName ?? made} oninput={(e) => (a.optionName = e.currentTarget.value)} />
+            <input id="wiz-option-name" data-testid="input-option-name" type="text" class="name" value={a.optionName ?? made} oninput={(e) => (a.optionName = e.currentTarget.value)} />
           </div>
           <h3>{t("app-wizard-your-choices")}</h3>
           <ul class="rows" data-testid="wizard-choices">
             {#each typedRows as r (r.name)}
-              <li data-input={r.name}>
+              <li data-input={r.name} data-testid="choice-row-{r.name}">
                 <span class="k">{r.label}</span><span class="v">{r.text}</span>
-                <button type="button" class="link" aria-label={t("app-wizard-change-input", { label: r.label })} onclick={() => go(r.step)}>{t("app-wizard-change")}</button>
+                <button type="button" class="link" aria-label={t("app-wizard-change-input", { label: r.label })} data-testid="change-{r.name}" onclick={() => go(r.step)}>{t("app-wizard-change")}</button>
               </li>
             {/each}
           </ul>
@@ -300,7 +309,7 @@
           {#if reviewProblems.length}
             <ul class="stops" data-testid="wizard-stops">
               {#each reviewProblems as p}
-                <li class="msg error">{problemText(schema, p)} <button type="button" class="link" onclick={() => go(p.step)}>{t("app-wizard-go-to-step", { step: t(NAMES[p.step]) })}</button></li>
+                <li class="msg error" data-testid="stop-{p.input}">{problemText(schema, p)} <button type="button" class="link" data-testid="stop-go-{p.input}" onclick={() => go(p.step)}>{t("app-wizard-go-to-step", { step: t(NAMES[p.step]) })}</button></li>
               {/each}
             </ul>
           {/if}
@@ -313,7 +322,7 @@
           <h3>{t("app-wizard-so-far")}</h3>
           <ol class="sofar" data-testid="wizard-sofar">
             {#each sofar as s (s.step)}
-              <li class:current={s.step === step}><span class="k">{t(NAMES[s.step])}</span><span class="v">{s.text ?? t("app-wizard-not-chosen")}</span></li>
+              <li class:current={s.step === step} data-testid="sofar-{s.step}"><span class="k">{t(NAMES[s.step])}</span><span class="v">{s.text ?? t("app-wizard-not-chosen")}</span></li>
             {/each}
           </ol>
         </aside>

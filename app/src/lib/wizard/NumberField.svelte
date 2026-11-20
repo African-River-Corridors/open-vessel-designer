@@ -20,12 +20,13 @@
   let invalid = $derived(messages.some((m) => m.block) && text !== "");
 </script>
 
-<div class="field" data-input={id}>
+<div class="field" data-input={id} data-testid="field-{id}">
   <label for="wiz-{id}">{label}</label>
   {#if help}<div class="help" id="wiz-{id}-help">{help}</div>{/if}
   <div class="row">
     <input
       id="wiz-{id}"
+      data-testid="input-{id}"
       type="text"
       inputmode="decimal"
       class:invalid
@@ -42,7 +43,7 @@
   {#if messages.length}
     <div id="wiz-{id}-msg">
       {#each messages as m}
-        <div class="msg {m.block ? 'error' : 'warning'}" data-severity={m.block ? "error" : "warning"}>{m.text}</div>
+        <div class="msg {m.block ? 'error' : 'warning'}" data-severity={m.block ? "error" : "warning"} data-testid="message-{id}">{m.text}</div>
       {/each}
     </div>
   {/if}

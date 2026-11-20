@@ -1,24 +1,29 @@
 <script lang="ts">
   // A question with large clear choices: native radio buttons drawn as cards, so the arrow keys, Tab and Space work.
-  let { name, legend, options, value, onChange }: {
+  let { name, input, legend, options, value, onChange, messages = [] }: {
     name: string;
+    /** The schema input this answers; it names the test ids (`choice-<input>-<value>`). */
+    input: string;
     legend: string;
     options: { value: string; label: string; help?: string }[];
     value: string | null;
     onChange: (v: string) => void;
+    /** What is missing or wrong, said under the choices. */
+    messages?: { text: string; block: boolean }[];
   } = $props();
 </script>
 
-<fieldset>
+<fieldset data-testid="choices-{input}">
   <legend>{legend}</legend>
   <div class="choices">
     {#each options as o (o.value)}
-      <label class="choice" class:chosen={value === o.value}>
+      <label class="choice" class:chosen={value === o.value} data-testid="choice-{input}-{o.value}">
         <input type="radio" {name} value={o.value} checked={value === o.value} onchange={() => onChange(o.value)} />
         <span class="text"><span class="name">{o.label}</span>{#if o.help}<span class="help">{o.help}</span>{/if}</span>
       </label>
     {/each}
   </div>
+  {#each messages as m}<div class="msg error" role="alert" data-testid="message-{input}">{m.text}</div>{/each}
 </fieldset>
 
 <style>
@@ -37,4 +42,7 @@
   .text { display: flex; flex-direction: column; gap: 2px; }
   .name { font-size: var(--fs-16); font-weight: 500; }
   .help { font-size: var(--fs-12); color: var(--ink-2); }
+  .msg { font-size: var(--fs-13); margin-top: var(--sp-2); }
+  .msg.error { color: var(--fail); }
+  .msg.error::before { content: "✕ " / ""; }
 </style>
