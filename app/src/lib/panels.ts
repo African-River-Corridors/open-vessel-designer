@@ -27,3 +27,26 @@ export function savePanels(choice: PanelChoice) {
     // Not remembered; the panels still work.
   }
 }
+
+/**
+ * Issue #1097: the Summary takes the whole main area, so a designer's first answer is one page. On the Summary
+ * the Outputs panel shows only when the designer opened it there this session (`onSummary`); on any other view
+ * the saved choice (`outputs`) decides, as before.
+ */
+export interface OutputsState {
+  /** The tab id of the view shown. */
+  view: string;
+  /** The saved choice, for every view but the Summary. */
+  outputs: boolean;
+  /** The designer opened the Outputs panel on the Summary this session. */
+  onSummary: boolean;
+}
+
+export function outputsShown(s: OutputsState): boolean {
+  return s.view === "summary" ? s.onSummary : s.outputs;
+}
+
+/** The Outputs panel button: it changes the choice of the view shown, and nothing else. */
+export function toggleOutputs(s: OutputsState): OutputsState {
+  return s.view === "summary" ? { ...s, onSummary: !s.onSummary } : { ...s, outputs: !s.outputs };
+}

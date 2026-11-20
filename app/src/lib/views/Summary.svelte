@@ -6,11 +6,13 @@
   import { damageRun } from "../damageRun.svelte";
   import { MAIN, POWERING, TANKS, exact, show, type Metric } from "../metrics";
   import { checkName, listParts, parts, say, slug, t, type TextIds } from "../i18n.svelte";
-  import { summarise, type Blocker } from "../summary";
+  import { shortTitle, summarise, type Blocker } from "../summary";
 
-  let { results, message, blockers, inputs, ids, option, calculating = false, onRunDamage, onCancelDamage, onShowInput, onShowCheck }: {
+  let { results, message, blockers, inputs, ids, option, calculating = false, onRunDamage, onCancelDamage, onShowInput, onShowCheck, onShowRule = () => {} }: {
     /** Issue #1096: a new Design is being calculated for the first time; there is nothing of it to show yet. */
     calculating?: boolean;
+    /** Issue #1090: open the Rule checks view at a Rule's row, or at its top for `null`. */
+    onShowRule?: (title: string | null) => void;
     /** The shown Option's fresh results; null where the Option is not calculated. */
     results: Record<string, unknown> | null;
     /** The engine's message where the Option has no results and no input to fix. */
@@ -48,17 +50,21 @@
 </script>
 
 <section class="summary" data-testid="summary" aria-label={t("app-summary-label")}>
-  <h4>{t("app-summary-works")}</h4>
   {#if calculating}
+    <h4>{t("app-summary-works")}</h4>
     <!-- Issue #1096: right after Create or Open, say plainly that the Design is being calculated. -->
     <p class="verdict pending" data-testid="summary-calculating">{t("app-summary-calculating")}</p>
   {:else}
+  <!-- Issue #1097: the three questions in two columns where the view is wide enough, so the first answer is one page. -->
+  <div class="cols">
+  <div class="q works" data-testid="summary-works">
+  <h4>{t("app-summary-works")}</h4>
   <p class="verdict {mark.tone}" data-testid="summary-verdict" data-kind={verdict.kind}>
     <span class="tag"><span aria-hidden="true">{mark.mark}</span> {t(mark.label)}</span>
     {#if verdict.kind === "met"}
       {t("app-summary-met")}
     {:else if verdict.kind === "not-met"}
-      {t("app-summary-not-met", { rules: verdict.titles.map((x) => checkName(x, ids)).join("; ") })}
+      {t("app-summary-not-met-count", { count: verdict.count })}
     {:else if verdict.inputs.length > 0}
       <!-- The link of the "Not recalculated" line: it focuses the input to fix. -->
       {#each parts("app-summary-not-calculated-fix", ["inputs"]) as p}{#if typeof p === "string"}{p}{:else}{#each listParts(verdict.inputs.map((b) => b.label)) as q}{#if typeof q === "string"}{q}{:else}{@const b = verdict.inputs[Number(q.arg)]}<a
@@ -89,8 +95,30 @@
       {/if}
     </p>
   {/if}
+  {#if verdict.kind === "not-met"}
+    <!-- Issue #1090: one failed Rule per line, the first few, each with a link to its row. -->
+    <ul class="failed" data-testid="summary-failed">
+      {#each verdict.shown as f (f.title)}
+        {@const name = checkName(f.title, ids)}
+        <li data-testid="summary-failed-rule" data-rule={f.title}>
+          <span class="name" title={name}>{shortTitle(name)}</span>
+          {#if f.check}
+            <a href={"#check-" + slug(f.check)} data-testid="summary-failed-link" data-to="check" onclick={(e) => { e.preventDefault(); onShowCheck(f.check!); }}>{t("app-summary-show-check")}</a>
+          {:else}
+            <a href="#rule-checks" data-testid="summary-failed-link" data-to="rule" onclick={(e) => { e.preventDefault(); onShowRule(f.title); }}>{t("app-summary-show-rule")}</a>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+    {#if verdict.more > 0}
+      <p class="more" data-testid="summary-failed-more">{t("app-summary-more-rules", { count: verdict.more })}
+        <a href="#rule-checks" data-testid="summary-open-rules" onclick={(e) => { e.preventDefault(); onShowRule(null); }}>{t("app-summary-open-rules")}</a></p>
+    {/if}
+  {/if}
   {#if summary.scope}<p class="scope" data-testid="summary-scope">{say(summary.scope, ids)}</p>{/if}
 
+  </div>
+  <div class="q got" data-testid="summary-got">
   <h4>{t("app-summary-got")}</h4>
   {#if summary.rows.length === 0 || !results}
     <p class="note" data-testid="summary-no-results">{t("app-summary-no-results")}</p>
@@ -108,6 +136,8 @@
     </table>
   {/if}
 
+  </div>
+  <div class="q next" data-testid="summary-next">
   <h4>{t("app-summary-next")}</h4>
   {#if results}
     {#if summary.warnings.length === 0}
@@ -119,7 +149,7 @@
             <span class="tag"><span aria-hidden="true">!</span> {t("app-rules-warn")}</span>
             <strong>{checkName(w.name, ids)}</strong>
             {#if w.message && w.message !== "OK"}<span class="msg">{say(w.message, ids)}</span>{/if}
-            <a href={"#check-" + slug(w.name)} onclick={(e) => { e.preventDefault(); onShowCheck(w.name); }}>{t("app-summary-show-check")}</a>
+            <a href={"#check-" + slug(w.name)} data-testid="summary-show-check" onclick={(e) => { e.preventDefault(); onShowCheck(w.name); }}>{t("app-summary-show-check")}</a>
           </li>
         {/each}
       </ul>
@@ -129,12 +159,23 @@
     {t("app-summary-input-counts", { typed: summary.inputs.typed, defaults: summary.inputs.defaults })}
     <a href="#input-panel" data-testid="summary-open-input" onclick={(e) => { e.preventDefault(); onShowInput(); }}>{t("app-summary-open-input")}</a>
   </p>
+  </div>
+  </div>
   {/if}
 </section>
 
 <style>
   /* A calm page of text and numbers: no chart, no new colour. It scrolls inside its own box. */
-  .summary { height: 100%; overflow: auto; box-sizing: border-box; padding-right: var(--sp-2); font-size: var(--fs-14); line-height: var(--lh-ui); max-width: 56em; }
+  .summary { height: 100%; overflow: auto; box-sizing: border-box; padding-right: var(--sp-2); font-size: var(--fs-14); line-height: var(--lh-ui); max-width: 72em; container-type: inline-size; }
+  .q + .q { margin-top: var(--sp-4); }
+  @container (min-width: 46em) {
+    .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "works got" "next got"; column-gap: var(--sp-5); align-items: start; }
+    .works { grid-area: works; }
+    .got { grid-area: got; }
+    .next { grid-area: next; }
+    .q + .q { margin-top: 0; }
+    .next { margin-top: var(--sp-4); }
+  }
   h4 { font: 600 var(--fs-12) var(--font-ui); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); background: var(--surface-2); border-bottom: var(--lw-thin) solid var(--rule); margin: var(--sp-4) 0 var(--sp-2); padding: var(--sp-1) var(--sp-2); }
   h4:first-child { margin-top: 0; }
   p { margin: var(--sp-2) 0; overflow-wrap: anywhere; }
@@ -145,6 +186,10 @@
   .fail .tag { background: var(--fail-soft); color: var(--fail); }
   .warn .tag, .warnings .tag { background: var(--warn-soft); color: var(--warn); }
   .verdict { font-weight: 600; }
+  .failed { list-style: none; margin: 0 0 var(--sp-2); padding: 0; }
+  .failed li { padding: 3px 0; border-bottom: var(--lw-thin) solid var(--rule); }
+  .failed .name { margin-right: var(--sp-2); }
+  .more { color: var(--ink-2); }
   .verdict.pending { color: var(--accent); }
   .provisional { color: var(--warn); font-weight: 600; }
   table { border-collapse: collapse; font-size: var(--fs-14); }

@@ -1,4 +1,5 @@
 """Housekeeping contract (ticket 6): glossary, licence holder, repo name, ADRs, roadmap, no web simulator."""
+import re
 from pathlib import Path
 import tomllib
 
@@ -59,7 +60,9 @@ def test_web_simulator_removed():
     assert not (ROOT / "web").exists()
     assert not (ROOT / "tools/build_web.py").exists()
     readme = read("README.md").lower()
-    assert "web/" not in readme and "pyodide" not in readme and "build_web" not in readme
+    # The old simulator's folder and script; the Rust web build (`crates/ovd-web/`, `tools/build_web.sh`) is fine.
+    assert re.search(r"(?<![\w-])web/", readme) is None
+    assert "pyodide" not in readme and "build_web.py" not in readme
 
 
 def test_embargo_list_stays():

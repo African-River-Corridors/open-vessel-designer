@@ -1,5 +1,7 @@
 # Tauri desktop app with an HTML/TypeScript UI; the same core in WebAssembly for the web later
 
+**Paused, 2026-11-20:** the desktop app is removed for now; the web app is the app (ADR 0026).
+
 The first product for non-coders is a desktop app for Windows and macOS. We build it with Tauri: a
 Rust backend that calls `ovcd-format`, and an HTML and TypeScript user interface. The app holds no
 calculation logic of its own. It reads a Design and gets results from the one core entry point.

@@ -1,6 +1,6 @@
 // The platform interface: every call the front end makes to the Rust side, and the file actions.
-// Two implementations: Tauri (desktop) and Web (the ovd-web WebAssembly session). Neither holds
-// any calculation, validation or default logic.
+// One implementation today: Web (the ovd-web WebAssembly session). It holds no calculation, validation
+// or default logic. The interface stays as the seam a desktop app returns through (ADR 0026).
 import type { DesignExample, Evaluation, Schema, Snapshot } from "../api";
 
 export type DrawingView = "side" | "plan" | "midship";
@@ -119,8 +119,8 @@ export interface DamageEnd {
 }
 
 export interface Platform {
-  /** "tauri" for the desktop app, "web" for the browser build. */
-  readonly kind: "tauri" | "web";
+  /** "web" for the browser build, the one platform for now (ADR 0026). */
+  readonly kind: "web";
   snapshot(): Promise<Snapshot>;
   inputSchema(): Promise<Schema>;
   evaluate(): Promise<Evaluation>;
@@ -146,12 +146,6 @@ export interface Platform {
   /** Spec 0017, D1: the app brought back the last Design (the web build does, from browser storage). */
   designRestored(): Promise<boolean>;
   openFile(): Promise<Snapshot | null>;
-  /**
-   * Issue #671: call `opened` when the app is given a Design from outside (Finder, "Open With",
-   * the command line) and has loaded it, or `failed` with the reason when it could not. The web
-   * build is never given a file this way.
-   */
-  onOpenedFromOutside(opened: () => void, failed: (reason: string) => void): Promise<void>;
   save(): Promise<Snapshot | null>;
   saveAs(): Promise<Snapshot | null>;
   setInput(option: string, name: string, value: unknown): Promise<Snapshot>;
@@ -168,7 +162,7 @@ export interface Platform {
   useBuiltInProfile(): Promise<Snapshot>;
   noticeSeen(): Promise<boolean>;
   acceptNotice(): Promise<void>;
-  /** Save one drawing view as a file. Resolves false when this platform cannot (the desktop app, for now). */
+  /** Save one drawing view as a file. Resolves false when this platform cannot. */
   exportDrawing(option: string, view: DrawingView, format: DrawingFormat): Promise<boolean>;
   /** Issue #460: the Option's Vessel Model as a glTF binary, saved as a file. */
   exportModel(option: string, format: ModelFormat, below?: string): Promise<boolean>;

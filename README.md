@@ -10,11 +10,10 @@ its checks, checked against real vessels.
 
 ## Ways to use it
 
-- **Desktop app** (Windows and macOS): live results as you type, drawings to the Drawing Format
-  Standard (SVG, PDF and DXF), stability curves, rule checks and a capital budget. See
-  [Run the desktop app](#run-the-desktop-app).
-- **Web version — coming.** The same Rust core compiled to WebAssembly, running in your browser
-  with nothing to install; your designs stay on your computer. Planned on the [roadmap](ROADMAP.md).
+- **Web app**: [open it in your browser](https://www.africanrivercorridors.com/ovd/app), nothing to
+  install. Live results as you type, drawings to the Drawing Format Standard (SVG, PDF and DXF),
+  stability curves, rule checks and a capital budget. The Rust core runs in your browser as
+  WebAssembly, so your designs stay on your computer. See [Run the web app](#run-the-web-app).
 - **Command line** (`ovd`): create, check, run and draw `.vdesign` files.
 - **Python library** (`ovd`): the calculation core from Python.
 
@@ -72,38 +71,28 @@ Python 3.12 or later.
 pip install git+https://github.com/African-River-Corridors/open-vessel-designer
 ```
 
-## Run the desktop app
+## Run the web app
 
-The desktop app is a concept design tool with live results and drawings. It needs no Python.
+The web app is the app: a concept design tool with live results and drawings. It needs no Python and
+nothing to install. Open [africanrivercorridors.com/ovd/app](https://www.africanrivercorridors.com/ovd/app).
 The first start shows a short notice: results are not verified and there is no warranty.
 
-**Download an installer.** Open the newest release on the
-[releases page](https://github.com/African-River-Corridors/open-vessel-designer/releases)
-and take the file for your computer. A release named `v<version>` is a numbered release; one named
-`test-...` is a test build of work in progress.
+**The desktop app is paused.** OVD ships the web app and the command line only, until the design and
+the engine are more stable (ADR 0026, `docs/adr/0026-web-and-command-line-only-english-only-for-now.md`).
+A release holds the `ovd` command line for Windows and macOS and the Python wheels, on the
+[releases page](https://github.com/African-River-Corridors/open-vessel-designer/releases).
 
-- Windows: `OVD_<version>_x64-setup.exe`
-- macOS, Apple silicon: `OVD_<version>_aarch64.dmg`
-- macOS, Intel: `OVD_<version>_x64.dmg`
-
-`SHA256SUMS.txt` on the same page lets you check the download. The installers are not signed, so
-your system warns you once:
-
-- Windows SmartScreen says "Windows protected your PC". Click **More info**, then **Run anyway**.
-- macOS says the app "can't be verified" (the download is not signed). Open the `.dmg`, drag OVD to
-  Applications, then open it once from **System Settings → Privacy & Security → Open Anyway**. If
-  that does not work, run `xattr -dr com.apple.quarantine /Applications/OVD.app` in Terminal and
-  open OVD again.
-
-**Build from source.** You need Git, Node 24 and Rust (install with [rustup](https://rustup.rs)).
-On Windows, rustup also asks for the Microsoft C++ build tools (MSVC); accept that. Then:
+**Build from source.** You need Git, Node 24 and Rust (install with [rustup](https://rustup.rs)), and
+the `wasm-bindgen` command line at the version `crates/ovd-web/Cargo.toml` pins. Then:
 
 ```
 git clone https://github.com/African-River-Corridors/open-vessel-designer
-cd open-vessel-designer/app
+cd open-vessel-designer
+bash tools/build_web.sh   # the WebAssembly session, into app/wasm-pkg
+cd app
 npm ci
-npx tauri dev       # run the app
-npx tauri build     # make the installer (target/release/bundle)
+npm run dev               # run the web app
+npm run build             # tests, type check and the web build (app/dist-web)
 ```
 
 ## Worked example
@@ -154,7 +143,7 @@ passing; it stays in the results as a failed check.
 | `catalogue/` | standard vessel classes and reference vessels, with sources |
 | `calibration/` | calibration cases, fitted factors and results |
 | `crates/` | the Rust core (`ovd-core`), file format and Design session (`ovd-format`), and CLI. Drawings go through [`otd`](https://github.com/African-River-Corridors/open-technical-drawer), pinned by tag |
-| `app/` | the desktop app (Tauri) |
+| `app/` | the web app (Svelte front end over the WebAssembly session) |
 | `website/` | the website and docs ([africanrivercorridors.com/ovd](https://www.africanrivercorridors.com/ovd)) |
 | `docs/adr/` | architecture decisions |
 | `GLOSSARY.md` | the domain language |

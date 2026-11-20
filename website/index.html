@@ -44,8 +44,8 @@
         <h1>An open instrument for the concept design of inland and coastal vessels.</h1>
         <p class="lede">Give it a hull and a cargo. It gives you capacity, draught, weights, tank arrangement, stability, resistance and power, each result with its rule, its source and its checks. Free to use, open formats, no gatekeeping.</p>
         <p class="cta">
-          <a class="btn primary" href="#install">Download the desktop app</a>
-          <a class="btn" href="/ovd/app">Open in your browser</a>
+          <a class="btn primary" href="/ovd/app">Open in your browser</a>
+          <a class="btn" href="#install">Other ways to use it</a>
         </p>
         <p class="fine">Version 0.3.0, test build. Concept and preliminary design only. Results are not verified. <a href="https://github.com/African-River-Corridors/open-vessel-designer">Source on GitHub</a>.</p>
       </div>
@@ -65,7 +65,7 @@
             <li>A concept and preliminary design tool for inland and coastal vessels and tug-barge systems.</li>
             <li>A calculation core you can read: every result names its rule set, edition and paragraph, and every coefficient its source.</li>
             <li>Calibrated against real barges and published design points, with the cases in the open.</li>
-            <li>A desktop app, a command line and a Python library over one Rust core.</li>
+            <li>A web app, a command line and a Python library over one Rust core.</li>
             <li>Drawings to an open Drawing Format Standard, as SVG, PDF and DXF.</li>
           </ul>
         </div>
@@ -108,7 +108,7 @@
       </div>
       <figure class="framed">
         <div class="gilt">
-          <a href="/ovd/assets/screenshots/ovd-app-lrg-gas-89.png"><img src="/ovd/assets/screenshots/ovd-app-lrg-gas-89-1280.webp" srcset="/ovd/assets/screenshots/ovd-app-lrg-gas-89-1280.webp 1280w, /ovd/assets/screenshots/ovd-app-lrg-gas-89.webp 1920w" sizes="(min-width: 1160px) 1112px, 100vw" width="1920" height="1050" alt="The OVD desktop app with the inland gas tanker LRG Gas 89 open: the input panel on the left, the side elevation drawing with four cargo tanks in the centre, and the outputs and checks below, all passing"></a>
+          <a href="/ovd/assets/screenshots/ovd-app-lrg-gas-89.png"><img src="/ovd/assets/screenshots/ovd-app-lrg-gas-89-1280.webp" srcset="/ovd/assets/screenshots/ovd-app-lrg-gas-89-1280.webp 1280w, /ovd/assets/screenshots/ovd-app-lrg-gas-89.webp 1920w" sizes="(min-width: 1160px) 1112px, 100vw" width="1920" height="1050" alt="The OVD app with the inland gas tanker LRG Gas 89 open: the input panel on the left, the side elevation drawing with four cargo tanks in the centre, and the outputs and checks below, all passing"></a>
         </div>
         <figcaption><b>LRG Gas 89</b> (built 2011), a self-propelled inland gas tanker: 95.04 × 11.45 m, depth 5.70 m, draught 2.80 m, four pressure tanks, from <a href="https://scheepvaartwest.be/CMS/index.php/gas-tankers/1402-lrg-gas-89-eni-02334363">Scheepvaartwest</a>. Designed and drawn in OVD from its published particulars; concept geometry, not the builder's drawing. The cargo is set to propane, one of the gases it carries. All 15 checks pass. <a href="/ovd/assets/examples/lrg-gas-89.vdesign">The design file</a>.</figcaption>
       </figure>
@@ -129,13 +129,12 @@
           <h3>Web app</h3>
           <p>OVD runs in your browser. Nothing to install. The calculation core and the drawings run on your computer, so your designs stay there: no server sees them.</p>
           <p><a class="btn" href="/ovd/app">Open in your browser</a></p>
-          <p class="note">The same concept design tool: results are not verified. Open and save files as on the desktop; the browser keeps your last Design.</p>
+          <p class="note">A concept design tool: results are not verified. Open and save <code>.vdesign</code> files; the browser keeps your last Design.</p>
         </div>
         <div class="card">
-          <h3>Desktop app</h3>
-          <p>Take the installer for your computer from the <a href="https://github.com/African-River-Corridors/open-vessel-designer/releases">newest release</a>. It needs no Python.</p>
-          <ul class="files"><li>Windows: <code>OVD_&lt;version&gt;_x64-setup.exe</code></li><li>macOS, Apple silicon: <code>OVD_&lt;version&gt;_aarch64.dmg</code></li><li>macOS, Intel: <code>OVD_&lt;version&gt;_x64.dmg</code></li></ul>
-          <p class="note">The installers are not signed yet. Your system warns you once. Check the download with <code>SHA256SUMS.txt</code>.</p>
+          <h3>Command line</h3>
+          <p>The <code>ovd</code> command for Windows and macOS is on the <a href="https://github.com/African-River-Corridors/open-vessel-designer/releases">newest release</a>. It needs no Python.</p>
+          <p class="note">The desktop app is paused while the design and the engine settle; the web app is the app. The binaries are not signed yet. Check the download with <code>SHA256SUMS.txt</code>.</p>
         </div>
         <div class="card">
           <h3>Python library</h3>
@@ -146,9 +145,9 @@
           <h3>From source</h3>
           <p>You need Git, Node 24 and Rust.</p>
 <pre><code>git clone https://github.com/African-River-Corridors/open-vessel-designer
-cd open-vessel-designer/app
-npm ci
-npx tauri dev</code></pre>
+cd open-vessel-designer
+bash tools/build_web.sh
+cd app && npm ci && npm run dev</code></pre>
         </div>
       </div>
     </div>

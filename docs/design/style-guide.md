@@ -1,6 +1,6 @@
 # OVD app style guide
 
-How the desktop app looks. It gives the app the same look as the website: a 1930s construction
+How the app looks (the web app; the desktop app is paused, ADR 0026). It gives the app the same look as the website: a 1930s construction
 blueprint. The blueprint field is Prussian blue with white ink. A gilt frame and a cream mat sit around
 it.
 
@@ -309,7 +309,7 @@ set:
 - At 16 px and 32 px the drawing is simplified (fewer lines); use the 16 and 32 px masters for those
   sizes, not a scaled-down 1024.
 
-The icons live in `app/src-tauri/icons/`, at the sizes `tauri.conf.json` lists.
+The desktop icon files left with the desktop app (ADR 0026); the last commit that has them is named there.
 
 **Splash (loading screen).** It shows while the engine starts, and goes away when the first result
 arrives. It is the blueprint field in a gilt frame on the cream mat. At the left: the mark, "OVD" in

@@ -1,5 +1,5 @@
-//! The Vessel Model calls of the 3D view (spec 0008, "the 3D viewer", issue #457), shared by the
-//! desktop app (Tauri) and the web build (WebAssembly): the meshes, the section at an x, a Space's
+//! The Vessel Model calls of the 3D view (spec 0008, "the 3D viewer", issue #457), used by the
+//! web build (WebAssembly): the meshes, the section at an x, a Space's
 //! values and the waterlines of an Option.
 //!
 //! No geometry here: every answer comes from `ovd-format` and `ovd-core`. The run of one Option

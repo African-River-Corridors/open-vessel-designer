@@ -11,7 +11,7 @@ const { version } = JSON.parse(readFileSync(new URL("./package.json", import.met
 export default defineConfig({
   plugins: [svelte()],
   base: "/ovd/app-files/",
-  define: { __APP_VERSION__: JSON.stringify(version), __OVD_WEB__: true },
+  define: { __APP_VERSION__: JSON.stringify(version) },
   // Issue #924: the damage worker is an ES module, so it can import the wasm glue.
   worker: { format: "es" },
   build: { outDir: "dist-web", emptyOutDir: true, assetsInlineLimit: 0 },
