@@ -9,6 +9,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { remote } from "webdriverio";
+import { showAllInputs } from "./inputs-mode.mjs";
 
 const here = import.meta.dirname;
 // The engine version the app shows: read from the Tauri config, so a version bump needs no test edit.
@@ -81,6 +82,7 @@ async function open(file, expectName, timeout = 15000) {
     browser.execute(() => document.querySelector(".field[data-input]") !== null && document.querySelector("[data-before-open]") === null),
     timeout,
   );
+  await showAllInputs(browser);
   await until("outputs", async () => (await browser.$("[data-testid=outputs]")).isExisting(), timeout);
   // The open time of each file, in the log, so a slow open shows before it reaches the limit (issue #922).
   console.log(`e2e open-time ${expectName}: ${Date.now() - started} ms (limit ${timeout} ms)`);
@@ -160,8 +162,10 @@ describe("OVD app smoke tests", () => {
     await browser?.deleteSession();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     for (const f of ["open.txt", "save.txt", "profile.txt", "discard.txt"]) forget(f);
+    // The mode is kept per user, so this holds for the whole run; the tests use inputs Essentials hides (issue #1084).
+    await showAllInputs(browser);
   });
 
   it("shows the first-run notice on first start only, and again from About", async () => {

@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Input panel (issue #1084, spec 0017): a switch at the top picks Essentials (the required inputs, the inputs the designer typed, and the inputs the schema marks essential) or All inputs, and the app keeps the choice per user; a filter box finds inputs by label in every group; each input has an "About this input" button that opens its help under the field. Calculations, defaults and the saved file do not change.

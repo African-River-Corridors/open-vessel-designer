@@ -10,6 +10,7 @@ import os from "node:os";
 import path from "node:path";
 import { remote } from "webdriverio";
 import { serve } from "./web-server.mjs";
+import { showAllInputs } from "./inputs-mode.mjs";
 
 const here = import.meta.dirname;
 const FIXTURE = path.resolve(here, "../../crates/ovd-format/tests/fixtures/gas_igc_2g_self_propelled.vdesign");
@@ -78,6 +79,8 @@ async function ready(b) {
     });
   }
   await until(b, "results", async () => (await outputs(b)).isExisting());
+  // Essentials hides the inputs that use the Defaults Profile; these tests use them (issue #1084).
+  await showAllInputs(b);
 }
 /** Open Settings (app bar), do `act`, close it again. */
 async function inSettings(b, act) {
