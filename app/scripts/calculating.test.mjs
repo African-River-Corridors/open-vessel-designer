@@ -44,6 +44,61 @@ test("an error does not leave the sign on, and the error goes on", async () => {
   assert.equal(c.running, 0);
 });
 
+// Issue #1096: QA found a gap in the run counter; two quick runs that overlap turn the sign off once, after the last.
+test("two quick overlapping runs turn the sign off once, after the last run ends", async () => {
+  const { c, log } = sign(30);
+  const first = c.during(() => wait(10));
+  const second = c.during(() => wait(20));
+  await first;
+  assert.deepEqual(log, [], "nothing yet: the second run still goes");
+  await second;
+  assert.deepEqual(log, [false], "off once, never on: both were quicker than the wait");
+});
+
+// Issue #1096: on the web an evaluation blocks the page, so the timer cannot fire while it runs. A run said to be
+// slow shows the sign at once and lets the page paint it before the work starts.
+test("a run said to be slow shows the sign at once and lets the page paint before the work starts", async () => {
+  const order = [];
+  const c = new Calculating(1000, (on) => order.push(on ? "on" : "off"), async () => order.push("painted"));
+  await c.during(async () => order.push("work"), true);
+  assert.deepEqual(order, ["on", "painted", "work", "off"]);
+});
+
+test("a slow run inside a run that already shows the sign does not paint again", async () => {
+  const order = [];
+  const c = new Calculating(1000, (on) => order.push(on ? "on" : "off"), async () => order.push("painted"));
+  await c.during(() => c.during(async () => order.push("inner"), true), true);
+  assert.deepEqual(order, ["on", "painted", "inner", "off"]);
+});
+
+test("a slow run inside a run whose timer has not fired yet shows the sign at once", async () => {
+  const order = [];
+  const c = new Calculating(1000, (on) => order.push(on ? "on" : "off"), async () => order.push("painted"));
+  await c.during(() => c.during(async () => order.push("inner"), true));
+  assert.deepEqual(order, ["on", "painted", "inner", "off"]);
+});
+
+test("a slow run inside a run whose timer has already turned the sign on still waits for the page to draw it", async () => {
+  const order = [];
+  const c = new Calculating(10, (on) => order.push(on ? "on" : "off"), async () => order.push("painted"));
+  await c.during(async () => {
+    await wait(30); // the timer fires: the sign is on in the page, but not yet drawn
+    await c.during(async () => order.push("inner"), true);
+  });
+  assert.deepEqual(order, ["on", "painted", "inner", "off"]);
+});
+
+test("after redraw, the next slow run waits for one more frame even when the sign was already drawn", async () => {
+  const order = [];
+  const c = new Calculating(1000, (on) => order.push(on ? "on" : "off"), async () => order.push("painted"));
+  await c.during(async () => {
+    await c.during(async () => order.push("first"), true);
+    c.redraw();
+    await c.during(async () => order.push("second"), true);
+  }, true);
+  assert.deepEqual(order, ["on", "painted", "first", "painted", "second", "off"]);
+});
+
 const finder = (table) => (id) => table[id] ?? null;
 
 test("the app wording in the Display Language wins over everything", () => {

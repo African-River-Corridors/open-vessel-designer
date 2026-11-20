@@ -13,14 +13,19 @@
   import Summary from "./views/Summary.svelte";
   import RuleChecks, { type RuleTrace } from "./views/RuleChecks.svelte";
   import CapitalBudget from "./views/CapitalBudget.svelte";
+  import CalculatingSign from "./CalculatingSign.svelte";
   import type { DamageResults } from "./damage";
   import { say, t, type TextIds } from "./i18n.svelte";
   import { viewRequest } from "./viewRequest.svelte";
 
   // The hull views are SVG drawn in Rust to the Drawing Format Standard (ADR 0009, spec 0003); the
   // panel only places and zooms them.
-  let { evaluation, active, lastGood, blockers, designSpeed, inputs, onRunDamage, onCancelDamage, onShowInput, onShowCheck }: {
+  let { evaluation, active, lastGood, blockers, designSpeed, inputs, sign, designPending, onRunDamage, onCancelDamage, onShowInput, onShowCheck }: {
     evaluation: Evaluation | null;
+    /** Issue #1096: the "Calculating…" sign while the Input panel is hidden; null when the panel shows it. */
+    sign: boolean | null;
+    /** Issue #1096: a new Design is being calculated for the first time. */
+    designPending: boolean;
     active: string;
     lastGood: Record<string, OptionEvaluation>;
     blockers: { name: string; label: string }[];
@@ -145,6 +150,7 @@
       {/each}
     </div>
     {#if stale && FROM_RESULTS.includes(current)}<span class="stale">{t("app-out-of-date")}</span>{/if}
+    {#if sign !== null}<span class="sign"><CalculatingSign on={sign} /></span>{/if}
   </header>
   <div class="tabs sub" role="tablist" aria-label={t("app-views-of", { group: t(group.label) })}>
     {#each group.views.filter((v) => v.id !== "convoy" || convoyOf(results)) as v (v.id)}
@@ -160,7 +166,7 @@
     <h3 class="title" data-testid="view-title">{currentLabel}</h3>
     <div class="content">
     {#if current === "summary"}
-      <Summary results={outcome?.status === "results" ? (outcome.results as Record<string, unknown>) : null} message={message} {blockers} {inputs} {ids} option={active}
+      <Summary results={outcome?.status === "results" ? (outcome.results as Record<string, unknown>) : null} message={message} {blockers} {inputs} {ids} option={active} calculating={designPending}
         {onRunDamage} {onCancelDamage} {onShowInput} {onShowCheck} />
     {:else if HULL.includes(current)}
       <div class="slot" data-testid="slot-{current}">
@@ -306,5 +312,7 @@
   .slot { height: 100%; }
   .charts { height: 100%; display: flex; flex-direction: column; gap: 10px; }
   .note { color: var(--ink-3); }
+  .sign { margin-left: auto; align-self: center; margin-bottom: var(--sp-1); }
+  .stale + .sign { margin-left: 0; }
   .stale { margin-left: auto; align-self: center; margin-bottom: var(--sp-1); background: var(--warn-soft); color: var(--warn); border: var(--lw-thin) solid var(--warn); font: var(--fs-11) var(--font-ui); padding: 1px 6px; border-radius: var(--radius); }
 </style>

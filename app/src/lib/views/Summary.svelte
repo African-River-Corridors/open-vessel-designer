@@ -8,7 +8,9 @@
   import { checkName, listParts, parts, say, slug, t, type TextIds } from "../i18n.svelte";
   import { summarise, type Blocker } from "../summary";
 
-  let { results, message, blockers, inputs, ids, option, onRunDamage, onCancelDamage, onShowInput, onShowCheck }: {
+  let { results, message, blockers, inputs, ids, option, calculating = false, onRunDamage, onCancelDamage, onShowInput, onShowCheck }: {
+    /** Issue #1096: a new Design is being calculated for the first time; there is nothing of it to show yet. */
+    calculating?: boolean;
     /** The shown Option's fresh results; null where the Option is not calculated. */
     results: Record<string, unknown> | null;
     /** The engine's message where the Option has no results and no input to fix. */
@@ -47,6 +49,10 @@
 
 <section class="summary" data-testid="summary" aria-label={t("app-summary-label")}>
   <h4>{t("app-summary-works")}</h4>
+  {#if calculating}
+    <!-- Issue #1096: right after Create or Open, say plainly that the Design is being calculated. -->
+    <p class="verdict pending" data-testid="summary-calculating">{t("app-summary-calculating")}</p>
+  {:else}
   <p class="verdict {mark.tone}" data-testid="summary-verdict" data-kind={verdict.kind}>
     <span class="tag"><span aria-hidden="true">{mark.mark}</span> {t(mark.label)}</span>
     {#if verdict.kind === "met"}
@@ -64,11 +70,12 @@
       {t("app-summary-not-calculated")}
     {/if}
   </p>
-  {#if summary.scope}<p class="scope" data-testid="summary-scope">{say(summary.scope, ids)}</p>{/if}
   {#if running}
+    <!-- Issue #1096: damage stability can still turn the verdict, so say so while it runs. -->
+    <p class="provisional" data-testid="summary-provisional">{t("app-summary-may-change")}</p>
     <p class="damage" data-testid="summary-damage" data-status="running">
       {t("app-damage-running")}: {t("app-damage-progress", { done: running.done, total: running.total })}
-      <button type="button" onclick={onCancelDamage}>{t("app-damage-cancel")}</button>
+      <button type="button" data-testid="summary-damage-cancel" onclick={onCancelDamage}>{t("app-damage-cancel")}</button>
     </p>
   {:else if summary.damage.status}
     <p class="damage" data-testid="summary-damage" data-status={summary.damage.status}>
@@ -82,6 +89,7 @@
       {/if}
     </p>
   {/if}
+  {#if summary.scope}<p class="scope" data-testid="summary-scope">{say(summary.scope, ids)}</p>{/if}
 
   <h4>{t("app-summary-got")}</h4>
   {#if summary.rows.length === 0 || !results}
@@ -121,6 +129,7 @@
     {t("app-summary-input-counts", { typed: summary.inputs.typed, defaults: summary.inputs.defaults })}
     <a href="#input-panel" data-testid="summary-open-input" onclick={(e) => { e.preventDefault(); onShowInput(); }}>{t("app-summary-open-input")}</a>
   </p>
+  {/if}
 </section>
 
 <style>
@@ -136,6 +145,8 @@
   .fail .tag { background: var(--fail-soft); color: var(--fail); }
   .warn .tag, .warnings .tag { background: var(--warn-soft); color: var(--warn); }
   .verdict { font-weight: 600; }
+  .verdict.pending { color: var(--accent); }
+  .provisional { color: var(--warn); font-weight: 600; }
   table { border-collapse: collapse; font-size: var(--fs-14); }
   tr { border-bottom: var(--lw-thin) solid var(--rule); }
   th { text-align: left; font-weight: 400; color: var(--ink-2); padding: 2px var(--sp-4) 2px var(--sp-1); white-space: nowrap; }

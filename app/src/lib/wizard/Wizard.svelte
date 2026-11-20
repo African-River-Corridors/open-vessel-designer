@@ -73,8 +73,6 @@
     const name = schemaText.choice(input, c.value, c.label);
     return input === "cargo" && c.status === "development" ? t("app-cargo-development", { name }) : name;
   };
-  /** A schema description is shown only when it is meant for people: a note for programmers holds `::`. */
-  const forPeople = (d: string | undefined) => (d && !d.includes("::") ? d : undefined);
   const unitOf = (name: string) => {
     const u = spec(name)?.unit;
     return u && u !== "-" ? u : "";
@@ -197,7 +195,7 @@
             input="cargo"
             messages={messagesOf("cargo")}
             legend={labelOf(schema, "cargo")}
-            options={choices("cargo").map((c) => ({ value: c.value, label: choiceLabel("cargo", c.value) ?? c.label, help: forPeople((c as Choice & { description?: string }).description) }))}
+            options={choices("cargo").map((c) => ({ value: c.value, label: choiceLabel("cargo", c.value) ?? c.label, help: (c as Choice & { description?: string }).description }))}
             value={a.cargo}
             onChange={(v) => (a.cargo = v)}
           />

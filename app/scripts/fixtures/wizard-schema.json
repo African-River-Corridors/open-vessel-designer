@@ -98,21 +98,21 @@
      "label": "Crude oil",
      "phase": "liquid_bulk",
      "status": "development",
-     "description": "Crude oil, default grade (density at 15 C; see liquid_bulk::crude_grade)"
+     "description": "Crude oil of a default grade: 870 kg/m3 at 15 C"
     },
     {
      "value": "diesel_en590",
      "label": "Diesel fuel (EN 590)",
      "phase": "liquid_bulk",
      "status": "development",
-     "description": "Diesel fuel to EN 590, UN 1202 (density at 20 C, middle of ADN Table C 0.82 to 0.85; see liquid_bulk::crude_grade)"
+     "description": "Diesel fuel to EN 590, UN 1202: 835 kg/m3 at 20 C, the middle of the ADN Table C range of 0.82 to 0.85"
     }
    ]
   },
   {
    "name": "hull_form",
    "label": "Hull Form",
-   "group": "Hull Form",
+   "group": "Required",
    "required": true,
    "applies_to": [
     "box_hold",
@@ -811,7 +811,7 @@
       "value": 0.98,
       "status": "sourced",
       "source": "IMO IGC Code, resolution MSC.370(93), paragraph 15.3 (default filling limit 98 %)",
-      "basis": "The limit is 98 % of the tank volume at the reference temperature. Owners' sheets agree: 98 % on 16 pressurised LPG carriers and 98.5 % on one 2022 LNG bunker vessel. For an LPG Cargo the tank is loaded to the loading limit of IGC 15.5.1, worked out from this filling limit (see lpg_loading_limit_basis)"
+      "basis": "The limit is 98 % of the tank volume at the reference temperature. Owners' sheets agree: 98 % on 16 pressurised LPG carriers and 98.5 % on one 2022 LNG bunker vessel. For an LPG Cargo the tank is loaded to the loading limit of IGC 15.5.1, worked out from this filling limit (see \"LPG density and loading limit basis\")"
      }
     ]
    },
@@ -1102,7 +1102,7 @@
   {
    "name": "service_area",
    "label": "Service Area",
-   "group": "Rules",
+   "group": "Required",
    "required": true,
    "applies_to": [
     "box_hold",

@@ -115,6 +115,8 @@ input-bow-rake-length-to-depth-ratio = Bow rake length over depth
 
 input-bow-rake-max-length-m = Longest bow rake from depth
 
+input-collision-bulkhead-m = Collision bulkhead distance from the forward perpendicular
+
 input-gross-tonnage = Gross tonnage
 
 input-pushed-stern-void-m = Stern void of a pushed barge
