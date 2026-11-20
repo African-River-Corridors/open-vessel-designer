@@ -15,18 +15,19 @@ type Spec = Pick<InputSpec, "name" | "kind" | "required" | "essential">;
 type Store = Pick<Storage, "getItem" | "setItem">;
 
 /** The saved choice, or Essentials when none is kept or storage is not available. */
-export function loadMode(storage: Pick<Storage, "getItem"> = localStorage): InputsMode {
+export function loadMode(storage?: Pick<Storage, "getItem">): InputsMode {
   try {
-    const saved = storage.getItem(MODE_KEY);
+    // Reading `localStorage` itself throws when site data is blocked, so it is read inside the try.
+    const saved = (storage ?? localStorage).getItem(MODE_KEY);
     return MODES.find((m) => m === saved) ?? DEFAULT_MODE;
   } catch {
     return DEFAULT_MODE;
   }
 }
 
-export function saveMode(mode: InputsMode, storage: Store = localStorage) {
+export function saveMode(mode: InputsMode, storage?: Store) {
   try {
-    storage.setItem(MODE_KEY, mode);
+    (storage ?? localStorage).setItem(MODE_KEY, mode);
   } catch {
     // Not remembered; the choice still applies for this run.
   }

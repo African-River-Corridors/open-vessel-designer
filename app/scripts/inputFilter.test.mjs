@@ -124,3 +124,13 @@ test("a storage that throws leaves Essentials", () => {
   assert.equal(loadMode(broken), "essentials");
   assert.doesNotThrow(() => saveMode("all", broken));
 });
+
+test("blocked site data: reading the global localStorage throws, and the mode is still Essentials", () => {
+  Object.defineProperty(globalThis, "localStorage", { configurable: true, get() { throw new Error("SecurityError"); } });
+  try {
+    assert.equal(loadMode(), "essentials");
+    assert.doesNotThrow(() => saveMode("all"));
+  } finally {
+    delete globalThis.localStorage;
+  }
+});
