@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Web app and command line only, for now (issue #1094, ADR 0026): the desktop app is paused and removed, with its tests, its CI and its installers. The web app is the app; the README and the website no longer offer a desktop download. A release now holds the `ovd` command line for Windows and macOS and the Python wheels that the release gate built and tested. The platform interface stays as the seam a desktop app returns through. No result changes.

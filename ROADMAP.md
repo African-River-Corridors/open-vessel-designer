@@ -120,7 +120,8 @@ there, in order:
    adds to it. Nothing is agreed yet. Each agreed change comes one at a time, with a before/after table.
 4. Formations: convoy totals, then convoy resistance and power.
 5. More Hull Forms (V-bottom and others), with configurable parameters. Now Vessel Model phase 1 (spec 0008).
-6. The Tauri desktop app (in parallel with the CLI). **First version done** (spec 0002, version 0.2.1).
+6. The Tauri desktop app (in parallel with the CLI). **First version done** (spec 0002, version 0.2.1). **Paused** on
+   2026-11-20: the web app and the command line only, until the design and the engine are more stable (ADR 0026).
    Still to come: US units, translations, the PDF report.
 7. The Drawing Format Standard, then GA drawings and DXF in the app. **Done** (spec 0003, version 0.2.1):
    side elevation, plan and midship section, written as SVG, PDF and DXF.

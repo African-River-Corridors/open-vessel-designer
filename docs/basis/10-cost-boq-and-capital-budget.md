@@ -218,7 +218,8 @@ mass factors, only the tank structure factor is an input. The currency and the t
 - `crates/ovd-format/tests/cost_rates.rs`: property tests. Each default equals the example file; a budget is
   the sum of its parts; a rate edit moves only the budget; the budget is out of the results hash; a dry bulk
   Option has no budget; gas masses come from the design.
-- `app/e2e/smoke.test.mjs`, lines 509-545: the view shows the basis, the three tables, the mass sources, a rate
+- The desktop smoke test (`app/e2e/smoke.test.mjs`, lines 509-545, removed with the desktop app; ADR 0026 names the last
+  commit that has it): the view shows the basis, the three tables, the mass sources, a rate
   edit moves the total, and dry bulk shows "Work in development".
 - **No calibration against real prices.** No Reference Vessel has a published build cost in `calibration/`.
 

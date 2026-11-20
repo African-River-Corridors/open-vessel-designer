@@ -83,7 +83,7 @@ skipped job counts as passed.
 | `web-parity.yml`: `web-parity` (a release gate) | never | only from `release.yml` (every release), or by hand |
 | `lean-proofs.yml`: `lean` | when `proofs/lean/**`, `crates/arc-rules/**` or the workflow file change | push to main on the same paths; every Monday (04:17 UTC); by hand |
 | `release.yml`: the release gate (`gate`, `app-gate`, `web-parity`, `calibration-bands`, `wheels`, `wasm-hashes`, `binaries`) | never | when a release is published; called from `app-build.yml`; by hand |
-| `app-build.yml`: `verify`, `gate`, `build`, `release` (installers, and the release itself) | never | push to main when `pyproject.toml` changes (only a version bump releases); push of a `v*` or `test-*` tag; by hand (builds, publishes nothing) |
+| `app-build.yml`: `verify`, `gate`, `release` (the release itself: the `ovd` binaries and the wheels) | never | push to main when `pyproject.toml` changes (only a version bump releases); push of a `v*` or `test-*` tag; by hand (runs the release gate, publishes nothing) |
 | `publish-pypi.yml`: `gate`, `sdist`, `publish` | never | push of a `v*` tag only; the `pypi` environment needs approval |
 | `design-impact-publish.yml`: `publish` | never | after a `ci.yml` run completes (`workflow_run`); it posts the design-impact report to the pull request |
 | `codeql.yml` | never | push to main; every Monday; by hand |
@@ -99,7 +99,7 @@ of `.config/rust-partitions.txt` still run once each with any count. Make the ru
 label no runner has leaves `gate-rust` queued, and `test` waits, for up to a day. Pull requests from forks run on
 the same runner while the variable is set. To end the trial, delete both variables.
 
-The desktop app is paused (ADR 0026): its daily checks (`app-checks.yml`) and its end-to-end job are gone.
+The desktop app is paused (ADR 0026): its code, its daily checks (`app-checks.yml`), its end-to-end job and its installers are gone.
 WebAssembly parity is a release gate: `release.yml` calls `web-parity.yml`, so a release cannot ship with a
 mismatch. It left the pull request path because it never failed on a mismatch and it cost a web build on most
 pull requests. Start it by hand (`gh workflow run web-parity.yml`) for a change to `crates/ovd-web/**`.
@@ -168,7 +168,7 @@ changes every day. So it is a separate activity, never a gate on a merge:
 
 ## Releases
 
-Installers are built and published only on purpose (issue #173; `tools/release_plan.py` decides):
+Releases are built and published only on purpose (issue #173; `tools/release_plan.py` decides):
 
 During development the app makes 0.2.x patch releases only. Version 0.3 is reserved for the first release shared with expert reviewers, and any minor bump needs the maintainer.
 

@@ -1,7 +1,7 @@
 //! The hull views: the GA documents of an Option (spec 0003), drawn to the Drawing Format Standard by
 //! `ovd-draw`, as SVG for the main panel.
 //!
-//! This module has no Tauri types. The front end only places and zooms what it returns: it holds
+//! This module has no platform types. The front end only places and zooms what it returns: it holds
 //! no geometry, no scale and no dimension.
 
 use ovd_draw::render::svg::{SvgOptions, to_svg};

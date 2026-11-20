@@ -2,7 +2,7 @@
 //! Option (for the window title), and the hash warnings and the notes of a changed old file from the
 //! last open.
 //!
-//! This module has no Tauri types, so it is tested like any other Rust. It holds no calculation,
+//! This module has no platform types, so it is tested like any other Rust. It holds no calculation,
 //! validation or default logic: every answer comes from [`DesignSession`].
 
 use crate::damage::{self, End, Job, Kept, Running};

@@ -38,8 +38,29 @@ PLANNED = "needs.verify.outputs.publish == 'true'"
 
 def test_every_job_that_builds_waits_for_verify():
     jobs = workflow(APP_BUILD)["jobs"]
-    assert "verify" in needs(jobs["build"])
-    assert "always()" not in str(jobs["build"].get("if", ""))
+    assert "verify" in needs(jobs["gate"])
+    assert "always()" not in str(jobs["gate"].get("if", ""))
+
+
+def test_no_desktop_installer_is_built():
+    """Label: property"""
+    # The desktop app is paused (ADR 0026): the release ships the command line and the wheels.
+    text = APP_BUILD.read_text(encoding="utf-8").lower()
+    assert "tauri" not in text and "installer (" not in text
+    assert set(workflow(APP_BUILD)["jobs"]) == {"verify", "gate", "release"}
+
+
+def test_the_release_attaches_the_gate_s_binaries_and_wheels():
+    """Label: property"""
+    steps = workflow(APP_BUILD)["jobs"]["release"]["steps"]
+    patterns = {s["with"]["pattern"] for s in steps if "download-artifact" in s.get("uses", "")}
+    assert patterns == {"ovd-*", "wheel-*"}
+    release = workflow(RELEASE)["jobs"]
+    uploads = {s["with"]["name"] for j in ("binaries", "wheels") for s in release[j]["steps"] if "upload-artifact" in s.get("uses", "")}
+    assert uploads == {"ovd-${{ matrix.os }}", "wheel-${{ matrix.os }}"}
+    run = "\n".join(s.get("run", "") for s in steps)
+    assert 'cp "$f" "assets/ovd-$os${f##*/ovd}"' in run and "*.whl assets/" in run
+    assert 'gh release create "$TAG" assets/*' in run
 
 
 def test_release_workflow_can_be_called():
@@ -105,8 +126,7 @@ def test_the_on_main_check_applies_to_numbered_releases_only():
 
 def test_nothing_builds_or_publishes_unless_the_plan_says_so():
     jobs = workflow(APP_BUILD)["jobs"]
-    assert jobs["build"]["if"] == "needs.verify.outputs.build == 'true'"
-    assert jobs["gate"]["if"] == PLANNED
+    assert jobs["gate"]["if"] == "needs.verify.outputs.build == 'true'"
     assert jobs["release"]["if"] == PLANNED
     assert "latest" not in jobs, "the rolling latest build was reversed (issue #173)"
 
@@ -124,8 +144,8 @@ def test_the_release_takes_its_tag_and_kind_from_the_plan_through_env():
 
 
 def test_only_a_version_tag_must_match_the_package_version():
-    build = workflow(APP_BUILD)["jobs"]["build"]
-    check = next(s for s in build["steps"] if "tomllib" in s.get("run", ""))
+    verify = workflow(APP_BUILD)["jobs"]["verify"]
+    check = next(s for s in verify["steps"] if "tomllib" in s.get("run", ""))
     assert check["if"] == "startsWith(github.ref, 'refs/tags/v')"
     assert "startsWith(github.ref, 'refs/tags/v')" in RELEASE.read_text(encoding="utf-8")
 

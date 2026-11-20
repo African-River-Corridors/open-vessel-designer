@@ -48,7 +48,7 @@ def tag_exists(tag: str) -> bool:
 def plan(event: str, ref: str, sha: str, before: str, version_at=version_at, tag_exists=tag_exists) -> dict:
     nothing = {"build": False, "publish": False, "tag": "", "kind": "", "on_main": False}
     if event == "workflow_dispatch":
-        return {**nothing, "build": True, "reason": "manual start: build the installers, publish nothing"}
+        return {**nothing, "build": True, "reason": "manual start: run the release gate, publish nothing"}
     if event != "push":
         return {**nothing, "reason": f"event {event!r} never releases"}
     if ref.startswith("refs/tags/"):

@@ -108,7 +108,7 @@ after(async () => {
 });
 
 describe("OVD web smoke tests", () => {
-  it("shows the notice, then the starter Design evaluated, with the web label and desktop link", async () => {
+  it("shows the notice, then the starter Design evaluated, and offers no desktop app (issue #1094)", async () => {
     const b = await start();
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
@@ -116,9 +116,9 @@ describe("OVD web smoke tests", () => {
     await until(b, "the notice to close", async () => !(await (await b.$("[data-testid=notice]")).isExisting()));
     await ready(b);
     assert.ok((await (await outputs(b)).getText()).length > 0, "outputs have text");
-    // The style sheet sets the label in capitals.
-    assert.equal((await (await b.$("[data-testid=web-label]")).getText()).toLowerCase(), "web version");
-    assert.equal(await (await b.$("a=Download the desktop app")).getAttribute("href"), "/ovd#install");
+    // The web app is the app: no "web version" label, no link to a desktop download (ADR 0026).
+    assert.equal(await (await b.$("[data-testid=web-label]")).isExisting(), false, "no web label");
+    assert.equal(await b.execute(() => document.querySelector("header a[href='/ovd#install']") !== null), false, "no desktop link");
     // Reload: the notice was remembered.
     await b.url(`${origin}/ovd/app`);
     await ready(b);

@@ -37,10 +37,8 @@
   let startOpen = $state(false);
   /** The setup wizard, while it is open: the answers it starts from, and the step. */
   let wizard = $state<{ answers: Answers; step: StepId } | null>(null);
-  /** Settings: Display Language, theme and Defaults Profile. */
+  /** Settings: theme and Defaults Profile. */
   let settingsOpen = $state(false);
-  /** The browser build: shows a label and a link to the desktop app. */
-  const web = api.isWeb();
 
   let leftWidth = $state(340);
   let bottomHeight = $state(260);
@@ -259,14 +257,8 @@
       }
       schema = await api.inputSchema();
       setInputLabels(Object.fromEntries(schema.inputs.map((i) => [i.name, i.label])));
-      // Listen before the first snapshot: a Design given to the app at launch is either in that
-      // snapshot already or announced after the listener is in place (#671).
-      await api.onOpenedFromOutside(
-        () => fileAction(api.snapshot, true),
-        (reason) => (error = reason),
-      );
       const first = await api.snapshot();
-      // A Design given at launch, or brought back from the last visit, is the one to show: no Start page.
+      // A Design brought back from the last visit is the one to show: no Start page.
       startOpen = first.path === null && !(await api.designRestored());
       await adopt(first, true);
     });
@@ -393,7 +385,6 @@
     <button onclick={() => fileAction(api.save, false)}>{t("app-save")}</button>
     <button onclick={() => fileAction(api.saveAs, false)}>{t("app-save-as")}</button>
     <button onclick={() => (noticeOpen = true)}>{t("app-about")}</button>
-    {#if web}<span class="web-badge" data-testid="web-label">{t("app-web-version")}</span> <a href="/ovd#install">{t("app-download-desktop")}</a>{/if}
     <span class="status">
       {#if snap}
         {@const fileText = snap.dirty ? t("app-file-unsaved", { file: snap.file_name }) : snap.file_name}
@@ -465,10 +456,6 @@
   .signline { flex: none; display: flex; justify-content: flex-end; align-items: center; box-sizing: border-box; height: 18px; padding: 0 var(--sp-3); }
   .calculating { color: var(--ink-3); font-size: var(--fs-12); line-height: 18px; white-space: nowrap; }
   .meta.file { flex: 0 1 auto; min-width: 0; overflow: clip; text-overflow: ellipsis; font-family: var(--font-mono); }
-  header :global(.web-badge) {
-    font-size: var(--fs-11); text-transform: uppercase; letter-spacing: 0.08em; padding: 1px var(--sp-2);
-    background: var(--surface-2); color: var(--ink-2); border: var(--lw-thin) solid var(--rule-strong); border-radius: var(--radius);
-  }
   header :global(a) { color: var(--accent); font-size: var(--fs-13); }
   .body { flex: 1; display: grid; min-height: 0; }
   .body > section { overflow: auto; min-width: 0; min-height: 0; }
