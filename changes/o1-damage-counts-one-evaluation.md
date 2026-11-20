@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- App (follow-up of issue #1096): after Create the new Design is evaluated once before damage stability and once after it. An evaluation still waiting to draw the "Calculating…" sign when a newer one is asked for no longer runs; before, the start-up evaluation could still be waiting and both evaluated the new Design, seconds each on the web. The damage progress says what it counts: "121 of about 1,824 cases, counting every layout the search tries"; the result says "106 cases of the layout chosen".

@@ -82,3 +82,18 @@ export function nextPaint(): Promise<void> {
     requestAnimationFrame(() => setTimeout(resolve, 0));
   });
 }
+
+/**
+ * The latest run asked for wins. `ask()` gives a check that stays true until a newer run is asked for: a run that
+ * is still waiting (for the page to draw the sign) when a newer one is asked for skips its work, and the newer one
+ * gives the answer. After Create the start-up evaluation could still be waiting for a frame; both then evaluated
+ * the new Design, one after the other, and on the web each costs seconds.
+ */
+export class Latest {
+  private asked = 0;
+
+  ask(): () => boolean {
+    const mine = ++this.asked;
+    return () => mine === this.asked;
+  }
+}

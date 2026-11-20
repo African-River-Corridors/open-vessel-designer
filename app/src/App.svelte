@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import * as api from "./lib/api";
-  import { Calculating } from "./lib/calculating.ts";
+  import { Calculating, Latest } from "./lib/calculating.ts";
   import type { Evaluation, Schema, Snapshot, OptionEvaluation } from "./lib/api";
   import LeftPanel from "./lib/LeftPanel.svelte";
   import MainPanel from "./lib/MainPanel.svelte";
@@ -60,6 +60,8 @@
   let calculating = $state(false);
   const sign = new Calculating(CALCULATING_AFTER_MS, (on) => (calculating = on));
   const whileCalculating = <T,>(work: () => Promise<T>) => sign.during(work);
+  const evaluations = new Latest();
+  const newDesigns = new Latest();
   /**
    * Issue #1096: how long the last evaluation held the page. On the web the engine runs on the page's own
    * thread, so the sign's timer cannot fire during it: once a run has held the page past the wait, the next
@@ -81,12 +83,17 @@
 
   /** Evaluate the Design, under the sign (issue #1096: every evaluation). `slow` shows the sign at once. */
   async function runEvaluation(slow = false) {
+    // The latest evaluation asked for wins: one still waiting to draw the sign when a newer one is asked for
+    // does not run, as the newer one evaluates the Design as it is then.
+    const current = evaluations.ask();
     const result = await sign.during(() => {
+      if (!current()) return Promise.resolve(null);
       const begun = performance.now();
       const answer = api.evaluate();
       lastBlockedMs = performance.now() - begun;
       return answer;
     }, slow || lastBlockedMs >= CALCULATING_AFTER_MS);
+    if (result === null) return;
     for (const o of result.options) {
       if (o.outcome.status === "results") lastGood[o.name] = o;
     }
@@ -153,10 +160,12 @@
     }
     if (redraw) generation += 1;
     snap = next;
+    const latestDesign = newDesign ? newDesigns.ask() : null;
     try {
       await runEvaluation(newDesign);
     } finally {
-      if (newDesign) designPending = false;
+      // A newer Design taken meanwhile is still being calculated: its own adopt clears the line.
+      if (latestDesign?.()) designPending = false;
     }
   }
 

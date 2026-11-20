@@ -656,7 +656,9 @@ app-damage-estimate = About { $seconds } s, from the last run on this machine.
 app-damage-run = Run damage stability
 app-damage-cancel = Cancel
 app-damage-running = Running damage stability
-app-damage-progress = { $done } of { $total } cases
+# The progress counts the cases of every layout the arrangement search tries, against a planned total that can
+# grow; the result counts the cases of the layout chosen. The words say so, so the two numbers do not seem to clash.
+app-damage-progress = { $done } of about { $total } cases, counting every layout the search tries
 app-damage-left = about { $seconds } s left
 app-damage-progress-label = Damage stability progress
 app-damage-did-not-run = Damage stability did not run: { $reason }
@@ -684,7 +686,7 @@ app-summary-not-calculated = Not calculated.
 app-summary-not-calculated-fix = Not calculated: fix the error under { $inputs }
 app-summary-not-calculated-because = Not calculated: { $message }
 app-summary-damage-run = Damage stability: run.
-app-summary-damage-run-cases = Damage stability: run, { $count } cases.
+app-summary-damage-run-cases = Damage stability: run, { $count } cases of the layout chosen.
 app-summary-damage-not-run = Damage stability: not run.
 app-summary-damage-not-applicable = Damage stability: not applicable.
 app-summary-damage-not-evaluated = Damage stability: not evaluated.

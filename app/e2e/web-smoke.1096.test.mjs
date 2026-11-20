@@ -184,7 +184,7 @@ describe("The Calculating sign beside the Input panel, for every evaluation (iss
     });
     assert.equal(inSight, true, "the line is in sight without scrolling the Summary");
     assert.equal(await (await b.$(testid("summary-damage"))).getAttribute("data-status"), "running");
-    assert.match(await (await b.$(testid("summary-damage"))).getText(), /\d+ of \d+/);
+    assert.match(await (await b.$(testid("summary-damage"))).getText(), /\d+ of about [\d,]+ cases, counting every layout the search tries/);
     // When the run ends (here, cancelled), the line goes.
     await click(b, "summary-damage-cancel");
     await until(b, "the run to end", async () => !(await exists(b, "summary-provisional")), 60000);

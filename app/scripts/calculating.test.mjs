@@ -2,7 +2,7 @@
 // Label: property
 import test from "node:test";
 import assert from "node:assert/strict";
-import { Calculating } from "../src/lib/calculating.ts";
+import { Calculating, Latest } from "../src/lib/calculating.ts";
 import { wordingOf } from "../src/lib/sayOrder.ts";
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -119,4 +119,32 @@ test("without app wording, English shows the engine text as it is", () => {
 test("without app wording, another language shows its translation, else the engine text", () => {
   assert.equal(wordingOf("engine", "m", finder({ m: "spanish engine" }), finder({}), false), "spanish engine");
   assert.equal(wordingOf("engine", "m", finder({}), finder({}), false), "engine");
+});
+
+// A run that still waits to draw the sign when a newer one is asked for does not run: the newer one gives the
+// answer. Found after Create: the start-up evaluation still waited for a frame, and both evaluated the new Design.
+test("a run still waiting to draw when a newer run is asked for does not run; the newer one does", async () => {
+  let release;
+  const drawn = new Promise((r) => (release = r));
+  const c = new Calculating(1000, () => {}, () => drawn);
+  const latest = new Latest();
+  const ran = [];
+  const run = (name) => {
+    const current = latest.ask();
+    return c.during(async () => (current() ? (ran.push(name), name) : null), true);
+  };
+  const first = run("start-up");
+  const second = run("create");
+  release();
+  assert.deepEqual(await Promise.all([first, second]), [null, "create"]);
+  assert.deepEqual(ran, ["create"]);
+});
+
+test("a run asked for after the last one ended runs as usual", async () => {
+  const latest = new Latest();
+  const a = latest.ask();
+  assert.equal(a(), true);
+  const b = latest.ask();
+  assert.equal(a(), false);
+  assert.equal(b(), true);
 });
