@@ -276,6 +276,10 @@ pub struct BargeCapacityInputs {
     /// Issue #448: the keel height at the bow (m). `None`: the moulded depth, the rake the drawings
     /// show.
     pub bow_rake_rise_m: Option<f64>,
+    /// Issue #994: the distance of the collision bulkhead aft of the forward perpendicular, in the
+    /// plane of maximum draught (m; ES-TRIN 2025/1, 3.03(1)(a)). `None`: 0.04 L, the bottom of the
+    /// band the Article gives as a general rule. Never clamped: the Rule rows judge a typed value.
+    pub collision_bulkhead_m: Option<f64>,
     /// Issue #449: bilge radius, sheer and camber of the hull.
     pub hull_shape: crate::hull::hull_form::HullShape,
     /// Issue #282: the angle of down-flooding (degrees) the designer gives; `None`: none given, so
@@ -432,6 +436,7 @@ impl BargeCapacityInputs {
             pushed_stern_void_m: DEFAULT_PUSHED_STERN_VOID_M,
             bow_rake_length_m: None,
             bow_rake_rise_m: None,
+            collision_bulkhead_m: None,
             hull_shape: crate::hull::hull_form::HullShape::default(),
             downflooding_angle_deg: None,
             downflooding_openings: Vec::new(),
@@ -627,6 +632,8 @@ pub struct BargeCapacityResult {
     pub stern_void_length_m: Option<f64>,
     pub cargo_zone_length_m: Option<f64>,
     pub bow_rake_length_m: Option<f64>,
+    /// Issue #994: the forward perpendicular and the collision bulkhead plane (ES-TRIN 3.03).
+    pub collision_bulkhead: Option<crate::collision_bulkhead::CollisionBulkhead>,
     pub aft_arrangement: Option<AftArrangementResult>,
     pub separation: Option<GasSeparationResult>,
 
@@ -1391,6 +1398,7 @@ struct Arrangement {
     rake_m: f64,
     aft_inputs: AftArrangementInputs,
     separation: Option<GasSeparationResult>,
+    collision_bulkhead: crate::collision_bulkhead::CollisionBulkhead,
 }
 
 /// Resolve the two non-cargo end lengths from the equipment and the code, not a percentage.
@@ -1505,19 +1513,33 @@ fn arrangement(inp: &BargeCapacityInputs, class: CargoClass) -> Result<Arrangeme
         CargoClass::LiquidBulk => (0.0, 0.0, None),
     };
 
-    // Issue #994: the forward house stands over the forepeak, the length of the bow rake. If the
-    // rake is too short for the house and the clear deck ahead of it, the house takes cargo length
-    // (D1 B), and the site says how much.
+    // Issue #994 (ES-TRIN 2025/1, 3.03): the collision bulkhead plane, from the forward perpendicular
+    // at the maximum draught (the depth less the required freeboard; a route's draught limit limits
+    // the loading, not the certificate draught).
+    let plane = crate::collision_bulkhead::locate(
+        inp.loa,
+        rake,
+        inp.bow_rake_rise_m.unwrap_or(inp.depth),
+        py_max(0.0, inp.depth - inp.required_freeboard),
+        inp.collision_bulkhead_m,
+    );
+    // The forward house stands aft of the plane: its front on the plane, or the anchor gear's clear
+    // deck from the bow where that is further aft. The cargo zone ends at or aft of the house, and
+    // the length that costs is the house's `cargo_length_lost_m`.
     let mut bow_void_m = rake + fwd_sep;
+    if inp.self_propelled {
+        aft_in.collision_bulkhead_x_m = Some(plane.x_m);
+    }
     if inp.self_propelled && aft_in.arrangement_style.is_wheelhouse_forward() {
         use crate::aft_arrangement::{ForwardHouseSite, forward_house_sizes as fh};
-        let needed = fh::LENGTH_M + fh::BOW_CLEAR_M;
-        let lost = (needed - rake).max(0.0);
-        bow_void_m = rake + lost + fwd_sep;
+        let x_fwd = py_min(plane.x_m, inp.loa - fh::BOW_CLEAR_M);
+        let x_aft = x_fwd - fh::LENGTH_M;
+        let natural = rake + fwd_sep;
+        bow_void_m = py_max(natural, inp.loa - x_aft);
         aft_in.forward_house_site = Some(ForwardHouseSite {
-            x_aft_m: inp.loa - fh::BOW_CLEAR_M - fh::LENGTH_M,
-            x_fwd_m: inp.loa - fh::BOW_CLEAR_M,
-            cargo_length_lost_m: lost,
+            x_aft_m: x_aft,
+            x_fwd_m: x_fwd,
+            cargo_length_lost_m: bow_void_m - natural,
         });
     }
 
@@ -1527,6 +1549,7 @@ fn arrangement(inp: &BargeCapacityInputs, class: CargoClass) -> Result<Arrangeme
         rake_m: rake,
         aft_inputs: aft_in,
         separation: sep,
+        collision_bulkhead: plane,
     })
 }
 
@@ -2394,6 +2417,7 @@ fn compute_once(inp: &BargeCapacityInputs) -> Result<BargeCapacityResult, PyErro
         stern_void_length_m: Some(stern_void),
         cargo_zone_length_m: Some(cargo_zone),
         bow_rake_length_m: Some(rake),
+        collision_bulkhead: Some(arr.collision_bulkhead),
         aft_arrangement: aft,
         separation: sep,
         containment_inner_volume_m3: detail.containment_inner_volume_m3,

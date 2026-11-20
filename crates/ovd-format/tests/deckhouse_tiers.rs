@@ -151,9 +151,12 @@ fn a_container_block_option_is_unchanged() {
     // a450181cb58452607279476905fb0ce6aa0ef78177c66204828777379e36b8d8. The first pin of that change
     // typed a lift of zero to hide the lifting wheelhouse; the container block keeps its default lift, so
     // it is pinned here on the real rule (it was 5f480ac8787f6ca206694ff7b96263c1b3a87aad67139476281c0fd1fcab3b64).
+    // Re-pinned by running the code (issue #994: the results report the forward perpendicular and the collision
+    // bulkhead plane under `geometry`, so the hash moves; no number of the hull moves): was
+    // 0641026d88121e9c05cce2417951b347c8a19828686da35d04ab8d48335ee5e2.
     assert_eq!(
         hash,
-        "0641026d88121e9c05cce2417951b347c8a19828686da35d04ab8d48335ee5e2"
+        "85402e770da4e88f751fcb7b0443b72c65ba00c413a1e8ae105d0f447d482719"
     );
 }
 

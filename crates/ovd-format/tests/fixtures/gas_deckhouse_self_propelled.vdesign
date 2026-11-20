@@ -101,6 +101,10 @@
           "value": null,
           "source": "default"
         },
+        "collision_bulkhead_m": {
+          "value": null,
+          "source": "default"
+        },
         "gross_tonnage": {
           "value": null,
           "source": "default"
@@ -720,7 +724,7 @@
           "source": "default"
         }
       },
-      "results_hash": "c44c7593d6e7041eb01627988c91520007a346f46a58dc0c62ec97ac7e651fb3"
+      "results_hash": "1142fc59bb9262d97f6027bb991c14ebf3aa21cd8a9e15fb4e99977427865c8f"
     }
   ],
   "defaults_profile": "built-in"
