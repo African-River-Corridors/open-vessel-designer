@@ -123,6 +123,27 @@ app-cargo-group-gas = gas
 app-convoy-abreast = Abreast
 app-convoy-in-line = In line
 
+# Essentials, All inputs, the filter box and help on the page (issue #1084)
+app-inputs-mode = Inputs shown
+app-inputs-essentials = Essentials
+app-inputs-all = All inputs
+app-inputs-more =
+    { $count ->
+        [one] { $count } more input uses the Defaults Profile.
+       *[other] { $count } more inputs use the Defaults Profile.
+    }
+app-inputs-show-all = Show all inputs.
+app-inputs-filter = Filter inputs
+app-inputs-filter-placeholder = Filter inputs by name
+app-inputs-filter-clear = Clear the filter
+app-inputs-filter-count =
+    { $count ->
+        [one] { $count } input matches.
+       *[other] { $count } inputs match.
+    }
+app-input-about = About this input
+app-input-about-label = About this input: { $label }
+
 ## Left panel: Vessel Class
 
 app-vessel-mode = How the vessel is defined
