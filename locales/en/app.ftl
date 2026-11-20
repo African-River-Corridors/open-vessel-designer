@@ -704,6 +704,14 @@ app-summary-open-input = Open the Input panel
 # Issue #1096: the Summary while a new Design is calculated, and while damage stability runs.
 app-summary-calculating = Calculating the Design… The answers show here when it is done.
 app-summary-may-change = The answer may still change until damage stability ends.
+# The Summary's picture of the vessel: what the picture shows, for a screen reader, and what a click does.
+app-summary-vessel-side = Side elevation of { $option }: { $loa } m long, { $beam } m beam, { $depth } m deep
+app-summary-vessel-plan = Plan of { $option }: { $loa } m long, { $beam } m beam
+app-summary-vessel-side-name = Side elevation of { $option }
+app-summary-vessel-plan-name = Plan of { $option }
+app-summary-vessel-open-side = Open the side elevation in Drawings
+app-summary-vessel-open-plan = Open the plan in Drawings
+app-summary-vessel-pending = The drawing of the vessel shows here once the Design is calculated.
 
 # The Start page and the setup wizard (issue #1080)
 app-start-title = Start a Design

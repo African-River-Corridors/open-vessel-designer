@@ -188,6 +188,8 @@
     <div class="content">
     {#if current === "summary"}
       <Summary results={outcome?.status === "results" ? (outcome.results as Record<string, unknown>) : null} message={message} {blockers} {inputs} {ids} option={active} calculating={designPending}
+        drawings={outcome?.status === "results" && views ? { side: views.side ?? null, plan: views.plan ?? null } : null}
+        onShowDrawing={(v) => { pickGroup("drawings"); current = v; }}
         {onRunDamage} {onCancelDamage} {onShowInput} {onShowCheck} onShowRule={showRule} />
     {:else if HULL.includes(current)}
       <div class="slot" data-testid="slot-{current}">

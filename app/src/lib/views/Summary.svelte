@@ -7,8 +7,14 @@
   import { MAIN, POWERING, TANKS, exact, show, type Metric } from "../metrics";
   import { checkName, listParts, parts, say, slug, t, type TextIds } from "../i18n.svelte";
   import { shortTitle, summarise, type Blocker } from "../summary";
+  import { vesselDims } from "../vessel";
+  import VesselPicture from "../VesselPicture.svelte";
 
-  let { results, message, blockers, inputs, ids, option, calculating = false, onRunDamage, onCancelDamage, onShowInput, onShowCheck, onShowRule = () => {} }: {
+  let { results, message, blockers, inputs, ids, option, calculating = false, drawings = null, onShowDrawing = () => {}, onRunDamage, onCancelDamage, onShowInput, onShowCheck, onShowRule = () => {} }: {
+    /** The side elevation and plan sheets of the shown results, as the Drawings view shows them; null without results. */
+    drawings?: { side: string | null; plan: string | null } | null;
+    /** Open a drawing in the Drawings view. */
+    onShowDrawing?: (view: "side" | "plan") => void;
     /** Issue #1096: a new Design is being calculated for the first time; there is nothing of it to show yet. */
     calculating?: boolean;
     /** Issue #1090: open the Rule checks view at a Rule's row, or at its top for `null`. */
@@ -46,6 +52,12 @@
     "not evaluated": "app-summary-damage-not-evaluated",
   };
   let verdict = $derived(summary.verdict);
+  /** The principal dimensions the pictures' text names; null leaves the Option's name alone. */
+  let dims = $derived(vesselDims(results));
+  const pictureLabel = (view: "side" | "plan") =>
+    view === "side"
+      ? dims ? t("app-summary-vessel-side", { option, ...dims }) : t("app-summary-vessel-side-name", { option })
+      : dims ? t("app-summary-vessel-plan", { option, ...dims }) : t("app-summary-vessel-plan-name", { option });
   let mark = $derived(MARKS[verdict.kind]);
 </script>
 
@@ -54,6 +66,8 @@
     <h4>{t("app-summary-works")}</h4>
     <!-- Issue #1096: right after Create or Open, say plainly that the Design is being calculated. -->
     <p class="verdict pending" data-testid="summary-calculating">{t("app-summary-calculating")}</p>
+    <!-- The picture's place: no drawing of the last Design while this one is calculated. -->
+    <p class="vessel-pending" data-testid="summary-vessel-pending">{t("app-summary-vessel-pending")}</p>
   {:else}
   <!-- Issue #1097: the three questions in two columns where the view is wide enough, so the first answer is one page. -->
   <div class="cols">
@@ -120,6 +134,13 @@
   </div>
   <div class="q got" data-testid="summary-got">
   <h4>{t("app-summary-got")}</h4>
+  {#if results && drawings?.side}
+    <!-- What did I make? The side elevation, and the plan under it where the width allows. -->
+    <div class="vessel" data-testid="summary-vessel">
+      <div class="pic side"><VesselPicture svg={drawings.side} label={pictureLabel("side")} hint={t("app-summary-vessel-open-side")} testid="summary-vessel-side" onOpen={() => onShowDrawing("side")} /></div>
+      {#if drawings.plan}<div class="pic plan"><VesselPicture svg={drawings.plan} label={pictureLabel("plan")} hint={t("app-summary-vessel-open-plan")} testid="summary-vessel-plan" onOpen={() => onShowDrawing("plan")} /></div>{/if}
+    </div>
+  {/if}
   {#if summary.rows.length === 0 || !results}
     <p class="note" data-testid="summary-no-results">{t("app-summary-no-results")}</p>
   {:else}
@@ -166,7 +187,7 @@
 
 <style>
   /* A calm page of text and numbers: no chart, no new colour. It scrolls inside its own box. */
-  .summary { height: 100%; overflow: auto; box-sizing: border-box; padding-right: var(--sp-2); font-size: var(--fs-14); line-height: var(--lh-ui); max-width: 72em; container-type: inline-size; }
+  .summary { height: 100%; overflow: auto; box-sizing: border-box; padding-right: var(--sp-2); font-size: var(--fs-14); line-height: var(--lh-ui); max-width: 72em; container-type: size; }
   .q + .q { margin-top: var(--sp-4); }
   @container (min-width: 46em) {
     .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "works got" "next got"; column-gap: var(--sp-5); align-items: start; }
@@ -191,6 +212,15 @@
   .failed .name { margin-right: var(--sp-2); }
   .more { color: var(--ink-2); }
   .verdict.pending { color: var(--accent); }
+  .vessel-pending { color: var(--ink-3); }
+  /* Fixed heights: a redraw never moves the numbers below. */
+  .vessel { display: flex; flex-direction: column; gap: var(--sp-1); margin-bottom: 6px; }
+  /* The side elevation always; the plan under it only where the Summary is tall and wide enough, so the verdict,
+     the numbers and the picture fit a 1280 x 800 window. The Summary's box is a size container: its size, not its
+     content, decides. */
+  .pic.side { height: 64px; }
+  .pic.plan { height: 72px; display: none; }
+  @container (min-height: 600px) and (min-width: 30em) { .pic.plan { display: block; } }
   .provisional { color: var(--warn); font-weight: 600; }
   table { border-collapse: collapse; font-size: var(--fs-14); }
   tr { border-bottom: var(--lw-thin) solid var(--rule); }
