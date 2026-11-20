@@ -63,5 +63,7 @@ def test_the_profile_says_what_the_rule_is_and_the_old_basis_text_is_gone():
     assert "the catalogue holds no depths" not in text
     profile = json.loads(text)["inputs"]
     assert "keel to main deck at the side" in profile["moulded_depth_m"]["basis"]
-    assert "catalogue/depth_rule.md" in profile["depth_to_beam_ratio"]["basis"]
+    # Issue #1098: the basis is shown to a designer, so it names the reference vessels, not the file that lists them.
+    assert "reference vessels with a published depth" in profile["depth_to_beam_ratio"]["basis"]
+    assert "catalogue/" not in profile["depth_to_beam_ratio"]["basis"]
     assert profile["length_to_depth_ratio"]["soft"]["max"] == 25.0

@@ -320,6 +320,10 @@ fn input_entry(spec: &crate::vdesign::InputSpec, profile: &Profile) -> Value {
             e.insert("convoy".into(), Value::Object(convoy));
         }
     }
+    // Issue #1098: a choice, a switch or a list carries its basis too, so "About this input" can show it.
+    if !e.contains_key("basis") && !profile.basis(name).is_empty() {
+        e.insert("basis".into(), json!(profile.basis(name)));
+    }
     if name == crate::vdesign::DEPTH_INPUT {
         e.insert("default_rule".into(), depth_rule(profile));
     }
