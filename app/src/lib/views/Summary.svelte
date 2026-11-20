@@ -72,6 +72,25 @@
       {t("app-summary-not-calculated")}
     {/if}
   </p>
+  {#if running}
+    <!-- Issue #1096: damage stability can still turn the verdict, so say so while it runs. -->
+    <p class="provisional" data-testid="summary-provisional">{t("app-summary-may-change")}</p>
+    <p class="damage" data-testid="summary-damage" data-status="running">
+      {t("app-damage-running")}: {t("app-damage-progress", { done: running.done, total: running.total })}
+      <button type="button" data-testid="summary-damage-cancel" onclick={onCancelDamage}>{t("app-damage-cancel")}</button>
+    </p>
+  {:else if summary.damage.status}
+    <p class="damage" data-testid="summary-damage" data-status={summary.damage.status}>
+      {#if summary.damage.status === "run"}
+        {summary.damage.cases === null ? t("app-summary-damage-run") : t("app-summary-damage-run-cases", { count: summary.damage.cases })}
+      {:else}
+        {t(DAMAGE_TEXT[summary.damage.status])}
+      {/if}
+      {#if summary.damage.status === "not run"}
+        <button type="button" data-testid="summary-damage-run" onclick={onRunDamage}>{t("app-damage-run")}</button>
+      {/if}
+    </p>
+  {/if}
   {#if verdict.kind === "not-met"}
     <!-- Issue #1090: one failed Rule per line, the first few, each with a link to its row. -->
     <ul class="failed" data-testid="summary-failed">
@@ -93,25 +112,6 @@
     {/if}
   {/if}
   {#if summary.scope}<p class="scope" data-testid="summary-scope">{say(summary.scope, ids)}</p>{/if}
-  {#if running}
-    <!-- Issue #1096: damage stability can still turn the verdict, so say so while it runs. -->
-    <p class="provisional" data-testid="summary-provisional">{t("app-summary-may-change")}</p>
-    <p class="damage" data-testid="summary-damage" data-status="running">
-      {t("app-damage-running")}: {t("app-damage-progress", { done: running.done, total: running.total })}
-      <button type="button" data-testid="summary-damage-cancel" onclick={onCancelDamage}>{t("app-damage-cancel")}</button>
-    </p>
-  {:else if summary.damage.status}
-    <p class="damage" data-testid="summary-damage" data-status={summary.damage.status}>
-      {#if summary.damage.status === "run"}
-        {summary.damage.cases === null ? t("app-summary-damage-run") : t("app-summary-damage-run-cases", { count: summary.damage.cases })}
-      {:else}
-        {t(DAMAGE_TEXT[summary.damage.status])}
-      {/if}
-      {#if summary.damage.status === "not run"}
-        <button type="button" data-testid="summary-damage-run" onclick={onRunDamage}>{t("app-damage-run")}</button>
-      {/if}
-    </p>
-  {/if}
 
   <h4>{t("app-summary-got")}</h4>
   {#if summary.rows.length === 0 || !results}

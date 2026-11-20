@@ -157,6 +157,7 @@ after(async () => {
 describe("The Calculating sign beside the Input panel, for every evaluation (issue #1096)", () => {
   it("after Create shows the sign and a Summary that says the Design is being calculated, then the result; while damage stability runs by itself the Summary says the answer may change", async () => {
     const b = await start();
+    await b.setWindowSize(1280, 800); // a laptop screen, as the maintainer tried it
     await firstStart(b);
     await click(b, "start-example");
     await until(b, "the example list", () => exists(b, "start-examples"));
@@ -175,6 +176,13 @@ describe("The Calculating sign beside the Input panel, for every evaluation (iss
     // Damage stability then runs by itself: the Summary says the answer may change, with the run's progress.
     await until(b, "the automatic damage run", () => exists(b, "summary-provisional"));
     assert.equal((await (await b.$(testid("summary-provisional"))).getText()).trim(), "The answer may still change until damage stability ends.");
+    // In sight in the Summary's own box, without scrolling: right under the verdict.
+    const inSight = await b.execute(() => {
+      const line = document.querySelector("[data-testid=summary-provisional]").getBoundingClientRect();
+      const box = document.querySelector("[data-testid=summary]").getBoundingClientRect();
+      return line.top >= box.top && line.bottom <= box.bottom;
+    });
+    assert.equal(inSight, true, "the line is in sight without scrolling the Summary");
     assert.equal(await (await b.$(testid("summary-damage"))).getAttribute("data-status"), "running");
     assert.match(await (await b.$(testid("summary-damage"))).getText(), /\d+ of \d+/);
     // When the run ends (here, cancelled), the line goes.
