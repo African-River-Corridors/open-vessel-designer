@@ -582,7 +582,28 @@ fn the_schema_lists_every_input_in_table_order_with_its_group() {
         .iter()
         .map(|i| i["name"].as_str().unwrap())
         .collect();
-    let table: Vec<&str> = INPUTS.iter().map(|s| s.name).collect();
+    // The table keeps its own order. The schema lists the same inputs, with the six required inputs
+    // in the order of the Required group, in the places the required inputs hold in the table
+    // (issue #1083).
+    let required_order = [
+        "cargo",
+        "formation",
+        "length_overall_m",
+        "beam_m",
+        "hull_form",
+        "service_area",
+    ];
+    let mut next_required = required_order.iter();
+    let table: Vec<&str> = INPUTS
+        .iter()
+        .map(|s| {
+            if s.group == ovd_format::vdesign::Group::Required {
+                *next_required.next().expect("six required inputs")
+            } else {
+                s.name
+            }
+        })
+        .collect();
     assert_eq!(listed, table);
     assert_eq!(
         schema["groups"],

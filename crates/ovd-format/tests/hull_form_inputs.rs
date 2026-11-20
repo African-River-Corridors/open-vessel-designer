@@ -96,7 +96,7 @@ fn the_schema_lists_every_new_input_with_its_group_condition_and_default_status(
             .find(|i| i["name"] == n)
             .unwrap_or_else(|| panic!("{n} is in the schema"))
     };
-    assert_eq!(entry("hull_form")["group"], "Hull Form");
+    assert_eq!(entry("hull_form")["group"], "Required");
     let choices: Vec<&str> = entry("hull_form")["choices"]
         .as_array()
         .unwrap()

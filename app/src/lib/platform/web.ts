@@ -2,7 +2,7 @@
 // a Design. Errors thrown by the session are strings; they become rejected promises with the same text.
 import init, { Session } from "../../../wasm-pkg/ovd_web.js";
 import wasmUrl from "../../../wasm-pkg/ovd_web_bg.wasm?url";
-import type { Evaluation, Schema, Snapshot } from "../api";
+import type { DesignExample, Evaluation, Schema, Snapshot } from "../api";
 import type { DamageEnd, DamageProgress, DeckItems, DrawingFormat, DrawingView, MeshGroup, ModelFormat, Platform, PropulsorPart, SectionOutline, SpaceInfo, Waterline } from "./types";
 import { t } from "../i18n.svelte";
 import type { DamageJob, DamageMessage } from "./damage.worker";
@@ -206,6 +206,9 @@ export async function createWebPlatform(): Promise<Platform> {
     runDamage,
     cancelDamage: async () => damageRun?.end("cancelled"),
     newFile: async () => (confirmDiscard() ? change(() => session.new_design()) : null),
+    newDesignFrom: (option, inputs) =>
+      change(() => session.new_design_from(option, JSON.stringify(inputs))),
+    designExamples: () => call<DesignExample[]>(() => session.design_examples()),
     openFile: async () => {
       if (!confirmDiscard()) return null;
       const file = await pickFile(".vdesign");

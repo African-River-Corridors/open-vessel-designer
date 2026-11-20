@@ -106,15 +106,15 @@ The result is what `ovd run --json` stores for one Option. These keys come from 
 
 ## Inputs
 
-The inputs are those of `ovd schema`. Run `ovd schema` for the units, the choices and the Defaults Profile value of each. An input applies only for some Cargos, Cargo Containments or Formations; an input that does not apply to the dict is an error.
+The inputs are those of `ovd schema`. Run `ovd schema` for the units, the choices and the Defaults Profile value of each. An input applies only for some Cargos, Cargo Containments or Formations; an input that does not apply to the dict is an error. Each entry of the schema also has `essential`: true for the inputs a first Design needs to see (every required input and a few more). It does not change which inputs apply.
 
 | Input | Name in words | Kind | Required |
 |---|---|---|---|
 | `cargo` | Cargo | cargo | yes |
-| `hull_form` | Hull Form | choice | yes |
 | `formation` | Formation | formation | yes |
 | `length_overall_m` | Length overall | number | yes |
 | `beam_m` | Beam | number | yes |
+| `hull_form` | Hull Form | choice | yes |
 | `moulded_depth_m` | Moulded depth | number |  |
 | `vessel_scheme` | Class Scheme | vessel_scheme |  |
 | `vessel_class` | Vessel Class | vessel_class |  |
