@@ -96,7 +96,7 @@ describe("Plain words and the calculating sign (issue #1082)", () => {
     await until(b, "the file name", async () => (await b.$("header")).getText().then((t) => t.includes("gas_igc_2g_self_propelled.vdesign")));
     await until(b, "results", async () => (await b.$("[data-testid=outputs]")).isExisting());
 
-    const sign = b.$("header [data-testid=calculating]");
+    const sign = b.$("[data-testid=calculating]");
     assert.equal(await sign.getAttribute("role"), "status", "the sign is a status");
     assert.equal(await sign.getAttribute("aria-live"), null, "role=status already announces politely");
     assert.equal((await sign.getText()).trim(), "", "nothing to announce at rest");
@@ -131,4 +131,56 @@ describe("Plain words and the calculating sign (issue #1082)", () => {
     await new Promise((r) => setTimeout(r, 1500));
     assert.equal(await b.execute(() => window.__seen), false, "the sign did not flash");
   });
+
+  for (const width of [1280, 1000]) {
+    it(`shows the sign on screen at ${width} px, clear of the Settings button and the file name`, async () => {
+      const b = await start();
+      await b.setWindowSize(width, 950);
+      await openApp(b);
+      await b.execute(() => {
+        HTMLInputElement.prototype.click = function () {};
+      });
+      await (await b.$("button=Open")).click();
+      const picker = await b.$("[data-testid=file-picker]");
+      await picker.waitForExist({ timeout: 5000 });
+      await picker.setValue(GAS_FIXTURE);
+      await until(b, "the file name", async () => (await b.$("header")).getText().then((t) => t.includes("gas_igc_2g_self_propelled.vdesign")));
+      await until(b, "results", async () => (await b.$("[data-testid=outputs]")).isExisting());
+      // Hold the evaluation for a long time, so the boxes can be read while the sign shows.
+      await b.execute(async () => {
+        const p = window.__ovdPlatform;
+        const real = p.evaluate.bind(p);
+        await real();
+        p.evaluate = async () => {
+          await new Promise((r) => setTimeout(r, 4000));
+          return real();
+        };
+      });
+      const sign = b.$("[data-testid=calculating]");
+      await b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]').click();
+      await until(b, "the Calculating… sign", async () => (await sign.getText()).trim() === "Calculating…");
+      const boxes = await b.execute(() => {
+        const rect = (el) => {
+          const r = el.getBoundingClientRect();
+          return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
+        };
+        const buttons = [...document.querySelectorAll("button")].filter((e) => e.getBoundingClientRect().width > 0).map(rect);
+        return {
+          sign: rect(document.querySelector("[data-testid=calculating]")),
+          settings: rect(document.querySelector("[data-testid=settings]")),
+          file: rect(document.querySelector("header .meta.file")),
+          buttons,
+          view: { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight },
+        };
+      });
+      const apart = (a, c) => a.right <= c.left + 0.5 || a.left >= c.right - 0.5 || a.bottom <= c.top + 0.5 || a.top >= c.bottom - 0.5;
+      const { sign: r } = boxes;
+      assert.ok(r.width > 0 && r.height > 0, "the sign has a box");
+      assert.ok(r.left >= 0 && r.top >= 0 && r.right <= boxes.view.width && r.bottom <= boxes.view.height, `the sign is inside the window at ${width} px: ${JSON.stringify(r)}`);
+      assert.ok(apart(r, boxes.settings), "the sign does not overlap the Settings button");
+      assert.ok(apart(r, boxes.file), "the sign does not overlap the file name");
+      for (const btn of boxes.buttons) assert.ok(apart(r, btn), `the sign covers a button: ${JSON.stringify(btn)}`);
+    });
+  }
 });
+

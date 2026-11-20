@@ -2,6 +2,7 @@
 // here, in the Display Language, with English as the fallback. Language is display state only: it
 // changes no input and no result, and it is never sent to Rust.
 import { formatNumber } from "./numberFormat.ts";
+import { wordingOf } from "./sayOrder.ts";
 import { FluentBundle, FluentResource, type FluentVariable } from "@fluent/bundle";
 
 export interface Language {
@@ -130,13 +131,9 @@ export function say(text: string, ids?: TextIds | null, msg?: EngineMsg | null):
   const m = msg ?? ids?.[text];
   if (!m) return text;
   const args = engineArgs(m.args ?? {}, ids);
-  // The app's own wording of the message comes first (issue #1082): the engine's English may point to the
-  // command line or the Python API, which the app never does. The source language fills a gap.
-  const plain = `app-plain-${m.id}`;
-  const own = format(BUNDLES.get(state.language.tag), plain, args) ?? format(BUNDLES.get(SOURCE.tag), plain, args);
-  if (own !== null) return own;
-  if (state.language.tag === SOURCE.tag) return text;
-  return format(BUNDLES.get(state.language.tag), m.id, args) ?? text;
+  const display = (id: string) => format(BUNDLES.get(state.language.tag), id, args);
+  const source = (id: string) => format(BUNDLES.get(SOURCE.tag), id, args);
+  return wordingOf(text, m.id, display, source, state.language.tag === SOURCE.tag);
 }
 
 /** Text the engine sends under a derived id (an input label, a choice): the English unless translated. */
