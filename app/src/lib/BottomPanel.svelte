@@ -2,7 +2,7 @@
   import type { Evaluation, OptionEvaluation } from "./api";
   import StaleWhy from "./StaleWhy.svelte";
   import { HYDROSTATICS, MAIN, POWERING, TANKS, exact, hasHydrostatics, hasPowering, hasTanks, show, textIds, valueAt, type Metric } from "./metrics";
-  import { checkName, num, say, t } from "./i18n.svelte";
+  import { checkName, num, say, slug, t } from "./i18n.svelte";
   import { CARGO_ONLY_CHECKS, FULL_LOAD_ROWS, consumablesInLoad } from "./loadBasis";
 
   // Outputs of the active Option, its checks and warnings, and a compare table of every Option.
@@ -155,7 +155,7 @@
         {/if}
         <ul class="checks" data-testid="checks">
           {#each checks as c (c.name)}
-            <li class={c.tone} data-testid="check" data-tone={c.tone}>
+            <li class={c.tone} data-testid="check" data-tone={c.tone} data-check={c.name} id={"check-" + slug(c.name)} tabindex="-1">
               <span class="tag"><span aria-hidden="true">{TAGS[c.tone].mark}</span> {t(TAGS[c.tone].label)}</span>
               <strong>{checkName(c.name, ids)}</strong>
               {#if c.message && c.message !== "OK"}<span class="msg">{say(c.message, ids)}</span>{/if}

@@ -10,28 +10,37 @@
   import SternCrew from "./views/SternCrew.svelte";
   import Stability from "./views/Stability.svelte";
   import Damage from "./views/Damage.svelte";
+  import Summary from "./views/Summary.svelte";
   import RuleChecks, { type RuleTrace } from "./views/RuleChecks.svelte";
   import CapitalBudget from "./views/CapitalBudget.svelte";
   import type { DamageResults } from "./damage";
   import { say, t, type TextIds } from "./i18n.svelte";
+  import { viewRequest } from "./viewRequest.svelte";
 
   // The hull views are SVG drawn in Rust to the Drawing Format Standard (ADR 0009, spec 0003); the
   // panel only places and zooms them.
-  let { evaluation, active, lastGood, blockers, designSpeed, onRunDamage, onCancelDamage }: {
+  let { evaluation, active, lastGood, blockers, designSpeed, inputs, onRunDamage, onCancelDamage, onShowInput, onShowCheck }: {
     evaluation: Evaluation | null;
     active: string;
     lastGood: Record<string, OptionEvaluation>;
     blockers: { name: string; label: string }[];
     /** The active Option's `max_speed_kn` input, from the Design session. */
     designSpeed: number | null;
+    /** The active Option's stored inputs, each with its source (the Summary counts typed and default ones). */
+    inputs: Record<string, { source: string }>;
     /** Issue #924: run the active Option's damage cases, or stop the run. */
     onRunDamage: () => void;
     onCancelDamage: () => void;
+    /** Issue #1081: the Summary's links to the Input panel and to a check in the Checks panel. */
+    onShowInput: () => void;
+    onShowCheck: (name: string) => void;
   } = $props();
 
   // Two levels of tabs: a group, then a view of that group. Each label is a Message Id. The panel never scrolls: a drawing is
   // fitted to the space it has. Switching a tab starts the new view fitted again.
   const GROUPS = [
+    // Issue #1081: the Summary is the first view, and the one shown when a Design is opened.
+    { id: "summary", label: "app-group-summary", views: [{ id: "summary", label: "app-view-summary" }] },
     {
       id: "drawings",
       label: "app-group-drawings",
@@ -73,6 +82,16 @@
   let current = $state(GROUPS[0].views[0].id);
   let group = $derived(GROUPS.find((g) => g.id === groupId) ?? GROUPS[0]);
   let currentLabel = $derived(t(group.views.find((v) => v.id === current)?.label ?? ""));
+
+  // A caller (the app, on opening a Design) asks for a view by its tab id: see viewRequest.svelte.ts.
+  $effect(() => {
+    const asked = viewRequest.count > 0 ? viewRequest.id : null;
+    const g = GROUPS.find((x) => x.views.some((v) => v.id === asked));
+    if (g && asked) {
+      groupId = g.id;
+      current = asked;
+    }
+  });
 
   function pickGroup(id: string) {
     groupId = id;
@@ -140,7 +159,10 @@
          zoom state of a drawing sits with its canvas, so nothing goes beneath the name. -->
     <h3 class="title" data-testid="view-title">{currentLabel}</h3>
     <div class="content">
-    {#if HULL.includes(current)}
+    {#if current === "summary"}
+      <Summary results={outcome?.status === "results" ? (outcome.results as Record<string, unknown>) : null} message={message} {blockers} {inputs} {ids} option={active}
+        {onRunDamage} {onCancelDamage} {onShowInput} {onShowCheck} />
+    {:else if HULL.includes(current)}
       <div class="slot" data-testid="slot-{current}">
         {#if drawing(current as HullKey)}
           <!-- A new key starts the view fitted again. -->
