@@ -117,12 +117,20 @@ fn a_choice_the_schema_refuses_gives_the_schemas_error_and_leaves_the_open_desig
     let before = open.session().design().to_text();
     let mut unknown = lng_barge();
     unknown.insert("no_such_input".into(), json!(1));
-    let mut too_deep = lng_barge();
-    too_deep.insert("beam_m".into(), json!(-3.0));
+    let mut negative_beam = lng_barge();
+    negative_beam.insert("beam_m".into(), json!(-3.0));
+    // One value just outside the hard limit the schema holds for the beam.
+    let beam_limit = Profile::built_in()
+        .hard("beam_m")
+        .unwrap()
+        .le
+        .expect("the schema holds an upper hard limit for the beam");
+    let mut beam_over_limit = lng_barge();
+    beam_over_limit.insert("beam_m".into(), json!(beam_limit + 1.0));
     let mut no_limits = pushed_barge();
     no_limits.remove("draught_limit_m");
     no_limits.remove("air_draft_limit_m");
-    for inputs in [unknown, too_deep, no_limits] {
+    for inputs in [unknown, negative_beam, beam_over_limit, no_limits] {
         let filled = fill_as_new(&short_file("o", &inputs), &Profile::built_in());
         let want = filled.report.errors.first().cloned().unwrap();
         let got = AppState::new_design_from("o", &inputs).err().unwrap();

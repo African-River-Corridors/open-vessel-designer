@@ -39,6 +39,15 @@ impl Session {
         ok(f(&mut self.state))?;
         Ok(self.state.snapshot().to_string())
     }
+
+    /// Replace the open Design with one made from typed choices. A refused choice leaves the open
+    /// Design as it is. Kept apart from the exported method so a test can read the error as text.
+    fn replace_from_choices(&mut self, option: &str, inputs_json: &str) -> Result<String, String> {
+        let inputs: serde_json::Map<String, Value> = serde_json::from_str(inputs_json)
+            .map_err(|e| format!("the choices are not a JSON object: {e}"))?;
+        self.state = AppState::new_design_from(option, &inputs)?;
+        Ok(self.state.snapshot().to_string())
+    }
 }
 
 #[wasm_bindgen]
@@ -134,10 +143,7 @@ impl Session {
     /// Spec 0017, D4: a new Design from typed choices (`inputs_json` is an object of input names and
     /// values). A refused choice is an error and leaves the open Design as it is.
     pub fn new_design_from(&mut self, option: &str, inputs_json: &str) -> Js<String> {
-        let inputs: serde_json::Map<String, Value> = serde_json::from_str(inputs_json)
-            .map_err(|e| err(format!("the choices are not a JSON object: {e}")))?;
-        self.state = ok(AppState::new_design_from(option, &inputs))?;
-        Ok(self.state.snapshot().to_string())
+        ok(self.replace_from_choices(option, inputs_json))
     }
 
     /// Spec 0017, D6: the examples of the Start page, as JSON. It makes no Design.
@@ -309,5 +315,14 @@ mod tests {
             .unwrap();
         let want = AppState::new_design_from(title, inputs).unwrap();
         assert_eq!(session.save_text().unwrap(), want.save_text().unwrap());
+    }
+
+    #[test]
+    fn a_refused_choice_leaves_the_open_design_as_it_was() {
+        let mut session = Session::new().unwrap();
+        let before = session.save_text().unwrap();
+        let refused = serde_json::json!({ "no_such_input": 1 }).to_string();
+        assert!(session.replace_from_choices("Refused", &refused).is_err());
+        assert_eq!(session.save_text().unwrap(), before);
     }
 }

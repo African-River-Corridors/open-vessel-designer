@@ -30,9 +30,10 @@ use crate::run::{
 };
 use crate::text_ids::msg_json;
 use crate::vdesign::{
-    AppliesTo, CARGO_CONTAINMENTS, Design, DesignOption, ENGINE_VERSION, FORMATION_KINDS, Group,
-    INPUTS, InputKind, KEYED_DEFAULTS, Report, Source, StoredInput, TABLE_DEFAULTS, TABLE_KEYS,
-    cargo_includes, check, choice_label, fill, formation_includes, new_design, when_includes,
+    AppliesTo, CARGO_CONTAINMENTS, Design, DesignOption, ENGINE_VERSION, FORMAT_VERSION,
+    FORMATION_KINDS, Group, INPUTS, InputKind, KEYED_DEFAULTS, Report, Source, StoredInput,
+    TABLE_DEFAULTS, TABLE_KEYS, cargo_includes, check, choice_label, fill, formation_includes,
+    new_design, when_includes,
 };
 use ovd_core::text::{Arg, Msg};
 use serde_json::{Map, Value, json};
@@ -614,8 +615,8 @@ impl DesignSession {
     ) -> Result<DesignSession, String> {
         let short_file = json!({
             "format": "vdesign",
-            "format_version": 2,
-            "engine_version": "0.0.0",
+            "format_version": FORMAT_VERSION,
+            "engine_version": ENGINE_VERSION,
             "options": [{ "name": option, "inputs": inputs }],
         });
         let filled = crate::vdesign::fill_as_new(&short_file.to_string(), &profile);
