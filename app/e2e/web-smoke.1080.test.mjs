@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { remote } from "webdriverio";
+import { closeBrowsers, openBrowser } from "./browser.mjs";
 import { serve } from "./web-server.mjs";
 
 const here = import.meta.dirname;
@@ -26,7 +26,7 @@ const chrome = () => ({
 let origin, server;
 const sessions = [];
 async function start() {
-  const b = await remote({ logLevel: "warn", strictSelectors: false, capabilities: chrome() });
+  const b = await openBrowser(chrome());
   sessions.push(b);
   return b;
 }
@@ -132,7 +132,7 @@ before(async () => {
   ({ server, origin } = await serve(DIST));
 });
 after(async () => {
-  for (const b of sessions) await b.deleteSession().catch(() => {});
+  await closeBrowsers();
   server?.close();
 });
 

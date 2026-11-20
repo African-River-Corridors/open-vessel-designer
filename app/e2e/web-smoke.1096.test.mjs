@@ -9,7 +9,7 @@ import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { remote } from "webdriverio";
+import { closeBrowsers, openBrowser } from "./browser.mjs";
 import { serve } from "./web-server.mjs";
 import { showAllInputs } from "./inputs-mode.mjs";
 
@@ -31,8 +31,8 @@ const sessions = [];
 async function start() {
   // One browser at a time: Chrome may hold back the animation frames of a window that is not in front, and
   // these tests read what was drawn frame by frame.
-  while (sessions.length > 0) await sessions.pop().deleteSession().catch(() => {});
-  const b = await remote({ logLevel: "warn", strictSelectors: false, capabilities: chrome() });
+  await closeBrowsers();
+  const b = await openBrowser(chrome());
   sessions.push(b);
   return b;
 }
@@ -150,7 +150,7 @@ before(async () => {
   ({ server, origin } = await serve(DIST));
 });
 after(async () => {
-  for (const b of sessions) await b.deleteSession().catch(() => {});
+  await closeBrowsers();
   server?.close();
 });
 

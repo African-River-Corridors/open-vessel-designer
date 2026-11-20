@@ -4,7 +4,7 @@ import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { remote } from "webdriverio";
+import { closeBrowsers, openBrowser } from "./browser.mjs";
 import { serve } from "./web-server.mjs";
 import { showAllInputs } from "./inputs-mode.mjs";
 import { showOutputsPanel } from "./outputs-panel.mjs";
@@ -25,7 +25,7 @@ const chrome = () => ({
 let origin, server;
 const sessions = [];
 async function start() {
-  const b = await remote({ logLevel: "warn", strictSelectors: false, capabilities: chrome() });
+  const b = await openBrowser(chrome());
   sessions.push(b);
   return b;
 }
@@ -47,7 +47,7 @@ before(async () => {
   ({ server, origin } = await serve(DIST));
 });
 after(async () => {
-  for (const b of sessions) await b.deleteSession().catch(() => {});
+  await closeBrowsers();
   server?.close();
 });
 
@@ -124,8 +124,16 @@ describe("Plain words and the calculating sign (issue #1082)", () => {
     });
     await showAllInputs(b); // Essentials hides this input (#1084)
     const toggle = b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]');
+    // The page notes the sign the moment it shows: on a busy machine a poll from here can miss its second on screen.
+    await b.execute(() => {
+      window.__shown = "";
+      new MutationObserver(() => {
+        const text = document.querySelector("[data-testid=calculating]")?.textContent.trim();
+        if (text) window.__shown = text;
+      }).observe(document.body, { subtree: true, childList: true, characterData: true });
+    });
     await toggle.click();
-    await until(b, "the Calculating… sign", async () => (await sign.getText()).trim() === "Calculating…");
+    await until(b, "the Calculating… sign", async () => (await b.execute(() => window.__shown)) === "Calculating…");
     await until(b, "the sign to go once the result is drawn", async () => (await sign.getText()).trim() === "");
 
     // An evaluation that returns at once (under about 200 ms) never shows the sign.
