@@ -11,6 +11,7 @@ import path from "node:path";
 import { remote } from "webdriverio";
 import { serve } from "./web-server.mjs";
 import { showAllInputs } from "./inputs-mode.mjs";
+import { showOutputsPanel } from "./outputs-panel.mjs";
 
 const here = import.meta.dirname;
 const FIXTURE = path.resolve(here, "../../crates/ovd-format/tests/fixtures/gas_igc_2g_self_propelled.vdesign");
@@ -115,6 +116,7 @@ describe("OVD web smoke tests", () => {
     await (await b.$("button=I understand")).click();
     await until(b, "the notice to close", async () => !(await (await b.$("[data-testid=notice]")).isExisting()));
     await ready(b);
+    await showOutputsPanel(b); // the Summary opens with the Outputs panel closed (#1097)
     assert.ok((await (await outputs(b)).getText()).length > 0, "outputs have text");
     // The style sheet sets the label in capitals.
     assert.equal((await (await b.$("[data-testid=web-label]")).getText()).toLowerCase(), "web version");
@@ -926,6 +928,7 @@ describe("OVD web smoke tests", () => {
     await picker.waitForExist({ timeout: 5000 });
     await picker.setValue(DRY_FIXTURE);
     await until(b, "the file name", async () => (await b.$("header")).getText().then((t) => t.includes("dry_bulk_box_hold.vdesign")));
+    await showOutputsPanel(b); // the Summary opens with the Outputs panel closed (#1097)
     await until(b, "the checks", async () => (await b.$$("[data-testid=checks] [data-testid=check]")).length > 0);
     const rows = await b.$$("[data-testid=checks] [data-testid=check]");
     const seen = [];
@@ -1005,6 +1008,7 @@ describe("OVD web smoke tests", () => {
     await (await b.$("button=I understand")).click();
     await ready(b);
     await openDesign(b, FIXTURE);
+    await showOutputsPanel(b); // the Summary opens with the Outputs panel closed (#1097)
     const consumables = await b.execute(async () => (await window.__ovdPlatform.evaluate()).options[0].outcome.results.loading_conditions.consumables_t);
     assert.ok(consumables > 0, "the gas fixture carries consumables");
     const note = await (await b.$("[data-testid=load-basis]")).getText();
