@@ -55,6 +55,10 @@ npx vite build --config vite.web.config.ts --mode test --outDir dist-web-test
 export WEBDRIVER_CACHE_DIR="${WEBDRIVER_CACHE_DIR:-$BASE}"
 export OVD_E2E_ROOT="$ROOT" TMPDIR="$ROOT"
 export OVD_E2E_FILE_LIMIT_S="${OVD_E2E_FILE_LIMIT_S:-600}"
+# The driver is fetched once, here, before the files start in parallel (a cold cache in CI).
+node e2e/fetch-driver.mjs "$ROOT/driver.env"
+while IFS= read -r line; do export "$line"; done < "$ROOT/driver.env"
+[ -x "${CHROMEDRIVER_PATH:-}" ] || { echo "e2e-web: no chromedriver" >&2; exit 1; }
 RUN_LIMIT_S="${OVD_E2E_RUN_LIMIT_S:-900}"
 
 start=$(date +%s)
