@@ -11,6 +11,7 @@ import path from "node:path";
 import { remote } from "webdriverio";
 import { serve } from "./web-server.mjs";
 import { showAllInputs } from "./inputs-mode.mjs";
+import { showOutputsPanel } from "./outputs-panel.mjs";
 
 const here = import.meta.dirname;
 const FIXTURE = path.resolve(here, "../../crates/ovd-format/tests/fixtures/gas_igc_2g_self_propelled.vdesign");
@@ -108,17 +109,18 @@ after(async () => {
 });
 
 describe("OVD web smoke tests", () => {
-  it("shows the notice, then the starter Design evaluated, with the web label and desktop link", async () => {
+  it("shows the notice, then the starter Design evaluated, and offers no desktop app (issue #1094)", async () => {
     const b = await start();
     await b.url(`${origin}/ovd/app`);
     await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
     await (await b.$("button=I understand")).click();
     await until(b, "the notice to close", async () => !(await (await b.$("[data-testid=notice]")).isExisting()));
     await ready(b);
+    await showOutputsPanel(b); // the Summary opens with the Outputs panel closed (#1097)
     assert.ok((await (await outputs(b)).getText()).length > 0, "outputs have text");
-    // The style sheet sets the label in capitals.
-    assert.equal((await (await b.$("[data-testid=web-label]")).getText()).toLowerCase(), "web version");
-    assert.equal(await (await b.$("a=Download the desktop app")).getAttribute("href"), "/ovd#install");
+    // The web app is the app: no "web version" label, no link to a desktop download (ADR 0026).
+    assert.equal(await (await b.$("[data-testid=web-label]")).isExisting(), false, "no web label");
+    assert.equal(await b.execute(() => document.querySelector("header a[href='/ovd#install']") !== null), false, "no desktop link");
     // Reload: the notice was remembered.
     await b.url(`${origin}/ovd/app`);
     await ready(b);
@@ -926,6 +928,7 @@ describe("OVD web smoke tests", () => {
     await picker.waitForExist({ timeout: 5000 });
     await picker.setValue(DRY_FIXTURE);
     await until(b, "the file name", async () => (await b.$("header")).getText().then((t) => t.includes("dry_bulk_box_hold.vdesign")));
+    await showOutputsPanel(b); // the Summary opens with the Outputs panel closed (#1097)
     await until(b, "the checks", async () => (await b.$$("[data-testid=checks] [data-testid=check]")).length > 0);
     const rows = await b.$$("[data-testid=checks] [data-testid=check]");
     const seen = [];
@@ -1005,6 +1008,7 @@ describe("OVD web smoke tests", () => {
     await (await b.$("button=I understand")).click();
     await ready(b);
     await openDesign(b, FIXTURE);
+    await showOutputsPanel(b); // the Summary opens with the Outputs panel closed (#1097)
     const consumables = await b.execute(async () => (await window.__ovdPlatform.evaluate()).options[0].outcome.results.loading_conditions.consumables_t);
     assert.ok(consumables > 0, "the gas fixture carries consumables");
     const note = await (await b.$("[data-testid=load-basis]")).getText();
@@ -1359,11 +1363,12 @@ describe("OVD web smoke tests", () => {
     await ready(b);
     await openDesign(b, DRY_FIXTURE);
     await b.setWindowSize(1280, 950);
-    const long = "a_very_long_design_file_name_that_would_push_the_header_wide.vdesign";
+    // Long enough to need cutting at 1280 px with the header as it is now (no web label, no desktop link: issue #1094).
+    const long = "a_very_long_design_file_name_that_would_push_the_header_wide_even_with_all_the_room_it_has_now.vdesign";
     await b.execute((long) => (document.querySelector("header .meta").textContent = long), long);
     const [file, profile, engine] = await headerTexts(b);
     // The long name takes the room the texts have, and is cut there, with the full name still in the page.
-    assert.equal(file.cut, true, `a 68-character name is not cut at 1280 px: ${JSON.stringify(file)}`);
+    assert.equal(file.cut, true, `a ${long.length}-character name is not cut at 1280 px: ${JSON.stringify(file)}`);
     assert.equal(file.inBox, true, `the cut file label is not inside the texts' box: ${JSON.stringify(file)}`);
     assert.ok(file.width >= 0.9 * file.boxWidth, `the file label does not take the room there is (${file.width} of ${file.boxWidth} px)`);
     assert.equal(await (await b.$("header .meta")).getText(), long, "the whole name is in the label for the tooltip and the tests");

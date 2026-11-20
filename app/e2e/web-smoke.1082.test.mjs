@@ -7,6 +7,7 @@ import path from "node:path";
 import { remote } from "webdriverio";
 import { serve } from "./web-server.mjs";
 import { showAllInputs } from "./inputs-mode.mjs";
+import { showOutputsPanel } from "./outputs-panel.mjs";
 
 const here = import.meta.dirname;
 const GAS_FIXTURE = path.resolve(here, "../../crates/ovd-format/tests/fixtures/gas_igc_2g_self_propelled.vdesign");
@@ -54,6 +55,7 @@ describe("Plain words and the calculating sign (issue #1082)", () => {
   it("tells the designer to choose a Service Area, in the Input panel and the Outputs panel, with no command line", async () => {
     const b = await start();
     await openApp(b);
+    await showOutputsPanel(b); // the Summary opens with the Outputs panel closed (#1097)
     // The starter Design has no Service Area (issue #925), so it shows the error in both places.
     const field = '.field[data-input="service_area"] .msg.error';
     await until(b, "the Service Area error", async () => (await b.$(field)).isExisting());

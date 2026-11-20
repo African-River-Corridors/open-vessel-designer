@@ -8,8 +8,6 @@ app-open = Open
 app-save = Save
 app-save-as = Save as
 app-about = About
-app-web-version = Web version
-app-download-desktop = Download the desktop app
 app-input-panel = Input panel
 app-input-panel-show = Show the Input panel
 app-input-panel-hide = Hide the Input panel
@@ -681,7 +679,15 @@ app-summary-works = Does it work?
 app-summary-got = What did I get?
 app-summary-next = What should I look at next?
 app-summary-met = Every blocking Rule that was evaluated is met.
-app-summary-not-met = Blocking Rules not met: { $rules }
+# Issue #1090: the failed blocking Rules as a count and a short list.
+app-summary-not-met-count =
+    { $count ->
+        [one] One blocking Rule is not met.
+       *[other] { $count } blocking Rules are not met.
+    }
+app-summary-show-rule = Show in the Rule checks
+app-summary-more-rules = and { $count } more.
+app-summary-open-rules = Open the Rule checks
 app-summary-not-calculated = Not calculated.
 app-summary-not-calculated-fix = Not calculated: fix the error under { $inputs }
 app-summary-not-calculated-because = Not calculated: { $message }

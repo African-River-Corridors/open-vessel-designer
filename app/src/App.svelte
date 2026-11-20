@@ -12,10 +12,10 @@
   import { answersFromInputs, emptyAnswers, type Answers, type StepId } from "./lib/wizard/wizard.ts";
   import SettingsDialog from "./lib/SettingsDialog.svelte";
   import MessageBar, { type BarMessage } from "./lib/MessageBar.svelte";
-  import { loadPanels, savePanels } from "./lib/panels";
+  import { loadPanels, outputsShown, savePanels, toggleOutputs } from "./lib/panels";
   import { list, say, schemaText, setInputLabels, t } from "./lib/i18n.svelte";
   import { damageRun } from "./lib/damageRun.svelte";
-  import { showView } from "./lib/viewRequest.svelte";
+  import { showView, viewShown } from "./lib/viewRequest.svelte";
   import { setInputsMode } from "./lib/inputsView.svelte";
   import { damageStatus, saveSecondsPerCase, secondsLeft, secondsPerCase, wholeSeconds } from "./lib/damage";
 
@@ -37,10 +37,8 @@
   let startOpen = $state(false);
   /** The setup wizard, while it is open: the answers it starts from, and the step. */
   let wizard = $state<{ answers: Answers; step: StepId } | null>(null);
-  /** Settings: Display Language, theme and Defaults Profile. */
+  /** Settings: theme and Defaults Profile. */
   let settingsOpen = $state(false);
-  /** The browser build: shows a label and a link to the desktop app. */
-  const web = api.isWeb();
 
   let leftWidth = $state(340);
   let bottomHeight = $state(260);
@@ -49,6 +47,15 @@
   let showInput = $state(saved.input);
   let showOutputs = $state(saved.outputs);
   $effect(() => savePanels({ input: showInput, outputs: showOutputs }));
+  /** Issue #1097: the designer opened the Outputs panel on the Summary this session (not saved). */
+  let outputsOnSummary = $state(false);
+  let outputsState = $derived({ view: viewShown.id, outputs: showOutputs, onSummary: outputsOnSummary });
+  /** Whether the Outputs panel shows now: closed on the Summary unless the designer opened it there. */
+  let outputsOpen = $derived(outputsShown(outputsState));
+  function setOutputs(next: { outputs: boolean; onSummary: boolean }) {
+    showOutputs = next.outputs;
+    outputsOnSummary = next.onSummary;
+  }
 
   const EVALUATE_PAUSE_MS = 150;
   let pending: ReturnType<typeof setTimeout> | undefined;
@@ -290,14 +297,8 @@
       }
       schema = await api.inputSchema();
       setInputLabels(Object.fromEntries(schema.inputs.map((i) => [i.name, i.label])));
-      // Listen before the first snapshot: a Design given to the app at launch is either in that
-      // snapshot already or announced after the listener is in place (#671).
-      await api.onOpenedFromOutside(
-        () => fileAction(api.snapshot, true),
-        (reason) => (error = reason),
-      );
       const first = await api.snapshot();
-      // A Design given at launch, or brought back from the last visit, is the one to show: no Start page.
+      // A Design brought back from the last visit is the one to show: no Start page.
       startOpen = first.path === null && !(await api.designRestored());
       await adopt(first, true);
     });
@@ -335,7 +336,7 @@
     document.querySelector<HTMLElement>("section.left")?.focus();
   }
   async function showCheck(name: string) {
-    showOutputs = true;
+    if (!outputsOpen) setOutputs(toggleOutputs(outputsState));
     await tick();
     const row = document.querySelector<HTMLElement>(`[data-check="${CSS.escape(name)}"]`);
     row?.scrollIntoView({ block: "center" });
@@ -424,7 +425,6 @@
     <button onclick={() => fileAction(api.save, false)}>{t("app-save")}</button>
     <button onclick={() => fileAction(api.saveAs, false)}>{t("app-save-as")}</button>
     <button onclick={() => (noticeOpen = true)}>{t("app-about")}</button>
-    {#if web}<span class="web-badge" data-testid="web-label">{t("app-web-version")}</span> <a href="/ovd#install">{t("app-download-desktop")}</a>{/if}
     <span class="status">
       {#if snap}
         {@const fileText = snap.dirty ? t("app-file-unsaved", { file: snap.file_name }) : snap.file_name}
@@ -436,13 +436,13 @@
       {/if}
     </span>
     <button type="button" data-testid="toggle-input-panel" aria-label={t(showInput ? "app-input-panel-hide" : "app-input-panel-show")} aria-pressed={showInput} onclick={() => (showInput = !showInput)}>{t("app-input-panel")}</button>
-    <button type="button" aria-label={t(showOutputs ? "app-outputs-panel-hide" : "app-outputs-panel-show")} aria-pressed={showOutputs} onclick={() => (showOutputs = !showOutputs)}>{t("app-outputs-panel")}</button>
+    <button type="button" data-testid="toggle-outputs-panel" aria-label={t(outputsOpen ? "app-outputs-panel-hide" : "app-outputs-panel-show")} aria-pressed={outputsOpen} onclick={() => setOutputs(toggleOutputs(outputsState))}>{t("app-outputs-panel")}</button>
     <button type="button" data-testid="settings" aria-haspopup="dialog" onclick={() => (settingsOpen = true)}>{t("app-settings")}</button>
   </header>
 
   <MessageBar {messages} />
 
-  <div class="body" style:grid-template-columns={showInput ? `${leftWidth}px 6px 1fr` : "0 0 1fr"} style:grid-template-rows={showOutputs ? `1fr 6px ${bottomHeight}px` : "1fr 0 0"}>
+  <div class="body" style:grid-template-columns={showInput ? `${leftWidth}px 6px 1fr` : "0 0 1fr"} style:grid-template-rows={outputsOpen ? `1fr 6px ${bottomHeight}px` : "1fr 0 0"}>
     <!-- Issue #1096: the sign shows at the top of the Input panel, near the edit; with the panel hidden, in the views' tab row. -->
     <section class="left" hidden={!showInput} tabindex="-1"><LeftPanel {snap} {schema} {generation} evaluation={activeEval} sign={showInput ? calculating : null}
       onPick={(name) => command(() => api.setActiveOption(name))}
@@ -460,8 +460,8 @@
       onOption={optionAction} /></section>
     <div class="handle v" hidden={!showInput} role="separator" aria-orientation="vertical" onpointerdown={drag("x")}></div>
     <section class="main"><MainPanel {evaluation} {active} {lastGood} {blockers} {designSpeed} inputs={activeInputs} sign={showInput ? null : calculating} {designPending} onRunDamage={() => runDamage(active)} onCancelDamage={cancelDamage} onShowInput={showInputPanel} onShowCheck={showCheck} /></section>
-    <div class="handle h" hidden={!showOutputs} role="separator" aria-orientation="horizontal" onpointerdown={drag("y")}></div>
-    <section class="bottom" hidden={!showOutputs}><BottomPanel {evaluation} {active} {lastGood} {blockers} onActivate={(name) => command(() => api.setActiveOption(name))} /></section>
+    <div class="handle h" hidden={!outputsOpen} role="separator" aria-orientation="horizontal" onpointerdown={drag("y")}></div>
+    <section class="bottom" hidden={!outputsOpen}><BottomPanel {evaluation} {active} {lastGood} {blockers} onActivate={(name) => command(() => api.setActiveOption(name))} /></section>
   </div>
 </div>
 
@@ -490,10 +490,6 @@
   /* No `overflow: hidden` on a text-only element: WebKit's WebDriver reads its text as empty (see the design note). */
   .meta { color: var(--ink-3); font-size: var(--fs-12); flex: 0 0 auto; white-space: nowrap; }
   .meta.file { flex: 0 1 auto; min-width: 0; overflow: clip; text-overflow: ellipsis; font-family: var(--font-mono); }
-  header :global(.web-badge) {
-    font-size: var(--fs-11); text-transform: uppercase; letter-spacing: 0.08em; padding: 1px var(--sp-2);
-    background: var(--surface-2); color: var(--ink-2); border: var(--lw-thin) solid var(--rule-strong); border-radius: var(--radius);
-  }
   header :global(a) { color: var(--accent); font-size: var(--fs-13); }
   .body { flex: 1; display: grid; min-height: 0; }
   .body > section { overflow: auto; min-width: 0; min-height: 0; }

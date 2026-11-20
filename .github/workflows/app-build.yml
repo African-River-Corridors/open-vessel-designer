@@ -1,7 +1,9 @@
 name: App build
 
-# Builds the desktop app installers: a Windows NSIS `-setup.exe` and macOS `.dmg` files (Apple
-# silicon and Intel). The installers are NOT signed (no signing secrets are used).
+# Publishes a release: the `ovd` command line for Windows and macOS (Apple silicon and Intel) and the
+# Python wheels, built and tested by the release gate (release.yml). The binaries are NOT signed (no
+# signing secrets are used). The desktop app and its installers are paused (ADR 0026); the web app is
+# deployed by website.yml.
 #
 # A release is made only on purpose (issue #173). `tools/release_plan.py` decides, in `verify`:
 #   - The version number is bumped: a merge to `main` that changes `version` in pyproject.toml
@@ -11,14 +13,13 @@ name: App build
 #     with the notes of the `Unreleased` section. Use it to try a build without a version bump; the
 #     commit need not be on `main`.
 #   - Any other merge to `main` builds and publishes nothing. A manual start (Actions tab, "Run
-#     workflow") builds the installers as workflow artifacts and publishes nothing.
+#     workflow") runs the release gate, which keeps the binaries and wheels as workflow artifacts, and
+#     publishes nothing.
 #
 # Nothing is published until `verify` passes: `test` and `release-guard` succeeded on the commit,
 # and, for a numbered release, the commit is on `main`. Publishing also waits for `gate`, the whole
 # release gate (release.yml: wheels, binaries and pytest on each system). A release made with
 # GITHUB_TOKEN does not start other workflows, so the gate is called from here.
-#
-# The ordinary CI jobs only compile the app (fast). Bundling happens only here.
 
 on:
   push:
@@ -51,6 +52,12 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
         run: python3 tools/release_plan.py
+      - name: A version tag must match the package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          v=$(python3 -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          test "v$v" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} != version v$v"; exit 1; }
       - name: The commit is on main
         if: steps.plan.outputs.on_main == 'true'
         run: |
@@ -83,82 +90,15 @@ jobs:
           done
 
   gate:
-    # The release gate (wheels, binaries, pytest on each system), before anything is published.
-    if: needs.verify.outputs.publish == 'true'
+    # The release gate (wheels, binaries, pytest on each system), before anything is published. It
+    # keeps the binaries (`ovd-<os>`) and the wheels (`wheel-<os>`) as artifacts.
+    if: needs.verify.outputs.build == 'true'
     needs: verify
     uses: ./.github/workflows/release.yml
 
-  build:
-    needs: verify
-    if: needs.verify.outputs.build == 'true'
-    name: installer (${{ matrix.name }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: windows
-            os: windows-latest
-            bundles: nsis
-            glob: target/release/bundle/nsis/*-setup.exe
-          - name: macos-apple-silicon
-            os: macos-latest
-            bundles: dmg
-            glob: target/release/bundle/dmg/*.dmg
-          - name: macos-intel
-            os: macos-15-intel
-            bundles: dmg
-            glob: target/release/bundle/dmg/*.dmg
-    steps:
-      - uses: actions/checkout@v4
-      - name: A version tag must match the package version
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          v=$(python3 -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
-          test "v$v" = "${GITHUB_REF_NAME}" || { echo "tag ${GITHUB_REF_NAME} != version v$v"; exit 1; }
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: npm
-          cache-dependency-path: app/package-lock.json
-      - name: Install the pinned Rust toolchain (rust-toolchain.toml)
-        run: rustup toolchain install
-      - uses: Swatinem/rust-cache@v2
-      - name: Front end dependencies
-        working-directory: app
-        run: npm ci
-      # The official Tauri action, pinned to a commit (action-v0.6.2). It builds the bundle; the
-      # release is made by the `release` job below, so that this job needs no write permission.
-      - name: Build the installer
-        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5
-        with:
-          projectPath: app
-          args: --bundles ${{ matrix.bundles }}
-      - name: Verify the app signature in the DMG
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          dmg=$(ls target/release/bundle/dmg/*.dmg)
-          mount=$(hdiutil attach -nobrowse -readonly "$dmg" | awk -F'\t' '/\/Volumes\// { print $NF }' | tail -n 1)
-          app=$(find "$mount" -maxdepth 1 -name '*.app' | head -n 1)
-          codesign -dv --verbose=2 "$app"
-          if ! codesign --verify --deep --strict --verbose=2 "$app"; then
-            hdiutil detach "$mount"
-            exit 1
-          fi
-          hdiutil detach "$mount"
-      - name: Keep the installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: ovd-${{ matrix.name }}
-          path: ${{ matrix.glob }}
-          if-no-files-found: error
-
   release:
     if: needs.verify.outputs.publish == 'true'
-    needs: [build, verify, gate]
+    needs: [verify, gate]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -166,11 +106,25 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          path: installers
+          path: artifacts
           pattern: ovd-*
-          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: wheel-*
+      # Each binary artifact holds one file named `ovd` (or `ovd.exe`): name it after its system.
+      - name: The files of the release
+        run: |
+          mkdir assets
+          for dir in artifacts/ovd-*; do
+            os=${dir#artifacts/ovd-}
+            for f in "$dir"/ovd "$dir"/ovd.exe; do
+              [ -f "$f" ] && cp "$f" "assets/ovd-$os${f##*/ovd}"
+            done
+          done
+          cp artifacts/wheel-*/*.whl assets/
       - name: Checksums
-        working-directory: installers
+        working-directory: assets
         run: |
           ls -l
           sha256sum * > SHA256SUMS.txt
@@ -190,7 +144,7 @@ jobs:
           else
             # a test release: what is not yet in a numbered release
             {
-              echo "A test build from commit ${GITHUB_SHA:0:7}. It is not a numbered release. The installer file names carry the last numbered version."
+              echo "A test build from commit ${GITHUB_SHA:0:7}. It is not a numbered release. The wheel file names carry the last numbered version."
               echo
               echo "## Unreleased changes"
               awk '/^## /{ if (on) exit; if ($0 == "## Unreleased") { on = 1; next } } on { print }' CHANGELOG.md
@@ -201,7 +155,7 @@ jobs:
             --link "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_SHA/CHANGELOG.md"
           {
             echo
-            echo "These installers are not signed. Windows SmartScreen and macOS show a warning on first start; the README says what to click."
+            echo "These binaries are not signed. Windows SmartScreen and macOS may warn on first start. The desktop app is paused; the web app is at https://www.africanrivercorridors.com/ovd/app."
             echo "OVD is a concept design tool. Its results are not verified. There is no warranty."
           } >> notes.md
           cat notes.md
@@ -214,7 +168,7 @@ jobs:
           if [ "$KIND" = test ]; then title="Test build $TAG (${GITHUB_SHA:0:7})"; else title="$TAG"; fi
           # A pushed tag exists already; a version bump on main creates its tag at this commit.
           if [ "$GITHUB_REF_TYPE" = tag ]; then where=(--verify-tag); else where=(--target "$GITHUB_SHA"); fi
-          gh release create "$TAG" installers/* \
+          gh release create "$TAG" assets/* \
             "${where[@]}" \
             --prerelease \
             --title "$title" \

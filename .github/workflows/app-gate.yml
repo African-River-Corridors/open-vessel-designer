@@ -85,12 +85,11 @@ jobs:
         run: bash tools/build_web.sh
       - name: Build ovd
         run: cargo build -p ovd-cli
-      - name: Front end (type check, desktop build, web build)
+      - name: Front end (unit tests, type check, web build)
         working-directory: app
         run: |
           npm ci
           npm run build
-          npm run build:web
       - name: Web smoke test (headless Chrome)
         working-directory: app
         env:

@@ -177,9 +177,7 @@ def test_version_is_0_3_0_everywhere():
     for crate in ("ovd-core", "ovd-format", "ovd-cli", "ovd-py", "ovd-shell", "ovd-web"):
         manifest = tomllib.loads((ROOT / "crates" / crate / "Cargo.toml").read_text(encoding="utf-8"))
         assert manifest["package"]["version"] == {"workspace": True}, crate
-    # the app: its front end, its Tauri config (the installer name) and its crate
+    # the web app's front end
     app = ROOT / "app"
     assert json.loads((app / "package.json").read_text(encoding="utf-8"))["version"] == "0.3.0"
     assert json.loads((app / "package-lock.json").read_text(encoding="utf-8"))["version"] == "0.3.0"
-    assert json.loads((app / "src-tauri" / "tauri.conf.json").read_text(encoding="utf-8"))["version"] == "0.3.0"
-    assert {p["name"]: p["version"] for p in lock["package"]}["ovd-app"] == "0.3.0"

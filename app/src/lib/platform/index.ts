@@ -1,9 +1,7 @@
-// The platform is chosen once, at start: Tauri when the page runs inside the desktop app, else Web.
-// The web build defines __OVD_WEB__ as true and the desktop build as false, so each bundle holds only
-// its own adapter (the desktop bundle has no WebAssembly; the web bundle has no Tauri code).
+// The platform, made once at start: the Web adapter over the WebAssembly session. The desktop app is
+// paused (ADR 0026); a returning desktop adapter implements the same `Platform` interface.
 import type { Platform } from "./types";
 
-declare const __OVD_WEB__: boolean;
 export type {
   Platform,
   DrawingFormat,
@@ -25,11 +23,7 @@ let current: Platform | null = null;
 
 export async function initPlatform(): Promise<Platform> {
   if (current) return current;
-  if (__OVD_WEB__) {
-    current = await (await import("./web")).createWebPlatform();
-  } else {
-    current = (await import("./tauri")).tauriPlatform;
-  }
+  current = await (await import("./web")).createWebPlatform();
   return current;
 }
 
