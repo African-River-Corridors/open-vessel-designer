@@ -43,11 +43,12 @@ const toggleGroup = (b, name) => b.execute((n) => document.querySelector(`.field
 /** Open the app and answer the Service Area, as the starter Design asks, so the panel and the results are there. */
 async function ready(b) {
   await b.url(`${origin}/ovd/app`);
-  // The first-run notice covers the page until it is accepted.
-  const notice = b.$("button=I understand");
-  if (await notice.waitForExist({ timeout: 5000 }).then(() => true, () => false)) await notice.click();
   const area = () => b.$('.field[data-input="service_area"] select');
   await until(b, "the Service Area", async () => (await area()).isExisting());
+  // The first-run notice covers the page until it is accepted; it is drawn with the page.
+  const notice = b.$("button=I understand");
+  if (await notice.isExisting()) await notice.click();
+  await until(b, "the notice to close", async () => !(await b.$("[data-testid=notice]").isExisting()));
   const select = await area();
   if (await b.execute((el) => el.value === "__unset__", select)) {
     await select.selectByAttribute("value", "river-only");
