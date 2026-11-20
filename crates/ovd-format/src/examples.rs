@@ -26,7 +26,7 @@ impl Example {
 pub const EXAMPLES: &[Example] = &[Example {
     id: "coastal-lng-barge",
     title: "Coastal LNG barge, 140 × 29 m",
-    text: "A self-propelled LNG barge with two Type C tanks, for coastal and river service.",
+    text: "A self-propelled LNG barge with Type C tanks, for coastal and river service.",
     inputs: coastal_lng_barge,
 }];
 

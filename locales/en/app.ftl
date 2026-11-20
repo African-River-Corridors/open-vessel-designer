@@ -693,6 +693,9 @@ app-summary-no-warnings = No warning checks are open.
 app-summary-show-check = Show in Checks
 app-summary-input-counts = Inputs: { $typed } typed and { $defaults } default.
 app-summary-open-input = Open the Input panel
+# Issue #1096: the Summary while a new Design is calculated, and while damage stability runs.
+app-summary-calculating = Calculating the Design… The answers show here when it is done.
+app-summary-may-change = The answer may still change until damage stability ends.
 
 # The Start page and the setup wizard (issue #1080)
 app-start-title = Start a Design
