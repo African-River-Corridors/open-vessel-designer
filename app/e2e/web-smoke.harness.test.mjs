@@ -5,13 +5,35 @@ import { spawn, execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, it } from "node:test";
+import { after, describe, it } from "node:test";
 
 const FILE = path.join(import.meta.dirname, "harness", "one-file.mjs");
+// The cases' folders live under the run's root, so run-web.sh's clean-up covers them too. Run alone,
+// this file makes a root of its own and removes it at the end.
+const OWN = !process.env.OVD_E2E_ROOT;
+const ROOT = process.env.OVD_E2E_ROOT || fs.mkdtempSync(path.join(os.tmpdir(), "ovd-e2e-harness."));
+const alive = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+const stopAll = (root) => {
+  try {
+    execFileSync("pkill", ["-KILL", "-f", root]);
+  } catch {}
+};
+after(() => {
+  stopAll(ROOT);
+  if (OWN) fs.rmSync(ROOT, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+});
 
-/** Run the stand-in file; give how it ended, how long it took and what of it is still there. */
-async function runCase(which, env = {}) {
-  const root = fs.mkdtempSync(path.join(process.env.OVD_E2E_ROOT || os.tmpdir(), `harness-${which}.`));
+/** Run the stand-in file; give how it ended, how long it took and what of it is still there. With
+ * `killOn`, kill the file (SIGKILL) as soon as its output matches, and give the writer's pid. */
+async function runCase(which, env = {}, killOn = null) {
+  const root = fs.mkdtempSync(path.join(ROOT, `harness-${which}.`));
   const started = Date.now();
   // Not as a part of this run's own test tree: without NODE_TEST_CONTEXT the stand-in is a run of its own.
   const { NODE_TEST_CONTEXT, ...outer } = process.env;
@@ -20,20 +42,44 @@ async function runCase(which, env = {}) {
     stdio: ["ignore", "pipe", "pipe"],
   });
   let out = "";
-  child.stdout.on("data", (d) => (out += d));
+  child.stdout.on("data", (d) => {
+    out += d;
+    if (killOn && killOn.test(out)) {
+      // The file runs in a process below the runner: kill every process of it but the writer, which
+      // must end on its own.
+      const writer = Number(out.match(/WRITER (\d+)/)?.[1] ?? 0);
+      const tree = (pid) => {
+        let kids = [];
+        try {
+          kids = execFileSync("pgrep", ["-P", String(pid)], { encoding: "utf8" }).split("\n").filter(Boolean).map(Number);
+        } catch {}
+        return [...kids.flatMap(tree), pid];
+      };
+      for (const pid of tree(child.pid)) if (pid !== writer) try { process.kill(pid, "SIGKILL"); } catch {}
+      killOn = null;
+    }
+  });
   child.stderr.on("data", (d) => (out += d));
   const code = await new Promise((resolve) => {
     const guard = setTimeout(() => child.kill("SIGKILL"), 90000);
     child.on("exit", (c, signal) => (clearTimeout(guard), resolve(signal ? `killed by ${signal}` : c)));
   });
   const seconds = (Date.now() - started) / 1000;
-  let alive = "";
+  const writer = Number(out.match(/WRITER (\d+)/)?.[1] ?? 0);
+  // A writer must end on its own when its file is killed: give it a moment, as the guard checks often.
+  let writerAlive = false;
+  if (writer) {
+    for (let i = 0; i < 50 && alive(writer); i++) await new Promise((r) => setTimeout(r, 100));
+    writerAlive = alive(writer);
+  }
+  let left_alive = "";
   try {
-    alive = execFileSync("pgrep", ["-f", root], { encoding: "utf8" }).trim();
+    left_alive = execFileSync("pgrep", ["-f", root], { encoding: "utf8" }).trim();
   } catch {}
+  stopAll(root); // whatever the case, nothing of it outlives it
   const left = fs.readdirSync(root, { recursive: true }).filter((f) => /profile-\d+$|chromedriver\.log$/.test(f));
-  fs.rmSync(root, { recursive: true, force: true });
-  return { code, seconds, alive, left, out };
+  fs.rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  return { code, seconds, alive: left_alive, left, out, writer, writerAlive };
 }
 
 describe("the web test harness (e2e/browser.mjs)", () => {
@@ -65,6 +111,12 @@ describe("the web test harness (e2e/browser.mjs)", () => {
     assert.equal(r.code, 0, r.out);
     assert.equal(r.alive, "", `processes left alive: ${r.alive}`);
     assert.deepEqual(r.left, [], "nothing left in the root");
+  });
+
+  it("a writer started by a test file ends by itself when the file is killed", async () => {
+    const r = await runCase("busy-killed", {}, /WRITER \d+/);
+    assert.ok(r.writer > 0, r.out);
+    assert.equal(r.writerAlive, false, `the writer ${r.writer} outlived its killed file`);
   });
 
   it("a file over its time limit fails, and its browser and driver are stopped", async () => {
