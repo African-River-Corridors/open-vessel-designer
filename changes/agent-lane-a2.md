@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- The app opens on a Start page after the first-run notice (issue #1080, spec 0017): "New Design, step by step", "Start from an example", "Open a Design file", and a link that opens the blank starter Design as before. The New button and its shortcut open the same page. The setup wizard asks for the Cargo, the Service Area, the Formation, the Hull and your own limits, one question to a step, with the schema's own limits, then makes the Design in one step. After Create the app runs damage stability once by itself where the Design says it has not been run.

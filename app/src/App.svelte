@@ -7,6 +7,9 @@
   import MainPanel from "./lib/MainPanel.svelte";
   import BottomPanel from "./lib/BottomPanel.svelte";
   import Notice from "./lib/Notice.svelte";
+  import StartPage from "./lib/wizard/StartPage.svelte";
+  import Wizard from "./lib/wizard/Wizard.svelte";
+  import { answersFromInputs, emptyAnswers, type Answers, type StepId } from "./lib/wizard/wizard.ts";
   import SettingsDialog from "./lib/SettingsDialog.svelte";
   import MessageBar, { type BarMessage } from "./lib/MessageBar.svelte";
   import { loadPanels, savePanels } from "./lib/panels";
@@ -29,6 +32,10 @@
   /** The first-run notice: open on first start, and again from About. */
   let noticeOpen = $state(false);
   let noticeIsFirstRun = $state(false);
+  /** The Start page (spec 0017, D1): open at first start, and from New. It replaces nothing until a path is chosen. */
+  let startOpen = $state(false);
+  /** The setup wizard, while it is open: the answers it starts from, and the step. */
+  let wizard = $state<{ answers: Answers; step: StepId } | null>(null);
   /** Settings: Display Language, theme and Defaults Profile. */
   let settingsOpen = $state(false);
   /** The browser build: shows a label and a link to the desktop app. */
@@ -179,6 +186,40 @@
     else command(() => api.deleteOption(name));
   }
 
+  /** The Start page's own paths: each replaces the Design only when it succeeds, so a refusal leaves the page open. */
+  async function startThen(action: () => Promise<Snapshot | null>) {
+    const before = generation;
+    await fileAction(action, true);
+    if (generation !== before) startOpen = false;
+  }
+
+  /**
+   * Create Design (spec 0017, D4 and D5): ask before unsaved work is discarded, make the Design from the typed
+   * choices, evaluate, and start damage stability once when the Design says it has not been run. Gives the
+   * reason when the choices were refused, so the wizard stays open and shows it.
+   */
+  async function createFromWizard(option: string, inputs: Record<string, unknown>): Promise<string | null> {
+    try {
+      await flush();
+      if (snap?.dirty && !(await api.confirmDiscard())) return null;
+      const next = await api.newDesignFrom(option, inputs);
+      wizard = null;
+      error = null;
+      await adopt(next, true);
+      // The Summary view opens here when the app has one (issue #1081); until then the view stays as it is.
+      const outcome = evaluation?.options.find((o) => o.name === next.active_option)?.outcome;
+      if (outcome?.status === "results" && damageStatus(outcome.results).status === "not run") void runDamage(next.active_option);
+      return null;
+    } catch (e) {
+      return String(e);
+    }
+  }
+
+  function startWizard(from: Answers, step: StepId) {
+    startOpen = false;
+    wizard = { answers: from, step };
+  }
+
   function onKey(e: KeyboardEvent) {
     if (!(e.metaKey || e.ctrlKey)) return;
     const k = e.key.toLowerCase();
@@ -190,7 +231,7 @@
       fileAction(api.openFile, true);
     } else if (k === "n") {
       e.preventDefault();
-      fileAction(api.newFile, true);
+      startOpen = true;
     }
   }
 
@@ -216,7 +257,10 @@
         () => fileAction(api.snapshot, true),
         (reason) => (error = reason),
       );
-      await adopt(await api.snapshot(), true);
+      const first = await api.snapshot();
+      // A Design given at launch, or brought back from the last visit, is the one to show: no Start page.
+      startOpen = first.path === null && !(await api.designRestored());
+      await adopt(first, true);
     });
   });
 
@@ -313,10 +357,18 @@
 <svelte:window onkeydown={onKey} />
 
 {#if noticeOpen}<Notice onClose={closeNotice} />{/if}
+{#if startOpen && !noticeOpen}<StartPage examples={api.designExamples}
+  onWizard={() => startWizard(emptyAnswers(), "cargo")}
+  onExample={(ex) => startWizard(answersFromInputs(ex.inputs), "review")}
+  onOpen={() => startThen(api.openFile)}
+  onSkip={() => startThen(api.newFile)}
+  onCancel={() => (startOpen = false)} />{/if}
+{#if schema && wizard}<Wizard {schema} answers={wizard.answers} step={wizard.step} onCreate={createFromWizard} onCancel={() => (wizard = null)} />{/if}
 {#if settingsOpen}<SettingsDialog profile={snap?.profile ?? null} onClose={() => (settingsOpen = false)}
   onProfile={(a) => command(a === "load" ? api.loadProfile : api.useBuiltInProfile, true)} />{/if}
 
-<div class="shell">
+<!-- The Start page and the wizard are dialogs over the app: while one is open, Tab stays inside it. -->
+<div class="shell" inert={(startOpen && !noticeOpen) || wizard !== null}>
   <header>
     <!-- The 32 px OVD mark, drawn in the text colour so it reads in both themes. -->
     <svg class="mark" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
@@ -328,7 +380,7 @@
       </g>
     </svg>
     <span class="brand">OVD</span>
-    <button onclick={() => fileAction(api.newFile, true)}>{t("app-new")}</button>
+    <button onclick={() => (startOpen = true)}>{t("app-new")}</button>
     <button onclick={() => fileAction(api.openFile, true)}>{t("app-open")}</button>
     <button onclick={() => fileAction(api.save, false)}>{t("app-save")}</button>
     <button onclick={() => fileAction(api.saveAs, false)}>{t("app-save-as")}</button>

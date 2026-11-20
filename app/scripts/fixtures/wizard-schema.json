@@ -1,0 +1,1143 @@
+{
+ "profile": "built-in",
+ "engine_version": "0.3.0",
+ "groups": [
+  "Required",
+  "Vessel Class",
+  "Hull and containment",
+  "Hull Form",
+  "Structure",
+  "Gas tanks",
+  "Dry-bulk hold",
+  "Liquid cargo tanks",
+  "Aft block",
+  "Openings",
+  "Stern and propulsion",
+  "Tug",
+  "Waterway Limits",
+  "Rules",
+  "Loading conditions",
+  "Speed and power",
+  "Cost rates"
+ ],
+ "inputs": [
+  {
+   "name": "cargo",
+   "label": "Cargo",
+   "group": "Required",
+   "required": true,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "cargo",
+   "choices": [
+    {
+     "value": "LNG",
+     "label": "LNG",
+     "phase": "liquid_gas",
+     "status": "released",
+     "description": "Liquefied Natural Gas (methane-rich)"
+    },
+    {
+     "value": "LNG_ethane",
+     "label": "LNG / Ethane",
+     "phase": "liquid_gas",
+     "status": "released",
+     "description": "LNG\u2013ethane blend at cryogenic temperature"
+    },
+    {
+     "value": "LPG_propane",
+     "label": "LPG (Propane)",
+     "phase": "liquid_gas",
+     "status": "released",
+     "description": "Fully refrigerated liquefied propane (-42.1 C, near-atmospheric)"
+    },
+    {
+     "value": "LPG_butane",
+     "label": "LPG (Butane)",
+     "phase": "liquid_gas",
+     "status": "released",
+     "description": "Cryogenic liquefied butane"
+    },
+    {
+     "value": "LPG_mix",
+     "label": "LPG (60/40 Propane/Butane)",
+     "phase": "liquid_gas",
+     "status": "released",
+     "description": "Fully refrigerated LPG mix (60% propane / 40% butane by mass)"
+    },
+    {
+     "value": "bauxite",
+     "label": "Bauxite",
+     "phase": "dry_bulk",
+     "status": "released",
+     "description": "Dry bulk bauxite ore (stowage density, ~0.67 m3/t)"
+    },
+    {
+     "value": "crude_oil",
+     "label": "Crude oil",
+     "phase": "liquid_bulk",
+     "status": "development",
+     "description": "Crude oil, default grade (density at 15 C; see liquid_bulk::crude_grade)"
+    },
+    {
+     "value": "diesel_en590",
+     "label": "Diesel fuel (EN 590)",
+     "phase": "liquid_bulk",
+     "status": "development",
+     "description": "Diesel fuel to EN 590, UN 1202 (density at 20 C, middle of ADN Table C 0.82 to 0.85; see liquid_bulk::crude_grade)"
+    }
+   ]
+  },
+  {
+   "name": "hull_form",
+   "label": "Hull Form",
+   "group": "Hull Form",
+   "required": true,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "choice",
+   "choices": [
+    {
+     "value": "box",
+     "label": "Box"
+    },
+    {
+     "value": "raked_box",
+     "label": "Raked box"
+    },
+    {
+     "value": "v_bottom",
+     "label": "V-bottom"
+    },
+    {
+     "value": "chine",
+     "label": "Chine"
+    },
+    {
+     "value": "shipd",
+     "label": "ShipD-style"
+    },
+    {
+     "value": "offsets",
+     "label": "Offsets table"
+    }
+   ]
+  },
+  {
+   "name": "formation",
+   "label": "Formation",
+   "group": "Required",
+   "required": true,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "formation",
+   "choices": [
+    {
+     "value": "self_propelled",
+     "label": "Self-propelled"
+    },
+    {
+     "value": "pushed_barge",
+     "label": "Pushed barge"
+    },
+    {
+     "value": "pushed_convoy",
+     "label": "Pushed convoy"
+    },
+    {
+     "value": "atb",
+     "label": "Articulated tug-barge (ATB)"
+    },
+    {
+     "value": "towed_barge",
+     "label": "Towed barge"
+    }
+   ],
+   "convoy": {
+    "abreast": {
+     "unit": "barges",
+     "hard": {
+      "ge": 1.0
+     },
+     "soft": {
+      "min": 1.0,
+      "max": 6.0
+     },
+     "basis": "catalogue pushed convoys are at most 4 abreast"
+    },
+    "in_line": {
+     "unit": "barges",
+     "hard": {
+      "ge": 1.0
+     },
+     "soft": {
+      "min": 1.0,
+      "max": 7.0
+     },
+     "basis": "catalogue pushed convoys are at most 5 in line"
+    }
+   }
+  },
+  {
+   "name": "length_overall_m",
+   "label": "Length overall",
+   "group": "Required",
+   "required": true,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "number",
+   "nullable": false,
+   "unit": "m",
+   "hard": {
+    "ge": 1.0,
+    "le": 1000.0
+   },
+   "soft": {
+    "min": 20.0,
+    "max": 250.0
+   }
+  },
+  {
+   "name": "beam_m",
+   "label": "Beam",
+   "group": "Required",
+   "required": true,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "number",
+   "nullable": false,
+   "unit": "m",
+   "hard": {
+    "ge": 1.0,
+    "le": 200.0
+   },
+   "soft": {
+    "min": 4.0,
+    "max": 35.0
+   }
+  },
+  {
+   "name": "moulded_depth_m",
+   "label": "Moulded depth",
+   "group": "Hull and containment",
+   "required": false,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "number",
+   "nullable": false,
+   "unit": "m",
+   "hard": {
+    "ge": 0.1,
+    "le": 100.0
+   },
+   "soft": {
+    "min": 1.0,
+    "max": 15.0
+   },
+   "default_rule": {
+    "form": "ratio x beam_m, to the millimetre",
+    "by": "cargo_group",
+    "ratios": {
+     "dry_bulk": 0.33,
+     "liquid": 0.3,
+     "gas": 0.55
+    },
+    "cargo_group": {
+     "LNG": "gas",
+     "LNG_ethane": "gas",
+     "LPG_propane": "gas",
+     "LPG_butane": "gas",
+     "LPG_mix": "gas",
+     "bauxite": "dry_bulk",
+     "crude_oil": "liquid",
+     "diesel_en590": "liquid"
+    },
+    "length_to_depth_warning_above": 25.0
+   }
+  },
+  {
+   "name": "vessel_scheme",
+   "label": "Class Scheme",
+   "group": "Vessel Class",
+   "required": false,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "vessel_scheme",
+   "nullable": true,
+   "choices": [
+    {
+     "value": "CN-GB38030",
+     "label": "CN-GB38030"
+    },
+    {
+     "value": "CEMT-1992",
+     "label": "CEMT-1992"
+    },
+    {
+     "value": "RWS-2010",
+     "label": "RWS-2010"
+    },
+    {
+     "value": "RWS-container",
+     "label": "RWS-container"
+    },
+    {
+     "value": "Europa-barge",
+     "label": "Europa-barge"
+    },
+    {
+     "value": "historic-FR",
+     "label": "historic-FR"
+    },
+    {
+     "value": "historic-NL/BE",
+     "label": "historic-NL/BE"
+    },
+    {
+     "value": "historic-DE",
+     "label": "historic-DE"
+    },
+    {
+     "value": "trade-label",
+     "label": "trade-label"
+    },
+    {
+     "value": "ADN",
+     "label": "ADN"
+    },
+    {
+     "value": "inland-LNG-bunker-barge",
+     "label": "inland-LNG-bunker-barge"
+    },
+    {
+     "value": "LNG-bunker-barge",
+     "label": "LNG-bunker-barge"
+    },
+    {
+     "value": "LNG-bunker-ATB",
+     "label": "LNG-bunker-ATB"
+    },
+    {
+     "value": "inland-LNG-bunker-pontoon",
+     "label": "inland-LNG-bunker-pontoon"
+    },
+    {
+     "value": "river-sea-LNG-carrier",
+     "label": "river-sea-LNG-carrier"
+    },
+    {
+     "value": "small-scale-LNG",
+     "label": "small-scale-LNG"
+    },
+    {
+     "value": "inland-gas-tanker",
+     "label": "inland-gas-tanker"
+    },
+    {
+     "value": "LPG-fully-pressurised",
+     "label": "LPG-fully-pressurised"
+    },
+    {
+     "value": "LPG-ethylene-semi-refrigerated",
+     "label": "LPG-ethylene-semi-refrigerated"
+    },
+    {
+     "value": "ethane-ethylene-carrier",
+     "label": "ethane-ethylene-carrier"
+    },
+    {
+     "value": "CNG-carrier",
+     "label": "CNG-carrier"
+    },
+    {
+     "value": "transhipment-shuttle-barge",
+     "label": "transhipment-shuttle-barge"
+    },
+    {
+     "value": "split-hopper-barge",
+     "label": "split-hopper-barge"
+    },
+    {
+     "value": "river-sea-RU",
+     "label": "river-sea-RU"
+    },
+    {
+     "value": "euro-sea-river-coaster",
+     "label": "euro-sea-river-coaster"
+    },
+    {
+     "value": "damen-combi-freighter",
+     "label": "damen-combi-freighter"
+    },
+    {
+     "value": "conoship-trader",
+     "label": "conoship-trader"
+    },
+    {
+     "value": "japan-domestic-coaster",
+     "label": "japan-domestic-coaster"
+    },
+    {
+     "value": "st-lawrence-seaway",
+     "label": "st-lawrence-seaway"
+    },
+    {
+     "value": "handy-small-general-cargo",
+     "label": "handy-small-general-cargo"
+    },
+    {
+     "value": "short-sea-feeder",
+     "label": "short-sea-feeder"
+    },
+    {
+     "value": "us-jones-act-atb",
+     "label": "us-jones-act-atb"
+    },
+    {
+     "value": "US-inland",
+     "label": "US-inland"
+    },
+    {
+     "value": "CN-GB50139",
+     "label": "CN-GB50139"
+    },
+    {
+     "value": "CN-Yangtze-standard",
+     "label": "CN-Yangtze-standard"
+    },
+    {
+     "value": "IN-IWAI",
+     "label": "IN-IWAI"
+    },
+    {
+     "value": "RU-RRR",
+     "label": "RU-RRR"
+    },
+    {
+     "value": "SA-Hidrovia",
+     "label": "SA-Hidrovia"
+    },
+    {
+     "value": "SA-Tiete-Parana",
+     "label": "SA-Tiete-Parana"
+    },
+    {
+     "value": "ID-Indonesian-standard",
+     "label": "ID-Indonesian-standard"
+    },
+    {
+     "value": "Nile-NNCRT",
+     "label": "Nile-NNCRT"
+    },
+    {
+     "value": "Congo-SCTP",
+     "label": "Congo-SCTP"
+    }
+   ]
+  },
+  {
+   "name": "vessel_class",
+   "label": "Vessel Class",
+   "group": "Vessel Class",
+   "required": false,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "vessel_class",
+   "nullable": true,
+   "choices": [
+    {
+     "value": "CN-GB38030-CG-110-H1R",
+     "label": "CN-GB38030-CG-110-H1R",
+     "scheme": "CN-GB38030",
+     "formation": "self_propelled",
+     "length_max_m": 88.0,
+     "beam_max_m": 11.0,
+     "draught_limit_m": null,
+     "air_draft_limit_m": null,
+     "reference_dwt_t": [
+      1000.0,
+      1000.0
+     ],
+     "abreast": 1,
+     "in_line": 1,
+     "confidence": "high"
+    },
+    {
+     "value": "CN-GB38030-CG-138-H1R",
+     "label": "CN-GB38030-CG-138-H1R",
+     "scheme": "CN-GB38030",
+     "formation": "self_propelled",
+     "length_max_m": 88.0,
+     "beam_max_m": 13.8,
+     "draught_limit_m": null,
+     "air_draft_limit_m": null,
+     "reference_dwt_t": [
+      2000.0,
+      2000.0
+     ],
+     "abreast": 1,
+     "in_line": 1,
+     "confidence": "high"
+    },
+    {
+     "value": "CEMT-I-W",
+     "label": "CEMT-I-W",
+     "scheme": "CEMT-1992",
+     "formation": "self_propelled",
+     "length_max_m": 38.5,
+     "beam_max_m": 5.05,
+     "draught_limit_m": 2.2,
+     "air_draft_limit_m": 4.0,
+     "reference_dwt_t": [
+      250.0,
+      400.0
+     ],
+     "abreast": 1,
+     "in_line": 1,
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "name": "cargo_containment",
+   "label": "Cargo Containment",
+   "group": "Hull and containment",
+   "required": false,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "choice",
+   "choices": [
+    {
+     "value": "box_hold",
+     "label": "Box hold"
+    },
+    {
+     "value": "sloped_hopper_hold",
+     "label": "Sloped hopper hold"
+    },
+    {
+     "value": "type_c_tanks",
+     "label": "Type C tanks"
+    },
+    {
+     "value": "integral_tanks",
+     "label": "Integral tanks"
+    }
+   ],
+   "default_by": {
+    "by": "cargo_phase",
+    "values": {
+     "dry_bulk": "box_hold",
+     "liquid_gas": "type_c_tanks",
+     "liquid_bulk": "integral_tanks"
+    }
+   }
+  },
+  {
+   "name": "min_freeboard_m",
+   "label": "Minimum freeboard (safety clearance)",
+   "group": "Hull and containment",
+   "required": false,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "number",
+   "nullable": false,
+   "unit": "m",
+   "hard": {
+    "ge": 0.0
+   },
+   "soft": {
+    "min": 0.15,
+    "max": 1.5
+   },
+   "default": 0.3
+  },
+  {
+   "name": "fill_ratio",
+   "label": "Fill ratio",
+   "group": "Gas tanks",
+   "required": false,
+   "applies_to": [
+    "type_c_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "number",
+   "nullable": false,
+   "unit": "-",
+   "hard": {
+    "ge": 0.1,
+    "le": 1.0
+   },
+   "soft": {
+    "min": 0.8,
+    "max": 0.99
+   },
+   "default_table": {
+    "by": [
+     "cargo_containment",
+     "cargo",
+     "lpg_carriage_condition",
+     "service_area"
+    ],
+    "rows": [
+     {
+      "when": {},
+      "value": 0.98,
+      "status": "sourced",
+      "source": "IMO IGC Code, resolution MSC.370(93), paragraph 15.3 (default filling limit 98 %)",
+      "basis": "The limit is 98 % of the tank volume at the reference temperature. Owners' sheets agree: 98 % on 16 pressurised LPG carriers and 98.5 % on one 2022 LNG bunker vessel. For an LPG Cargo the tank is loaded to the loading limit of IGC 15.5.1, worked out from this filling limit (see lpg_loading_limit_basis)"
+     }
+    ]
+   },
+   "default_by": {
+    "by": "Cargo, LPG carriage condition",
+    "values": {
+     "any": 0.98
+    }
+   }
+  },
+  {
+   "name": "max_tank_od_m",
+   "label": "Maximum tank outer diameter",
+   "group": "Gas tanks",
+   "required": false,
+   "applies_to": [
+    "type_c_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "number",
+   "nullable": false,
+   "unit": "m",
+   "hard": {
+    "gt": 0.0,
+    "le": 50.0
+   },
+   "soft": {
+    "min": 4.0,
+    "max": 20.0
+   },
+   "default": 16.0
+  },
+  {
+   "name": "tanks_across",
+   "label": "Tanks across (override)",
+   "group": "Gas tanks",
+   "required": false,
+   "applies_to": [
+    "type_c_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "number",
+   "nullable": true,
+   "unit": "tanks",
+   "hard": {
+    "ge": 1.0,
+    "le": 10.0
+   },
+   "soft": {
+    "min": 1.0,
+    "max": 3.0
+   },
+   "default": null
+  },
+  {
+   "name": "tanks_in_line",
+   "label": "Tanks in line",
+   "group": "Gas tanks",
+   "required": false,
+   "applies_to": [
+    "type_c_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "number",
+   "nullable": false,
+   "unit": "tanks",
+   "hard": {
+    "ge": 1.0,
+    "le": 50.0
+   },
+   "soft": {
+    "min": 1.0,
+    "max": 4.0
+   },
+   "default": 2
+  },
+  {
+   "name": "hold_covering",
+   "label": "Hold covering",
+   "group": "Dry-bulk hold",
+   "required": false,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "default_status": "estimate",
+   "kind": "choice",
+   "choices": [
+    {
+     "value": "covered",
+     "label": "Covered"
+    },
+    {
+     "value": "open",
+     "label": "Open"
+    }
+   ],
+   "default": "covered"
+  },
+  {
+   "name": "max_speed_kn",
+   "label": "Maximum speed",
+   "group": "Speed and power",
+   "required": false,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "number",
+   "nullable": false,
+   "unit": "kn",
+   "hard": {
+    "ge": 1.0,
+    "le": 100.0
+   },
+   "soft": {
+    "min": 2.0,
+    "max": 20.0
+   },
+   "default": 10.0
+  },
+  {
+   "name": "air_draft_limit_m",
+   "label": "Air-draft limit",
+   "group": "Waterway Limits",
+   "required": false,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "number",
+   "nullable": true,
+   "unit": "m",
+   "hard": {
+    "gt": 0.0,
+    "le": 1000.0
+   },
+   "soft": {
+    "min": 3.0,
+    "max": 40.0
+   },
+   "default": null
+  },
+  {
+   "name": "draught_limit_m",
+   "label": "Draught limit",
+   "group": "Waterway Limits",
+   "required": false,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "number",
+   "nullable": true,
+   "unit": "m",
+   "hard": {
+    "gt": 0.0,
+    "le": 100.0
+   },
+   "soft": {
+    "min": 0.8,
+    "max": 12.0
+   },
+   "default": null
+  },
+  {
+   "name": "service_area",
+   "label": "Service Area",
+   "group": "Rules",
+   "required": true,
+   "applies_to": [
+    "box_hold",
+    "sloped_hopper_hold",
+    "type_c_tanks",
+    "integral_tanks"
+   ],
+   "applies_to_formation": [
+    "self_propelled",
+    "pushed_barge",
+    "pushed_convoy",
+    "atb",
+    "towed_barge"
+   ],
+   "applies_to_cargo": [
+    "LNG",
+    "LNG_ethane",
+    "LPG_propane",
+    "LPG_butane",
+    "LPG_mix",
+    "bauxite",
+    "crude_oil",
+    "diesel_en590"
+   ],
+   "kind": "choice",
+   "choices": [
+    {
+     "value": "river-only",
+     "label": "River only"
+    },
+    {
+     "value": "coastal-and-river",
+     "label": "Coastal and river"
+    }
+   ]
+  }
+ ]
+}

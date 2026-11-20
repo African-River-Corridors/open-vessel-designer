@@ -141,6 +141,10 @@ export interface Platform {
   newDesignFrom(option: string, inputs: Record<string, unknown>): Promise<Snapshot>;
   /** Spec 0017, D6: the examples of the Start page. It makes no Design. */
   designExamples(): Promise<DesignExample[]>;
+  /** Spec 0017, D1: ask before the Start page's Create replaces an unsaved Design. `true` means go ahead. */
+  confirmDiscard(): Promise<boolean>;
+  /** Spec 0017, D1: the app brought back the last Design (the web build does, from browser storage). */
+  designRestored(): Promise<boolean>;
   openFile(): Promise<Snapshot | null>;
   /**
    * Issue #671: call `opened` when the app is given a Design from outside (Finder, "Open With",

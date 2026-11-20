@@ -177,11 +177,13 @@ export async function createWebPlatform(): Promise<Platform> {
   session = new Session();
 
   // Bring back the last Design, if there is one. Any failure leaves the starter Design.
+  let restored = false;
   try {
     const raw = readKey(LAST_DESIGN);
     if (raw) {
       const last = JSON.parse(raw) as { name: string; text: string };
       session.open_text(last.name, last.text);
+      restored = true;
     }
   } catch {
     /* ignore: the starter Design stays */
@@ -209,6 +211,8 @@ export async function createWebPlatform(): Promise<Platform> {
     newDesignFrom: (option, inputs) =>
       change(() => session.new_design_from(option, JSON.stringify(inputs))),
     designExamples: () => call<DesignExample[]>(() => session.design_examples()),
+    confirmDiscard: async () => confirmDiscard(),
+    designRestored: async () => restored,
     openFile: async () => {
       if (!confirmDiscard()) return null;
       const file = await pickFile(".vdesign");
