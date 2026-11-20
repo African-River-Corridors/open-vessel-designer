@@ -93,6 +93,14 @@
       {t("app-summary-not-calculated")}
     {/if}
   </p>
+  {#if results && drawings?.side}
+    <!-- What did I make? The side elevation, and the plan under it where there is room. Above the damage lines,
+         so nothing moves it when damage stability ends. -->
+    <div class="vessel" data-testid="summary-vessel">
+      <div class="pic side"><VesselPicture svg={drawings.side} label={pictureLabel("side")} hint={t("app-summary-vessel-open-side")} testid="summary-vessel-side" onOpen={() => onShowDrawing("side")} /></div>
+      {#if drawings.plan}<div class="pic plan"><VesselPicture svg={drawings.plan} label={pictureLabel("plan")} hint={t("app-summary-vessel-open-plan")} testid="summary-vessel-plan" onOpen={() => onShowDrawing("plan")} /></div>{/if}
+    </div>
+  {/if}
   {#if running}
     <!-- Issue #1096: damage stability can still turn the verdict, so say so while it runs. -->
     <p class="provisional" data-testid="summary-provisional">{t("app-summary-may-change")}</p>
@@ -139,13 +147,6 @@
       <summary data-testid="summary-scope-line">{#if counts}{t("app-summary-scope-counts", { sets: counts.ruleSets, notEvaluated: counts.notEvaluated })}{#if counts.notRun > 0} {t("app-summary-scope-not-run", { count: counts.notRun })}{/if} {/if}<span class="show">{t(summaryView.scopeOpen ? "app-summary-scope-hide" : "app-summary-scope-show")}</span></summary>
       <p data-testid="summary-scope">{say(summary.scope, ids)}</p>
     </details>
-  {/if}
-  {#if results && drawings?.side}
-    <!-- What did I make? The side elevation, and the plan under it where there is room. -->
-    <div class="vessel" data-testid="summary-vessel">
-      <div class="pic side"><VesselPicture svg={drawings.side} label={pictureLabel("side")} hint={t("app-summary-vessel-open-side")} testid="summary-vessel-side" onOpen={() => onShowDrawing("side")} /></div>
-      {#if drawings.plan}<div class="pic plan"><VesselPicture svg={drawings.plan} label={pictureLabel("plan")} hint={t("app-summary-vessel-open-plan")} testid="summary-vessel-plan" onOpen={() => onShowDrawing("plan")} /></div>{/if}
-    </div>
   {/if}
 
   </div>
