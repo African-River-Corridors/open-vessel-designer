@@ -2,6 +2,7 @@
   // The Start page (spec 0017, D1): three choices and one link. It opens over the app; nothing is replaced until
   // a path is chosen, so Cancel (or Escape) leaves the Design as it is.
   import type { DesignExample } from "../api";
+  import { trapFocus } from "../focusTrap";
   import { t } from "../i18n.svelte";
 
   let { examples, onWizard, onExample, onOpen, onSkip, onCancel }: {
@@ -43,7 +44,7 @@
 <svelte:window onkeydown={onKey} />
 
 <div class="veil">
-  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="start-title" data-testid="start-page">
+  <div class="dialog" role="dialog" aria-modal="true" use:trapFocus aria-labelledby="start-title" data-testid="start-page">
     {#if view === "start"}
       <h2 id="start-title" tabindex="-1" bind:this={heading}>{t("app-start-title")}</h2>
       <p class="plain">{t("app-start-plain")}</p>

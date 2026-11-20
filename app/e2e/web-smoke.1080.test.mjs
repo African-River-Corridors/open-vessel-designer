@@ -404,7 +404,9 @@ describe("OVD web: the Start page and the setup wizard (issue #1080)", () => {
     await b.keys(["Control", "o"]);
     await new Promise((r) => setTimeout(r, 500));
     assert.equal(await exists(b, testid("start-page")), false, "Ctrl+N opens no Start page under the wizard");
-    assert.equal(await exists(b, testid("wizard")), true);
+    // What the designer sees after Ctrl+O: the wizard is still open, with no Start page under it.
+    assert.equal(await exists(b, testid("wizard")), true, "the wizard is still open after Ctrl+O");
+    assert.equal(await exists(b, testid("start-page")), false, "no Start page under the wizard after Ctrl+O");
     // Tab and Shift+Tab never leave the wizard.
     const insideWizard = () => b.execute(() => !!document.activeElement?.closest("[data-testid=wizard]"));
     for (let i = 0; i < 14; i += 1) {
@@ -418,5 +420,34 @@ describe("OVD web: the Start page and the setup wizard (issue #1080)", () => {
     await b.keys(["Escape"]);
     await until(b, "the wizard to close", async () => !(await exists(b, testid("wizard"))));
     assert.equal(await exists(b, testid("start-page")), false, "Escape closed the wizard and nothing under it");
+  });
+
+  it("Tab and Shift+Tab wrap at the first and last element of the wizard and of the Start page", async () => {
+    const b = await start();
+    await firstStart(b);
+    const active = () => b.execute(() => document.activeElement?.getAttribute("data-testid") || document.activeElement?.id || "");
+    const inside = (id) => b.execute((t) => !!document.activeElement?.closest(`[data-testid=${t}]`), id);
+    // The Start page: its heading is focused; the buttons are the tab stops.
+    const stops = await b.execute(() => [...document.querySelectorAll("[data-testid=start-page] button")].map((n) => n.getAttribute("data-testid")));
+    const first = stops[0];
+    const last = stops[stops.length - 1];
+    await b.execute((id) => document.querySelector(`[data-testid=${id}]`).focus(), last);
+    await b.keys(["Tab"]);
+    assert.equal(await active(), first, "Tab from the last element of the Start page goes to the first");
+    await b.keys(["Shift", "Tab"]);
+    assert.equal(await active(), last, "Shift+Tab from the first element of the Start page goes to the last");
+    assert.equal(await inside("start-page"), true);
+    // The wizard, on its first step with nothing chosen: the first stop is the Cargo choices, the last is Next.
+    await click(b, testid("start-wizard"));
+    await until(b, "the wizard", () => exists(b, testid("wizard")));
+    const inChoices = () => b.execute(() => !!document.activeElement?.closest("[data-testid=choices-cargo]"));
+    await b.keys(["Tab"]);
+    assert.equal(await inChoices(), true, "the first Tab from the heading reaches the Cargo choices");
+    await b.keys(["Shift", "Tab"]);
+    assert.equal(await inside("wizard"), true, "Shift+Tab from the first element stays inside the wizard");
+    assert.equal(await active(), "wizard-next", "Shift+Tab from the first stop goes to the last");
+    await b.keys(["Tab"]);
+    assert.equal(await inside("wizard"), true, "Tab from the last element stays inside the wizard");
+    assert.equal(await inChoices(), true, "Tab from the last stop goes to the first");
   });
 });

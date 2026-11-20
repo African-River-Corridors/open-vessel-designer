@@ -213,7 +213,10 @@
     const k = e.key.toLowerCase();
     // New and Open start something new: not while a dialog is open over the app.
     const dialogOpen = noticeOpen || startOpen || wizard !== null || settingsOpen;
-    if ((k === "o" || k === "n") && dialogOpen) return;
+    if ((k === "o" || k === "n") && dialogOpen) {
+      e.preventDefault(); // else the browser's own Open dialog (Ctrl+O) or a new window (Ctrl+N) opens over the dialog
+      return;
+    }
     if (k === "s") {
       e.preventDefault();
       fileAction(e.shiftKey ? api.saveAs : api.save, false);
