@@ -93,20 +93,26 @@ describe("The Summary's scope line", () => {
     assert.doesNotMatch(line, /\.\S/, "a space after every full stop");
     assert.equal(await sentenceShown(b), false, "the sentence is folded at first");
 
+    // Each read waits for what the click changes: the page records the open state on the details element's toggle
+    // event, a moment after the sentence is drawn, and only then does the label change.
+    const lineText = async () => (await (await b.$(testid("summary-scope-line"))).getText()).trim();
     await click(b, "summary-scope-line");
     await until(b, "the sentence to open", () => sentenceShown(b));
+    await until(b, "the label to say Hide the scope", async () => (await lineText()).endsWith("Hide the scope"));
     assert.match((await (await b.$(testid("summary-scope"))).getText()).trim(), /^Service Area /);
-    assert.ok((await (await b.$(testid("summary-scope-line"))).getText()).trim().endsWith("Hide the scope"));
 
-    // Another view and back: the Summary keeps it open.
+    // Another view and back: the Summary keeps it open. Wait for each view to change, not only to exist.
     await click(b, "group-drawings");
+    await until(b, "the Summary to go", async () => !(await exists(b, "summary-scope-line")));
     await click(b, "group-summary");
     await until(b, "the Summary again", () => exists(b, "summary-scope-line"));
-    assert.equal(await sentenceShown(b), true, "still open");
+    await until(b, "the sentence still open", () => sentenceShown(b), 5000);
+    assert.ok((await lineText()).endsWith("Hide the scope"), "the label says it is open");
 
     await click(b, "summary-scope-line");
     await until(b, "the sentence to close", async () => !(await sentenceShown(b)));
+    await until(b, "the label to say Show the scope", async () => (await lineText()).endsWith("Show the scope"));
     // Closed, the line still says how many blocking Rules were not evaluated.
-    assert.match((await (await b.$(testid("summary-scope-line"))).getText()).trim(), /\d+ blocking Rules were not evaluated\./);
+    assert.match(await lineText(), /\d+ blocking Rules were not evaluated\./);
   });
 });
