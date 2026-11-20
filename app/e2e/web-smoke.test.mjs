@@ -1359,11 +1359,12 @@ describe("OVD web smoke tests", () => {
     await ready(b);
     await openDesign(b, DRY_FIXTURE);
     await b.setWindowSize(1280, 950);
-    const long = "a_very_long_design_file_name_that_would_push_the_header_wide.vdesign";
+    // Long enough to need cutting at 1280 px with the header as it is now (no web label, no desktop link: issue #1094).
+    const long = "a_very_long_design_file_name_that_would_push_the_header_wide_even_with_all_the_room_it_has_now.vdesign";
     await b.execute((long) => (document.querySelector("header .meta").textContent = long), long);
     const [file, profile, engine] = await headerTexts(b);
     // The long name takes the room the texts have, and is cut there, with the full name still in the page.
-    assert.equal(file.cut, true, `a 68-character name is not cut at 1280 px: ${JSON.stringify(file)}`);
+    assert.equal(file.cut, true, `a ${long.length}-character name is not cut at 1280 px: ${JSON.stringify(file)}`);
     assert.equal(file.inBox, true, `the cut file label is not inside the texts' box: ${JSON.stringify(file)}`);
     assert.ok(file.width >= 0.9 * file.boxWidth, `the file label does not take the room there is (${file.width} of ${file.boxWidth} px)`);
     assert.equal(await (await b.$("header .meta")).getText(), long, "the whole name is in the label for the tooltip and the tests");
