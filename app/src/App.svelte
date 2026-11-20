@@ -340,7 +340,8 @@
 {#if settingsOpen}<SettingsDialog profile={snap?.profile ?? null} onClose={() => (settingsOpen = false)}
   onProfile={(a) => command(a === "load" ? api.loadProfile : api.useBuiltInProfile, true)} />{/if}
 
-<div class="shell">
+<!-- The Start page and the wizard are dialogs over the app: while one is open, Tab stays inside it. -->
+<div class="shell" inert={(startOpen && !noticeOpen) || wizard !== null}>
   <header>
     <!-- The 32 px OVD mark, drawn in the text colour so it reads in both themes. -->
     <svg class="mark" viewBox="0 0 64 64" width="32" height="32" aria-hidden="true" focusable="false">
