@@ -74,7 +74,6 @@
       {t("app-summary-not-calculated")}
     {/if}
   </p>
-  {#if summary.scope}<p class="scope" data-testid="summary-scope">{say(summary.scope, ids)}</p>{/if}
   {#if running}
     <!-- Issue #1096: damage stability can still turn the verdict, so say so while it runs. -->
     <p class="provisional" data-testid="summary-provisional">{t("app-summary-may-change")}</p>
@@ -94,6 +93,7 @@
       {/if}
     </p>
   {/if}
+  {#if summary.scope}<p class="scope" data-testid="summary-scope">{say(summary.scope, ids)}</p>{/if}
 
   </div>
   <div class="q got" data-testid="summary-got">
