@@ -38,7 +38,12 @@ const fieldNames = (b) => b.execute(() => [...document.querySelectorAll(".field[
 const pressed = async (b, id) => (await (await b.$(`[data-testid=${id}]`)).getAttribute("aria-pressed")) === "true";
 const groupOpen = (b, name) => b.execute((n) => document.querySelector(`.field[data-input="${n}"]`).closest("details").open, name);
 
-const toggleGroup = (b, name) => b.execute((n) => document.querySelector(`.field[data-input="${n}"]`).closest("details").querySelector("summary").click(), name);
+// The page learns of a toggle from the details element's own event, which comes a moment after the click. Wait for it,
+// or text typed at once in the filter box reaches the page first and the page never learns that the group closed.
+const toggleGroup = async (b, name) => {
+  await b.execute((n) => document.querySelector(`.field[data-input="${n}"]`).closest("details").querySelector("summary").click(), name);
+  await b.pause(100);
+};
 
 /** Open the app and answer the Service Area, as the starter Design asks, so the panel and the results are there. */
 async function ready(b) {
