@@ -1150,27 +1150,12 @@ describe("OVD app smoke tests", () => {
     await until("the theme attribute to go", async () => (await theme()) === null);
   });
 
-  it("keeps the language, theme and Defaults Profile in Settings, not in the app bar", async () => {
-    assert.equal(await browser.$("header [data-testid=language]").isExisting(), false);
+  it("keeps the theme and Defaults Profile in Settings, not in the app bar", async () => {
     assert.equal(await browser.$("header .theme").isExisting(), false);
     assert.equal(await browser.$("button=Load from file").isExisting(), false);
     await inSettings(async () => {
-      assert.ok(await browser.$("[data-testid=settings-dialog] [data-testid=language]").isExisting());
       assert.ok(await browser.$("[data-testid=settings-dialog] .theme").isExisting());
       assert.ok(await browser.$("[data-testid=settings-dialog]").$("button=Load from file").isExisting());
     });
-  });
-
-  it("switches the language in Settings, keeps the choice on reload, and back to English", async () => {
-    const lang = () => browser.execute(() => document.documentElement.lang);
-    await inSettings(async () => (await browser.$("[data-testid=language]")).selectByAttribute("value", "es"));
-    await until("the header in Spanish", async () => (await browser.$("button=Abrir")).isExisting());
-    assert.equal(await lang(), "es");
-    await browser.refresh();
-    await until("Spanish after a reload", async () => (await browser.$("button=Abrir")).isExisting());
-    assert.equal(await lang(), "es");
-    await inSettings(async () => (await browser.$("[data-testid=language]")).selectByAttribute("value", "en"));
-    await until("the header in English", async () => (await browser.$("button=Open")).isExisting());
-    assert.equal(await lang(), "en");
   });
 });

@@ -13,18 +13,13 @@ export interface Language {
   numbers: string;
 }
 
-/** English is the source. The others are drafts until a native speaker reviews them (locales/REVIEWING.md). */
-export const LANGUAGES: Language[] = [
-  { tag: "en", name: "English", numbers: "en-GB" },
-  { tag: "es", name: "Español", numbers: "es-419" },
-  { tag: "pt", name: "Português (Brasil)", numbers: "pt-BR" },
-  { tag: "zh-Hans", name: "简体中文", numbers: "zh-Hans-CN" },
-  { tag: "ak", name: "Twi (Akan)", numbers: "ak-GH" },
-];
+/**
+ * The languages the app ships. English only for now (ADR 0026): the other languages are paused until the
+ * design and the engine are more stable. Every text still goes through `t()` and `say()`, so a language
+ * returns by adding its folder under `locales/` and its line here.
+ */
+export const LANGUAGES: Language[] = [{ tag: "en", name: "English", numbers: "en-GB" }];
 const SOURCE = LANGUAGES[0];
-
-/** Where the choice is kept, per user. It is never saved in a Design and never sent to Rust. */
-export const LANGUAGE_KEY = "ovd.language";
 
 // Every .ftl file of the Text Library, built into the bundle: the web app needs no fetch.
 const FILES = import.meta.glob("../../../locales/*/*.ftl", { query: "?raw", import: "default", eager: true }) as Record<
@@ -57,45 +52,11 @@ export function setLanguage(tag: string) {
 }
 
 /**
- * The language to start in: the user's kept choice, else the first system language that the app
- * has, else English. Twi is filed under `ak` (CLDR maps `tw` to `ak`); any Chinese but the
- * traditional script is Simplified Chinese.
+ * At start: English, the one language the app ships (ADR 0026). A choice kept by an earlier version
+ * (`ovd.language` in local storage) is ignored, and left where it is.
  */
-export function startLanguage(kept: string | null, system: readonly string[]): string {
-  if (kept && LANGUAGES.some((l) => l.tag === kept)) return kept;
-  for (const wanted of system) {
-    const w = wanted.toLowerCase();
-    const base = w.split("-")[0];
-    if (base === "zh") {
-      if (!/-(hant|tw|hk|mo)\b/.test(w)) return "zh-Hans";
-    } else if (base === "ak" || base === "tw" || base === "twi") {
-      return "ak";
-    } else if (LANGUAGES.some((l) => l.tag === base)) {
-      return base;
-    }
-  }
-  return SOURCE.tag;
-}
-
-/** At start: the kept choice or the system language. Storage can be missing (a private window). */
 export function initLanguage() {
-  let kept: string | null = null;
-  try {
-    kept = localStorage.getItem(LANGUAGE_KEY);
-  } catch {
-    // No storage: the system language applies.
-  }
-  setLanguage(startLanguage(kept, navigator.languages ?? [navigator.language]));
-}
-
-/** The user picked a language: show it now and keep the choice. */
-export function chooseLanguage(tag: string) {
-  setLanguage(tag);
-  try {
-    localStorage.setItem(LANGUAGE_KEY, state.language.tag);
-  } catch {
-    // Not kept; the language still applies for this run.
-  }
+  setLanguage(SOURCE.tag);
 }
 
 function format(b: FluentBundle | undefined, id: string, args?: Record<string, FluentVariable>): string | null {
