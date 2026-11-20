@@ -37,6 +37,14 @@ async function runCase(which, env = {}) {
 }
 
 describe("the web test harness (e2e/browser.mjs)", () => {
+  it("every web test file opens its browsers through e2e/browser.mjs, never webdriverio's remote() itself", () => {
+    const direct = fs
+      .readdirSync(import.meta.dirname)
+      .filter((f) => /^web-smoke\..*\.mjs$|^web-smoke\.test\.mjs$/.test(f))
+      .filter((f) => /from ["']webdriverio["']/.test(fs.readFileSync(path.join(import.meta.dirname, f), "utf8")));
+    assert.deepEqual(direct, [], "these files start their own drivers: use openBrowser and closeBrowsers from ./browser.mjs");
+  });
+
   it("a file whose browser never opens ends at once, its driver stopped", async () => {
     const r = await runCase("never-opens");
     assert.equal(r.code, 0, r.out);
