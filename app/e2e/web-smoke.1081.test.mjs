@@ -57,6 +57,10 @@ async function start() {
   await b.url(`${origin}/ovd/app`);
   await until(b, "the notice", async () => exists(b, "[data-testid=notice]"));
   await (await b.$("button=I understand")).click();
+  // A first start opens the Start page after the notice (spec 0017): take its skip link.
+  await until(b, "the Start page", async () => (await b.$("[data-testid=start-page]")).isExisting());
+  await (await b.$("[data-testid=start-skip]")).click();
+  await until(b, "the Start page to close", async () => !(await b.$("[data-testid=start-page]").isExisting()));
   await until(b, "the app", async () => exists(b, "header"));
   return b;
 }

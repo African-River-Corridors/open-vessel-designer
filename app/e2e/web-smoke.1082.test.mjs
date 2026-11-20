@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { remote } from "webdriverio";
 import { serve } from "./web-server.mjs";
+import { showAllInputs } from "./inputs-mode.mjs";
 
 const here = import.meta.dirname;
 const GAS_FIXTURE = path.resolve(here, "../../crates/ovd-format/tests/fixtures/gas_igc_2g_self_propelled.vdesign");
@@ -35,6 +36,10 @@ async function openApp(b) {
   await b.url(`${origin}/ovd/app`);
   await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
   await (await b.$("button=I understand")).click();
+  // A first start opens the Start page after the notice (spec 0017): take its skip link.
+  await until(b, "the Start page", async () => (await b.$("[data-testid=start-page]")).isExisting());
+  await (await b.$("[data-testid=start-skip]")).click();
+  await until(b, "the Start page to close", async () => !(await b.$("[data-testid=start-page]").isExisting()));
 }
 
 before(async () => {
@@ -114,6 +119,7 @@ describe("Plain words and the calculating sign (issue #1082)", () => {
         return real();
       };
     });
+    await showAllInputs(b); // Essentials hides this input (#1084)
     const toggle = b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]');
     await toggle.click();
     await until(b, "the Calculating… sign", async () => (await sign.getText()).trim() === "Calculating…");
@@ -157,6 +163,7 @@ describe("Plain words and the calculating sign (issue #1082)", () => {
         };
       });
       const sign = b.$("[data-testid=calculating]");
+      await showAllInputs(b); // Essentials hides this input (#1084)
       await b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]').click();
       await until(b, "the Calculating… sign", async () => (await sign.getText()).trim() === "Calculating…");
       const boxes = await b.execute(() => {

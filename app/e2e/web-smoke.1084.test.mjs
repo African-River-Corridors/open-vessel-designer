@@ -49,6 +49,13 @@ async function ready(b) {
   const notice = b.$("button=I understand");
   if (await notice.isExisting()) await notice.click();
   await until(b, "the notice to close", async () => !(await b.$("[data-testid=notice]").isExisting()));
+  // A first start opens the Start page after the notice (spec 0017): take its skip link.
+  // After a reload the Design is restored and there is no Start page: skip only when it is there.
+  const skip = await b.$("[data-testid=start-skip]");
+  if (await skip.isExisting()) {
+    await skip.click();
+    await until(b, "the Start page to close", async () => !(await b.$("[data-testid=start-page]").isExisting()));
+  }
   const select = await area();
   if (await b.execute((el) => el.value === "__unset__", select)) {
     await select.selectByAttribute("value", "river-only");
