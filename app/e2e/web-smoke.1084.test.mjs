@@ -38,9 +38,14 @@ const fieldNames = (b) => b.execute(() => [...document.querySelectorAll(".field[
 const pressed = async (b, id) => (await (await b.$(`[data-testid=${id}]`)).getAttribute("aria-pressed")) === "true";
 const groupOpen = (b, name) => b.execute((n) => document.querySelector(`.field[data-input="${n}"]`).closest("details").open, name);
 
+const toggleGroup = (b, name) => b.execute((n) => document.querySelector(`.field[data-input="${n}"]`).closest("details").querySelector("summary").click(), name);
+
 /** Open the app and answer the Service Area, as the starter Design asks, so the panel and the results are there. */
 async function ready(b) {
   await b.url(`${origin}/ovd/app`);
+  // The first-run notice covers the page until it is accepted.
+  const notice = b.$("button=I understand");
+  if (await notice.waitForExist({ timeout: 5000 }).then(() => true, () => false)) await notice.click();
   const area = () => b.$('.field[data-input="service_area"] select');
   await until(b, "the Service Area", async () => (await area()).isExisting());
   const select = await area();
@@ -111,10 +116,8 @@ describe("Essentials, All inputs, the filter box and help on the page (issue #10
       await until(b, mode, () => pressed(b, `mode-${mode}`));
       const before = await fieldNames(b);
       // Close the group of the input, so the filter must open it.
-      const summary = () => b.execute(() => document.querySelector('.field[data-input="min_freeboard_m"]').closest("details").querySelector("summary").textContent);
-      const group = await summary();
-      await (await b.$(`summary=${group}`)).click();
-      await until(b, "the group to close", async () => !(await groupOpen(b, "min_freeboard_m")));
+      await toggleGroup(b, "min_freeboard_m");
+      await until(b, `the group to close (${mode})`, async () => !(await groupOpen(b, "min_freeboard_m")));
 
       await (await b.$("[data-testid=input-filter]")).setValue("FREEBOARD");
       await until(b, "the filter result", async () => {
@@ -129,8 +132,31 @@ describe("Essentials, All inputs, the filter box and help on the page (issue #10
       await until(b, "the panel restored", async () => (await fieldNames(b)).length === before.length);
       assert.deepEqual(await fieldNames(b), before, `${mode}: the same inputs as before`);
       assert.equal(await groupOpen(b, "min_freeboard_m"), false, "the group is closed again");
-      await (await b.$(`summary=${group}`)).click(); // open it again for the next round
+      await toggleGroup(b, "min_freeboard_m"); // open it again for the next round
     }
+  });
+
+  it("the \"fix the error under\" link reaches an input Essentials hides, by switching to All inputs", async () => {
+    const b = await start();
+    await ready(b);
+    // A channel shallower than its under-keel clearance is an error under both inputs. The clearance holds its
+    // default, so Essentials hides it.
+    const clearance = "channel_under_keel_clearance_m";
+    await (await b.$("[data-testid=mode-all]")).click();
+    await until(b, "the channel depth", () => shown(b, "channel_depth_m"));
+    const none = b.$('.field[data-input="channel_depth_m"] .none input');
+    if ((await none.isExisting()) && (await none.isSelected())) await none.click();
+    const box = b.$('.field[data-input="channel_depth_m"] input[type=text]');
+    await box.waitForExist({ timeout: 15000, timeoutMsg: "the channel depth box" });
+    await box.setValue("0.1");
+    await until(b, "the error link", () => b.$(`[data-testid=stale-why] a[href="#${clearance}"]`).isExisting());
+    await (await b.$("[data-testid=mode-essentials]")).click();
+    await until(b, "Essentials", () => pressed(b, "mode-essentials"));
+    assert.equal(await shown(b, clearance), false, "Essentials hides the clearance");
+    await (await b.$(`[data-testid=stale-why] a[href="#${clearance}"]`)).click();
+    await until(b, "All inputs", () => pressed(b, "mode-all"));
+    await until(b, "the clearance to show", () => shown(b, clearance));
+    await until(b, "the clearance box to have focus", () => b.execute((n) => document.activeElement?.closest(`.field[data-input="${n}"]`) !== null, clearance));
   });
 
   it("\"About this input\" opens the help under the field and closes it again", async () => {
