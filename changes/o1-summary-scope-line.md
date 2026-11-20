@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- App: the Summary folds its long scope sentence behind one line with the two counts from the result ("8 Rule Sets checked; 4 blocking Rules were not evaluated. Show the scope"); the sentence opens on a click and stays open or closed for the session. The line always shows the count of blocking Rules not evaluated. The room it frees goes to the picture of the vessel, now under that line in the left column and about twice as tall (120 px), with the plan under it where there is room.

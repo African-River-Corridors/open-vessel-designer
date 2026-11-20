@@ -140,6 +140,8 @@ describe("Summary view (issue #1081)", () => {
     const verdict = await b.$("[data-testid=summary-verdict]");
     assert.equal(await verdict.getAttribute("data-kind"), failing === 0 ? "met" : "not-met");
     // The scope sentence is the Outputs panel's, word for word.
+    // The sentence sits behind the scope's one line: open it first.
+    await (await b.$("[data-testid=summary-scope-line]")).click();
     assert.equal((await (await b.$("[data-testid=summary-scope]")).getText()).trim(), outputs["Scope of the check"]);
     // The warning checks not met are the Checks panel's, in its words.
     const panelWarn = await b.execute(() => [...document.querySelectorAll("[data-testid=check][data-tone=warn] strong")].map((e) => e.textContent.trim()));

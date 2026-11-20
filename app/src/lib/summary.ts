@@ -187,3 +187,26 @@ export function summarise(i: SummaryInput): Summary {
     inputs,
   };
 }
+
+/** The two counts of the scope's one-line summary, read from the result's Rule Trace (not from its sentence). */
+export interface ScopeCounts {
+  /** The Rule Sets the Option was checked against. */
+  ruleSets: number;
+  /** Blocking Rules the engine could not evaluate. */
+  notEvaluated: number;
+  /** Blocking Rules left out on purpose (damage stability not run). */
+  notRun: number;
+}
+
+/** The scope's counts; null where the results hold no Rule Trace with its list of Rule Sets. */
+export function scopeCounts(results: unknown): ScopeCounts | null {
+  const trace = at(results, ["rule_trace"]) as
+    | { rule_sets?: unknown[]; verdict?: { blocking_not_evaluated?: unknown[]; blocking_not_run?: unknown[] } }
+    | undefined;
+  if (!trace || !Array.isArray(trace.rule_sets)) return null;
+  return {
+    ruleSets: trace.rule_sets.length,
+    notEvaluated: trace.verdict?.blocking_not_evaluated?.length ?? 0,
+    notRun: trace.verdict?.blocking_not_run?.length ?? 0,
+  };
+}

@@ -711,6 +711,23 @@ app-summary-vessel-side-name = Side elevation of { $option }
 app-summary-vessel-plan-name = Plan of { $option }
 app-summary-vessel-open-side = Open the side elevation in Drawings
 app-summary-vessel-open-plan = Open the plan in Drawings
+# The Summary's scope, folded to one line: the counts come from the result.
+app-summary-scope-counts =
+    { $sets ->
+        [one] One Rule Set checked;
+       *[other] { $sets } Rule Sets checked;
+    } { $notEvaluated ->
+        [0] every blocking Rule was evaluated.
+        [one] one blocking Rule was not evaluated.
+       *[other] { $notEvaluated } blocking Rules were not evaluated.
+    }
+app-summary-scope-not-run =
+    { $count ->
+        [one] One more was not run.
+       *[other] { $count } more were not run.
+    }
+app-summary-scope-show = Show the scope
+app-summary-scope-hide = Hide the scope
 app-summary-vessel-pending = The drawing of the vessel shows here once the Design is calculated.
 
 # The Start page and the setup wizard (issue #1080)

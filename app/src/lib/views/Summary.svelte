@@ -6,9 +6,10 @@
   import { damageRun } from "../damageRun.svelte";
   import { MAIN, POWERING, TANKS, exact, show, type Metric } from "../metrics";
   import { checkName, listParts, parts, say, slug, t, type TextIds } from "../i18n.svelte";
-  import { shortTitle, summarise, type Blocker } from "../summary";
+  import { scopeCounts, shortTitle, summarise, type Blocker } from "../summary";
   import { vesselDims } from "../vessel";
   import VesselPicture from "../VesselPicture.svelte";
+  import { summaryView } from "../summaryView.svelte";
 
   let { results, message, blockers, inputs, ids, option, calculating = false, drawings = null, onShowDrawing = () => {}, onRunDamage, onCancelDamage, onShowInput, onShowCheck, onShowRule = () => {} }: {
     /** The side elevation and plan sheets of the shown results, as the Drawings view shows them; null without results. */
@@ -54,6 +55,8 @@
   let verdict = $derived(summary.verdict);
   /** The principal dimensions the pictures' text names; null leaves the Option's name alone. */
   let dims = $derived(vesselDims(results));
+  /** The scope's two counts, from the result (issue: the Summary's scope line). */
+  let counts = $derived(scopeCounts(results));
   const pictureLabel = (view: "side" | "plan") =>
     view === "side"
       ? dims ? t("app-summary-vessel-side", { option, ...dims }) : t("app-summary-vessel-side-name", { option })
@@ -129,18 +132,25 @@
         <a href="#rule-checks" data-testid="summary-open-rules" onclick={(e) => { e.preventDefault(); onShowRule(null); }}>{t("app-summary-open-rules")}</a></p>
     {/if}
   {/if}
-  {#if summary.scope}<p class="scope" data-testid="summary-scope">{say(summary.scope, ids)}</p>{/if}
-
-  </div>
-  <div class="q got" data-testid="summary-got">
-  <h4>{t("app-summary-got")}</h4>
+  {#if summary.scope}
+    <!-- The scope is reference text, not the answer: one line with its two counts, the sentence on opening. The
+         line always shows the count of blocking Rules not evaluated. Open or closed is kept for the session. -->
+    <details class="scope" data-testid="summary-scope-box" open={summaryView.scopeOpen} ontoggle={(e) => (summaryView.scopeOpen = e.currentTarget.open)}>
+      <summary data-testid="summary-scope-line">{#if counts}{t("app-summary-scope-counts", { sets: counts.ruleSets, notEvaluated: counts.notEvaluated })}{#if counts.notRun > 0} {t("app-summary-scope-not-run", { count: counts.notRun })}{/if} {/if}<span class="show">{t(summaryView.scopeOpen ? "app-summary-scope-hide" : "app-summary-scope-show")}</span></summary>
+      <p data-testid="summary-scope">{say(summary.scope, ids)}</p>
+    </details>
+  {/if}
   {#if results && drawings?.side}
-    <!-- What did I make? The side elevation, and the plan under it where the width allows. -->
+    <!-- What did I make? The side elevation, and the plan under it where there is room. -->
     <div class="vessel" data-testid="summary-vessel">
       <div class="pic side"><VesselPicture svg={drawings.side} label={pictureLabel("side")} hint={t("app-summary-vessel-open-side")} testid="summary-vessel-side" onOpen={() => onShowDrawing("side")} /></div>
       {#if drawings.plan}<div class="pic plan"><VesselPicture svg={drawings.plan} label={pictureLabel("plan")} hint={t("app-summary-vessel-open-plan")} testid="summary-vessel-plan" onOpen={() => onShowDrawing("plan")} /></div>{/if}
     </div>
   {/if}
+
+  </div>
+  <div class="q got" data-testid="summary-got">
+  <h4>{t("app-summary-got")}</h4>
   {#if summary.rows.length === 0 || !results}
     <p class="note" data-testid="summary-no-results">{t("app-summary-no-results")}</p>
   {:else}
@@ -218,8 +228,11 @@
   /* The side elevation always; the plan under it only where the Summary is tall and wide enough, so the verdict,
      the numbers and the picture fit a 1280 x 800 window. The Summary's box is a size container: its size, not its
      content, decides. */
-  .pic.side { height: 64px; }
-  .pic.plan { height: 72px; display: none; }
+  .pic.side { height: 120px; }
+  .pic.plan { height: 96px; display: none; }
+  .scope summary { cursor: pointer; color: var(--ink-2); font-size: var(--fs-13); }
+  .scope .show { color: var(--accent); text-decoration: underline; white-space: nowrap; }
+  .scope p { margin-top: var(--sp-1); }
   @container (min-height: 600px) and (min-width: 30em) { .pic.plan { display: block; } }
   .provisional { color: var(--warn); font-weight: 600; }
   table { border-collapse: collapse; font-size: var(--fs-14); }

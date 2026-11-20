@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { FAILED_SHOWN, shortTitle, summarise, summaryRows } from "../src/lib/summary.ts";
+import { FAILED_SHOWN, scopeCounts, shortTitle, summarise, summaryRows } from "../src/lib/summary.ts";
 
 const read = (u) => JSON.parse(fs.readFileSync(new URL(u, import.meta.url), "utf8"));
 const GAS = read("../../examples/gas-140x29-coastal-lng/results.json").options[0].results;
@@ -160,4 +160,22 @@ test("the shown lines carry the shortened title and the full one", () => {
   const f = summarise(input(results)).verdict.shown.at(-1);
   assert.equal(f.title, "x ".repeat(80).trim());
   assert.ok(f.short.length < f.title.length);
+});
+
+// The scope sentence behind a one-line summary: its two counts come from the result, never from the sentence.
+test("the scope's counts: the Rule Sets checked, and the blocking Rules not evaluated and not run", () => {
+  assert.deepEqual(scopeCounts(GAS), { ruleSets: GAS.rule_trace.rule_sets.length, notEvaluated: 4, notRun: 0 });
+  assert.equal(GAS.rule_trace.rule_sets.length, 8);
+  const results = structuredClone(GAS);
+  results.rule_trace.verdict.blocking_not_run = [{ rule: "igc/2.7/damage-survival", title: "Survival after the assumed damage" }];
+  results.rule_trace.verdict.blocking_not_evaluated.pop();
+  assert.deepEqual(scopeCounts(results), { ruleSets: 8, notEvaluated: 3, notRun: 1 });
+});
+
+test("without a Rule Trace there are no counts", () => {
+  assert.equal(scopeCounts(null), null);
+  assert.equal(scopeCounts({ results: {} }), null);
+  const bare = structuredClone(GAS);
+  delete bare.rule_trace.verdict;
+  assert.deepEqual(scopeCounts(bare), { ruleSets: 8, notEvaluated: 0, notRun: 0 });
 });
