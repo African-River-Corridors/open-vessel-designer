@@ -225,19 +225,21 @@ describe("The Calculating sign beside the Input panel, for every evaluation (iss
       await openApp(b);
       await openGasBarge(b);
       await until(b, "results", () => exists(b, "outputs"));
-      // Hold the evaluation without holding the page, so the boxes can be read while the sign shows.
+      // Hold the evaluation, without holding the page, until the test lets it go: the sign stays on while the
+      // boxes are read, however slow the machine. (A fixed wait could end between two polls on a busy machine.)
       await b.execute(() => {
         const p = window.__ovdPlatform;
         const real = p.evaluate.bind(p);
         p.evaluate = async () => {
-          await new Promise((r) => setTimeout(r, 4000));
+          await new Promise((r) => (window.__letGo = r));
           return real();
         };
       });
       await showAllInputs(b); // Essentials hides this input (#1084)
       await record(b);
       await (await b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]')).click();
-      await until(b, "the sign in the Input panel", async () => (await seen(b)).at(-1) === "input");
+      // The record of drawn frames says where the sign was: it is read, not the last poll.
+      await until(b, "the sign drawn in the Input panel", async () => (await seen(b)).includes("input"));
 
       const sign = await rectOf(b, testid("calculating"));
       const panel = await rectOf(b, "section.left");
@@ -249,13 +251,20 @@ describe("The Calculating sign beside the Input panel, for every evaluation (iss
 
       // Hide the Input panel while the evaluation runs: the sign shows in the views' tab row.
       await click(b, "toggle-input-panel");
-      await until(b, "the sign in the views' tab row", async () => (await seen(b)).at(-1) === "views");
+      await until(b, "the sign drawn in the views' tab row", async () => (await seen(b)).includes("views"));
+      // While the Input panel was shown, the sign was drawn there and nowhere else.
+      const beforeHiding = (await seen(b)).slice(0, (await seen(b)).indexOf("views"));
+      assert.deepEqual([...new Set(beforeHiding.filter((x) => x !== "off"))], ["input"], `drawn only in the Input panel: ${beforeHiding}`);
       const moved = await rectOf(b, testid("calculating"));
       const tabs = await rectOf(b, "[data-testid=views-panel] > header");
       assert.ok(moved.top >= tabs.top && moved.bottom <= tabs.bottom && moved.right <= view.width, `in the tab row: ${JSON.stringify({ moved, tabs })}`);
       for (const c of await controls(b)) assert.ok(apart(moved, c), `the sign covers a control: ${c.what}`);
 
-      await until(b, "the sign to go once the result is drawn", async () => (await seen(b)).at(-1) === "off", 15000);
+      // Let the evaluation go: the sign goes once the result is drawn.
+      await b.execute(() => window.__letGo());
+      await until(b, "the sign to go once the result is drawn", async () => (await seen(b)).at(-1) === "off", 30000);
+      const after = (await seen(b)).slice((await seen(b)).indexOf("views"));
+      assert.deepEqual([...new Set(after.filter((x) => x !== "off"))], ["views"], `with the panel hidden, drawn only in the tab row: ${after}`);
       assert.equal((await (await b.$(testid("calculating"))).getText()).trim(), "", "nothing to announce at rest");
     });
   }
