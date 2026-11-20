@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
     import type { DamageViews, Evaluation, HullViews, OptionEvaluation } from "./api";
   import StaleWhy from "./StaleWhy.svelte";
   import PrincipalStrip from "./PrincipalStrip.svelte";
@@ -103,6 +104,17 @@
     viewShown.id = current;
   });
 
+  /** Issue #1090: open the Rule checks view at a Rule's row (or at the top, for `null`) and put the focus there. */
+  async function showRule(title: string | null) {
+    pickGroup("stability-propulsion");
+    current = "rules";
+    await tick();
+    const row = title === null ? null : document.querySelector<HTMLElement>(`[data-testid=rule-check-row][data-rule="${CSS.escape(title)}"]`);
+    const target = row ?? document.querySelector<HTMLElement>("[data-testid=rule-checks]");
+    target?.scrollIntoView({ block: "center" });
+    target?.focus();
+  }
+
   function pickGroup(id: string) {
     groupId = id;
     current = GROUPS.find((g) => g.id === id)!.views[0].id;
@@ -157,11 +169,14 @@
     {#if stale && FROM_RESULTS.includes(current)}<span class="stale">{t("app-out-of-date")}</span>{/if}
     {#if sign !== null}<span class="sign"><CalculatingSign on={sign} /></span>{/if}
   </header>
-  <div class="tabs sub" role="tablist" aria-label={t("app-views-of", { group: t(group.label) })}>
-    {#each group.views.filter((v) => v.id !== "convoy" || convoyOf(results)) as v (v.id)}
-      <button type="button" role="tab" aria-selected={v.id === current} class:on={v.id === current} onclick={() => (current = v.id)}>{t(v.label)}</button>
-    {/each}
-  </div>
+  <!-- Issue #1090: a group with one view (the Summary) shows no second row of tabs. -->
+  {#if group.views.length > 1}
+    <div class="tabs sub" role="tablist" aria-label={t("app-views-of", { group: t(group.label) })}>
+      {#each group.views.filter((v) => v.id !== "convoy" || convoyOf(results)) as v (v.id)}
+        <button type="button" role="tab" aria-selected={v.id === current} class:on={v.id === current} onclick={() => (current = v.id)}>{t(v.label)}</button>
+      {/each}
+    </div>
+  {/if}
   <!-- Issue #1097: the Summary gives its own headline numbers, so the strip that repeats them is left out there. -->
   {#if current !== "summary"}<PrincipalStrip {results} />{/if}
   {#if stale}<div class="whyrow"><StaleWhy {blockers} /></div>{/if}
@@ -173,7 +188,7 @@
     <div class="content">
     {#if current === "summary"}
       <Summary results={outcome?.status === "results" ? (outcome.results as Record<string, unknown>) : null} message={message} {blockers} {inputs} {ids} option={active} calculating={designPending}
-        {onRunDamage} {onCancelDamage} {onShowInput} {onShowCheck} />
+        {onRunDamage} {onCancelDamage} {onShowInput} {onShowCheck} onShowRule={showRule} />
     {:else if HULL.includes(current)}
       <div class="slot" data-testid="slot-{current}">
         {#if drawing(current as HullKey)}

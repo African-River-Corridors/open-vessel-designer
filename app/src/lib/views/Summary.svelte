@@ -6,11 +6,13 @@
   import { damageRun } from "../damageRun.svelte";
   import { MAIN, POWERING, TANKS, exact, show, type Metric } from "../metrics";
   import { checkName, listParts, parts, say, slug, t, type TextIds } from "../i18n.svelte";
-  import { summarise, type Blocker } from "../summary";
+  import { shortTitle, summarise, type Blocker } from "../summary";
 
-  let { results, message, blockers, inputs, ids, option, calculating = false, onRunDamage, onCancelDamage, onShowInput, onShowCheck }: {
+  let { results, message, blockers, inputs, ids, option, calculating = false, onRunDamage, onCancelDamage, onShowInput, onShowCheck, onShowRule = () => {} }: {
     /** Issue #1096: a new Design is being calculated for the first time; there is nothing of it to show yet. */
     calculating?: boolean;
+    /** Issue #1090: open the Rule checks view at a Rule's row, or at its top for `null`. */
+    onShowRule?: (title: string | null) => void;
     /** The shown Option's fresh results; null where the Option is not calculated. */
     results: Record<string, unknown> | null;
     /** The engine's message where the Option has no results and no input to fix. */
@@ -62,7 +64,7 @@
     {#if verdict.kind === "met"}
       {t("app-summary-met")}
     {:else if verdict.kind === "not-met"}
-      {t("app-summary-not-met", { rules: verdict.titles.map((x) => checkName(x, ids)).join("; ") })}
+      {t("app-summary-not-met-count", { count: verdict.count })}
     {:else if verdict.inputs.length > 0}
       <!-- The link of the "Not recalculated" line: it focuses the input to fix. -->
       {#each parts("app-summary-not-calculated-fix", ["inputs"]) as p}{#if typeof p === "string"}{p}{:else}{#each listParts(verdict.inputs.map((b) => b.label)) as q}{#if typeof q === "string"}{q}{:else}{@const b = verdict.inputs[Number(q.arg)]}<a
@@ -92,6 +94,26 @@
         <button type="button" data-testid="summary-damage-run" onclick={onRunDamage}>{t("app-damage-run")}</button>
       {/if}
     </p>
+  {/if}
+  {#if verdict.kind === "not-met"}
+    <!-- Issue #1090: one failed Rule per line, the first few, each with a link to its row. -->
+    <ul class="failed" data-testid="summary-failed">
+      {#each verdict.shown as f (f.title)}
+        {@const name = checkName(f.title, ids)}
+        <li data-testid="summary-failed-rule" data-rule={f.title}>
+          <span class="name" title={name}>{shortTitle(name)}</span>
+          {#if f.check}
+            <a href={"#check-" + slug(f.check)} data-testid="summary-failed-link" data-to="check" onclick={(e) => { e.preventDefault(); onShowCheck(f.check!); }}>{t("app-summary-show-check")}</a>
+          {:else}
+            <a href="#rule-checks" data-testid="summary-failed-link" data-to="rule" onclick={(e) => { e.preventDefault(); onShowRule(f.title); }}>{t("app-summary-show-rule")}</a>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+    {#if verdict.more > 0}
+      <p class="more" data-testid="summary-failed-more">{t("app-summary-more-rules", { count: verdict.more })}
+        <a href="#rule-checks" data-testid="summary-open-rules" onclick={(e) => { e.preventDefault(); onShowRule(null); }}>{t("app-summary-open-rules")}</a></p>
+    {/if}
   {/if}
   {#if summary.scope}<p class="scope" data-testid="summary-scope">{say(summary.scope, ids)}</p>{/if}
 
@@ -164,6 +186,10 @@
   .fail .tag { background: var(--fail-soft); color: var(--fail); }
   .warn .tag, .warnings .tag { background: var(--warn-soft); color: var(--warn); }
   .verdict { font-weight: 600; }
+  .failed { list-style: none; margin: 0 0 var(--sp-2); padding: 0; }
+  .failed li { padding: 3px 0; border-bottom: var(--lw-thin) solid var(--rule); }
+  .failed .name { margin-right: var(--sp-2); }
+  .more { color: var(--ink-2); }
   .verdict.pending { color: var(--accent); }
   .provisional { color: var(--warn); font-weight: 600; }
   table { border-collapse: collapse; font-size: var(--fs-14); }
