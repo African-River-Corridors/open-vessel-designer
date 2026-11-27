@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { summarise, summaryRows } from "../src/lib/summary.ts";
+import { FAILED_SHOWN, scopeCounts, shortTitle, summarise, summaryRows } from "../src/lib/summary.ts";
 
 const read = (u) => JSON.parse(fs.readFileSync(new URL(u, import.meta.url), "utf8"));
 const GAS = read("../../examples/gas-140x29-coastal-lng/results.json").options[0].results;
@@ -57,7 +57,13 @@ test("an Option with a blocking Rule not met: the verdict names it by title", ()
   results.rule_trace.rows.push(twin);
   results.checks.push({ name: "stable", ok: false, message: "GM too small", severity: "error" });
   const s = summarise(input(results));
-  assert.deepEqual(s.verdict, { kind: "not-met", titles: [failing.title, "stable"] });
+  assert.equal(s.verdict.kind, "not-met");
+  assert.equal(s.verdict.count, 2);
+  assert.deepEqual(s.verdict.shown.map((f) => f.title), [failing.title, "stable"]);
+  assert.equal(s.verdict.more, 0);
+  // A failed check has its row in the Checks panel; a Rule with no check of its name goes to the Rule checks view.
+  assert.equal(s.verdict.shown[1].check, "stable");
+  assert.equal(s.verdict.shown[0].check, results.checks.some((c) => c.name === failing.title) ? failing.title : null);
   // A failed Rule that only warns does not count.
   const soft = structuredClone(GAS);
   const warn = soft.rule_trace.rows.find((r) => r.consequence !== "block");
@@ -101,4 +107,75 @@ test("a missing number is undefined in its row, never a made-up one", () => {
   delete results.results.freeboard_m;
   assert.equal(label(summarise(input(results)), "app-metric-freeboard").value, undefined);
   assert.equal(summaryRows(null).every((r) => r.value === undefined), true);
+});
+
+// Issue #1090: the failed blocking Rules as a short list.
+const failingRules = (n) => {
+  const results = structuredClone(GAS);
+  const base = results.rule_trace.rows.find((r) => r.consequence === "block");
+  for (let i = 0; i < n; i++) results.rule_trace.rows.push({ ...base, title: `Rule ${i + 1}: the hull meets a long requirement number ${i + 1}`, outcome: "fail" });
+  return results;
+};
+
+test("15 failed Rules give a count of 15, five listed and 10 more", () => {
+  const v = summarise(input(failingRules(15))).verdict;
+  assert.equal(FAILED_SHOWN, 5);
+  assert.equal(v.kind, "not-met");
+  assert.equal(v.count, 15);
+  assert.equal(v.shown.length, 5);
+  assert.deepEqual(v.shown.map((f) => f.title), [1, 2, 3, 4, 5].map((i) => `Rule ${i}: the hull meets a long requirement number ${i}`));
+  assert.equal(v.more, 10);
+});
+
+test("three failed Rules give three lines and no more", () => {
+  const v = summarise(input(failingRules(3))).verdict;
+  assert.equal(v.count, 3);
+  assert.equal(v.shown.length, 3);
+  assert.equal(v.more, 0);
+});
+
+test("a long title is shortened at a word's end, never in the middle of a word", () => {
+  const long = "Intact stability of a tank vessel carrying liquefied gas in bulk, for every loading condition of the stability booklet";
+  const short = shortTitle(long, 60);
+  assert.ok(short.length <= 61, short);
+  assert.ok(short.endsWith("…"), short);
+  const kept = short.slice(0, -1);
+  assert.ok(long.startsWith(kept), "the kept part is the start of the title");
+  assert.match(long.slice(kept.length), /^[\s,;:]/, "the cut falls between words");
+  assert.equal(shortTitle("A short title", 60), "A short title", "a short title is whole");
+  // Every cut of the long title, at every length: never inside a word.
+  for (let max = 10; max <= long.length; max++) {
+    const s = shortTitle(long, max);
+    if (s === long) continue;
+    const k = s.slice(0, -1);
+    assert.ok(long.startsWith(k) && /^[\s,;:]/.test(long.slice(k.length)), `max ${max}: ${s}`);
+  }
+  // One word longer than the limit is kept whole.
+  assert.equal(shortTitle("Supercalifragilistic rest", 8), "Supercalifragilistic…");
+});
+
+test("the shown lines carry the shortened title and the full one", () => {
+  const results = failingRules(1);
+  results.rule_trace.rows.at(-1).title = "x ".repeat(80).trim();
+  const f = summarise(input(results)).verdict.shown.at(-1);
+  assert.equal(f.title, "x ".repeat(80).trim());
+  assert.ok(f.short.length < f.title.length);
+});
+
+// The scope sentence behind a one-line summary: its two counts come from the result, never from the sentence.
+test("the scope's counts: the Rule Sets checked, and the blocking Rules not evaluated and not run", () => {
+  assert.deepEqual(scopeCounts(GAS), { ruleSets: GAS.rule_trace.rule_sets.length, notEvaluated: 4, notRun: 0 });
+  assert.equal(GAS.rule_trace.rule_sets.length, 8);
+  const results = structuredClone(GAS);
+  results.rule_trace.verdict.blocking_not_run = [{ rule: "igc/2.7/damage-survival", title: "Survival after the assumed damage" }];
+  results.rule_trace.verdict.blocking_not_evaluated.pop();
+  assert.deepEqual(scopeCounts(results), { ruleSets: 8, notEvaluated: 3, notRun: 1 });
+});
+
+test("without a Rule Trace there are no counts", () => {
+  assert.equal(scopeCounts(null), null);
+  assert.equal(scopeCounts({ results: {} }), null);
+  const bare = structuredClone(GAS);
+  delete bare.rule_trace.verdict;
+  assert.deepEqual(scopeCounts(bare), { ruleSets: 8, notEvaluated: 0, notRun: 0 });
 });

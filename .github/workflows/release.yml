@@ -6,7 +6,7 @@ name: Release
 # There is no nightly run. It builds and tests; it publishes NOTHING (no PyPI, no upload to a release).
 # Wheels and binaries are kept as workflow artifacts for the maintainer to inspect.
 #
-# Order: `gate` (the CI jobs `test` and `release-guard`) -> `app-gate` (web-app, app-e2e), `web-parity`, `wasm-hashes`, `wheels` and `binaries`. Both build jobs
+# Order: `gate` (the CI jobs `test` and `release-guard`) -> `app-gate` (web-app), `web-parity`, `wasm-hashes`, `wheels` and `binaries`. Both build jobs
 # list `gate` in `needs`, so a failing `test` or `release-guard` stops the run before any build step.
 
 on:
@@ -28,8 +28,8 @@ jobs:
     needs: gate
     uses: ./.github/workflows/web-parity.yml
 
-  # The web app and the desktop app smoke tests (issue #716). They left the pull request path: a release
-  # waits on them here. app-gate.yml holds them.
+  # The web app's end-to-end tests (issue #1094). They run on pull requests too; a release waits on them
+  # here as well. app-gate.yml holds them.
   app-gate:
     needs: gate
     uses: ./.github/workflows/app-gate.yml
@@ -110,7 +110,7 @@ jobs:
           # A test run here may read only the folders copied below; tests/test_workflows_release.py
           # checks that in `test`, so a new test that needs tools/ fails there, not at release (#211).
           mkdir "$RUNNER_TEMP/wheel-check"
-          cp -r tests tools examples calibration catalogue evaluation "$RUNNER_TEMP/wheel-check/"
+          cp -r tests tools examples calibration catalogue evaluation locales "$RUNNER_TEMP/wheel-check/"
           # The evaluation harness reads the built-in Rule Set files from the checkout.
           mkdir -p "$RUNNER_TEMP/wheel-check/crates/ovd-format"
           cp -r crates/ovd-format/rules "$RUNNER_TEMP/wheel-check/crates/ovd-format/"

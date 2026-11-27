@@ -46,3 +46,24 @@ def test_no_placed_test_is_one_the_pr_profile_leaves_out():
     pr = tomllib.loads((ROOT / ".config" / "nextest.toml").read_text(encoding="utf-8"))["profile"]["pr"]
     for _, binary, test, _ in _lines():
         assert f"test(={test})" not in pr["default-filter"], test
+
+
+def test_the_tool_leaves_a_slow_unit_test_to_the_hash_share():
+    """A slow unit test of a library (binary `ovd-shell`, test `state::tests::...`) is not placed:
+    the file's format names integration tests only. Its time still counts in every job's share.
+
+    Label: property"""
+    import sys
+
+    sys.path.insert(0, str(ROOT / "tools"))
+    import rust_partitions
+
+    measured = {
+        ("ovd-format::a", "slow_one"): 100.0,
+        ("ovd-shell", "state::tests::slow_unit"): 90.0,
+        ("ovd-format::b", "quick"): 1.0,
+    }
+    placed, load = rust_partitions.place(measured, 2, 15.0)
+    assert [key for _, key, _ in placed] == [("ovd-format::a", "slow_one")]
+    assert sum(load) == sum(measured.values())
+

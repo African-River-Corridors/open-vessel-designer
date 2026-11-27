@@ -1,0 +1,3 @@
+<!-- unreleased -->
+- App (issue #1082, spec 0017): no message the app shows tells the designer to run a command-line program or use the Python API. The Service Area error now reads "Choose a Service Area: river only, or coastal and river."; the river-limit, saved-file and Vessel Class messages have app wording too. The command line and the Python API keep their own hints. No result moves.
+- App (issue #1082, spec 0017): a thin line under the header shows "Calculating…" while an edit is being evaluated, once the wait passes about 200 ms. It is on screen at every window width and stays on while any evaluation still runs. The views keep their "out of date" mark.

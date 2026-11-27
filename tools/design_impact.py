@@ -252,6 +252,15 @@ OPTIONAL_INPUT_CASES = (
     # lowerable mast moves the river air drafts; a base from before refuses both inputs.
     ("vent_stub_m", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"vent_stub_m": 2.0, "service_area": "river-only"}),
+    # Issue #1101: the collision bulkhead's distance aft of the forward perpendicular, which places the forward house
+    # (ES-TRIN 2025/1 Article 3.03(1)(a): 0.04 L to 0.04 L + 2 m, down to 0.03 L with a flooding calculation). A 110 m
+    # river-only LNG barge with the forward wheelhouse: 0.03 L, inside the band, and its top.
+    *(
+        (f"collision_bulkhead_m {x} m", "LNG", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
+         {"collision_bulkhead_m": x, "arrangement_style": "wheelhouse_forward", "service_area": "river-only",
+          "draught_limit_m": 4.0, "air_draft_limit_m": 40.0})
+        for x in (3.3, 5.0, 6.4)
+    ),
     ("vent_mast_lowerable", "LPG_propane", "type_c_tanks", "self_propelled", 110.0, 11.4, 6.0,
      {"vent_mast_lowerable": True}),
     # The aft block inputs (issue #4, slice 4), set to their defaults in the same way. A self-propelled

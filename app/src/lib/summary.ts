@@ -13,10 +13,43 @@ export interface Blocker {
 export type Verdict =
   /** Every evaluated blocking Rule is met. */
   | { kind: "met" }
-  /** Blocking Rules that are not met, by title; checks of severity error that fail are named too. */
-  | { kind: "not-met"; titles: string[] }
+  /**
+   * Blocking Rules that are not met; checks of severity error that fail count too (issue #1090): how many, the
+   * first few to list, and how many more.
+   */
+  | { kind: "not-met"; count: number; shown: FailedRule[]; more: number }
   /** No results: the inputs to fix, or the engine's own message where the Option has no results for another reason. */
   | { kind: "not-calculated"; inputs: Blocker[]; message: string | null };
+
+/** Issue #1090: one failed blocking Rule (or failed check of severity error) on the Summary's short list. */
+export interface FailedRule {
+  /** The title in full, as the Rule Trace or the Checks panel gives it. */
+  title: string;
+  /** The title shortened at a word's end, for one line. */
+  short: string;
+  /** The name of its row in the Checks panel, or null where it has none (the link goes to the Rule checks view). */
+  check: string | null;
+}
+
+/** How many failed Rules the Summary lists before "and N more". */
+export const FAILED_SHOWN = 5;
+/** The longest title the list shows whole, in characters. */
+export const TITLE_MAX = 90;
+
+/**
+ * A title cut to at most `max` characters and an ellipsis, at the end of a word: never in the middle of one. A
+ * first word longer than `max` is kept whole.
+ */
+export function shortTitle(title: string, max = TITLE_MAX): string {
+  if (title.length <= max) return title;
+  const words = title.split(/(?=[\s,;:])/);
+  let kept = words[0];
+  for (const w of words.slice(1)) {
+    if ((kept + w).length > max) break;
+    kept += w;
+  }
+  return kept.replace(/[\s,;:]+$/, "") + "…";
+}
 
 /** One headline number: where it lives in the results, and its value there. The component formats it. */
 export interface SummaryRow {
@@ -140,12 +173,40 @@ export function summarise(i: SummaryInput): Summary {
   const titles: string[] = [];
   for (const r of trace?.rows ?? []) if (r.consequence === "block" && r.outcome === "fail" && !titles.includes(r.title)) titles.push(r.title);
   for (const c of checks) if (!c.ok && c.severity !== "warning" && !titles.includes(c.name)) titles.push(c.name);
+  const failed = titles.slice(0, FAILED_SHOWN).map((title) => ({
+    title,
+    short: shortTitle(title),
+    check: checks.some((c) => c.name === title) ? title : null,
+  }));
   return {
-    verdict: titles.length === 0 ? { kind: "met" } : { kind: "not-met", titles },
+    verdict: titles.length === 0 ? { kind: "met" } : { kind: "not-met", count: titles.length, shown: failed, more: titles.length - failed.length },
     scope: typeof trace?.scope === "string" ? trace.scope : null,
     damage: damageStatus(results),
     rows: summaryRows(results),
     warnings: checks.filter((c) => !c.ok && c.severity === "warning").map((c) => ({ name: c.name, message: c.message })),
     inputs,
+  };
+}
+
+/** The two counts of the scope's one-line summary, read from the result's Rule Trace (not from its sentence). */
+export interface ScopeCounts {
+  /** The Rule Sets the Option was checked against. */
+  ruleSets: number;
+  /** Blocking Rules the engine could not evaluate. */
+  notEvaluated: number;
+  /** Blocking Rules left out on purpose (damage stability not run). */
+  notRun: number;
+}
+
+/** The scope's counts; null where the results hold no Rule Trace with its list of Rule Sets. */
+export function scopeCounts(results: unknown): ScopeCounts | null {
+  const trace = at(results, ["rule_trace"]) as
+    | { rule_sets?: unknown[]; verdict?: { blocking_not_evaluated?: unknown[]; blocking_not_run?: unknown[] } }
+    | undefined;
+  if (!trace || !Array.isArray(trace.rule_sets)) return null;
+  return {
+    ruleSets: trace.rule_sets.length,
+    notEvaluated: trace.verdict?.blocking_not_evaluated?.length ?? 0,
+    notRun: trace.verdict?.blocking_not_run?.length ?? 0,
   };
 }

@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { remote } from "webdriverio";
+import { closeBrowsers, openBrowser } from "./browser.mjs";
 import { serve } from "./web-server.mjs";
 
 const here = import.meta.dirname;
@@ -52,11 +52,15 @@ function gasBarge() {
 }
 
 async function start() {
-  const b = await remote({ logLevel: "warn", strictSelectors: false, capabilities: chrome() });
+  const b = await openBrowser(chrome());
   sessions.push(b);
   await b.url(`${origin}/ovd/app`);
   await until(b, "the notice", async () => exists(b, "[data-testid=notice]"));
   await (await b.$("button=I understand")).click();
+  // A first start opens the Start page after the notice (spec 0017): take its skip link.
+  await until(b, "the Start page", async () => (await b.$("[data-testid=start-page]")).isExisting());
+  await (await b.$("[data-testid=start-skip]")).click();
+  await until(b, "the Start page to close", async () => !(await b.$("[data-testid=start-page]").isExisting()));
   await until(b, "the app", async () => exists(b, "header"));
   return b;
 }
@@ -96,7 +100,7 @@ before(async () => {
   ({ server, origin } = await serve(DIST));
 });
 after(async () => {
-  for (const b of sessions) await b.deleteSession().catch(() => {});
+  await closeBrowsers();
   server?.close();
 });
 
@@ -136,6 +140,8 @@ describe("Summary view (issue #1081)", () => {
     const verdict = await b.$("[data-testid=summary-verdict]");
     assert.equal(await verdict.getAttribute("data-kind"), failing === 0 ? "met" : "not-met");
     // The scope sentence is the Outputs panel's, word for word.
+    // The sentence sits behind the scope's one line: open it first.
+    await (await b.$("[data-testid=summary-scope-line]")).click();
     assert.equal((await (await b.$("[data-testid=summary-scope]")).getText()).trim(), outputs["Scope of the check"]);
     // The warning checks not met are the Checks panel's, in its words.
     const panelWarn = await b.execute(() => [...document.querySelectorAll("[data-testid=check][data-tone=warn] strong")].map((e) => e.textContent.trim()));

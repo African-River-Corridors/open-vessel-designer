@@ -1,6 +1,6 @@
 # OVD app style guide
 
-How the desktop app looks. It gives the app the same look as the website: a 1930s construction
+How the app looks (the web app; the desktop app is paused, ADR 0026). It gives the app the same look as the website: a 1930s construction
 blueprint. The blueprint field is Prussian blue with white ink. A gilt frame and a cream mat sit around
 it.
 
@@ -176,12 +176,10 @@ contrast target. A border that marks a control (an input box, a toggle) uses `--
 --font-hand: "Architects Daughter", "Barlow Semi Condensed", sans-serif;
 ```
 
-- **Other languages (spec 0005).** The bundled fonts have the letters of English, Spanish and
-  Portuguese. Twi (ɛ, ɔ) and Chinese come from system fonts listed after them in each stack: Segoe
-  UI, Noto Sans and DejaVu Sans, then PingFang SC, Microsoft YaHei, Noto Sans CJK SC and Source Han
-  Sans SC (the serif stack has the serif forms). `<html lang>` follows the Display Language, so the
-  browser picks the Chinese glyphs. Tabs and table heads may break a long word
-  (`overflow-wrap: anywhere`); Chinese uses `line-break: strict`.
+- **Other languages (spec 0005).** English only for now (ADR 0026). The font stacks still list
+  system fonts after the bundled ones (Segoe UI, Noto Sans and DejaVu Sans, then PingFang SC,
+  Microsoft YaHei, Noto Sans CJK SC and Source Han Sans SC), so a returning language has its letters.
+  Tabs and table heads may break a long word (`overflow-wrap: anywhere`).
 - **The hand lettering is for display only.** It is never used for inputs, numbers, tables, messages
   or body text.
 - **The app bundles its fonts.** It runs offline, and never loads Google Fonts or any other web font
@@ -311,7 +309,7 @@ set:
 - At 16 px and 32 px the drawing is simplified (fewer lines); use the 16 and 32 px masters for those
   sizes, not a scaled-down 1024.
 
-The icons live in `app/src-tauri/icons/`, at the sizes `tauri.conf.json` lists.
+The desktop icon files left with the desktop app (ADR 0026); the last commit that has them is named there.
 
 **Splash (loading screen).** It shows while the engine starts, and goes away when the first result
 arrives. It is the blueprint field in a gilt frame on the cream mat. At the left: the mark, "OVD" in

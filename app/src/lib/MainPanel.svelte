@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
     import type { DamageViews, Evaluation, HullViews, OptionEvaluation } from "./api";
   import StaleWhy from "./StaleWhy.svelte";
   import PrincipalStrip from "./PrincipalStrip.svelte";
@@ -13,14 +14,19 @@
   import Summary from "./views/Summary.svelte";
   import RuleChecks, { type RuleTrace } from "./views/RuleChecks.svelte";
   import CapitalBudget from "./views/CapitalBudget.svelte";
+  import CalculatingSign from "./CalculatingSign.svelte";
   import type { DamageResults } from "./damage";
   import { say, t, type TextIds } from "./i18n.svelte";
-  import { viewRequest } from "./viewRequest.svelte";
+  import { viewRequest, viewShown } from "./viewRequest.svelte";
 
   // The hull views are SVG drawn in Rust to the Drawing Format Standard (ADR 0009, spec 0003); the
   // panel only places and zooms them.
-  let { evaluation, active, lastGood, blockers, designSpeed, inputs, onRunDamage, onCancelDamage, onShowInput, onShowCheck }: {
+  let { evaluation, active, lastGood, blockers, designSpeed, inputs, sign, designPending, onRunDamage, onCancelDamage, onShowInput, onShowCheck }: {
     evaluation: Evaluation | null;
+    /** Issue #1096: the "Calculating…" sign while the Input panel is hidden; null when the panel shows it. */
+    sign: boolean | null;
+    /** Issue #1096: a new Design is being calculated for the first time. */
+    designPending: boolean;
     active: string;
     lastGood: Record<string, OptionEvaluation>;
     blockers: { name: string; label: string }[];
@@ -93,6 +99,22 @@
     }
   });
 
+  // Issue #1097: tell the app which view shows, so it can give the Summary the whole main area.
+  $effect(() => {
+    viewShown.id = current;
+  });
+
+  /** Issue #1090: open the Rule checks view at a Rule's row (or at the top, for `null`) and put the focus there. */
+  async function showRule(title: string | null) {
+    pickGroup("stability-propulsion");
+    current = "rules";
+    await tick();
+    const row = title === null ? null : document.querySelector<HTMLElement>(`[data-testid=rule-check-row][data-rule="${CSS.escape(title)}"]`);
+    const target = row ?? document.querySelector<HTMLElement>("[data-testid=rule-checks]");
+    target?.scrollIntoView({ block: "center" });
+    target?.focus();
+  }
+
   function pickGroup(id: string) {
     groupId = id;
     current = GROUPS.find((g) => g.id === id)!.views[0].id;
@@ -141,17 +163,22 @@
     <h2>{t("app-views")}</h2>
     <div class="tabs" role="tablist" aria-label={t("app-view-groups")}>
       {#each GROUPS as g (g.id)}
-        <button type="button" role="tab" aria-selected={g.id === groupId} class:on={g.id === groupId} onclick={() => pickGroup(g.id)}>{t(g.label)}</button>
+        <button type="button" role="tab" data-testid="group-{g.id}" aria-selected={g.id === groupId} class:on={g.id === groupId} onclick={() => pickGroup(g.id)}>{t(g.label)}</button>
       {/each}
     </div>
     {#if stale && FROM_RESULTS.includes(current)}<span class="stale">{t("app-out-of-date")}</span>{/if}
+    {#if sign !== null}<span class="sign"><CalculatingSign on={sign} /></span>{/if}
   </header>
-  <div class="tabs sub" role="tablist" aria-label={t("app-views-of", { group: t(group.label) })}>
-    {#each group.views.filter((v) => v.id !== "convoy" || convoyOf(results)) as v (v.id)}
-      <button type="button" role="tab" aria-selected={v.id === current} class:on={v.id === current} onclick={() => (current = v.id)}>{t(v.label)}</button>
-    {/each}
-  </div>
-  <PrincipalStrip {results} />
+  <!-- Issue #1090: a group with one view (the Summary) shows no second row of tabs. -->
+  {#if group.views.length > 1}
+    <div class="tabs sub" role="tablist" aria-label={t("app-views-of", { group: t(group.label) })}>
+      {#each group.views.filter((v) => v.id !== "convoy" || convoyOf(results)) as v (v.id)}
+        <button type="button" role="tab" aria-selected={v.id === current} class:on={v.id === current} onclick={() => (current = v.id)}>{t(v.label)}</button>
+      {/each}
+    </div>
+  {/if}
+  <!-- Issue #1097: the Summary gives its own headline numbers, so the strip that repeats them is left out there. -->
+  {#if current !== "summary"}<PrincipalStrip {results} />{/if}
   {#if stale}<div class="whyrow"><StaleWhy {blockers} /></div>{/if}
 
   <div class="view" data-view={current}>
@@ -160,8 +187,10 @@
     <h3 class="title" data-testid="view-title">{currentLabel}</h3>
     <div class="content">
     {#if current === "summary"}
-      <Summary results={outcome?.status === "results" ? (outcome.results as Record<string, unknown>) : null} message={message} {blockers} {inputs} {ids} option={active}
-        {onRunDamage} {onCancelDamage} {onShowInput} {onShowCheck} />
+      <Summary results={outcome?.status === "results" ? (outcome.results as Record<string, unknown>) : null} message={message} {blockers} {inputs} {ids} option={active} calculating={designPending}
+        drawings={outcome?.status === "results" && views ? { side: views.side ?? null, plan: views.plan ?? null } : null}
+        onShowDrawing={(v) => { pickGroup("drawings"); current = v; }}
+        {onRunDamage} {onCancelDamage} {onShowInput} {onShowCheck} onShowRule={showRule} />
     {:else if HULL.includes(current)}
       <div class="slot" data-testid="slot-{current}">
         {#if drawing(current as HullKey)}
@@ -306,5 +335,7 @@
   .slot { height: 100%; }
   .charts { height: 100%; display: flex; flex-direction: column; gap: 10px; }
   .note { color: var(--ink-3); }
+  .sign { margin-left: auto; align-self: center; margin-bottom: var(--sp-1); }
+  .stale + .sign { margin-left: 0; }
   .stale { margin-left: auto; align-self: center; margin-bottom: var(--sp-1); background: var(--warn-soft); color: var(--warn); border: var(--lw-thin) solid var(--warn); font: var(--fs-11) var(--font-ui); padding: 1px 6px; border-radius: var(--radius); }
 </style>

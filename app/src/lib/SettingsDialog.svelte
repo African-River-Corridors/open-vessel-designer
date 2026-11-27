@@ -1,7 +1,7 @@
 <script lang="ts">
-  // Settings: the per-user choices that change no result (Display Language, theme) and the Defaults
+  // Settings: the per-user choices that change no result (the theme) and the Defaults
   // Profile, kept out of the app bar and the input panel. Escape, Close or a click outside closes it.
-  import LanguageControl from "./LanguageControl.svelte";
+  import { trapFocus } from "./focusTrap";
   import ThemeControl from "./ThemeControl.svelte";
   import { t } from "./i18n.svelte";
 
@@ -24,13 +24,8 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (Escape closes it) -->
 <div class="veil" onclick={(e) => e.target === e.currentTarget && onClose()}>
-  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" data-testid="settings-dialog">
+  <div class="dialog" role="dialog" aria-modal="true" use:trapFocus aria-labelledby="settings-title" data-testid="settings-dialog">
     <h2 id="settings-title">{t("app-settings")}</h2>
-
-    <section>
-      <h3>{t("app-language")}</h3>
-      <LanguageControl />
-    </section>
 
     <section>
       <h3>{t("app-theme")}</h3>

@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- App: the Summary shows the vessel. At the top of its right column, the side elevation of the Option, the Drawings view's own sheet framed on the hull, and the plan under it where the Summary is tall and wide enough. A click, or Enter, opens that drawing in the Drawings view. Its text names the Option and its length, beam and depth. While a new Design is calculated, the picture's place says so; with no result there is no picture. Its box has a fixed height, so nothing moves when damage stability ends and the drawing is redrawn.

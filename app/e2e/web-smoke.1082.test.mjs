@@ -1,0 +1,204 @@
+// Web end-to-end for issue #1082 (spec 0017, D12 and D13): plain words in the app, and a sign that it
+// is calculating. Run by e2e/run-web.sh with the other web-smoke files.
+import { after, before, describe, it } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { closeBrowsers, openBrowser } from "./browser.mjs";
+import { serve } from "./web-server.mjs";
+import { showAllInputs } from "./inputs-mode.mjs";
+import { showOutputsPanel } from "./outputs-panel.mjs";
+
+const here = import.meta.dirname;
+const GAS_FIXTURE = path.resolve(here, "../../crates/ovd-format/tests/fixtures/gas_igc_2g_self_propelled.vdesign");
+const DIST = path.resolve(here, "../dist-web-test");
+
+const chrome = () => ({
+  browserName: "chrome",
+  "wdio:enforceWebDriverClassic": true,
+  "goog:chromeOptions": {
+    ...(process.env.CHROME_BINARY ? { binary: process.env.CHROME_BINARY } : fs.existsSync("/Applications/Google Chrome.app") ? { binary: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" } : {}),
+    args: ["--headless=new", "--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist", "--window-size=1500,950"],
+  },
+});
+
+let origin, server;
+const sessions = [];
+async function start() {
+  const b = await openBrowser(chrome());
+  sessions.push(b);
+  return b;
+}
+const until = (b, what, check, timeout = 30000) =>
+  b.waitUntil(check, { timeout, interval: 50, timeoutMsg: `timed out waiting for: ${what}` });
+
+/** Open the app past the first-run notice. */
+async function openApp(b) {
+  await b.url(`${origin}/ovd/app`);
+  await until(b, "the notice", async () => (await b.$("[data-testid=notice]")).isExisting());
+  await (await b.$("button=I understand")).click();
+  // A first start opens the Start page after the notice (spec 0017): take its skip link.
+  await until(b, "the Start page", async () => (await b.$("[data-testid=start-page]")).isExisting());
+  await (await b.$("[data-testid=start-skip]")).click();
+  await until(b, "the Start page to close", async () => !(await b.$("[data-testid=start-page]").isExisting()));
+}
+
+before(async () => {
+  ({ server, origin } = await serve(DIST));
+});
+after(async () => {
+  await closeBrowsers();
+  server?.close();
+});
+
+describe("Plain words and the calculating sign (issue #1082)", () => {
+  it("tells the designer to choose a Service Area, in the Input panel and the Outputs panel, with no command line", async () => {
+    const b = await start();
+    await openApp(b);
+    await showOutputsPanel(b); // the Summary opens with the Outputs panel closed (#1097)
+    // The starter Design has no Service Area (issue #925), so it shows the error in both places.
+    const field = '.field[data-input="service_area"] .msg.error';
+    await until(b, "the Service Area error", async () => (await b.$(field)).isExisting());
+    const expected = "Choose a Service Area: river only, or coastal and river.";
+    assert.equal((await (await b.$(field)).getText()).trim(), expected);
+    const outputs = async () => {
+      const texts = [];
+      for (const e of await b.$$(".err")) texts.push(await e.getText());
+      return texts;
+    };
+    await until(b, "the error in the Outputs panel", async () => (await outputs()).some((t) => t.includes("Service Area")));
+    assert.ok((await outputs()).some((t) => t.includes(expected)), `the Outputs panel says: ${await outputs()}`);
+    // No text on the page names the program with a sub-command.
+    const page = await b.execute(() => document.body.innerText);
+    assert.doesNotMatch(page, /\bovd\s+[a-z]|simulate/);
+  });
+
+  // English only for now (issue #1095): Settings has no Display Language control, so this test is paused.
+  it.skip("keeps the plain Service Area wording in another Display Language, never the command-line hint", async () => {
+    const b = await start();
+    await openApp(b);
+    await (await b.$("[data-testid=settings]")).click();
+    await until(b, "the Settings dialog", async () => (await b.$("[data-testid=settings-dialog]")).isExisting());
+    await (await b.$("[data-testid=language]")).selectByAttribute("value", "es");
+    await (await b.$("[data-testid=settings-close]")).click();
+    const field = '.field[data-input="service_area"] .msg.error';
+    await until(b, "the Service Area error", async () => (await b.$(field)).isExisting());
+    const shown = (await (await b.$(field)).getText()).trim();
+    assert.equal(shown, "Choose a Service Area: river only, or coastal and river.");
+    // Every error text on the page: none names the program, a call or the Python API.
+    const errors = (await b.execute(() => [...document.querySelectorAll(".err, .msg.error")].map((e) => e.innerText))).join("\n");
+    assert.match(errors, /Service Area/, "the error texts were read");
+    assert.doesNotMatch(errors, /\bovd\b|simulate|python/i);
+  });
+
+  it("shows Calculating… while a slow evaluation runs after an edit to a gas barge, and not before or after", async () => {
+    const b = await start();
+    await openApp(b);
+    await b.execute(() => {
+      HTMLInputElement.prototype.click = function () {};
+    });
+    await (await b.$("button=Open")).click();
+    const picker = await b.$("[data-testid=file-picker]");
+    await picker.waitForExist({ timeout: 5000 });
+    await picker.setValue(GAS_FIXTURE);
+    await until(b, "the file name", async () => (await b.$("header")).getText().then((t) => t.includes("gas_igc_2g_self_propelled.vdesign")));
+    await until(b, "results", async () => (await b.$("[data-testid=outputs]")).isExisting());
+
+    const sign = b.$("[data-testid=calculating]");
+    assert.equal(await sign.getAttribute("role"), "status", "the sign is a status");
+    assert.equal(await sign.getAttribute("aria-live"), null, "role=status already announces politely");
+    assert.equal((await sign.getText()).trim(), "", "nothing to announce at rest");
+
+    // Make the evaluation take about a second, so the sign has time to show whatever the machine's speed.
+    // The first answer is kept: the second part of the test hands it back at once.
+    await b.execute(async () => {
+      const p = window.__ovdPlatform;
+      const real = p.evaluate.bind(p);
+      window.__kept = await real();
+      window.__slow = true;
+      p.evaluate = async () => {
+        if (!window.__slow) return window.__kept;
+        await new Promise((r) => setTimeout(r, 1200));
+        return real();
+      };
+    });
+    await showAllInputs(b); // Essentials hides this input (#1084)
+    const toggle = b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]');
+    // The page notes the sign the moment it shows: on a busy machine a poll from here can miss its second on screen.
+    await b.execute(() => {
+      window.__shown = "";
+      new MutationObserver(() => {
+        const text = document.querySelector("[data-testid=calculating]")?.textContent.trim();
+        if (text) window.__shown = text;
+      }).observe(document.body, { subtree: true, childList: true, characterData: true });
+    });
+    await toggle.click();
+    await until(b, "the Calculating… sign", async () => (await b.execute(() => window.__shown)) === "Calculating…");
+    await until(b, "the sign to go once the result is drawn", async () => (await sign.getText()).trim() === "");
+
+    // An evaluation that returns at once (under about 200 ms) never shows the sign.
+    await b.execute(() => {
+      window.__slow = false;
+      window.__seen = false;
+      new MutationObserver(() => {
+        if (document.querySelector("[data-testid=calculating]")?.textContent.trim()) window.__seen = true;
+      }).observe(document.body, { subtree: true, childList: true, characterData: true });
+    });
+    await toggle.click();
+    await new Promise((r) => setTimeout(r, 1500));
+    assert.equal(await b.execute(() => window.__seen), false, "the sign did not flash");
+  });
+
+  for (const width of [1280, 1000]) {
+    it(`shows the sign on screen at ${width} px, clear of the Settings button and the file name`, async () => {
+      const b = await start();
+      await b.setWindowSize(width, 950);
+      await openApp(b);
+      await b.execute(() => {
+        HTMLInputElement.prototype.click = function () {};
+      });
+      await (await b.$("button=Open")).click();
+      const picker = await b.$("[data-testid=file-picker]");
+      await picker.waitForExist({ timeout: 5000 });
+      await picker.setValue(GAS_FIXTURE);
+      await until(b, "the file name", async () => (await b.$("header")).getText().then((t) => t.includes("gas_igc_2g_self_propelled.vdesign")));
+      await until(b, "results", async () => (await b.$("[data-testid=outputs]")).isExisting());
+      // Hold the evaluation for a long time, so the boxes can be read while the sign shows.
+      await b.execute(async () => {
+        const p = window.__ovdPlatform;
+        const real = p.evaluate.bind(p);
+        await real();
+        p.evaluate = async () => {
+          await new Promise((r) => setTimeout(r, 4000));
+          return real();
+        };
+      });
+      const sign = b.$("[data-testid=calculating]");
+      await showAllInputs(b); // Essentials hides this input (#1084)
+      await b.$('.field[data-input="vent_mast_lowerable"] input[type=checkbox]').click();
+      await until(b, "the Calculating… sign", async () => (await sign.getText()).trim() === "Calculating…");
+      const boxes = await b.execute(() => {
+        const rect = (el) => {
+          const r = el.getBoundingClientRect();
+          return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
+        };
+        const buttons = [...document.querySelectorAll("button")].filter((e) => e.getBoundingClientRect().width > 0).map(rect);
+        return {
+          sign: rect(document.querySelector("[data-testid=calculating]")),
+          settings: rect(document.querySelector("[data-testid=settings]")),
+          file: rect(document.querySelector("header .meta.file")),
+          buttons,
+          view: { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight },
+        };
+      });
+      const apart = (a, c) => a.right <= c.left + 0.5 || a.left >= c.right - 0.5 || a.bottom <= c.top + 0.5 || a.top >= c.bottom - 0.5;
+      const { sign: r } = boxes;
+      assert.ok(r.width > 0 && r.height > 0, "the sign has a box");
+      assert.ok(r.left >= 0 && r.top >= 0 && r.right <= boxes.view.width && r.bottom <= boxes.view.height, `the sign is inside the window at ${width} px: ${JSON.stringify(r)}`);
+      assert.ok(apart(r, boxes.settings), "the sign does not overlap the Settings button");
+      assert.ok(apart(r, boxes.file), "the sign does not overlap the file name");
+      for (const btn of boxes.buttons) assert.ok(apart(r, btn), `the sign covers a button: ${JSON.stringify(btn)}`);
+    });
+  }
+});
+

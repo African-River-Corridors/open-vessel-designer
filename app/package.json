@@ -4,25 +4,20 @@
   "version": "0.3.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "node scripts/contrast.mjs && npm run test:unit && svelte-check --tsconfig ./tsconfig.json && vite build",
-    "test:unit": "node --test scripts/theme.test.mjs scripts/contrast.test.mjs scripts/chartTheme.test.mjs scripts/model3d.test.mjs scripts/loadBasis.test.mjs scripts/principal.test.mjs scripts/damage.test.mjs scripts/ruleOutcomes.test.mjs scripts/sternCrew.test.mjs scripts/inputsShown.test.mjs scripts/summary.test.mjs",
+    "dev": "vite --config vite.web.config.ts",
+    "build": "node scripts/contrast.mjs && npm run test:unit && svelte-check --tsconfig ./tsconfig.json && vite build --config vite.web.config.ts",
+    "test:unit": "node --test scripts/theme.test.mjs scripts/contrast.test.mjs scripts/chartTheme.test.mjs scripts/model3d.test.mjs scripts/loadBasis.test.mjs scripts/principal.test.mjs scripts/damage.test.mjs scripts/ruleOutcomes.test.mjs scripts/sternCrew.test.mjs scripts/inputsShown.test.mjs scripts/summary.test.mjs scripts/calculating.test.mjs scripts/wizard.test.mjs scripts/inputFilter.test.mjs scripts/focusTrap.test.mjs scripts/panels.test.mjs scripts/vessel.test.mjs",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "build:web": "svelte-check --tsconfig ./tsconfig.json && vite build --config vite.web.config.ts",
-    "tauri": "tauri",
-    "e2e": "bash e2e/run.sh",
     "e2e:web": "bash e2e/run-web.sh"
   },
   "dependencies": {
     "@fluent/bundle": "^0.18.0",
-    "@tauri-apps/api": "^2.12.3",
-    "@tauri-apps/plugin-dialog": "^2.8.2",
     "three": "0.186.1",
     "uplot": "^1.6.32"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
-    "@tauri-apps/cli": "^2.12.2",
     "@tsconfig/svelte": "^5.0.8",
     "@types/three": "0.186.0",
     "svelte": "^5.57.2",

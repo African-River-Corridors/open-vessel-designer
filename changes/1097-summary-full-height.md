@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- App (issue #1097): the Summary view takes the full height of the main area. While it shows, the Outputs panel is closed unless the designer opens it there with the Outputs panel button; that choice is kept for the session, and "Show in Checks" still opens the panel. Every other view keeps the saved choice. Where the view is wide enough the Summary sets its three questions in two columns, and it leaves out the Principal strip, which repeated its numbers.

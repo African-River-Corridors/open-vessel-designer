@@ -8,8 +8,6 @@ app-open = Open
 app-save = Save
 app-save-as = Save as
 app-about = About
-app-web-version = Web version
-app-download-desktop = Download the desktop app
 app-input-panel = Input panel
 app-input-panel-show = Show the Input panel
 app-input-panel-hide = Hide the Input panel
@@ -19,13 +17,15 @@ app-outputs-panel-hide = Hide the Outputs panel
 app-file-unsaved = { $file } (unsaved)
 app-header-profile = Defaults: { $profile }
 app-engine-version = Engine { $version }
-app-language = Language
 app-theme = Theme
 app-theme-auto = Auto
 app-theme-light = Light
 app-theme-dark = Dark
 app-settings = Settings
 app-settings-close = Close
+
+# Issue #1082: the sign while an edit is being calculated (spec 0017, D13).
+app-calculating = Calculating…
 
 ## Banners and common words
 
@@ -56,6 +56,18 @@ app-out-of-date = out of date
 app-range-to = { $min } to { $max }
 app-unsaved-discard = The Design has unsaved changes. Discard them?
 app-file-name = File name
+
+# Issue #1082: plain words for engine messages that give a command-line or Python hint (spec 0017, D12).
+# `app-plain-<id>` is shown in the app in place of the engine message `<id>`, in every Display Language
+# until it is translated. The command line and the Python API keep the engine message and its hint.
+app-plain-msg-service-area-required = Choose a Service Area: river only, or coastal and river.
+app-plain-msg-river-limit-required-draught = A river-only Option needs a number for the draught limit: not set. Type a value, or pick a Vessel Class that gives it.
+app-plain-msg-river-limit-required-air-draft = A river-only Option needs a number for the air-draft limit: not set. Type a value, or pick a Vessel Class that gives it.
+app-plain-msg-river-limits-required = A river-only Option needs a number for the draught limit and the air-draft limit: not set. Type a value for each, or pick a Vessel Class that gives them.
+app-plain-msg-river-limits-legacy = This river-only file was saved before the rule that needs a number for the draught limit and the air-draft limit; it stores none for at least one of them, so its hull is not bounded by it. It keeps its results. Type the limits in the Input panel.
+app-plain-msg-inputs-not-stored = Inputs not stored in the file: { $inputs }. A saved Design holds every input as used, so a Defaults Profile edit cannot change it.
+app-plain-msg-scheme = { $input } = { $value } is not a scheme with a Vessel Class that can define a vessel.
+app-plain-msg-class-unknown = { $input } = { $value } is not a Vessel Class.
 
 ## The first-run notice
 
@@ -107,6 +119,27 @@ app-cargo-group-liquid = liquid
 app-cargo-group-gas = gas
 app-convoy-abreast = Abreast
 app-convoy-in-line = In line
+
+# Essentials, All inputs, the filter box and help on the page (issue #1084)
+app-inputs-mode = Inputs shown
+app-inputs-essentials = Essentials
+app-inputs-all = All inputs
+app-inputs-more =
+    { $count ->
+        [one] { $count } more input uses the Defaults Profile.
+       *[other] { $count } more inputs use the Defaults Profile.
+    }
+app-inputs-show-all = Show all inputs.
+app-inputs-filter = Filter inputs
+app-inputs-filter-placeholder = Filter inputs by name
+app-inputs-filter-clear = Clear the filter
+app-inputs-filter-count =
+    { $count ->
+        [one] { $count } input matches.
+       *[other] { $count } inputs match.
+    }
+app-input-about = About this input
+app-input-about-label = About this input: { $label }
 
 ## Left panel: Vessel Class
 
@@ -621,7 +654,9 @@ app-damage-estimate = About { $seconds } s, from the last run on this machine.
 app-damage-run = Run damage stability
 app-damage-cancel = Cancel
 app-damage-running = Running damage stability
-app-damage-progress = { $done } of { $total } cases
+# The progress counts the cases of every layout the arrangement search tries, against a planned total that can
+# grow; the result counts the cases of the layout chosen. The words say so, so the two numbers do not seem to clash.
+app-damage-progress = { $done } of about { $total } cases, counting every layout the search tries
 app-damage-left = about { $seconds } s left
 app-damage-progress-label = Damage stability progress
 app-damage-did-not-run = Damage stability did not run: { $reason }
@@ -644,12 +679,20 @@ app-summary-works = Does it work?
 app-summary-got = What did I get?
 app-summary-next = What should I look at next?
 app-summary-met = Every blocking Rule that was evaluated is met.
-app-summary-not-met = Blocking Rules not met: { $rules }
+# Issue #1090: the failed blocking Rules as a count and a short list.
+app-summary-not-met-count =
+    { $count ->
+        [one] One blocking Rule is not met.
+       *[other] { $count } blocking Rules are not met.
+    }
+app-summary-show-rule = Show in the Rule checks
+app-summary-more-rules = and { $count } more.
+app-summary-open-rules = Open the Rule checks
 app-summary-not-calculated = Not calculated.
 app-summary-not-calculated-fix = Not calculated: fix the error under { $inputs }
 app-summary-not-calculated-because = Not calculated: { $message }
 app-summary-damage-run = Damage stability: run.
-app-summary-damage-run-cases = Damage stability: run, { $count } cases.
+app-summary-damage-run-cases = Damage stability: run, { $count } cases of the layout chosen.
 app-summary-damage-not-run = Damage stability: not run.
 app-summary-damage-not-applicable = Damage stability: not applicable.
 app-summary-damage-not-evaluated = Damage stability: not evaluated.
@@ -658,3 +701,83 @@ app-summary-no-warnings = No warning checks are open.
 app-summary-show-check = Show in Checks
 app-summary-input-counts = Inputs: { $typed } typed and { $defaults } default.
 app-summary-open-input = Open the Input panel
+# Issue #1096: the Summary while a new Design is calculated, and while damage stability runs.
+app-summary-calculating = Calculating the Design… The answers show here when it is done.
+app-summary-may-change = The answer may still change until damage stability ends.
+# The Summary's picture of the vessel: what the picture shows, for a screen reader, and what a click does.
+app-summary-vessel-side = Side elevation of { $option }: { $loa } m long, { $beam } m beam, { $depth } m deep
+app-summary-vessel-plan = Plan of { $option }: { $loa } m long, { $beam } m beam
+app-summary-vessel-side-name = Side elevation of { $option }
+app-summary-vessel-plan-name = Plan of { $option }
+app-summary-vessel-open-side = Open the side elevation in Drawings
+app-summary-vessel-open-plan = Open the plan in Drawings
+# The Summary's scope, folded to one line: the counts come from the result.
+app-summary-scope-counts =
+    { $sets ->
+        [one] One Rule Set checked;
+       *[other] { $sets } Rule Sets checked;
+    } { $notEvaluated ->
+        [0] every blocking Rule was evaluated.
+        [one] one blocking Rule was not evaluated.
+       *[other] { $notEvaluated } blocking Rules were not evaluated.
+    }
+app-summary-scope-not-run =
+    { $count ->
+        [one] One more was not run.
+       *[other] { $count } more were not run.
+    }
+app-summary-scope-show = Show the scope
+app-summary-scope-hide = Hide the scope
+app-summary-vessel-pending = The drawing of the vessel shows here once the Design is calculated.
+
+# The Start page and the setup wizard (issue #1080)
+app-start-title = Start a Design
+app-start-plain = Choose how to begin. Nothing is replaced until you create a Design.
+app-start-wizard = New Design, step by step
+app-start-wizard-help = Answer five short questions about the vessel.
+app-start-example = Start from an example
+app-start-example-help = Open a finished set of answers and change what you like.
+app-start-open = Open a Design file
+app-start-open-help = Carry on with work you saved earlier.
+app-start-skip = Skip: open the blank starter Design
+app-start-examples-title = Examples
+app-start-examples-loading = Loading the examples…
+app-wizard-step-of = Step { $n } of { $total }
+app-wizard-step-cargo = Cargo
+app-wizard-step-area = Service Area
+app-wizard-step-formation = Formation
+app-wizard-step-hull = Hull
+app-wizard-step-limits = Your own limits
+app-wizard-step-review = Review
+app-wizard-help-cargo = What will the vessel carry?
+app-wizard-help-area = Where will it sail? This decides which Rules are checked.
+app-wizard-help-formation = How is the vessel set up: on its own, or joined to a pusher, a tug or other barges?
+app-wizard-help-hull = Give the size of the hull, by typed dimensions or by a standard Vessel Class.
+app-wizard-help-limits = Leave any of these empty and the tool chooses.
+app-wizard-help-review = Check your choices. Change any step, then create the Design.
+app-wizard-area-river-only = Checks the inland-waterway Rules.
+app-wizard-area-coastal-and-river = Checks the inland-waterway Rules and the sea-going Rules.
+app-wizard-river-limits-note = A river-only Design needs both limits below. A Vessel Class chosen in step 4 can give them instead.
+app-wizard-help-freeboard = Left empty, the safety clearance of the inland Rules is used. The load-line table value appears in the Rule checks after the first result.
+app-wizard-help-default = Left empty: { $value }, from the Defaults Profile.
+app-wizard-convoy-counts = { $abreast } abreast, { $inLine } in line
+app-wizard-so-far = Your answers so far
+app-wizard-not-chosen = Not chosen yet
+app-wizard-option-name = Option name
+app-wizard-your-choices = Your choices
+app-wizard-change = Change
+app-wizard-change-input = Change { $label }
+app-wizard-defaults-count = { $count } other inputs come from the Defaults Profile ({ $profile }).
+app-wizard-go-to-step = Go to { $step }
+app-wizard-back = Back
+app-wizard-next = Next
+app-wizard-cancel = Cancel
+app-wizard-create = Create Design
+app-wizard-over = over { $value }
+app-wizard-at-least = at least { $value }
+app-wizard-under = under { $value }
+app-wizard-at-most = at most { $value }
+app-wizard-required = { $label } is needed.
+app-wizard-not-a-number = { $label } must be a number.
+app-wizard-hard-limit = { $label } must be { $range }{ $unit }.
+app-wizard-soft-limit = { $label } is outside the usual range of { $min } to { $max }{ $unit }. It is accepted.

@@ -1,15 +1,19 @@
 <script lang="ts">
   import type { OptionEvaluation, Schema, Snapshot } from "./api";
   import InputField from "./InputField.svelte";
-  import { isShown } from "./inputsShown";
+  import { hiddenByEssentials, shownInputs } from "./inputFilter";
+  import { inputsView, setInputsFilter, setInputsMode } from "./inputsView.svelte";
   import VesselClass from "./VesselClass.svelte";
+  import CalculatingSign from "./CalculatingSign.svelte";
   import { schemaText, t } from "./i18n.svelte";
 
   // The left panel. The groups, their order, the labels, the choices and the ranges all come from
   // the schema. An input is drawn when the Option holds it, so the panel needs no rule for which
   // inputs a Cargo Containment uses: Rust sends only those that apply.
-  let { snap, schema, evaluation, generation, onPick, onEdit, onReset, onFormation, onImportOffsets, onOption }: {
+  let { snap, schema, evaluation, generation, sign, onPick, onEdit, onReset, onFormation, onImportOffsets, onOption }: {
     snap: Snapshot | null;
+    /** Issue #1096: the "Calculating…" sign, on or off; null when it is drawn elsewhere (the panel is hidden). */
+    sign: boolean | null;
     schema: Schema | null;
     evaluation: OptionEvaluation | undefined;
     /** Changes when the fields must be drawn afresh. */
@@ -27,17 +31,23 @@
   // Issue #1034: a river-only Option needs a number for its two river limits. A field is drawn afresh when this
   // changes, so the limit boxes show the moment the Service Area becomes river-only.
   let riverOnly = $derived(option?.inputs["service_area"]?.value === "river-only");
+  // Issue #1084: Essentials draws fewer inputs, and text in the filter box draws the inputs it matches, in every
+  // group. The choice of inputs is made in inputFilter.ts. See isShown (issues #925, #1034) for what the Option holds.
+  let held = $derived(option?.inputs ?? {});
+  let filtering = $derived(inputsView.query.trim() !== "");
+  let drawn = $derived(
+    shownInputs(schema?.inputs ?? [], held, riverOnly, inputsView.mode, inputsView.query, (i) => schemaText.input(i.name, i.label)),
+  );
   let groups = $derived(
     (schema?.groups ?? []).map((g) => ({
       name: g,
-      inputs: (schema?.inputs ?? []).filter(
-        // Issues #925, #1034: a required choice or a river-only limit the Option does not hold yet is
-        // drawn empty, so the designer is asked for it. See isShown.
-        (i) => i.group === g && isShown(i, option?.inputs ?? {}, riverOnly)
-          && i.kind !== "vessel_scheme" && i.kind !== "vessel_class", // drawn by VesselClass
-      ),
-    })).filter((g) => g.inputs.length > 0 || g.name === VESSEL_CLASS_GROUP),
+      inputs: drawn.filter((i) => i.group === g && i.kind !== "vessel_scheme" && i.kind !== "vessel_class"), // drawn by VesselClass
+    })).filter((g) => g.inputs.length > 0 || (g.name === VESSEL_CLASS_GROUP && vesselClassShown)),
   );
+  // The Vessel Class group is drawn whole, by VesselClass, when either of its two inputs is drawn.
+  let vesselClassShown = $derived((inputsView.mode === "all" && !filtering) || drawn.some((i) => i.kind === "vessel_scheme" || i.kind === "vessel_class"));
+  let hiddenCount = $derived(hiddenByEssentials(schema?.inputs ?? [], held, riverOnly));
+  let matchCount = $derived(drawn.length);
   const VESSEL_CLASS_GROUP = "Vessel Class";
   const specOf = (name: string) => schema?.inputs.find((i) => i.name === name);
   let classMessages = $derived([...messagesFor("vessel_scheme"), ...messagesFor("vessel_class")]);
@@ -67,13 +77,13 @@
   {#if snap}
     <section class="options">
       <h2>{t("app-option")}</h2>
-      <select aria-label={t("app-option-active")} value={snap.active_option} onchange={(e) => onPick(e.currentTarget.value)}>
+      <select data-testid="option-picker" aria-label={t("app-option-active")} value={snap.active_option} onchange={(e) => onPick(e.currentTarget.value)}>
         {#each snap.design.options as o (o.name)}
           <option value={o.name}>{o.name}</option>
         {/each}
       </select>
       <div class="buttons">
-        <button onclick={() => onOption("add")}>{t("app-option-add")}</button>
+        <button data-testid="option-add" onclick={() => onOption("add")}>{t("app-option-add")}</button>
         <button onclick={() => onOption("duplicate")}>{t("app-option-duplicate")}</button>
         <button onclick={startRename}>{t("app-option-rename")}</button>
         <button onclick={() => (confirmDelete = true)} disabled={only} title={only ? t("app-option-delete-last") : ""}>{t("app-option-delete")}</button>
@@ -99,8 +109,33 @@
       {/if}
     </section>
 
+    <section class="view">
+      <div class="moderow">
+        <div class="mode" role="group" aria-label={t("app-inputs-mode")}>
+          <button type="button" data-testid="mode-essentials" aria-pressed={inputsView.mode === "essentials"} onclick={() => setInputsMode("essentials")}>{t("app-inputs-essentials")}</button>
+          <button type="button" data-testid="mode-all" aria-pressed={inputsView.mode === "all"} onclick={() => setInputsMode("all")}>{t("app-inputs-all")}</button>
+        </div>
+        <!-- Issue #1096: the sign beside the switch, where the eyes are while typing. -->
+        {#if sign !== null}<CalculatingSign on={sign} />{/if}
+      </div>
+      <div class="inline filter">
+        <input
+          type="text"
+          data-testid="input-filter"
+          aria-label={t("app-inputs-filter")}
+          placeholder={t("app-inputs-filter-placeholder")}
+          value={inputsView.query}
+          oninput={(e) => setInputsFilter(e.currentTarget.value)}
+          onkeydown={(e) => { if (e.key === "Escape") setInputsFilter(""); }}
+        />
+        {#if filtering}<button type="button" data-testid="input-filter-clear" onclick={() => setInputsFilter("")}>{t("app-inputs-filter-clear")}</button>{/if}
+      </div>
+      <p class="count" role="status" data-testid="input-filter-count">{filtering ? t("app-inputs-filter-count", { count: matchCount }) : ""}</p>
+    </section>
+
     {#each groups as g (g.name)}
-      <details open={!closed[g.name]} ontoggle={(e) => (closed[g.name] = !e.currentTarget.open)}>
+      <!-- While the filter has text, every group with a match is open; the open and closed state the designer left is kept. -->
+      <details open={filtering || !closed[g.name]} ontoggle={(e) => { if (!filtering) closed[g.name] = !e.currentTarget.open; }}>
         <summary>{schemaText.group(g.name)}</summary>
         {#if schema?.group_notes?.[g.name]}<p class="gnote" data-testid="group-note">{schemaText.note(g.name, schema.group_notes[g.name])}</p>{/if}
         {#if g.name === VESSEL_CLASS_GROUP}
@@ -128,6 +163,9 @@
         {/each}
       </details>
     {/each}
+    {#if inputsView.mode === "essentials" && !filtering && hiddenCount > 0}
+      <p class="more" data-testid="inputs-more">{t("app-inputs-more", { count: hiddenCount })} <button type="button" class="link" onclick={() => setInputsMode("all")}>{t("app-inputs-show-all")}</button></p>
+    {/if}
   {/if}
 </div>
 
@@ -142,6 +180,22 @@
   .inline { display: flex; gap: var(--sp-1); margin-top: 6px; align-items: center; font-size: var(--fs-13); }
   .confirm { background: var(--fail-soft); color: var(--fail); padding: var(--sp-1) 6px; }
   details { border-top: var(--lw-thin) solid var(--rule); margin-top: 10px; padding-top: var(--sp-1); }
+  /* Issue #1096: the switch, the filter and the sign stay at the top while the inputs scroll, so the sign is
+     in sight whichever input is being edited. */
+  .view { margin-top: 10px; position: sticky; top: 0; z-index: 2; background: var(--paper); padding-bottom: var(--sp-1); }
+  .moderow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3); }
+  .mode { display: inline-flex; }
+  .mode button { background: transparent; font-size: var(--fs-13); border-radius: 0; margin-left: -1px; }
+  .mode button:first-child { border-radius: var(--radius) 0 0 var(--radius); margin-left: 0; }
+  .mode button:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+  .mode button[aria-pressed="true"],
+  .mode button[aria-pressed="true"]:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); position: relative; z-index: 1; }
+  .mode button:focus-visible { position: relative; z-index: 2; }
+  .filter { margin-top: 6px; }
+  .count { margin: 2px 0 0; font-size: var(--fs-12); color: var(--ink-3); min-height: 1em; }
+  .more { margin: var(--sp-2) 0; font-size: var(--fs-12); color: var(--ink-3); }
+  .link { background: none; border: none; color: var(--accent); text-decoration: underline; padding: 0; cursor: pointer; font-size: inherit; }
+  .link:hover:not(:disabled) { background: none; }
   .gnote { margin: var(--sp-1) 0; font-size: var(--fs-12); color: var(--ink-3); }
   summary { font-family: var(--font-serif); font-weight: 600; color: var(--ink); font-size: var(--fs-16); cursor: pointer; }
 </style>

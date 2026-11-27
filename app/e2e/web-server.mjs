@@ -29,6 +29,12 @@ export function serve(dir, port = 0) {
     res.writeHead(200, { "content-type": TYPES[path.extname(file)] ?? "application/octet-stream" });
     fs.createReadStream(file).pipe(res);
   });
+  // Closing the server also drops the browser's open keep-alive connections, so it never holds the test file open.
+  const close = server.close.bind(server);
+  server.close = (done) => {
+    server.closeAllConnections();
+    return close(done);
+  };
   return new Promise((resolve) =>
     server.listen(port, "127.0.0.1", () => resolve({ server, origin: `http://127.0.0.1:${server.address().port}` })),
   );

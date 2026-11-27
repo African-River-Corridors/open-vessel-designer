@@ -1,5 +1,5 @@
-// The only door to the Rust side. Every function forwards to the platform adapter (Tauri commands on the
-// desktop, the WebAssembly session in the browser); none computes.
+// The only door to the Rust side. Every function forwards to the platform adapter (the WebAssembly
+// session in the browser); none computes.
 import { platform } from "./platform";
 export type { DrawingFormat, DrawingView, ModelFormat } from "./platform";
 import type { DamageEnd, DamageProgress, DrawingFormat, DrawingView, ModelFormat } from "./platform";
@@ -172,9 +172,11 @@ export const newDesignFrom = (option: string, inputs: Record<string, unknown>) =
   platform().newDesignFrom(option, inputs);
 /** Spec 0017, D6: the examples of the Start page. */
 export const designExamples = () => platform().designExamples();
+/** Spec 0017, D1: ask before a new Design replaces unsaved work; true means go ahead. */
+export const confirmDiscard = () => platform().confirmDiscard();
+/** Spec 0017, D1: the app brought back the last Design, so there is no Start page. */
+export const designRestored = () => platform().designRestored();
 export const openFile = () => platform().openFile();
-export const onOpenedFromOutside = (opened: () => void, failed: (reason: string) => void) =>
-  platform().onOpenedFromOutside(opened, failed);
 export const save = () => platform().save();
 export const saveAs = () => platform().saveAs();
 export const setInput = (option: string, name: string, value: unknown) =>
@@ -198,9 +200,7 @@ export const useBuiltInProfile = () => platform().useBuiltInProfile();
 /** The first-run notice: has it been accepted, and remember that it was. */
 export const noticeSeen = () => platform().noticeSeen();
 export const acceptNotice = () => platform().acceptNotice();
-/** True in the browser build. */
-export const isWeb = () => platform().kind === "web";
-/** Save a drawing view as a download. false where the platform cannot (the desktop app, for now). */
+/** Save a drawing view as a download. false where the platform cannot. */
 export const exportDrawing = (option: string, view: DrawingView, format: DrawingFormat) =>
   platform().exportDrawing(option, view, format);
 export const exportModel = (option: string, format: ModelFormat, below?: string) =>

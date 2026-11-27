@@ -2,6 +2,9 @@
 
 Status: **approved by the maintainer, 2026-10-14.**
 
+**Paused, 2026-11-20:** the desktop app is removed for now; OVD ships the web app and the command line only
+(ADR 0026, issue #1094). ADR 0026 names the last commit that holds the desktop code and says what a return needs.
+
 ## Problem Statement
 
 The Rust core is complete (spec 0001), but the only way to use it is the `ovd` command-line tool.

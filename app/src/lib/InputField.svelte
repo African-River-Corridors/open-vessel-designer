@@ -91,6 +91,10 @@
   let hasError = $derived(messages.some((m) => m.severity === "error"));
   let label = $derived(schemaText.input(spec.name, spec.label));
 
+  // Issue #1084: the tooltip text, shown under the field when the designer opens "About this input".
+  let aboutOpen = $state(false);
+  const aboutId = $derived(`about-${spec.name}`);
+
   let value = $derived(stored.value);
   /** Issue #1034: a river limit of a river-only Option has no "none"; the field shows no value until answered. */
   let needsNumber = $derived(riverOnly && RIVER_LIMITS.includes(spec.name));
@@ -132,7 +136,23 @@
     {#if !spec.required && stored.source === "typed"}
       <button class="link" onclick={onReset} title={t("app-reset-title")}>{t("app-reset")}</button>
     {/if}
+    {#if help !== ""}
+      <button
+        type="button"
+        class="link about"
+        data-testid="about-toggle"
+        aria-expanded={aboutOpen}
+        aria-controls={aboutId}
+        aria-label={t("app-input-about-label", { label })}
+        onclick={() => (aboutOpen = !aboutOpen)}
+      >{t("app-input-about")}</button>
+    {/if}
   </div>
+  {#if aboutOpen && help !== ""}
+    <div class="about-text" id={aboutId} data-testid="about-text">
+      {#each help.split("\n") as line}<p>{line}</p>{/each}
+    </div>
+  {/if}
 
   {#if spec.kind === "number"}
     <div class="row">
@@ -272,6 +292,9 @@
   .badge.class { color: var(--src-class); }
   .link { background: none; border: none; color: var(--accent); text-decoration: underline; padding: 0; cursor: pointer; font-size: var(--fs-11); }
   .link:hover:not(:disabled) { background: none; }
+  .link.about { margin-left: auto; }
+  .about-text { margin: 2px 0 4px; padding: 2px 6px; border-left: var(--lw-thick) solid var(--rule-strong); font-size: var(--fs-12); color: var(--ink-3); }
+  .about-text p { margin: 0 0 2px; }
   .row { display: flex; gap: 6px; align-items: center; }
   .summary { font-size: var(--fs-12); color: var(--ink-3); }
   .row.convoy label { display: flex; flex-direction: column; font-size: var(--fs-11); color: var(--ink-3); }

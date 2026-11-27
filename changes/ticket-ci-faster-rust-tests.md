@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- Dev and test builds optimise ovd-format, the rules kernel and every outside library, as they already did the core; debug assertions and overflow checks stay on. The Rust tests are spread over the twelve CI jobs again from current times: the suite has grown about six times since the last split. A slow unit test of a library stays in the hash share, since the split file names integration tests only.

@@ -48,12 +48,9 @@ def test_the_text_library_is_whole_and_the_check_is_fast():
     assert check <= 4 * reference, f"the check took {check:.3f} s; the reference task took {reference:.3f} s"
 
 
-def tree(tmp_path: Path, english: str, code: str, **translations: str) -> Path:
+def tree(tmp_path: Path, english: str, code: str) -> Path:
     (tmp_path / "locales" / "en").mkdir(parents=True)
     (tmp_path / "locales" / "en" / "app.ftl").write_text(english, encoding="utf-8")
-    for tag, text in translations.items():
-        (tmp_path / "locales" / tag).mkdir()
-        (tmp_path / "locales" / tag / "app.ftl").write_text(text, encoding="utf-8")
     (tmp_path / "app" / "src").mkdir(parents=True)
     (tmp_path / "app" / "src" / "a.ts").write_text(code, encoding="utf-8")
     (tmp_path / "crates").mkdir()
@@ -66,7 +63,7 @@ CODE = 't("app-hello", { name }); t("app-bye");'
 
 def test_a_clean_tree_passes(tmp_path):
     """Label: property"""
-    root = tree(tmp_path, EN, CODE, es="# status: draft\napp-hello = Hola { $name }\n")
+    root = tree(tmp_path, EN, CODE)
     assert i18n_check.check(root) == []
 
 
@@ -82,35 +79,6 @@ def test_a_built_prefix_counts_as_used(tmp_path):
     """Label: property"""
     root = tree(tmp_path, EN + "app-item-a = A\n", CODE + " t(`app-item-${id}`);")
     assert i18n_check.check(root) == []
-
-
-def test_placeholder_mismatch_orphan_and_missing_status(tmp_path):
-    """Label: property"""
-    es = "# status: draft\napp-hello = Hola { $nombre }\napp-bye = Adiós\n# status: draft\napp-extra = Más\n"
-    problems = i18n_check.check(tree(tmp_path, EN, CODE, es=es))
-    assert any("placeholders of app-hello" in p for p in problems)
-    assert any("app-bye has no status line" in p for p in problems)
-    assert any("orphan: app-extra" in p for p in problems)
-
-
-def test_a_review_lapses_when_the_english_changes_and_fix_sets_it_to_draft(tmp_path):
-    """Label: property"""
-    good = i18n_check.english_hash("app-bye = Bye")
-    es = f"# status: reviewed @someone {good}\napp-bye = Adiós\n# status: reviewed @someone 00000000\napp-hello = Hola {{ $name }}\n"
-    root = tree(tmp_path, EN, CODE, es=es)
-    problems = i18n_check.check(root)
-    assert len(problems) == 1 and "lapsed review" in problems[0] and "app-hello" in problems[0]
-    assert i18n_check.check(root, fix=True) == []
-    text = (root / "locales" / "es" / "app.ftl").read_text(encoding="utf-8")
-    assert f"# status: reviewed @someone {good}\napp-bye" in text
-    assert "# status: draft\napp-hello" in text
-
-
-def test_a_multiline_message_keeps_its_placeholders(tmp_path):
-    """Label: property"""
-    en = "app-n = { $n ->\n        [one] one { $what }\n       *[other] { $n } { $what }\n    }\n"
-    es = "# status: draft\napp-n = { $n ->\n       *[other] { $n } { $what }\n    }\n"
-    assert i18n_check.check(tree(tmp_path, en, 't("app-n")', es=es)) == []
 
 
 def test_a_stale_engine_file_is_caught(tmp_path):
@@ -141,41 +109,23 @@ def test_a_text_call_whose_arguments_differ_from_its_english_is_caught(tmp_path)
     assert any("check-low: the English names ['x'] but the call gives ['y']" in p for p in problems)
 
 
-def test_a_stale_drawing_file_is_caught_and_drawings_stay_english(tmp_path):
+def test_a_stale_drawing_file_is_caught(tmp_path):
     """Label: property"""
     root = tree(tmp_path, EN, CODE)
     (root / "crates" / "a.rs").write_text('let t = label!("draw-loa", "LOA {length}", length = metres(loa));\n', encoding="utf-8")
     (root / "locales" / "en" / "drawing.ftl").write_text("draw-loa = LENGTH { $length }\n", encoding="utf-8")
-    (root / "locales" / "es").mkdir()
-    (root / "locales" / "es" / "drawing.ftl").write_text("# status: draft\ndraw-loa = ESLORA { $length }\n", encoding="utf-8")
     problems = i18n_check.check(root)
     assert any("drawing.ftl is not what the code gives" in p for p in problems)
-    assert any("locales/es/drawing.ftl: drawing messages are English only" in p for p in problems)
 
 
-def test_a_malformed_term_list_is_caught(tmp_path):
+def test_the_text_library_is_english_only(tmp_path):
     """Label: property"""
-    root = tree(tmp_path, EN, CODE, es="# status: draft\napp-bye = Adiós\n")
-    (root / "locales" / "terms.toml").write_text(
-        '[draught]\nen = "draught"\nes = ["calado", "draft", "Calado de trazado."]\n'
-        '[heel]\nes = ["escora", "draft", ""]\n'
-        '[beam]\nen = "beam"\nes = ["manga", "approved", ""]\n'
-        '[hull]\nen = "hull"\n',
-        encoding="utf-8",
-    )
-    problems = i18n_check.check(root)
-    assert not any("[draught]" in p for p in problems)
-    assert any("[heel] needs an `en` term" in p for p in problems)
-    assert any("[beam] es must be [term, status, note]" in p for p in problems)
-    assert any("[hull] es must be [term, status, note]" in p for p in problems)
-
-
-def test_hashes_prints_the_reviewed_line_of_each_english_message(tmp_path):
-    """Label: property"""
+    # English only for now (ADR 0026): a folder of another language, or a file beside the folders, is
+    # caught, so a half-returned language cannot ship by accident.
     root = tree(tmp_path, EN, CODE)
-    (root / "locales" / "en" / "drawing.ftl").write_text("draw-loa = LOA\n", encoding="utf-8")
-    lines = i18n_check.hashes("es", root)
-    assert lines == [
-        f"app-hello: # status: reviewed @your-handle {i18n_check.english_hash('app-hello = Hello { $name }')}",
-        f"app-bye: # status: reviewed @your-handle {i18n_check.english_hash('app-bye = Bye')}",
-    ]
+    (root / "locales" / "es").mkdir()
+    (root / "locales" / "es" / "app.ftl").write_text("app-bye = Adiós\n", encoding="utf-8")
+    (root / "locales" / "terms.toml").write_text('[draught]\nen = "draught"\n', encoding="utf-8")
+    problems = i18n_check.check(root)
+    assert any(p.startswith("locales/es: English only for now") for p in problems)
+    assert any(p.startswith("locales/terms.toml: English only for now") for p in problems)

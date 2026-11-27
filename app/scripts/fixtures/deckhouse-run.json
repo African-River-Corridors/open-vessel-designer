@@ -1114,6 +1114,19 @@
    "args": {},
    "id": "check-hold-segregation-bulkhead"
   },
+  "house front 17.83 m forward of the stern, collision bulkhead plane at 132.16 m": {
+   "args": {
+    "front": {
+     "num": "17.83",
+     "value": 17.832
+    },
+    "plane": {
+     "num": "132.16",
+     "value": 132.16
+    }
+   },
+   "id": "check-house-aft-of-collision-bulkhead"
+  },
   "input capacity must be a feasible volume-bound design (not overloaded)": {
    "args": {},
    "id": "check-capacity-is-volume-bound"

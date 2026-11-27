@@ -1,0 +1,2 @@
+<!-- unreleased -->
+- The web tests end every browser and driver they start, on every exit path, and keep their temp files in one folder per run that the run removes. One chromedriver serves each test file instead of one per test; each test's browser ends with the test. A test, a test file and the whole run each have a time limit, so a hang fails instead of waiting for ever, and the run fails if any process it started is still alive. Test files run three at a time.
